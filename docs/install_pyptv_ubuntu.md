@@ -9,7 +9,9 @@ original link: <neuroimaging.scipy.org/doc/manual/html/devel/tools/virtualenv-tu
 
 On Ubuntu we use package manager (`sudo apt-get install package-name`): 
 
-`sudo apt-get install python-numpy python-scipy python-setuptools python-wxgtk2.8 cython swig  python-imaging python-vtk python-pyrex python-matplotlib g++ libc6-dev libx11-dev python2.7-dev freeglut3-dev autoconf libtool git python-sphinx curl`
+		sudo apt-get install python-numpy python-scipy python-setuptools python-wxgtk2.8 cython swig  
+		python-imaging python-vtk python-pyrex python-matplotlib g++ libc6-dev libx11-dev python2.7-dev 
+		freeglut3-dev libtool git python-sphinx curl make cmake python-enable
 
 if you get some error about `Gl/gl.h` or `GL/glu.h`, maybe also:
 
@@ -43,8 +45,9 @@ Download from <http://sourceforge.net/projects/check/files/latest/download?sourc
 
 		$ git clone git://github.com/OpenPTV/openptv.git
 		$ cd openptv/liboptv
-		$ autoreconf --install
-		$ ./configure
+		$ cmake -G "Unix Makefiles" -i
+		CMake will ask you some questions about your system (accepting the 
+		defaults is usually ok)
 		$ make
 		$ make check
 		$ sudo make install
@@ -52,7 +55,7 @@ Download from <http://sourceforge.net/projects/check/files/latest/download?sourc
 
 5. Download and install `openptv-python`:  
 
-		$ git clone git://github.com/alexlib/openptv-python.git
+		$ git clone git://github.com/OpenPTV/openptv-python.git
 		$ cd openptv-python/pyptv_gui
 		$ python setup.py build_ext --inplace
 
