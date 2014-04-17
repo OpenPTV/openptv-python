@@ -1,0 +1,23 @@
+.. _api_reference:
+
+API reference
+=============
+
+This is a complete api reference to the openptv python module.
+
+The ``openptv.pyptv_gui`` module
+----------------------------------
+.. automodule:: pyptv_gui
+
+.. currentmodule:: pyptv_gui
+
+.. autosummary:: 
+    :toctree: generated/
+    
+    
+.. automodule:: parameters
+
+.. currentmodule:: parameters
+
+.. autosummary::
+	:toctree:: generated/

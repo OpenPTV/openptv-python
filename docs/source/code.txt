@@ -1,0 +1,34 @@
+OpenPTV-Python source code
+==========================
+
+.. automodule:: pyptv_gui
+	:members:
+
+
+Parameters I/O
+---------------------------
+
+.. automodule:: parameters
+   :members:
+
+GUI for parameters:
+------------------------------
+
+.. automodule:: parameter_gui
+   :members: 
+   
+Batch processing
+------------------------------
+
+.. automodule:: pyptv_batch
+   :members: 
+   
+
+External plug-ins: sequence/tracking
+-------------------------------------
+
+.. automodule:: ext_sequence_denis
+   :members: 
+
+.. automodule:: ext_tracker_denis
+   :members: 

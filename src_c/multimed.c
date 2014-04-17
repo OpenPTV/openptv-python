@@ -494,10 +494,8 @@ double	X,Y,Z;
 
 
 
-void volumedimension (xmax, xmin, ymax, ymin, zmax, zmin, num_cams)
-double *xmax, *xmin, *ymax, *ymin, *zmax, *zmin;
-int num_cams;
-{
+void volumedimension (double *xmax, double *xmin, double *ymax, double *ymin, \
+double *zmax, double *zmin, int num_cams){
   int	i_cam;
   double X,Y,Z, R, X1,Y1,Z1, Zmin, Rmax=0,Zmax, a,b,c;
   double x,y;

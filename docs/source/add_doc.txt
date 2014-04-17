@@ -1,0 +1,11 @@
+.. _add_doc:
+
+=========================
+Additional Documents
+=========================
+
++ The original manual :download:`[Link] <../add_docs/ptvmanual.pdf>` and the reference guide :download:`[Link] <../add_docs/reference_guide.pdf>` written by Jochen Willneff in 2003 (Read it first).
++ Multi-plane calibration manual by Lorenzo del Castello, TU/e. :download:`[Link] <../add_docs/calibTutorial.pdf>` 
++ PTV file system description :download:`[Link] <../add_docs/PTVFileSystem.pdf>`
++ Technical aspects of 3D PTV :download:`[Link] <../add_docs/Technical_aspects.pdf>`
++ Python Bindings to PTV library :download:`[Link] <../add_docs/Python_bindings.pdf>`

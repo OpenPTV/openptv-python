@@ -1,0 +1,326 @@
+.. _installation_instruction:
+
+=========================
+Installation instructions
+=========================
+
+
+Introduction
+------------
+
+
+The OpenPTV contains of two main parts: 
+
+#. Core library written in C, called `liboptv <http://github.com/OpenPTV/openptv/tree/master/liboptv>`_
+#. Python frontend GUI and control entitled `openptv-python <http://github.com/OpenPTV/openptv-python>`_ (note that we support so far Python 2.x, Python 3 is not yet tested)
+
+
+The C library ``liboptv`` is using Check framework for the unit tests and Cmake project for the build. We recommend installing both software packages, however it is not obligatory, you may skip the relevant parts if you're not going to develop or test the library.
+
+
+The Python GUI is based on the great packages of NumPy, SciPy, Enthought TraitsUI, Cython (for linking to the ``liboptv``) and these have to be installed prior to installing ``openptv-python``. NOTE THAT WE ARE STILL USING PYTHON 2.X
+
+
+You need to install both ``liboptv`` and ``openptv-python`` parts to make OpenPTV working. It is possible, however, to use pre-compiled binaries for the ``liboptv``. We explain all the possibilities in this document. 
+
+
+liboptv - a library of the OpenPTV algorithms
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This is a library - you can build it and link to it in your own project, e.g. calling functions from your own GUI or command-line software. When the package is installed correctly, you can reference it in your code by including files from the ``optv`` directory under the standard include path. For example::
+
+  #include <optv/tracking_frame_buf.h>
+
+To build your program you also link it with ``liboptv``. On ``gcc``, one adds the flag
+``-loptv`` to the command line. Other compilers and IDEs have their own 
+instructions for adding libraries; consult your IDE/compiler manual for the 
+details.
+
+Below are instructions for building it and making it ready for use, either from
+a source distribution (a tarball with all necessary files) or directly from a 
+Git repository. 
+
+
+Installing on Linux/Mac for the experienced users:
+--------------------------------------------------
+
+Installing directly from the source tree in Git is fast and simple, using 
+CMake. Before installation first we need to make sure that the dependencies are installed. A bit more detailed instructions for Ubuntu users are given below.  
+
+1. The tests of liboptv depend on the Check framework. You can either get it 
+   from your package manager (on Ubuntu::
+   
+    $$ sudo apt-get install check
+    
+   or get the source package  from <http://check.sourceforge.net> and install according 
+   to the instructions in the Check package. Typically you would need to run 
+   the following commands in a shell::
+
+     $ ./configure
+     $ make
+     $ make install
+
+2. The build instructions for liboptv are processed with CMake. Again, this 
+   is available either from your package manager on Linux, or from <http://cmake.org>.
+   
+   After installing CMake, installing ``liboptv`` is a simple matter of running
+   the following commands in the ``liboptv/`` directory::
+   
+     $ cmake
+     $ make
+     $ make verify 
+     $ make install
+
+The install process will put the header files and libraries in default system
+paths (on linux, ``/usr/local/include`` and ``/usr/local/lib`` respectively), so that 
+you can use the ``optv`` library in your code without further modifications. You 
+can run ``cmake`` with parameters that would change the install locations (see
+below on the Windows install process). If you do so, remmember to make sure 
+that your compiler knows the path to the installed location.
+
+
+Detailed instructions of installing OpenPTV on Ubuntu 12.04
+------------------------------------------------------------
+
+Creating ``liboptv``: 
+~~~~~~~~~~~~~~~~~~~~~
+
+1. Download and install Check unit testing framework:  
+
+Download from Sourceforge.net <http://sourceforge.net/projects/check/files/latest/download?source=files> or use::
+
+		$ curl -O http://sourceforge.net/projects/check/files/latest/download?source=files
+		$ ./configure 
+		$ make
+		$ make verify
+		$ sudo make install 
+
+2. Download and install `liboptv`, note that CMake will ask you some questions about your system, and accepting the defaults is recommended ::  
+
+		$ git clone git://github.com/OpenPTV/openptv.git
+		$ cd openptv/liboptv
+		$ cmake -G "Unix Makefiles" -i
+		$ make
+		$ make verify
+		$ sudo make install
+
+
+Creating ``openptv-python``:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Steps 3-4 are to obtain the necessary packages for ``openptv-python`` using native Ubuntu package manager. Steps 3-4 could be replaced by installing the *academic license* version of CANOPY from Enthought, see <https://www.enthought.com/products/canopy/>. It is also possible to get the free licensed Canopy Express version and add the missing packages manually.
+
+
+3. The required packages for Ubuntu which are not installed with Python by default can be obtained (following the receipt of  `neuroimaging <neuroimaging.scipy.org/doc/manual/html/devel/tools/virtualenv-tutor.html>`_), using the  package manager (``sudo apt-get install package-name``):: 
+
+
+	sudo apt-get install python-numpy python-scipy python-setuptools python-wxgtk2.8 
+	cython swig python-imaging python-vtk python-pyrex python-matplotlib g++
+	libc6-dev libx11-dev python2.7-dev freeglut3-dev libtool git python-sphinx curl 
+	make cmake python-enable
+
+if you get some error about `Gl/gl.h` or `GL/glu.h`, maybe also::
+
+		$ sudo apt-get install libatlas-base-dev libgl1--mesa-dev libglu1-mesa-dev  
+
+
+4. Get the necessary packages: ETS from Enthought, download the Python script that installs all-in-one `ets.py <https://github.com/enthought/ets/raw/master/ets.py>`_::  
+
+		$ mkdir ets
+		$ cd ets
+		$ python ets.py clone 
+		$ sudo python ets.py install
+
+
+5. Download and install `openptv-python`::  
+
+		$ git clone git://github.com/OpenPTV/openptv-python.git
+		$ cd openptv-python/pyptv_gui
+		$ python setup.py build_ext --inplace
+
+6. For the test, get the test_folder and see if it works::
+
+		$ cd ~
+		$ git clone https://bitbucket.org/turbulencelabtau/ptv_test_folder.git
+		$ cd ptv_test_folder
+		$ mkdir res
+		$ cd ~/openptv-python/pyptv-gui/ 
+		$ python pyptv_gui.py ~/ptv_test_folder/test/
+
+
+For Mac OS X I found this Gist very useful: <https://gist.github.com/satra/845545> and another copy `here <https://www.ibic.washington.edu/wiki/display/faq/How+do+I+install+EPD+Python+in+a+virtualenv>`_
+
+If you encounter the error like this while trying to run the ``openptv-python``::
+
+	$ python pyptv_gui.py ../../ptv_test_folder/test/
+   
+    > Wrong experimental directory /home/hristo/ptv_test_folder/test
+	> src_path= /home/hristo/openptv-python/src_c
+	> Traceback (most recent call last):
+	> File "pyptv_gui.py", line 60, in <module>
+	> import ptv1 as ptv
+	> ImportError: liboptv.so: cannot open shared object file: No such file or
+	> directory 
+
+
+Then it's suggested to try::
+
+     $ PATH=/usr/local/lib:$PATH python pyptv_gui.py ~/ptv_test_folder/test/
+     
+or ::
+
+     $ LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH python pyptv_gui.py ~/ptv_test_folder/test/
+
+Whichever works, it is then useful to update the local ~/.bashrc file to define this every time one opens a shell.
+
+
+Installing on Windows
+----------------------
+
+
+Unlike Linux and MacOS, which both implement POSIX standards (the Unix 
+standards base) and contain a default C build environment, Windows has 
+no such environment. Choices range from the bare-bones Windows SDK, whose 
+compiler is based on an outdated verion of C, to Visual Studio, a commercial 
+product with its own IDE and build toolchain. Aside from being costly and 
+proprietary, building with these compilers introduces compatibility problems
+with other programs. For example, building Python modules with VC 2010 from
+the Windows SDK fails because Python was build with VC 2008.
+
+All this setup is here to justify the fact that build instructions here are
+for the MingW compiler and the MSYS package of Unix tools for Windows. After a
+hard process of trial and error this was found to be the easiest, most 
+compatible solution.
+
+The MSYS package provides the GCC compiler (MinGW), a Bash command-line shell 
+and Unix build tools for Windows. It can be found here: <http://www.mingw.org/wiki/MSYS>
+
+After installing MSYS MinGW according to the instructions on the MSYS site, you will have a MinGW shell or MSYS shell in your start menu. Future instructions 
+assume that this shell is used.
+
+Installing Check
+~~~~~~~~~~~~~~~~
+
+The tests of liboptv depend on the Check framework. You can get it from 
+<http://check.sourceforge.net>. 
+
+Installing Check is done roughly in the same way as on Linux, in the MSYS 
+shell::
+
+     $ ./configure --prefix=/mingw
+     $ make
+     $ make install
+
+However, it is **important** to note where the install actually lands so that we 
+can help CMake find it. The Check library would be installed under the MSYS
+tree which was set up when installing MSYS. The default installation is in
+what MSYS refers to as ``/usr/local``. If your MSYS is installed on ``C:\MinGW``,
+then Check would then be in ``C:\MinGW\msys\1.0\local\`` or a similar path. Make sure to verify this.
+
+
+
+Installing liboptv
+~~~~~~~~~~~~~~~~~~~
+
+
+
+1. For processing of build instructions, install CMake, from <http://cmake.org>
+
+
+Now that Check is installed, installing liboptv is relatively straightforward.
+Since you are reading this file, you already have that package. enter the 
+``liboptv/`` subdirectory, create a directory under it called ``build/``, and change
+into it `` cd liboptv/build/ ``
+
+
+Now, in the Build directory, run ``cmake`` with the following command::
+    
+    $ cmake ../ -G "Unix Makefiles" -i
+
+CMake will then ask you some questions about your system (accepting the 
+defaults is usually ok). Now and at any future step, you can erase the 
+contents of the build/ directory and start over. You can also regenerate
+makefiles with a simple ``cmake ../`` in a working build directory, since 
+CMake caches values you set before.
+
+Now that CMake is initialized, a command to generate Makefiles with all
+paths told in advance, would be::
+
+    $  cmake ../ -DCMAKE_INSTALL_PREFIX:PATH=/usr -DCMAKE_PREFIX_PATH=/c/MinGW/msys/1.0/local/
+
+Note the path where Check was installed is specified, and be sure to adjust it
+if it is a different path in your system.
+
+Now to build and install ``liboptv``, type::
+
+    $ make
+    $ make verify
+    $ make install
+
+This would install liboptv in what MSYS refers to as ``/usr``, which is 
+``C:\MinGW\msys\1.0\`` on my system. Any further program that is built using MSYS
+looks for this path by default so no further adjustment is necessary for using
+liboptv in your program, other than adding the include and link directives
+specified above.
+
+However, on run time it appears that the DLL (or .pyd) file we just installed looks for
+the accompanying DLL that was installed alongside it. Windows wants this DLL
+to be in the PATH it searches for executables. So the last step of installing
+on Windows is to modify the PATH environment variable so that it lists the 
+place where the liboptv DLL is installed (in our example, this would be 
+``C:\MinGW\msys\1.0\lib``).
+
+
+Installing Python environment
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+We recommend using WinPython, Pythonxy, Canopy (Enthought) or Anaconda (Continuum Analytics) and use their package managers to get all the necessary packages. The main ones are: 
+
+* Numpy
+* Scipy
+* Cython
+* ETS from Enthought (including Traits, Chaco and Pyface)
+* PyQt
+
+
+
+If nothing works, where I can get help?  
+---------------------------------------
+
+Send your build logs, description of the problem and details of the operating system, Python version, etc. to::
+
+	openptv@googlegroups.com
+
+
+If I do not want to build or test the software, can I use pre-compiled binaries?
+---------------------------------------------------------------------------------
+
+Mac OS X users can use the `pre-compiled try-before-installing instructions <https://github.com/OpenPTV/openptv-python/wiki/Getting-started-using-OpenPTV-Python-on-Mac-OS-X>`_
+
+For Linux and Windows it is possible to download the appropriate pre-compiled library files: `liboptv installers <http://goo.gl/MqDzP>`_
+ 
+The ``include`` folder content should be copied/installed to something like ``/usr/local/include`` and the ``lib`` content into ``/usr/local/lib``. Otherwise
+add the location of the ``liboptv`` files in the next step, e.g.::
+
+ 	$ python setup.py install -I /usr/local/include -L /usr/local/lib
+
+
+
+If I do not want to use package managers but to get all the Python packages at once?
+------------------------------------------------------------------------------------
+
+You can get one of the Python development environments for your platform. Some had good experiences with WinPython, PythonXY, Canopy and later Anaconda. NOTE THAT WE HAVE NOT TESTED PYTHON 3 AND WE ARE USING AND SUPPORTING PYTHON 2.X. 
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+

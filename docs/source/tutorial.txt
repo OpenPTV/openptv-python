@@ -1,0 +1,312 @@
+﻿==========
+Tutorials
+==========
+
+
+Please, see our screencasts for the quick overview and the step-by-step tutorial:
+
+- Tutorial 1: <http://youtu.be/S2fY5WFsFwo>
+- Tutorial 2: <http://www.youtube.com/watch?v=_JxFxwVDSt0>
+- Tutorial 3: <http://www.youtube.com/watch?v=z1eqFL5JIJc>
+
+If you want to practice, install the software and **download** the necessary files from :ref:`downloads <downloads>` page. 
+
+
+
+Tutorial
+---------
+
+
+New experiment:
+
+* For a new set of experiments open a new folder. The file should contai the following sub-folders: ``cal``: for calibration, ``parameters``, ``img`` and ``res``. For example, a clean file for example (copy it and rename the file) is in ``ptv/fresh_test``.
+
+Calibration files:
+^^^^^^^^^^^^^^^^^^^^^
+* The ``cal`` folder contains: calibration images, one for each camera, e.g. ``cam1.tif``, ``cam2.tif`` and so on, orientation files ``cam1.ori``, ``cam2.ori`` ..., and a ``calblock.txt`` file that contains the x,y,z coordinates of the calibration target. 
+
+* ``ori`` files: camera’s orientation files::
+
+	10.0 10.0 300.0
+	0.01 0.05 0.0002
+
+	1.0 0.0 0.0
+	0.0 1.0 0.0 
+	0.0 0.0 1.0
+
+	0.0 0.0 
+	80.0
+
+	0.0001 0.0001 100.0000
+
+* First row: x,y,z of the camera sensor from the calibration target origin (0,0,0)
+* Second row: the angles [radians], the first is around ``x`` axis, then ``y`` axis and the third is the angle of rotation around ``z`` direction which coincides with the imaging axis of the camera (the line that connects the sensor and the target)
+* The next three rows is the rotation matrix
+* next 2 parameters are the ``xp,yp`` positions of the pinhole in respect to the image center in millimeters. if the camera imaging axis is at 90 deg. to the sensor, then ``xp=yp=0.0``.
+* Next parameter is the back-focal distance, typically called ``f``. For example, if we have a ratio of world image to chip image of 500 mm to 65 mm (384 pixels is therefore corresponding to 17 microns), e.g. 1:8. The distance from lens to calibration target is about 800 mm. Hence the focal distance is about 100 mm.
+* Last row with the 3 parameters is the the position of the glass in respect to to the origin and in the coordinate system of the calibration target (``x`` is typically from left to right, ``y`` is from bottom to top and ``z`` is by definition the positive direction looking at the camera. so if the glass wall is perpendicular to the imaging axis and parallel to the calibration target, and the distance in water is about 100 mm the last row is ``0.0 0.0 100.0``. Since division by zero is not recommended we sugest to use a very tiny deviation from ``0.0``, e.g. ``0.0001``
+
+
+Calibration best practice:
+
+
+In the first run- choose reasonable parameters according to the cameras
+positions in the experiment.
+
+* Gain 4 calibration pictures, one for each camera, and copy them to the cal file.
+* right click on the current run. choose calibration parameters:
+
+1. Image data:
+
+Fill in the name of the four calibration pictures ,four orientation data
+pictures and file of coordinates on plate.
+
+ |image0|
+
+2. Calibration data detection:
+
+Different parameters in order to detect the dots on the calibration
+target.
+
+ |image1|
+
+3. Manual pre-orientation:
+
+Fill in the numbers of four points on the calibration target. The
+numbers should be set as chosen in manual orientation.
+
+ |image2|
+
+4. Calibration orientation parameters:
+
+The lens distortion is modeled with up to five parameters :k1,k2,k3+
+p1,p2
+
+Affin transformation: scx, she
+
+Principle distance: xp, yp
+
+In the first calibration process don’t mark those parameters. After
+establishing the calibration, the different parameters can be marked in
+order to improve the calibration.
+
+ |image3|
+
+* In the upper toolbar choose : calibration and create calibration
+
+* load/show images*: shows the calibration images
+
+*detection*: detect the calibration dots on the calibration image. check
+that all the dots were identified correctly and marked in blue, and that
+there aren’t any extra dots.
+
+mark the four points from the manual pre-orientation in each camera and
+press manual orient. This creates the man\_ori.dat. Next time, skip this
+stage and press detection and then orient with file.
+
+*show initial guess:*  The yellow dots show where the dots from the
+calibration plane would end up on your images if the initial guess would
+be correct.
+
+If the yellow dots aren’t in the right location, change the ori files -
+edit ori files and press show initial guess again to see the change, do
+it until the yellow and blue dots match.
+
+Check that the position of each camera according to the ori files is
+also reasonable according to the cameras position in reality.
+
+*sort grid:* situates all the dots in their positions. Check that all
+dots were found and marked correctly.
+
+*orientation*: creates the orientation.
+
+In order to improve the orientation : mark some of the Calibration
+orientation parameters and press orientation again.
+
+Dumbbell calibration
+^^^^^^^^^^^^^^^^^^^^^
+
+Sometimes it is inconvenient to position a calibration target. Either
+because there is something in the way, or because it is cumbersome to
+get the entire target again out of the observation domain. It would be
+much easier to move a simple object randomly around the observation
+domain and from this perform the calibration.
+
+This is what ``\ Dumbbell calibration\`` is doing. The simple
+object is a dumbbell with two points separated at a known distance. A
+very rough initial guess is sufficient to solve the correspondence
+problem for only two particles per image. In other words, the tolerable
+epipolar band width is very large: large enough to also find the
+correspondence for a very rough calibration, but small enough so as not
+to mix up the two points. From there on, calibration optimizes the
+distances by which the epipolar lines miss each other, while maintaining
+the detected distance of the dumbbell points.
+
+Unlike previous calibration approaches, Dumbbell calibration uses all
+camera views simultaneously.
+
+Required input
+
+ |image4|
+
+Somehow, an object with two well visible points has to be moved through
+the observation domain and recorder. The dumbbells points should be
+separated by roughly a third of the observation scale.
+
+Note that the accuracy by which these dumbbell points can be determined
+in 2d, also defines the possible accuracy in 3d.
+
+Processing:
+
+* Copy at least 500 images of the dumbbell (for each camera) as a tiff file to a new file Prepare target files using matlab code: ``tau\_dumbbell\_detection\_db\_v3b``. Every target file should contain only 2 points.
+* Right click on the current run: choose main parameters.
+
+Main parameters:
+
+write the name of the first dumbbell image, and the name of the
+calibration images you want to use.
+
+ |image5|
+
+Particle recognition:
+* since there are ready target files, mark ``\ use existing\_target\_files\``.
+
+ |image6|
+
+Sequence processing:
+
+Fill in the numbers of the first and last picture in the sequence
+processing, and the base name for every camera.
+
+ |image7|
+
+Criteria for correspondences:
+
+min corr for ratio nx:
+min corr for ratio ny:
+min corr for ratio npix:
+sum of gv:
+min for weighted correlation:
+tol band: The number that defines the distance from the epipolar line to
+the possible candidate [mm].
+
+ |image8|
+
+Processing of a single time step:
+
+* In the upper toolbar choose: start and then pre-tracking ,image coordinate, after that the two points of the dumbbell are detected. Then choose pre-tacking, correspondence. This establish correspondences between the detected dumbbell from one camera to all other cameras 
+* you can press one point of the dumbbell in each camera and to see the epipolar lines. 
+* The processing of a single time step is necessary to adjust parameters like grey value thresholds or tolerance to the epipolar line.
+
+ |image9|
+
+* In the upper toolbar choose: sequence, sequence without display
+* In the upper toolbar choose: tracking, detected particles. Then tracking, tracking without display and then show trajectory.
+* Right click on the current run. choose calibration parameters:
+
+#. Dumbbell calibration parameters:
+
+ |image10|
+
+*Eps [mm]:* It is the tolerable bandwith by which epipolar lines are allowed to miss each other during calibration. should be the same number as the tol. band in ``Criteria for correspondences``
+*Dumbbell scale [mm]* :distance between the dumbbell points. It is quite important Since the algorithm optimizes two targets, the epipolar mismatch and the scale of the dumbbell particle pair
+*Gradient descent factor*: if everything would be linear then a factor of 1 would converge after one step. Generally one is a bit instable though, so a more careful, but slow, value is 0.5.
+*Weight for dumbbell penalty*: this is the relative weight that is given to the dumbbell scale penalty. with one it is equally bad to have dumbbell scale of only 24mm and to have epipolar mismatch of 1mm. After rough converge this value can be reduced to 0.01-0.2, since it is difficult to precisely even measure this scale.
+
+*Step size through sequence*: it is step size. It could be different
+then 1 when the dumbbell recording is very long with successive images
+that are almost identical, then step size of 10 or so might be more
+appropriate.
+
+In the upper toolbar choose : calibration and create calibration.
+choose orient with dumbbell.
+
+#. Shaking calibration:
+
+ |image11|
+
+#. Processing of a single time step
+
+#. Main parameters:
+
+Write the name of the first image, and the name of the calibration
+images you want to use.
+
+ |image12|
+
+#. Particle recognition:
+
+Don’t mark ``use existing_target_files``. fill the particle recognition parameters in order to find the particles.
+
+    |image13|
+
+* Press start in the upper toolbar. the four picture images from ``main parameters, general`` will appear.
+
+ |image14|
+
+* Under Pretracking the processing of a single time step regularly starts with the application of a highpass filtering (Highpass). After that the particles are detected (Image Coord) and the position of each particle is determined with a weighted grey value operator. The next step is to establish correspondences between the detected particles from one camera to all other cameras (Correspondences).
+
+ |image15|
+
+The processing of a single time step is necessary to adjust parameters
+like grey value thresholds or tolerance to the epipolar line.
+
+#. Sequence:
+
+After having optimized the parameters for a single time step the
+processing of the whole image sequence can be performed under Sequence .
+
+* Under main parameters, Sequence processing. Fill in the numbers of the first and last picture in the sequence processing, and the base name for every camera.
+* In the upper toolbar choose sequence with or without display of the currently processed image data. It is not advisable to use the display option when long image sequences are processed. The display of detected particle positions and the established links can be very time consuming.
+* For each time step the detected image coordinates and the 3D coordinates are written to files, which are later used as input data for the Tracking procedure.
+
+#. Tracking:
+
+	#. Tracking parameters:
+
+Before the tracking can be performed several parameters defining the
+velocity, acceleration and direction divergence of the particles have to
+be set in the submenu Tracking Parameters. The flag‘
+
+Add new particles position’ is essential to benefit from the
+capabilities of the
+
+enhanced method. To derive a velocity field from the observed flow.
+
+ |image16|
+
+	#. Tracking, Detected Particles displays the detected particles from the sequence processing.
+
+ |image17|
+
+	#. Choose tracking, tracking without display. Again it is not advisable to use the display option if long sequences are processed. The tracking procedure allows bidirectional tracking.
+
+	#. Tracking, show Trajectories displays the reconstructed trajectories in all image display windows.
+
+ |image18|
+
+.. |image0| image:: ../images/fig1.png
+.. |image1| image:: ../images/fig2.png
+.. |image2| image:: ../images/fig3.png
+.. |image3| image:: ../images/fig4.png
+.. |image4| image:: ../images/fig6.png
+.. |image5| image:: ../images/fig6.png
+.. |image6| image:: ../images/fig7.png
+.. |image7| image:: ../images/fig8.png
+.. |image8| image:: ../images/fig9.png
+.. |image9| image:: ../images/fig10.png
+.. |image10| image:: ../images/fig11.png
+.. |image11| image:: ../images/fig12.png
+.. |image12| image:: ../images/fig13.png
+.. |image13| image:: ../images/fig14.png
+.. |image14| image:: ../images/fig15.png
+.. |image15| image:: ../images/fig16.png
+.. |image16| image:: ../images/fig17.png
+.. |image17| image:: ../images/fig18.png
+.. |image18| image:: ../images/fig19.png
+
+
+
+
+    
+

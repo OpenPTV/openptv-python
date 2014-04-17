@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Terminal=true
+Name=unmount-mount
+Icon=/home/jimmy/openptv/images.jpeg
+Exec=/home/jimmy/openptv/openptv-python/pyptv_gui/pyptv_gui.py
+

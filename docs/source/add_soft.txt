@@ -1,0 +1,14 @@
+ .. _add_soft:
+
+=========================
+Additional software projects
+=========================
+
+The command line version of the 3D-PTV is the only derivative that is distributed under the same license. Other packages will be slowly adopted by the 3D-PTV project but these are developed by the independent authors. Please, pay attention to their license files
+
++ Streaks tracking software by Matthias Machacek <https://github.com/3dptv/3dptv_streaks>
++ Command line version of the 3D-PTV software from the University of Plymouth <https://github.com/3dptv/command_line>
++ Post-processing software package by Beat Luethi <https://github.com/3dptv/3d-ptv-post-process>
++ Real Time Particle Tracking Velocimetry using FPGA on camera particle identification <https://github.com/3dptv/real_time_sobel_fpga_3dptv>
++ Two-frame tracking from University of Rome, written by Luca Shindler <https://github.com/3dptv/two-frame-tracking>
+
