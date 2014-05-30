@@ -1,0 +1,68 @@
+PTV Files
+===========================================
+The PTV program generates several files for each frame.
+
+1. File Extensions
+^^^^^^^^^^^^^^^^^^
+Each file is encoded according to the Experiment and Frame number as follows: `****.XXXYYYYY, where ****` is the file name (see further on), XXX is the experiment number and YYYYY is the frame number in the experiment. (e.g. ``cam1.18612740`` is file cam1 for frame 12,740 in experiment 186.)
+
+2. File names
+^^^^^^^^^^^^^^^^^^
+	a.In the ``Image`` folder
+		The image folder contains data from all (4) cameras in the experiment, each frame has 8 files (*frame* is the extension as described above):
+
+		i. `Image Files`
+			`cam1.*frame*, cam2.*frame*, cam3.*frame* and cam4.*frame*` - are files representing the images encoded in tiff format. Thus e.g. cam1.18612740 is the tiff image shot from camera 1 at frame 12740 of experiment 186.
+
+		ii. `Targets Files`
+			Each image file has a target file associated with it, and named the same as the image with _targets added (e.g. ``cam1_targets.18612740``). These files contain information on all the detected particles in the image, and is formatted as a tab-delineated text file, with the following structure:
+
+			+ The first row contains only one column, specifying the number of particles detected in the image.
+
+			The other rows contain 8 columns each:
+
+			+ Particle number, x_location, y_location, area (pixels), x_length(pixels), y_length(pixels), sum of grayscale values in the particle, and correspondence.
+
+
+			The **particle ID** is arbitrary, and is given by the detection algorithm.
+
+			The **x and y location** are the location of the particle center of mass, and can thus have sub-pixel value.
+
+			The **area** is the actual number of pixels taken up by the particle.
+
+			The **x and y length** are the lengths of the major and minor axes of the particle (i.e. the length and the height of the particle if it were rotated to a horizontal position)
+
+			The **sum of grayscale** is the sum of all greyscale values of the particle 
+
+			**Correspondence** is a flag that gets 1 if this particle was detected in more than one camera (i.e. if the particle is located on the intersection of 2 or more epipolar lines). A particle that with a positive number in the `correspondence` flag gets an ID in the rt_is file (see below), and is located at the corresponding line there.
+
+	b. In the ``Res`` folder
+		The res folder contains the tracking results from the whole sequence, and has 3 files per frame.
+			
+		i. ``rt_is`` Files
+			These files contain the summary of the particles found in the frame, formatted as a tab-delineated text file, with the following structure:
+			+ The first row contains only one column, specifying the number of particles in the file.
+			
+			The other rows contain 8 columns each:
+			
+			+ Particle number, x_location, y_location, z_location, id1, id2, id3, id4
+
+			The **particle ID** is arbitrary, and is given by the tracking algorithm.
+
+			The **x, y and z location** are the location of the particle in 3d, measured in mm.
+
+			**id1, id2, id3, and id4** are the particle IDs of that particle in corresponding camera frames. If the particle was not detected in a certain frame, its `corresponding ID` is -1. 
+
+			**Note**: rt_is files start with 1 and not 0, so the IDs need to be incremented by 1!
+
+		ii. ``ptv_is`` Files
+			These are files used to track particles, and is essentially similar to the ``rt_is`` file, but with the following columns:
+			+ previous_particle, next_particle, x_location, y_location, z_location
+			+ `Previous` Particle is the particle ID of that particle in the previous frame, or -1 if it was first detected in the current frame.
+			+ Next Particle is the particle ID of that particle in the next frame, or -2 if it was not detected in the next frame.
+
+		iii. ``added`` Files
+			These are files used to track particles added to the list of particles during the forward-backward-forward projection. It is essentially the same as the corresponding ptv_is file (see above), with the addition of a last column which is (always?) 4, and could signify the number of cameras over which the particle was identified.
+
+`For more information regarding to the PTV file system, look at the` **PTV file system descrption manual** `in the additional documentation section`
+

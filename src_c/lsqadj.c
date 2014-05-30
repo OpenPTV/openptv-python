@@ -1,6 +1,7 @@
 /* parts of code of adjlib.c from Horst Beyer, Hannes Kirndorfer */
 
 #include "ptv.h"
+#include "lsqadj.h"
 
 void ata ( a, ata, m, n )
 int      m, n;
