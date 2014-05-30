@@ -117,7 +117,7 @@ Glass		gl;
 double		X, Y, Z;
 Exterior	*ex_t;
 double		*X_t, *Y_t, *Z_t;
-double      *cross_p, *cross_c;
+double      cross_p[3], cross_c[3];
 {
   //--Beat Lüthi June 07: I change the stuff to a system perpendicular to the interface
   double dummy;
@@ -278,7 +278,8 @@ int    	i_cam;
   double       	x,y, *Ri,*Zi;
   double       	rw = 2; //was 2, has unit [mm]??, Beat Lüthi Aug 1, 2007, is ok
   Exterior	    Ex_t[4];
-  double       	X_t,Y_t,Z_t,cross_p[3],cross_c[3],Zmin_t,Zmax_t;
+  double       	X_t,Y_t,Z_t,Zmin_t,Zmax_t;
+  double        cross_p[3], cross_c[3];
     
   /* find extrema of imaged object volume */
   /* ==================================== */
@@ -309,7 +310,7 @@ int    	i_cam;
   ray_tracing_v2 (x,y, Ex[i_cam], I[i_cam], G[i_cam], mmp, &X1, &Y1, &Z1, &a, &b, &c);
   Z = Zmin;   X = X1 + (Z-Z1) * a/c;   Y = Y1 + (Z-Z1) * b/c;
   //trans
-  trans_Cam_Point(Ex[i_cam],mmp,G[i_cam],X,Y,Z,&Ex_t[i_cam],&X_t,&Y_t,&Z_t,&cross_p,&cross_c);
+  trans_Cam_Point(Ex[i_cam],mmp,G[i_cam],X,Y,Z,&Ex_t[i_cam],&X_t,&Y_t,&Z_t, cross_p, cross_c);
   if(Z_t<Zmin_t)Zmin_t=Z_t;
   if(Z_t>Zmax_t)Zmax_t=Z_t;
   //
@@ -319,7 +320,7 @@ int    	i_cam;
   if (R > Rmax)	Rmax = R;
   Z = Zmax;   X = X1 + (Z-Z1) * a/c;   Y = Y1 + (Z-Z1) * b/c;
   //trans
-  trans_Cam_Point(Ex[i_cam],mmp,G[i_cam],X,Y,Z,&Ex_t[i_cam],&X_t,&Y_t,&Z_t,&cross_p,&cross_c);
+  trans_Cam_Point(Ex[i_cam],mmp,G[i_cam],X,Y,Z,&Ex_t[i_cam],&X_t,&Y_t,&Z_t,cross_p,cross_c);
   if(Z_t<Zmin_t)Zmin_t=Z_t;
   if(Z_t>Zmax_t)Zmax_t=Z_t;
   //
@@ -335,7 +336,7 @@ int    	i_cam;
   ray_tracing_v2 (x,y, Ex[i_cam], I[i_cam], G[i_cam], mmp, &X1, &Y1, &Z1, &a, &b, &c);
   Z = Zmin;   X = X1 + (Z-Z1) * a/c;   Y = Y1 + (Z-Z1) * b/c;
   //trans
-  trans_Cam_Point(Ex[i_cam],mmp,G[i_cam],X,Y,Z,&Ex_t[i_cam],&X_t,&Y_t,&Z_t,&cross_p,&cross_c);
+  trans_Cam_Point(Ex[i_cam],mmp,G[i_cam],X,Y,Z,&Ex_t[i_cam],&X_t,&Y_t,&Z_t,cross_p,cross_c);
   if(Z_t<Zmin_t)Zmin_t=Z_t;
   if(Z_t>Zmax_t)Zmax_t=Z_t;
   //
@@ -345,7 +346,7 @@ int    	i_cam;
   if (R > Rmax)	Rmax = R;
   Z = Zmax;   X = X1 + (Z-Z1) * a/c;   Y = Y1 + (Z-Z1) * b/c;
   //trans
-  trans_Cam_Point(Ex[i_cam],mmp,G[i_cam],X,Y,Z,&Ex_t[i_cam],&X_t,&Y_t,&Z_t,&cross_p,&cross_c);
+  trans_Cam_Point(Ex[i_cam],mmp,G[i_cam],X,Y,Z,&Ex_t[i_cam],&X_t,&Y_t,&Z_t,cross_p,cross_c);
   if(Z_t<Zmin_t)Zmin_t=Z_t;
   if(Z_t>Zmax_t)Zmax_t=Z_t;
   //
@@ -361,7 +362,7 @@ int    	i_cam;
   ray_tracing_v2 (x,y, Ex[i_cam], I[i_cam], G[i_cam], mmp, &X1, &Y1, &Z1, &a, &b, &c);
   Z = Zmin;   X = X1 + (Z-Z1) * a/c;   Y = Y1 + (Z-Z1) * b/c;
   //trans
-  trans_Cam_Point(Ex[i_cam],mmp,G[i_cam],X,Y,Z,&Ex_t[i_cam],&X_t,&Y_t,&Z_t,&cross_p,&cross_c);
+  trans_Cam_Point(Ex[i_cam],mmp,G[i_cam],X,Y,Z,&Ex_t[i_cam],&X_t,&Y_t,&Z_t,cross_p,cross_c);
   if(Z_t<Zmin_t)Zmin_t=Z_t;
   if(Z_t>Zmax_t)Zmax_t=Z_t;
   //
@@ -371,7 +372,7 @@ int    	i_cam;
   if (R > Rmax)	Rmax = R;
   Z = Zmax;   X = X1 + (Z-Z1) * a/c;   Y = Y1 + (Z-Z1) * b/c;
   //trans
-  trans_Cam_Point(Ex[i_cam],mmp,G[i_cam],X,Y,Z,&Ex_t[i_cam],&X_t,&Y_t,&Z_t,&cross_p,&cross_c);
+  trans_Cam_Point(Ex[i_cam],mmp,G[i_cam],X,Y,Z,&Ex_t[i_cam],&X_t,&Y_t,&Z_t,cross_p,cross_c);
   if(Z_t<Zmin_t)Zmin_t=Z_t;
   if(Z_t>Zmax_t)Zmax_t=Z_t;
   //
@@ -388,7 +389,7 @@ int    	i_cam;
   ray_tracing_v2 (x,y, Ex[i_cam], I[i_cam], G[i_cam], mmp, &X1, &Y1, &Z1, &a, &b, &c);
   Z = Zmin;   X = X1 + (Z-Z1) * a/c;   Y = Y1 + (Z-Z1) * b/c;
   //trans
-  trans_Cam_Point(Ex[i_cam],mmp,G[i_cam],X,Y,Z,&Ex_t[i_cam],&X_t,&Y_t,&Z_t,&cross_p,&cross_c);
+  trans_Cam_Point(Ex[i_cam],mmp,G[i_cam],X,Y,Z,&Ex_t[i_cam],&X_t,&Y_t,&Z_t,cross_p,cross_c);
   if(Z_t<Zmin_t)Zmin_t=Z_t;
   if(Z_t>Zmax_t)Zmax_t=Z_t;
   //
@@ -398,7 +399,7 @@ int    	i_cam;
   if (R > Rmax)	Rmax = R;
   Z = Zmax;   X = X1 + (Z-Z1) * a/c;   Y = Y1 + (Z-Z1) * b/c;
   //trans
-  trans_Cam_Point(Ex[i_cam],mmp,G[i_cam],X,Y,Z,&Ex_t[i_cam],&X_t,&Y_t,&Z_t,&cross_p,&cross_c);
+  trans_Cam_Point(Ex[i_cam],mmp,G[i_cam],X,Y,Z,&Ex_t[i_cam],&X_t,&Y_t,&Z_t,cross_p,cross_c);
   if(Z_t<Zmin_t)Zmin_t=Z_t;
   if(Z_t>Zmax_t)Zmax_t=Z_t;
   //
@@ -416,7 +417,7 @@ int    	i_cam;
  
   /* create twodimensional mmLUT structure */
   //trans
-  trans_Cam_Point(Ex[i_cam],mmp,G[i_cam],X,Y,Z,&Ex_t[i_cam],&X_t,&Y_t,&Z_t,&cross_p,&cross_c);
+  trans_Cam_Point(Ex[i_cam],mmp,G[i_cam],X,Y,Z,&Ex_t[i_cam],&X_t,&Y_t,&Z_t,cross_p,cross_c);
 
   mmLUT[i_cam].origin.x = Ex_t[i_cam].x0;
   mmLUT[i_cam].origin.y = Ex_t[i_cam].y0;
@@ -439,7 +440,7 @@ int    	i_cam;
 	//old mmLUT[i_cam].data[i*nz + j]= multimed_r_nlay (Ex[i_cam], mmp, 
 	//      	                                        Ri[i]+Ex[i_cam].x0, Ex[i_cam].y0, Zi[j]);
 	//trans
-	trans_Cam_Point(Ex[i_cam],mmp,G[i_cam],X,Y,Z,&Ex_t[i_cam],&X_t,&Y_t,&Z_t,&cross_p,&cross_c);
+	trans_Cam_Point(Ex[i_cam],mmp,G[i_cam],X,Y,Z,&Ex_t[i_cam],&X_t,&Y_t,&Z_t,cross_p,cross_c);
       mmLUT[i_cam].data[i*nz + j]
 	= multimed_r_nlay_v2 (Ex_t[i_cam], Ex[i_cam], mmp, 
 		                  Ri[i]+Ex_t[i_cam].x0, Ex_t[i_cam].y0, Zi[j]);
@@ -494,10 +495,8 @@ double	X,Y,Z;
 
 
 
-void volumedimension (xmax, xmin, ymax, ymin, zmax, zmin, num_cams)
-double *xmax, *xmin, *ymax, *ymin, *zmax, *zmin;
-int num_cams;
-{
+void volumedimension (double *xmax, double *xmin, double *ymax, double *ymin, \
+double *zmax, double *zmin, int num_cams){
   int	i_cam;
   double X,Y,Z, R, X1,Y1,Z1, Zmin, Rmax=0,Zmax, a,b,c;
   double x,y;

@@ -88,8 +88,8 @@ unsigned char	*img;
 	end = img + imgsize;
 
 	histogram (img, histo);
-	for (i=0, sum=0; (i<255)&&(sum<imx); sum+=histo[i], i++);  gmin = i;	
-	for (i=255, sum=0; (i>0)&&(sum<512); sum+=histo[i], i--);  gmax = i;	
+	for (i=0, sum=0; (i<255)&&(sum<imx); sum+=histo[i], i++)  gmin = i;	
+	for (i=255, sum=0; (i>0)&&(sum<512); sum+=histo[i], i--)  gmax = i;	
 	offs = gmin;  diff = gmax - gmin;  gain = 255 / diff;
 	
 	for (ptr=img; ptr<end; ptr++)

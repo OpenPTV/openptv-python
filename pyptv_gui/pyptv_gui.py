@@ -1,10 +1,15 @@
-""" PyPTV_GUI is the GUI for the 3D-PTV (http://ptv.origo.ethz.ch) written in 
-Python/Enthought Traits GUI/Numpy/Chaco
+""" OpenPTV-Python is the GUI for the OpenPTV (http://www.openptv.net) liboptv library 
+based on Python/Enthought Traits GUI/Numpy/Chaco
+
 
 Copyright (c) 2008-2013, Tel Aviv University
+
 Copyright (c) 2013 - the OpenPTV team
+
 The software is distributed under the terms of MIT-like license
 http://opensource.org/licenses/MIT
+
+.. moduleauthors:: OpenPTV group
 
 """
 

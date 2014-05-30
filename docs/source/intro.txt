@@ -1,0 +1,225 @@
+============
+Introduction
+============
+
+**OpenPTV** is the abbreviation for the Open Source Particle Tracking Velocimetry consortium. The core of  this software is the 3D-PTV software originally developed at ETH Zurich. The consortium of the academic institutions  is working on improving the core algorithms, developing a stand-alone library with a simpler and clear API. We also develop the new user interface in Python, that started at the Tel Aviv University. Read more about the consortium on our website http://www.openptv.net 
+
+In the future we would like to allow everyone to add their algorithms to the OpenPTV 
+library, named ``liboptv`` and develop several interfaces, combining it with the pre- 
+and post-processing routines using Python/NumPy/SciPy/PIL/Matplotlib/Mayavi/etc. See the existing repositories on http://github.com/OpenPTV
+
+
+About 3D-PTV measurement method
+=========================================
+
+`3D-PTV in a nutshell  <http://www.slideshare.net/guest290904/3dptv-particle-tracking-velocimetry>`_
+
+Objectives of the 3D-PTV experimental method
+---------------------------------------------
+
+We are convinced that the three dimensional tracking method that provides otherwise inaccessible information
+about the flow can make an impact in various applications, allowing for the
+researchers and industry to get a deeper insight into their flows.
+Most of the flows are highly complex and turbulent and only few of
+them can get a limited low-dimensional or analytical description that
+explains the different flow phenomena. Experimental research is
+inevitable in observing the flow and discovering new phenomena, in
+addition to assisting to explain the old ones.
+
+
+Introduction
+------------
+
+The **3D Particle Tracking Velocimetry** (3D-PTV) offers a flexible
+technique for the determination of velocity fields in flows. It is
+based on the visualization of a flow with small, neutrally buoyant
+particles and a stereoscopic recording image sequences of the
+particles. During 80's-90's the successful research work performed
+by the Institute of Geodesy and Photogrammetry at ETH Zurich led to an
+operational and reliable measurement tool used in hydrodynamics and
+space applications. In cooperation with the Institute of
+Hydromechanics and Water Resources Management at ETH Zurich further
+progress has been achieved in the improvement of the existing hard-
+and software solutions. Regarding the hardware setup the acquisition
+system used at the ETH Zurich was upgraded from offline to online
+image digitization.
+
+
+	|3dptv|
+
+
+Data acquisition
+----------------
+
+
++ Seed a flow with tracer particles
++ Illuminate a 3-D observation volume inside the flow by a pulsed
+  lightsource
++ Image the scene by 2 (or rather 3-4) synchronized
++ Length of image sequences depending from imaging rate and storage
+  device
+
+
+The system used at the ETH Zurich was upgraded from offline to online
+image digitization. In the previous system, the image sequences were
+firstly recorded on analogue videotapes and digitized afterwards,
+while in the new system two frame grabbers (Matrox Genesis) are used
+to provide online digitization and storage. The length of the recorded
+digital image sequences is nowadays restricted by the storage device
+capabilities. The data rate for a 60 Hz full-frame camera with a
+resolution of 640 x 480 pixels is about 19 MB/sec, and hence in an
+experiment which lasts for 1 minute four cameras deliver a total
+amount of about 4.5 GB image data.
+
+
+The Particle Tracking Velocimetry software performs the following
+tasks:
+
+
++ Calibration of the multi-camera system (determination of camera
+  exterior and interior orientations, lens distortion and further
+  disturbances, (e.g. `Willneff and Maas, 2000 <http://www.tu-
+  dresden.de/fghgipf/forschung/material/publ2000/JoWi_paper.pdf>`_) and
+  the exact geometric modelling ("multimedia geometry" - each beam from
+  a particle to the sensor passes the three optical media water, glass,
+  air with different refractive indices, which leads to a twice broken
+  beam).
++ Image preprocessing: perform highpass filtering due to non-
+  uniformities in the background illumination
++ Detect particles in the images by a modified thresholding operator,
+  localize particles with subpixel accuracy by a centroid operator
++ Establish stereoscopic correspondences
++ Determine 3-D particle coordinates
++ Storage of all relevant object and image space information
++ Perform tracking in 2-D image and 3-D object space
+
+
+
+
+Data Processing
+---------------
+
+
++ Image preprocessing: perform highpass filtering due to non-
+  uniformities in the background illumination
++ Detect particles in the images by a modified thresholding operator,
+  localize particles with subpixel accuracy by a centroid operator
++ Establish stereoscopic correspondences
++ Determine 3-D particle coordinates
++ Storage of all relevant object and image space information
++ Perform tracking in 2-D image and 3-D object space
+
+
+A crucial point is the handling of ambiguities occuring in different
+steps of the data processing chain:
+
+
++ Particles may overlap in the images. For that reason a modified
+  thresholding/centroid operator was developed searching for local
+  maxima in the images and dividing particle images at local minima
+  under certain conditions.
++ Due to the fact that particle images cannot be distinguished by
+  features like size, shape or color, the only criterion for the
+  establishment of stereoscopic correspondences is the epipolar line.
+  Ambiguities occur when multiple candidates are found in a search area
+  defined by the epipolar line. These ambiguities can only be solved if
+  a third (or even a fourth) camera is being used.
++ Ambiguities may also occur in the tracking procedure. Criteria like
+  local correlation and smoothness of the velocity field are employed to
+  solve these criteria.
+
+
+Another important issue is an accurate calibration of the system
+(determination of camera exterior and interior orientations, lens
+distortion and further disturbances) and the exact geometric modelling
+("multimedia geometry" - each beam from a particle to the sensor
+passes the three optical media water, glass, air with different
+refractive indices, which leads to a twice broken beam).
+
+
+
+
+Potential
+---------
+
+
++ Truely 3-D technique: all three components of the velocity field are
+  determined in a 3-D observation volume
++ Delivers 3-D vector field for Eulerian analysis plus 3-D
+  trajectories for Lagrangian analysis
++ A system based on 4 CCD progressive scan cameras (digitized to 640 x
+  480 pixels) is capable of tracking more than 1000 particles
++ The ralative accuracy of the velocity vectors is ~ 1:4000 of the
+  field of view
+
+
+
+Real time image processing schemes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
++ `Real time image compression using a customized FPGA design,
+  <http://link.aip.org/link/?RSINAK/78/023704/1>`_
++ `Real time image processing using a on-camera FPGA,
+  <http://adsabs.harvard.edu/abs/2010ExFl...48..105K>`_
+
+
+
+Collaboration
+-------------
+
+
++ `Institute of Environmental Engineering, ETH Zurich <http://www.ifu.ethz.ch/>`_
++ `Institute of Photogrammetry, ETH Zurich <http://www.igp.ethz.ch/photogrammetry/>`_
++ `Turbulence Structure Laboratory, Tel Aviv University <http://www.eng.tau.ac.il/turbulencelab/>`_
++ `Technical University Eidnhoven, Applied Physics <http://www.phys.tue.nl/>`_
++ `Riso National Laboratory <http://en.wikipedia.org/wiki/Ris%C3%B8_DTU_National_Laboratory_for_Sustainable_Energy>`_
++ `International Collaboration for Turbulence Research, ICTR <http://www.ictr.eu/>`_
++ `COST action "Particles in Turbulence" <http://mp0806.cineca.it/eindhoven/>`_ 
+
+
+We organize the PTV benchmarking (open, free and user-friendly, we'll
+publish only what you want to be published) in order to make our
+algorithms validated versus each other and improve our particle
+tracking abilities worldwide. Write to `Alex`_ if you want to **join**
+with your own version of particle tracking software or with your data
+test case (e.g. that you find difficult to track or to improve).
+
+
+See also
+--------
+
++ `Particle Tracking Velocimetry on Wikipedia <http://en.wikipedia.org/wiki/Particle_tracking_velocimetry#3D-PTV_schemes>`_
+
+
+References
+-----------
+
+
++ Maas, H.-G., 1992. Digitale Photogrammetrie in der dreidimensionalen
+  Strömungsmesstechnik, ETH Zürich Dissertation Nr. 9665
++ Malik, N., Dracos, T., Papantoniou, D., 1993. Particle Tracking in
+  three dimensional turbulent flows - Part II: Particle tracking.
+  Experiments in Fluids Vol. 15, pp. 279-294
++ Maas, H.-G., Grün, A., Papantoniou, D., 1993. Particle Tracking in
+  three dimensional turbulent flows - Part I: Photogrammetric
+  determination of particle coordinates. Experiments in Fluids Vol. 15,
+  pp. 133-146
++ Srdic, Andjelka, 1998. Interaction of dense particles with
+  stratified and turbulent environments. Ph.D. Dissertation, Arizona
+  State University.
++ Lüthi, B., Tsinober, A., Kinzelbach W. (2005)- Lagrangian
+  Measurement of Vorticity Dynamics in Turbulent Flow. Journal of Fluid
+  Mechanics. (528), p. 87-118
++ Nicholas T. Ouellette, Haitao Xu, Eberhard Bodenschatz, A
+  quantitative study of three-dimensional Lagrangian particle tracking
+  algorithms, Experiments in Fluids, Volume 40, Issue 2, Feb 2006, Pages
+  301 - 313.
++ Kreizer Mark, Ratner David and Alex Liberzon Real-time image
+  processing for particle tracking velocimetry, Experiments in Fluids,
+  Volume 48, Issue 1, pp.105-110,
+  `http://adsabs.harvard.edu/abs/2010ExFl...48..105K`_
+
+
+.. |3dptv| image:: ../images/3dptv.png
+

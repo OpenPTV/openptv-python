@@ -22,6 +22,7 @@ Routines contained:
 Related routines:
 
 ******************************************************************/
+#include <stdio.h>
 #include <optv/tracking_frame_buf.h>
 #include "parameters.h"
 #include "lsqadj.h"
@@ -655,16 +656,8 @@ double *residual;
 	*residual=*d_outer+weight_scale*(*av_dist_error);
 }
 
-void orient_v5 (n_img, nfix, Ex, I, G, ap)
+void orient_v5(int n_img, int nfix, Exterior *Ex, Interior *I, Glass *G, ap_52 *ap){
 
-Exterior	*Ex;	/* exterior orientation, approx and result */
-Interior	*I;		/* interior orientation, approx and result */
-Glass   	*G;		/* glass orientation, approx and result */
-ap_52		*ap;	/* add. parameters, approx and result */
-int	       	n_img,nfix;		/* # of object points */
-
-
-{
     int  	i,j,itnum,max_itnum,i_img,dummy;
     double       	residual, best_residual, old_val,dm = 0.0001,  drad = 0.00001,sens,factor,weight_scale;   
     double 	Xp, Yp, Zp, xp, yp, xpd, ypd, r, qq;
