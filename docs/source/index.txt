@@ -1,0 +1,50 @@
+.. OpenPTV documentation master file, created by
+   sphinx-quickstart on Thu Oct 21 20:43:09 2010.
+   You can adapt this file completely to your liking, but it should at least
+   contain the root `toctree` directive.
+
+OpenPTV documentation
+=====================
+
+	|logo|
+
+
+Contents:
+
+.. toctree::
+   :maxdepth: 2
+   
+   intro
+   installation_instruction
+   tutorial
+   developers
+   howto
+   benchmark
+   projects
+   add_doc
+   add_soft
+   gui_doc
+   downloads_page
+
+   
+
+   
+API:
+
+.. toctree::
+   :maxdepth: 2
+
+   
+
+   
+
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
+
+
+.. |logo| image:: ../images/openptv_logo.png
+

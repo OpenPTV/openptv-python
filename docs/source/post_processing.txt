@@ -1,0 +1,126 @@
+Post Processing
+====================
+
+PostPTV
+^^^^^^^^^^^^^^^^^^^^
+Download it from <https://github.com/yosefm/postptv/tree/ptvis_mem> 
+
+extract it somewhere. You only run the python from that directory of postptv and change the path to your files. All the data is included in the 'trajects' structure. 
+
+
+
+Using the following few lines::
+
+	from matplotlib import pyplot
+	from flowtracks.io import trajectories_ptvis
+	
+	inName = '../PTV/ptv_is.%d'
+	trajects = trajectories_ptvis(inName, traj_min_len=5) # the directory with the input files
+
+	pyplot.figure(figsize = (12, 10))
+
+	positions = [tr.pos() for tr in trajects]
+	for pos in positions:
+	trajX = [pos[k][0] for k in range(len(pos))]
+	trajY = [pos[k][1] for k in range(len(pos))]
+	pyplot.plot(trajX, trajY, '.')
+
+	pyplot.legend()
+	pyplot.show()
+
+
+Using this on the test file, You would get the sparse image as the following:
+
+|image1|
+
+PostPTV C-code developed by Beat Luthi (calculates velocities and velocity derivatives from the flow tracks)
+^^^^^^^^^^^^^^^^^^^^
+
+The principal of this software is described in pages 6-9 of Luthi et al., JFM 2005. And the derivative calculation is given on page 3 of Luthi at al., JoT 2007.
+
+In short terms, the code fits cubic polynomials into raw particle positions, after that it takes the first and second derivative at the positions of the particles to get high-pass filtered velocity and accelerations. Spatial derivatives are calculated from the u(x) field, where u is only defined for points where particles are.
+
+Download here: <https://github.com/3dptv/3d-ptv-post-process>
+
+The code is written in C, MVS, has one ASCII input file (input.inp) and as output has ASCII files with filtered x,y,z, u,v,w, ax,ay,az, du/dt (3) du/dx (9), da/dx (9).
+The source code is in post_process.cpp and stdafx.h
+
+Before doing anything else, edit the input.inp file.::
+
+	1	                      %make xuap.* files? Put 1 or 0 for "yes"/"no"               
+	1	                      %make trajPoint.* files?      
+	1						  %create derivatives? 
+	0	                      %make p_trajPoint.* files?
+	0	                      %make H_trajPoint.* files?
+	/Users/alex/Documents/PTV/0104_water    %path where ptv_is.* files are
+	100001	                  %firstFile (the code will start from ptv_is.100001)            
+	103000	                  %lastFile  (the code will finish with ptv_is.103000)                    
+	0.0167	                  %delta_t 2 msec - just a guess (time step between the frames)
+	0.000001	              %viscosity - water
+	21                        %max lenght of polynomial (21 is the maximum, 4 is minimum))
+	0                         %min left/right (determines how much centred the polynomial fit should be)                
+	0.5                       %max_vel (is hardly used but acts as a safety measure, typically it should be 3-5 times larger than r.m.s. u)
+	0.05                      %radius for interpolation sphere (is a very important parameter. It determines how large the interpolation domain around a point x should be. As a rule of thumb the radius should not exceed 5 Kolmogorov units. Anything from 7-12 points per interpolation sphere is enough)
+	0.3                       %weight for rel diva-2Q error (Depending on the weights the result aims to improve quality of relative error of diva=-4Q and relative acceleration error of Du/Dt=du/dt+u du/dx.
+	0.7                       %weight for rel acceleration error
+
+	---its better if you don't touch the following-----------------------------
+	3                         %minTrajLength 
+	35                        %polynomial constant (to choose polynomial order)
+	10.0                      %c1
+	0.05                      %c2 
+	199                       %max num points for interpolation 
+	200                       %numOfFrames in memory (max=300)
+
+
+After the input file is ready...
+
+To install on Linux:
+
+cd to the folder Macosx (make sure the input.inp file there is replaces with your modified one), type::
+ 
+	make post_process cpp
+
+This will create an executable file. To run the code type::
+
+	./post_process
+
+When running the trajPoint part you should see something like the following (make sure that points per sphere are around 7-10, that the number of good points are around 40% or better, and that the values for r.m.s. u and dissipation are plausible.
+
+|image2|
+
+
+The output.
+For each ptv_is.* file in the res folder there will be a xuap.* file created containing column by column the following information (r=raw, f=filtered)::
+ 
+ 	 1	       2	    3    4    5	       6    7    8        9  10   11     12   13   14         15
+	link_past, link_future,    x_r, y_r, z_r,     x_f, y_f, z_f,     u_f,v_f,w_f,   ax_f,ay_f,az_f,    successful
+
+The main result is stored in the n_trajPoint.* files. Each trajectory that starts at frame x will be stored in n_trajPoint.x. This explains why the second n_trajPoint.* is so much larger than all the others. 
+
+If you choose not to calculate the derivatives, the n_trajPoint.* files columns correspond to the following::
+
+	1  2  3    4  5  6    7   8   9    10
+	xp yp zp  up vp wp   axp ayp azp  step
+
+
+If you calculate derivatives, the output of n_trajPoint.* files is::
+
+	1  2  3    4  5  6    7   8   9   10  11  12    13   14   15   16   17   18    19  20  21     22     23     24     25     26     27     28     29     30          31                      32
+	xp yp zp  up vp wp   axp ayp azp  w1p w2p w3p  s11p s12p s13p s22p s23p s33p   tup vtp wtp  daxdxp daxdyp daxdzp daydxp daydyp daydzp dazdxp dazdyp dazdzp quality(0=good,1=bad) steps_along_trajectory
+
+xuag.*::
+
+	 1     2      3   4   5    6  7  8      9  10  11   12    13 14 15   16 17 18   19 20 21     22    23 24 25    26 27  28     29  30 31   32   33  34            35
+	left right   x_f y_f z_f   u  v  w     ax  ay  az  cubic  ux uy uz   vx vy vz   wx wy wz    grad   ut vt wt   axx axy axz   ayx ayy ayz  azx azy azz    quality(0=good,1=bad)                    
+
+xuagp.*::
+
+	 1     2      3   4   5    6  7  8      9  10  11   12    13 14 15   16 17 18   19 20 21     22    23 24 25    26 27  28     29  30 31   32   33  34     35 36 37            38
+	left right   x_f y_f z_f   u  v  w     ax  ay  az  cubic  ux uy uz   vx vy vz   wx wy wz    grad   ut vt wt   axx axy axz   ayx ayy ayz  azx azy azz     px py pz    quality(0=good,1=bad)                    
+
+ 
+
+.. |image1| image:: ../images/fig20.png
+.. |image2| image:: ../images/fig21.png
+

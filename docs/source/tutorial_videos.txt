@@ -1,0 +1,11 @@
+
+Tutorial videos
+=====================
+
+Please, see our screencasts for the quick overview and the step-by-step tutorial:
+
+- Tutorial 1: <http://youtu.be/S2fY5WFsFwo>
+- Tutorial 2: <http://www.youtube.com/watch?v=_JxFxwVDSt0>
+- Tutorial 3: <http://www.youtube.com/watch?v=z1eqFL5JIJc>
+
+If you want to practice, install the software and **download** the necessary files from :ref:`downloads <downloads>` page. 

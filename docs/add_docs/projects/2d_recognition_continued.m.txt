@@ -1,0 +1,98 @@
+name_root=['D:\technical\codes\IfU-IPG-PTV\working_folder_colloid_dup/'];
+
+
+for_small_stuff=3;
+hist_scale=30;
+for_max_search=30;
+
+img=1;
+i=19740;
+name=[name_root,'img\cam',num2Str(img),'.',num2Str(i)];
+I = imread(name);
+%imshow(I);
+
+filt1 = imopen(I, ones(for_small_stuff,for_small_stuff));%remove stuff that has less than 3 by 3 area
+filt1 = adapthisteq(filt1, 'ClipLimit',0.1,'NumTiles',[hist_scale hist_scale],'NBins',256);
+%imshow(filt1);
+for_max = imextendedmax(filt1,for_max_search);
+L2 = bwlabel(for_max);
+%hold on;
+stats2  = regionprops(L2,'Centroid');
+%length(stats2)
+for_max=for_max-for_max;
+for j = 1:length(stats2)
+   for_max(round(stats2(j).Centroid(2)),round(stats2(j).Centroid(1)))=255;
+end
+
+
+for_perim = imclose(filt1, ones(for_small_stuff,for_small_stuff));
+for_perim = im2bw(for_perim, graythresh(I));
+%imshow(for_perim);
+perim = bwperim(for_perim);
+%overlay1 = imoverlay(filt1, perim, [0.3 1 0.3]);%
+%imshow(overlay1)
+
+
+for_water = imcomplement(filt1);
+%imshow(for_water);
+%imshow(for_perim)
+%imshow(for_max)
+for_water = imimposemin(for_water,  ~for_perim |for_max);
+L = watershed(for_water);
+stats3  = regionprops(L,'Centroid');
+% imshow(label2rgb(L))
+% 
+% hold on;
+% for j = 1:length(stats2)
+%     plot(stats2(j).Centroid(1),stats2(j).Centroid(2),'r.');
+% end
+% for j = 1:length(stats3)
+%     plot(stats3(j).Centroid(1),stats3(j).Centroid(2),'k.');
+% end
+
+% title(sprintf('image %d, frame %d',img,i))
+
+ad_border=zeros(1024,1280);
+for i=1+1:1024-1
+    for j=1+1:1280-1
+        if L(i,j)==0
+            if L(i+1,j)>1 & L(i-1,j)>1 & L(i+1,j)~=L(i-1,j)
+                ad_border(i,j)=1;
+            end
+            if L(i,j+1)>1 & L(i,j-1)>1 & L(i,j+1)~=L(i,j-1)
+                ad_border(i,j)=1;
+            end
+            if L(i+1,j+1)>1 & L(i-1,j-1)>1 & L(i+1,j+1)~=L(i-1,j-1)
+                ad_border(i,j)=1;
+            end
+            if L(i+1,j-1)>1 & L(i-1,j+1)>1 & L(i+1,j-1)~=L(i-1,j+1)
+                ad_border(i,j)=1;
+            end
+        end
+    end
+end
+ad_border=logical(ad_border);
+figure;
+overlay = imoverlay(label2rgb(L),ad_border, [0 0 0]);%
+imshow(overlay);
+hold on;
+for j = 1:length(stats3)
+    plot(stats3(j).Centroid(1),stats3(j).Centroid(2),'k.');
+end
+title(sprintf('image %d, frame %d',img,i))
+
+
+figure;
+overlay2 = imoverlay(filt1, perim, [0.3 1 0.3]);%
+imshow(overlay2)
+title(sprintf('image %d, frame %d',img,i))
+
+
+num_max=length(stats2)
+num_cells=length(stats3)
+
+
+
+
+
+

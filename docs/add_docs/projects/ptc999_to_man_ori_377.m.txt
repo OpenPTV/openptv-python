@@ -1,0 +1,128 @@
+function ptc999_to_man_ori_377(dir1,dir2,midplane)
+% PTC999_TO_MAN_ORI_377(DIRNAME1,DIRNAME2,MIDPLANE)
+% takes the PTC999.DAT file from DIRNAME1 as an input
+% and generates all the necessary files for the 3D-PTV software
+% (almost) automatic calibration in DIRNAME2:
+% MAN_ORI.DAT 
+% MAN_ORI.PAR in /parameters
+% CAL377.TXT 
+% CAM1.TIF, CAM2.TIF, CAM3.TIF in /cal
+%
+% There is only CAM1-3.TIF.ORI files are missing. 
+%
+% MIDPLANE = 0 or 1 (false or true) - useful if only the midplane
+% points are used for the calibration. 
+% 
+% Author: Alex Liberzon
+% 
+
+if ~nargin
+    dir1 = 'c:\PTV\benchmarks\piv_std_377\ptc\';
+    dir2 = 'c:\PTV\Software\sortgrid_from_initial_guess_Oct09\case377\';
+    midplane = 0;
+end
+% PTC999_TO_MAN_ORI_377
+
+% read ptc999.dat file from the case 377
+d = load(fullfile(dir1,'ptc999.dat'));
+
+cal = fullfile(dir2,'cal377mid.txt');
+dat = fullfile(dir2,'man_ori.dat');
+par = fullfile(dir2,'parameters','man_ori.par');
+cam1 = fullfile(dir2,'cal','cam1.tif');
+cam2 = fullfile(dir2,'cal','cam2.tif');
+cam3 = fullfile(dir2,'cal','cam3.tif');
+
+% cm -> mm
+d(:,2:4) = d(:,2:4)*10;
+
+% transform axis: x->x y->-z z -> y
+tmp = d;
+d(:,3) = tmp(:,4);
+d(:,4) = -tmp(:,3);
+
+% indices:
+% d(:,1) = d(:,1) + 1;
+
+% if one plane only:
+if midplane
+midplane = find(d(:,4) == 0);
+d = d(midplane,:);
+d(:,1) = 1:size(d,1);
+id = [1,5,21,25];
+else
+    d(:,1) = d(:,1) + 1;
+    id = [1,5,121,125];
+end
+
+
+% write cal377.txt
+fid = fopen(cal,'w');
+fprintf(fid,'%5d %9.4f %9.4f %9.4f\n',d(:,1:4)');
+fclose(fid);
+
+% choose points
+id = [1,5,21,25];
+fidpar = fopen(par,'w');
+fiddat = fopen(dat,'w');
+for i = 1:4
+    fprintf(fidpar,'%3d\n',d(id,1));
+end
+for i = 1:4
+    fprintf(fiddat,'%6.3f %6.3f\n',d(id(i),5:6));
+end
+for i=1:4
+    fprintf(fiddat,'%6.3f %6.3f\n',d(id(i),7:8));
+end
+for i=1:4
+    fprintf(fiddat,'%6.3f %6.3f\n',d(id(i),9:10));
+end
+
+fclose(fidpar);
+fclose(fiddat);
+
+% generate images:
+% Image generation parameters
+Radius = 2;
+sx = 256;
+sy = 256;
+
+%% Cam1
+x = d(:,5);
+y = d(:,6);
+% figure, scatter(x,y)
+bw = uint8(zeros(sx,sy));
+for j = 1:length(x)
+    output_coord = plot_circle(x(j),y(j),Radius);
+    bw = imadd(bw,uint8(poly2mask(output_coord(:,1),output_coord(:,2),sx,sy)));
+end
+bw(bw>0) = 255;
+% figure, imshow(bw)
+imwrite(bw,cam1,'tiff','compression','none')
+
+%% Cam1
+x = d(:,7);
+y = d(:,8);
+% figure, scatter(x,y)
+bw = uint8(zeros(sx,sy));
+for j = 1:length(x)
+    output_coord = plot_circle(x(j),y(j),Radius);
+    bw = imadd(bw,uint8(poly2mask(output_coord(:,1),output_coord(:,2),sx,sy)));
+end
+bw(bw>0) = 255;
+% figure, imshow(bw)
+imwrite(bw,cam2,'tiff','compression','none')
+
+%% Cam1
+x = d(:,9);
+y = d(:,10);
+% figure, scatter(x,y)
+bw = uint8(zeros(sx,sy));
+for j = 1:length(x)
+    output_coord = plot_circle(x(j),y(j),Radius);
+    bw = imadd(bw,uint8(poly2mask(output_coord(:,1),output_coord(:,2),sx,sy)));
+end
+bw(bw>0) = 255;
+% figure, imshow(bw)
+imwrite(bw,cam3,'tiff','compression','none')
+

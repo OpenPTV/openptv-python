@@ -50,7 +50,7 @@ cdef extern from "globals.h": # to lose the declspec
     int sequence_proc_c(int dumb_flag)
     int sequence_proc_loop_c(int dumbell, int i)
 
-    tracking_run* trackcorr_c_init ()
+    tracking_run* trackcorr_c_init()
     int trackcorr_c_loop (tracking_run *run_info, int step, int display)
     int trackcorr_c_finish(tracking_run *run_info, int step)
     int trackback_c ()

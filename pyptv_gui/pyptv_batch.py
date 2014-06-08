@@ -164,10 +164,20 @@ def run_batch(new_seq_first,new_seq_last):
 
 if __name__ == '__main__':
 
-	try:
-		seq_first = sys.argv[2]
-		seq_last = sys.argv[3]
-		run_batch(eval(seq_first),eval(seq_last))
-	except:
-		print("something wrong with the software or folder")
-		general.printException()
+	import time
+
+	start = time.time()
+	repetitions = 1 # 10 or 100 for heavy load
+	
+	for i in range(repetitions):
+
+		try:
+			seq_first = sys.argv[2]
+			seq_last = sys.argv[3]
+			run_batch(eval(seq_first),eval(seq_last))
+		except:
+			print("something wrong with the software or folder")
+			general.printException()
+		
+	end = time.time()
+	print 'time lapsed %f sec' % (end - start)

@@ -225,7 +225,7 @@ void angle_acc(pos3d start, pos3d pred, pos3d cand, double *angle, double *acc)
     }
 }
 
-int trackcorr_c_loop (tracking_run *run_info, int step, int display)
+void trackcorr_c_loop (tracking_run *run_info, int step, int display)
 {
    /* sequence loop */
     char  val[256], buf[256];
@@ -739,7 +739,7 @@ int trackcorr_c_loop (tracking_run *run_info, int step, int display)
     }
 } /* end of sequence loop */
 
-int trackcorr_c_finish(tracking_run *run_info, int step)
+void trackcorr_c_finish(tracking_run *run_info, int step)
 {
   int range = run_info->seq_par->last - run_info->seq_par->first;
   
@@ -759,7 +759,7 @@ int trackcorr_c_finish(tracking_run *run_info, int step)
 }
 
 /*     track backwards */
-int trackback_c ()
+void trackback_c ()
 {
     char  buf[256];
     int i, j, h, k, step, invol=0;

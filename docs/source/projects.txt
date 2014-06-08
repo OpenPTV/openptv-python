@@ -1,0 +1,13 @@
+Research projects using OpenPTV
+===============================
+
++ Advection and diffusion processes of complex-nozzle jet flows `[Link] <http://chamorro.mechse.illinois.edu/3d.htm>`_
++ Agglomerate breakage in turbulence [MISSING LINK]
++ Experimental analysis of aortic flow in human aorta [MISSING LINK]
++ Experimental study of turbulent entrainment in swirling jet [MISSING LINK]
++ Velocity derivatives in turbulent flow from 3D-PTV measurements
++ JET growth motion in aerosols module observed under micro-gravity conditions on the sounding rocket MASER 8
++ Anaglyph display of a portion of a velocity field determined by 3-D PTV (use red/blue glasses for stereo-viewing)
++ Study on the applicability of 3-D PTV to surface tension driven convection (Marangoni convection) 
++ Study on the applicability of 3-D PTV for measurements in liquid columns (joined project with ESA-ESTEC and Alenia Aerospazio)
++ 2-D projection of a 3-D trajectory field in a vortex measured with 3-D PTV

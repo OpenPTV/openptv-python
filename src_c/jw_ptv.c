@@ -17,10 +17,7 @@
  
  ****************************************************************************/
 #include "ptv.h"
-#include "parameters.h"
-#include "tools.h"
-#include "image_processing.h"
-#include "orientation.h"
+
 
 #define nmax 20240
 
@@ -425,16 +422,16 @@ int detection_proc_c()
                 
                 num[i_img] = read_targets(pix[i_img], img_name[i_img], 0);
                                 
-                printf("pix.x0=%d\n",pix[i_img][0].x);
-                printf("pix.y0=%d\n",pix[i_img][0].y);
+                // printf("pix.x0=%f\n",pix[i_img][0].x);
+                // printf("pix.y0=%f\n",pix[i_img][0].y);
                 
                 break;
         }
         
-        printf("pix.x0=%f\n",pix[0][0].x);
-        printf("pix.y0=%f\n",pix[0][0].y);
-        sprintf (buf,"%d: %d,  ", i_img+1, num[i_img]);
-        strcat(val, buf);
+        // printf("pix.x0=%f\n",pix[0][0].x);
+        // printf("pix.y0=%f\n",pix[0][0].y);
+        // sprintf (buf,"%d: %d,  ", i_img+1, num[i_img]);
+        // strcat(val, buf);
         
         /* proper sort of targets in y-direction for later binary search */
         /* and for dimitris' tracking */
@@ -1025,7 +1022,7 @@ int calibration_proc_c (int sel)
                     fp1 = fopen_r ("parameters/multi_planes.par");
                     fscanf (fp1,"%d\n", &planes);
                     for(i=0;i<planes;i++) 
-                        fscanf (fp1,"%s\n", &multi_filename[i]);
+                        fscanf (fp1,"%s\n", multi_filename[i]);//fscanf (fp1,"%s\n", &multi_filename[i]);
                     fclose(fp1);
                     
                     for (n=0, nfix=0, dump_for_rdb=0; n<10; n++)
@@ -1172,7 +1169,7 @@ int calibration_proc_c (int sel)
         case 12: puts ("Orientation from dumbbells"); strcpy(buf, "");
 			
             prepare_eval(n_img,&nfix); //goes and looks up what sequence is defined and takes all cord. from rt_is
-            orient_v5 (n_img, nfix,&Ex, &I, &G, &ap);
+            orient_v5 (n_img, nfix, Ex, I, G, ap); // orient_v5 (n_img, nfix,&Ex, &I, &G, &ap);
 			
             for(i_img=0;i_img<n_img;i_img++){
                 write_ori (Ex[i_img], I[i_img], G[i_img], ap[i_img],

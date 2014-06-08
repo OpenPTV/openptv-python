@@ -1,7 +1,8 @@
 /*  global declarations for ptv  */
 
+#include "tracking_run.h"
 #include "typedefs.h"
-#include <optv/tracking_frame_buf.h>
+#include "optv/tracking_frame_buf.h"
 #include <stdio.h>
 
 #ifndef GLOBALS_H
@@ -143,5 +144,32 @@ void just_plot();
 void det_lsq_3d ();
 void orient();
 void volumedimension();
+void img_coord ();
+void subtract_mask();
+
+
+
+void highpass();
+int  start_proc_c();
+int init_proc_c();
+int pre_processing_c();
+int detection_proc_c();
+int calibration_proc_c();
+int correspondences_proc_c();
+int sequence_proc_c();
+int sequence_proc_loop_c();
+
+tracking_run *trackcorr_c_init();
+void trackcorr_c_loop();
+void trackcorr_c_finish();
+void trackback_c();
+int trajectories_c();
+int mouse_proc_c();
+int determination_proc_c();
+void prepare_eval();
+void prepare_eval_shake();
+
+
+
 
 #endif

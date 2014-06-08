@@ -149,7 +149,7 @@ target		pix[];
         
       if (xp > -eps  &&  yp > -eps  &&  xp < imx+eps  &&  yp < imy+eps)
 	{
-	  printf("going to find neighbours %d, %d, %3.1f, %3.1f, %3.1f\n", old, num, xp, yp, eps); 
+	  // printf("going to find neighbours %d, %d, %3.1f, %3.1f, %3.1f\n", old, num, xp, yp, eps); 
 	  j = nearest_neighbour_pix (old, num, xp, yp, eps);
 	  
 	  if (j != -999)
