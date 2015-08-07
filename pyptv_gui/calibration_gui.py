@@ -492,6 +492,7 @@ class calibration_gui(HasTraits):
         self.status_text="Orientation finished."
 
     def _button_orient_part_fired(self):
+        self.backup_ori_files()
         self.ptv.py_calibration(10)
         x1,y1,x2,y2=[],[],[],[]
         self.ptv.py_get_from_orient(x1,y1,x2,y2)
@@ -508,6 +509,7 @@ class calibration_gui(HasTraits):
         self.status_text="Orientation with particles finished."
 
     def _button_orient_dumbbell_fired(self):
+            self.backup_ori_files()
             print "Starting orientation from dumbbell"
             self.ptv.py_ptv_set_dumbbell(1)
             n_camera=len(self.camera)
