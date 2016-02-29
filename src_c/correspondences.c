@@ -137,13 +137,16 @@ void correspondences_4 (volume_par *vpar, control_par *cpar)
 		  p2 = list[0][1][i].p2[j];
 		  p3 = list[0][2][i].p2[k];
 		  p4 = list[0][3][i].p2[l];
-		  for (m=0; m<list[1][2][p2].n; m++)
+		  for (m=0; m<list[1][2][p2].n; m++) {
+		    p31 = list[1][2][p2].p2[m];
+		    if (p3 != p31) continue;
 		    for (n=0; n<list[1][3][p2].n; n++)
 		      {
-			p31 = list[1][2][p2].p2[m];
+			
 			p41 = list[1][3][p2].p2[n];
-			if (p3 == p31  &&  p4 == p41)
-			  for (o=0; o<list[2][3][p3].n; o++)
+			if (p4 != p41) continue;
+		i3 = list[2][3][p3].n;
+			  for (o=0; o<i3; o++)
 			    {
 			      p42 = list[2][3][p3].p2[o];
 			      if (p4 == p42)
@@ -174,13 +177,13 @@ void correspondences_4 (volume_par *vpar, control_par *cpar)
 					  printf (" > %d matches\n", match0);
 					  i = num[0];
 					}
-				    }
-				}
+				   }
+				 }
 			    }
 		      }
-		}
-	}
-
+		     }
+	       }
+         }
 
       /* -------------------------------------------------------------------- */
 
