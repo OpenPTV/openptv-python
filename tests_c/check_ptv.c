@@ -8,8 +8,12 @@
 #include <check.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <unistd.h>
+#include <errno.h>
 #include <math.h>
+
 #include <optv/vec_utils.h>
+#include <optv/parameters.h>
 
 #include "../src_c/ptv.h"
 #include "../src_c/orientation.h"
@@ -105,6 +109,28 @@ START_TEST(test_num_deriv_exterior)
 }
 END_TEST
 
+START_TEST(test_prepshake)
+{
+    
+    /* replace res/ with a fuller results dir. This will be undone 
+       after the test.
+    */
+    chdir("testing_fodder/");
+    control_par *cpar = read_control_par("parameters/ptv.par");
+    fail_unless(rename("res", "_res") == 0);
+    symlink("sample_res", "res");
+    
+    prepare_eval_shake(cpar);
+    for (int i = 0; i < nfix; i++) {
+        fail_unless(crd[0][i].pnr == fix[i].pnr);
+    }
+    
+    /* undo res switch. */
+    unlink("res");
+    fail_unless(rename("_res", "res") == 0);
+}
+END_TEST
+
 Suite* ptv_suite(void) {
     Suite *s = suite_create ("PTV");
 
@@ -115,6 +141,10 @@ Suite* ptv_suite(void) {
     TCase *tc_wori = tcase_create ("Write orientation file");
     tcase_add_test(tc_wori, test_write_ori);
     suite_add_tcase (s, tc_wori);
+
+    TCase *tc = tcase_create ("Milkshake brings all boys to yard");
+    tcase_add_test(tc, test_prepshake);
+    suite_add_tcase (s, tc);
 
     TCase *tc_numder = tcase_create ("Numeric derivative of an Exterior object");
     tcase_add_test(tc_numder, test_num_deriv_exterior);
@@ -127,7 +157,7 @@ int main(void) {
     int number_failed;
     Suite *s = ptv_suite ();
     SRunner *sr = srunner_create (s);
-    srunner_run_all (sr, CK_ENV);
+    srunner_run_all (sr, CK_VERBOSE);
     number_failed = srunner_ntests_failed (sr);
     srunner_free (sr);
     return (number_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
