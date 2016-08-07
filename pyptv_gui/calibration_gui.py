@@ -30,7 +30,7 @@ src_path = os.path.join(os.path.split(os.path.abspath(os.getcwd()))[0],'src_c')
 sys.path.append(src_path)
 
 
-import ptv1 as ptv 
+import ptv1 as ptv
 import parameter_gui as exp
 import parameters as par
 
@@ -43,7 +43,7 @@ class clicker_tool(ImageInspectorTool):
     x=0
     y=0
     def normal_left_down(self, event):
-        """ Handles the left mouse button being clicked.       
+        """ Handles the left mouse button being clicked.
         Fires the **new_value** event with the data (if any) from the event's
         position.
         """
@@ -69,18 +69,18 @@ class clicker_tool(ImageInspectorTool):
             image_data=plot.value
             self.x=(x_index)
             self.y=(y_index)
-            
+
             self.right_changed=1-self.right_changed
             print self.x
             print self.y
-            
-                   
+
+
             self.last_mouse_position = (event.x, event.y)
 
     def normal_mouse_move(self, event):
         pass
     def __init__(self, *args, **kwargs):
-                super(clicker_tool, self).__init__(*args, **kwargs)
+        super(clicker_tool, self).__init__(*args, **kwargs)
 
 
 # ----------------------------------------------------------
@@ -94,9 +94,9 @@ class plot_window (HasTraits):
     name=Str
     view = View(
              Item(name='_plot',editor=ComponentEditor(), show_label=False),
-             
+
              )
-    
+
     def __init__(self):
         # -------------- Initialization of plot system ----------------
         padd=25
@@ -122,7 +122,7 @@ class plot_window (HasTraits):
         self.drawcross("coord_x","coord_y",self._x,self._y,"red",5)
         self._plot.overlays=[]
         self.plot_num_overlay(self._x,self._y,self.man_ori)
-            
+
     def right_clicked_event(self):
         print ("right clicked")
         if len(self._x)>0:
@@ -143,7 +143,7 @@ class plot_window (HasTraits):
                 self.drawcross("x","y",x[0],y[0],"blue",4)
 
 
-    
+
     def attach_tools(self):
         self._click_tool=clicker_tool(self._img_plot)
         self._click_tool.on_trait_change(self.left_clicked_event, 'left_changed')
@@ -156,14 +156,14 @@ class plot_window (HasTraits):
             self._plot.index_mapper.on_trait_change(self.handle_mapper, 'updated', remove=False)
         if self._plot.value_mapper is not None:
             self._plot.value_mapper.on_trait_change(self.handle_mapper, 'updated', remove=False)
-                    
-    
+
+
     def drawcross(self, str_x,str_y,x,y,color1,mrk_size):
         self._plot_data.set_data(str_x,x)
         self._plot_data.set_data(str_y,y)
         self._plot.plot((str_x,str_y),type="scatter",color=color1,marker="plus",marker_size=mrk_size)
         self._plot.request_redraw()
-            
+
     def drawline(self,str_x,str_y,x1,y1,x2,y2,color1):
         self._plot_data.set_data(str_x,[x1,x2])
         self._plot_data.set_data(str_y,[y1,y2])
@@ -183,7 +183,7 @@ class plot_window (HasTraits):
         example usage:
             drawquiver ([100,200],[100,100],[400,400],[300,200],'red',linewidth=2.0)
             draws 2 red lines with thickness = 2 :  100,100->400,300 and 200,100->400,200
-                    
+
         """
         x1,y1,x2,y2=self.remove_short_lines(x1c,y1c,x2c,y2c)
         if len(x1)>0:
@@ -200,7 +200,7 @@ class plot_window (HasTraits):
             self._quiverplots.append(quiverplot) #we need this to track how many quiverplots are in the current plot
             # import pdb; pdb.set_trace()
     def remove_short_lines(self,x1,y1,x2,y2):
-        """ removes short lines from the array of lines 
+        """ removes short lines from the array of lines
         parameters:
             x1,y1,x2,y2 - start and end coordinates of the lines
         returns:
@@ -226,27 +226,27 @@ class plot_window (HasTraits):
             if hasattr(self._plot.overlays[i],'real_position'):
                 coord_x1, coord_y1=self._plot.map_screen([self._plot.overlays[i].real_position])[0]
                 self._plot.overlays[i].alternate_position=(coord_x1,coord_y1)
-    
+
     def plot_num_overlay(self,x,y,txt):
         for i in range (0,len(x)):
             coord_x, coord_y=self._plot.map_screen([(x[i],y[i])])[0]
-            ovlay=TextBoxOverlay(component=self._plot, 
-            text=str(txt[i]), alternate_position=(coord_x,coord_y), 
+            ovlay=TextBoxOverlay(component=self._plot,
+            text=str(txt[i]), alternate_position=(coord_x,coord_y),
                 real_position=(x[i],y[i]),
                 text_color = "white",
                 border_color = "red"
                 )
             self._plot.overlays.append(ovlay)
-                    
+
     def update_image(self,image,is_float):
-            if is_float:
-                self._plot_data.set_data('imagedata',image.astype(np.float))
-            else:
-                self._plot_data.set_data('imagedata',image.astype(np.byte))
-            self._plot.request_redraw()
-            
+        if is_float:
+            self._plot_data.set_data('imagedata',image.astype(np.float))
+        else:
+            self._plot_data.set_data('imagedata',image.astype(np.byte))
+        self._plot.request_redraw()
+
 # ---------------------------------------------------------
-    
+
 class calibration_gui(HasTraits):
 
     camera=List
@@ -275,7 +275,7 @@ class calibration_gui(HasTraits):
     button_test = Button()
 
         # Defines GUI view --------------------------
- 
+
     view = View(
               HGroup(
                 VGroup(
@@ -294,7 +294,7 @@ class calibration_gui(HasTraits):
                             Item(name='button_checkpoint',label='Checkpoints', show_label=False,enabled_when='pass_init_disabled'),
                             Item(name='button_ap_figures',label='Ap figures', show_label=False,enabled_when='pass_init_disabled'),
                             show_left=False,
-                            
+
                             ),
                     VGroup(
                         Item(name='button_edit_cal_parameters',label='Edit calibration parameters', show_label=False),
@@ -302,7 +302,7 @@ class calibration_gui(HasTraits):
                             show_left=False,
                             ),
                     ),
-            
+
                             Item( 'camera',style  = 'custom',
                             editor = ListEditor( use_notebook = True,
                                        deletable    = False,
@@ -311,9 +311,9 @@ class calibration_gui(HasTraits):
                                        ),
                                        show_label = False
                                        ),
-         
+
                     orientation='horizontal'
-                            ), 
+                            ),
             title = 'Calibration',
             id='view1',
             width = 1.,
@@ -326,20 +326,20 @@ class calibration_gui(HasTraits):
         cp = exp.Calib_Params(par_path=self.par_path)
         cp.edit_traits(kind='modal')
         par.copy_params_dir(self.par_path, par.temp_path)
-        
+
     def _button_showimg_fired(self):
         if os.path.isfile(os.path.join(self.exp1.active_params.par_path,'man_ori.dat')):
             shutil.copyfile(os.path.join(self.exp1.active_params.par_path,'man_ori.dat'),\
             os.path.join(os.getcwd(),'man_ori.dat'))
-        
+
         print("Load Image fired")
         self.load_init_v1() # < - this should be united with the Calib_Params in experiment_01a.py
         print(len(self.ori_img))
         self.ptv.py_calibration(1)
         self.pass_init=True
         self.status_text="Initialization finished."
-        
-                
+
+
     def _button_detection_fired(self):
         if self.need_reset:
             self.reset_show_images()
@@ -349,12 +349,12 @@ class calibration_gui(HasTraits):
         x=[]
         y=[]
         self.ptv.py_get_pix(x,y)
-        
-        self.update_plots(self.ori_img)
+
+        # self.update_plots(self.ori_img)
         self.drawcross("x","y",x,y,"blue",4)
         for i in range(len(self.camera)):
-              self.camera[i]._right_click_avail=1
-        
+            self.camera[i]._right_click_avail=1
+
     def _button_manual_fired(self):
         points_set=True
         for i in range(len(self.camera)):
@@ -362,7 +362,7 @@ class calibration_gui(HasTraits):
                 print "inside manual click"
                 print self.camera[i]._x
                 points_set=False
-        
+
         if points_set:
             man_ori_path = os.path.join(os.getcwd(),'man_ori.dat')
             f=open(man_ori_path, 'w')
@@ -372,12 +372,12 @@ class calibration_gui(HasTraits):
                 for i in range(len(self.camera)):
                     for j in range(4):
                         f.write("%f %f\n" % (self.camera[i]._x[j],self.camera[i]._y[j]))
-                
+
                 self.status_text="man_ori.dat saved."
                 f.close()
         else:
             self.status_text="Set 4 points on each calibration image for manual orientation"
-                        
+
     def _button_file_orient_fired(self):
         if self.need_reset:
             self.reset_show_images()
@@ -404,7 +404,7 @@ class calibration_gui(HasTraits):
         man_ori_par_path = os.path.join(os.getcwd(),'parameters','man_ori.par')
         f=open(man_ori_par_path, 'r')
         if f is None:
-                self.status_text="Error loading man_ori.par."
+            self.status_text="Error loading man_ori.par."
         else:
             for i in range(len(self.camera)):
                 for j in range(4):
@@ -414,19 +414,19 @@ class calibration_gui(HasTraits):
             f.close()
             self.ptv.py_calibration(4)
             self.status_text="Loading orientation data from file finished."
-                                
-                                
+
+
     def _button_init_guess_fired(self):
-            if self.need_reset:
-                self.reset_show_images()
-                self.need_reset=0
-            self.ptv.py_calibration(9)
-            x=[]
-            y=[]
-            self.ptv.py_get_from_calib(x,y)
-            self.drawcross("init_x","init_y",x,y,"yellow",3)
-            self.status_text="Initial guess finished."
-        
+        if self.need_reset:
+            self.reset_show_images()
+            self.need_reset=0
+        self.ptv.py_calibration(9)
+        x=[]
+        y=[]
+        self.ptv.py_get_from_calib(x,y)
+        self.drawcross("init_x","init_y",x,y,"yellow",3)
+        self.status_text="Initial guess finished."
+
     def _button_sort_grid_fired(self):
         if self.need_reset:
             self.reset_show_images()
@@ -452,7 +452,7 @@ class calibration_gui(HasTraits):
             self.camera[i]._plot.overlays=[]
             self.camera[i].plot_num_overlay(x[i],y[i],pnr[i])
         self.status_text="Sort grid finished."
-            
+
     def _button_sort_grid_init_fired(self):
         if self.need_reset:
             self.reset_show_images()
@@ -471,7 +471,7 @@ class calibration_gui(HasTraits):
             self.camera[i]._plot.overlays=[]
             self.camera[i].plot_num_overlay(x[i],y[i],pnr[i])
         self.status_text="Sort grid initial guess finished."
-            
+
     def _button_orient_fired(self):
         # backup the ORI/ADDPAR files first
         self.backup_ori_files()
@@ -483,7 +483,7 @@ class calibration_gui(HasTraits):
         x2=[]
         y2=[]
         self.ptv.py_get_from_orient(x1,y1,x2,y2)
-        
+
         self.reset_plots()
         for i in range (len(self.camera)):
             self.camera[i]._plot_data.set_data('imagedata',self.ori_img[i].astype(np.float))
@@ -491,7 +491,7 @@ class calibration_gui(HasTraits):
             self.camera[i].drawquiver(x1[i],y1[i],x2[i],y2[i],"red")
             self.camera[i]._plot.index_mapper.range.set_bounds(0,self.h_pixel)
             self.camera[i]._plot.value_mapper.range.set_bounds(0,self.v_pixel)
-        
+
         self.drawcross("orient_x","orient_y",x1,y1,"orange",4)
         self.status_text="Orientation finished."
 
@@ -500,7 +500,7 @@ class calibration_gui(HasTraits):
         self.ptv.py_calibration(10)
         x1,y1,x2,y2=[],[],[],[]
         self.ptv.py_get_from_orient(x1,y1,x2,y2)
-           
+
         self.reset_plots()
         for i in range (len(self.camera)):
             self.camera[i]._plot_data.set_data('imagedata',self.ori_img[i].astype(np.float))
@@ -529,7 +529,7 @@ class calibration_gui(HasTraits):
             stepshake=self.ptv.py_get_from_sequence_init()
             if not stepshake:
                 stepshake=1
-            
+
         temp_img=np.array([],dtype=np.ubyte)
         for i in range(seq_first,seq_last+1,stepshake):
             seq_ch="%04d" % i
@@ -543,9 +543,9 @@ class calibration_gui(HasTraits):
                 except:
                     print "Error reading file"
                     self.ptv.py_set_img(temp_img,j)
-                
+
             self.ptv.py_sequence_loop(1,i)
-        
+
         print "Orientation from dumbbell - sequence finished"
         self.ptv.py_calibration(12)
         self.ptv.py_ptv_set_dumbbell(1)
@@ -553,8 +553,8 @@ class calibration_gui(HasTraits):
 
     def _button_restore_orient_fired(self):
         self.restore_ori_files()
-        
-        
+
+
     def load_init_v1(self):
         calOriParams = par.CalOriParams(len(self.camera), path = self.par_path)
         calOriParams.read()
@@ -583,58 +583,56 @@ class calibration_gui(HasTraits):
                 break
             self.ori_img.append(img1)
             self.ptv.py_set_img(self.ori_img[i],i)
-                
+
         self.reset_show_images()
         # Loading manual parameters here
-                        
+
         #TODO: rewrite using Parameters subclass
         man_ori_path = os.path.join(os.getcwd(),'parameters','man_ori.par')
         f = open(man_ori_path, 'r')
         if f is None:
-                printf('\nError loading man_ori.par')
+            printf('\nError loading man_ori.par')
         else:
-                for i in range (len(self.camera)):
-                        for j in range(4):
-                                self.camera[i].man_ori[j]=int(f.readline().strip())
+            for i in range (len(self.camera)):
+                for j in range(4):
+                    self.camera[i].man_ori[j]=int(f.readline().strip())
         f.close()
-            
-            
+
+
 
     def reset_plots(self):
-            for i in range (len(self.camera)):
-                    self.camera[i]._plot.delplot(*self.camera[i]._plot.plots.keys()[0:])
-                    self.camera[i]._plot.overlays=[]
-                    for j in range(len(self.camera[i]._quiverplots)):
-                        self.camera[i]._plot.remove(self.camera[i]._quiverplots[j])
-                    self.camera[i]._quiverplots=[]
-                    
+        for i in range (len(self.camera)):
+            self.camera[i]._plot.delplot(*self.camera[i]._plot.plots.keys()[0:])
+            self.camera[i]._plot.overlays=[]
+            for j in range(len(self.camera[i]._quiverplots)):
+                self.camera[i]._plot.remove(self.camera[i]._quiverplots[j])
+            self.camera[i]._quiverplots=[]
+
     def reset_show_images(self):
-            for i in range (len(self.camera)):
-                    self.camera[i]._plot.delplot(*self.camera[i]._plot.plots.keys()[0:])
-                    self.camera[i]._plot.overlays=[]
-                    #self.camera[i]._plot_data.set_data('imagedata',self.ori_img[i].astype(np.byte))
-                    self.camera[i]._plot_data.set_data('imagedata',self.ori_img[i].astype(np.ubyte))
-                    
-                    self.camera[i]._img_plot=self.camera[i]._plot.img_plot('imagedata',colormap=gray)[0]
-                    self.camera[i]._x=[]
-                    self.camera[i]._y=[]
-                    self.camera[i]._img_plot.tools=[]
-                    self.camera[i].attach_tools()
-                    self.camera[i]._plot.request_redraw()
-                    for j in range(len(self.camera[i]._quiverplots)):
-                        self.camera[i]._plot.remove(self.camera[i]._quiverplots[j])
-                    self.camera[i]._quiverplots=[]
-                    
-                            
+        for i in range (len(self.camera)):
+            self.camera[i]._plot.delplot(*self.camera[i]._plot.plots.keys()[0:])
+            self.camera[i]._plot.overlays=[]
+            self.camera[i]._plot_data.set_data('imagedata',self.ori_img[i].astype(np.float))
+            self.camera[i]._img_plot=self.camera[i]._plot.img_plot('imagedata',colormap=gray)[0]
+            self.camera[i]._x=[]
+            self.camera[i]._y=[]
+            self.camera[i]._img_plot.tools=[]
+            self.camera[i].attach_tools()
+            self.camera[i]._plot.request_redraw()
+            for j in range(len(self.camera[i]._quiverplots)):
+                self.camera[i]._plot.remove(self.camera[i]._quiverplots[j])
+            self.camera[i]._quiverplots=[]
+
+
     def _button_edit_ori_files_fired(self):
-            editor = codeEditor(path=self.par_path)
-            editor.edit_traits(kind = 'livemodal')              
-                    
-                 
+        editor = codeEditor(path=self.par_path)
+        editor.edit_traits(kind = 'livemodal')
+
+
     def drawcross(self,str_x,str_y,x,y,color1,size1):
         for i in range(len(self.camera)):
             self.camera[i].drawcross(str_x,str_y,x[i],y[i],color1,size1)
-            
+
     def backup_ori_files(self):
         # backup ORI/ADDPAR files to the backup_cal directory
         calOriParams = par.CalOriParams(len(self.camera), path = self.par_path)
@@ -648,7 +646,7 @@ class calibration_gui(HasTraits):
         # backup ORI/ADDPAR files to the backup_cal directory
         calOriParams = par.CalOriParams(len(self.camera), path = self.par_path)
         calOriParams.read()
-            
+
         for f in calOriParams.img_ori:
             print "restored %s " % f
             shutil.copyfile(f+'.bck',f)
@@ -666,36 +664,36 @@ class calibration_gui(HasTraits):
                 shutil.copyfile(f+'.bck',f)
 
 
-            
+
     def load_init(self):
         calOriParams = par.CalOriParams(len(self.camera), path = self.par_path)
         calOriParams.read()
         (fixp_name, img_cal_name, img_ori, tiff_flag, pair_flag, chfield) = \
             (calOriParams.fixp_name, calOriParams.img_cal_name, calOriParams.img_ori, calOriParams.tiff_flag, calOriParams.pair_flag, calOriParams.chfield)
-        self.ori_img_name = img_cal_name                    
-        for i in range (len(self.camera)):      
-                print ("reading "+self.ori_img_name[i])
-                try:
-                        img1=imread(self.ori_img_name[i]).astype(np.ubyte)
-                except:
-                        print("Error reading image "+self.ori_img_name[i])
-                        break
-                self.ori_img.append(img1)
-                if self.camera[i]._plot is not None:
-                        self.camera[i]._plot.delplot(*self.camera[i]._plot.plots.keys()[0:])
-                self.camera[i]._plot_data.set_data('imagedata',self.ori_img[i].astype(np.byte))
-                self.camera[i]._img_plot=self.camera[i]._plot.img_plot('imagedata',colormap=gray)[0]
-                
-                self.camera[i]._x=[]
-                self.camera[i]._y=[]
-                self.camera[i]._plot.overlays=[]
-                self.camera[i]._img_plot.tools=[]
-                self.camera[i].attach_tools()
-                self.camera[i]._plot.request_redraw()
-                
-                
-                self.ptv.py_set_img(self.ori_img[i],i)
-                        
+        self.ori_img_name = img_cal_name
+        for i in range (len(self.camera)):
+            print ("reading "+self.ori_img_name[i])
+            try:
+                img1=imread(self.ori_img_name[i]).astype(np.ubyte)
+            except:
+                print("Error reading image "+self.ori_img_name[i])
+                break
+            self.ori_img.append(img1)
+            if self.camera[i]._plot is not None:
+                self.camera[i]._plot.delplot(*self.camera[i]._plot.plots.keys()[0:])
+            self.camera[i]._plot_data.set_data('imagedata',self.ori_img[i].astype(np.byte))
+            self.camera[i]._img_plot=self.camera[i]._plot.img_plot('imagedata',colormap=gray)[0]
+
+            self.camera[i]._x=[]
+            self.camera[i]._y=[]
+            self.camera[i]._plot.overlays=[]
+            self.camera[i]._img_plot.tools=[]
+            self.camera[i].attach_tools()
+            self.camera[i]._plot.request_redraw()
+
+
+            self.ptv.py_set_img(self.ori_img[i],i)
+
         f.close()
 # Loading manual parameters here
         #TODO: rewrite using Parameters subclass
@@ -706,19 +704,19 @@ class calibration_gui(HasTraits):
         else:
             for i in range (len(self.camera)):
                 for j in range(4):
-                        self.camera[i].man_ori[j]=int(f.readline().strip())
-            
+                    self.camera[i].man_ori[j]=int(f.readline().strip())
 
-#                 
+
+#
 #   def drawcross(self,str_x,str_y,x,y,color1,size1):
 #           for i in range(len(self.camera)):
 #                   self.camera[i].drawcross(str_x,str_y,x[i],y[i],color1,size1)
-    
+
     def update_plots(self,images,is_float=0):
-            for i in range(len(images)):
-                    self.camera[i].update_image(images[i],is_float)
-       
-            
+        for i in range(len(images)):
+            self.camera[i].update_image(images[i],is_float)
+
+
     #---------------------------------------------------
     # Constructor
     #---------------------------------------------------
@@ -728,5 +726,3 @@ class calibration_gui(HasTraits):
         self.par_path = par_path
         self.ptv = ptv
         # self.ptv.py_init_proc_c() - likely that this created memory overflow on Mac
-        
-
