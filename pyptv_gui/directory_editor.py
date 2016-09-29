@@ -20,10 +20,10 @@ class DirectoryEditorDialog ( HasTraits ):
 	view = View( 
 		dir_item,
 		title	  = 'Choose the Experiments directory',
-		buttons	  = ['OK'],
+		# buttons	  = ['OK'],
 		width=0.5,
-		resizable = True,
-		kind = 'modal'
+		resizable = True#,
+		# kind = 'modal'
 	)
 # Create the demo:
 # demo = DirectoryEditorDemo()
