@@ -28,6 +28,15 @@ from skimage import img_as_ubyte
 from threading import Thread
 from pyface.api import GUI
 
+from optv.correspondences import correspondences, MatchedCoords
+from optv.segmentation import target_recognition
+from optv.orientation import point_positions
+from optv.image_processing import preprocess_image
+#from optv.tracking_framebuf import CORRES_NONE
+from optv.tracker import Tracker, default_naming
+from optv.calibration import Calibration
+from optv.parameters import ControlParams, VolumeParams, TrackingParams, \
+    SequenceParams, TargetParams
 
 
 # Parse inputs:
@@ -460,24 +469,24 @@ class TreeMenuHandler (Handler):
         info.object.update_plots(info.object.orig_image)
 
     def highpass_action(self,info):
-        """ highpass_action - calls ptv.py_pre_processing_c() binding which does highpass on working images (object.orig_image)
-        that were set with init action
+        """ highpass_action - calls ptv.py_pre_processing_c() binding which does highpass 
+        on working images (object.orig_image) that were set with init action
         """
-        print ("highpass started")
-        ptv.py_pre_processing_c() # call the binding
+        print("highpass started")
+        info.object.orig_image = ptv.py_pre_processing_c(info.object.orig_image)
         info.object.update_plots(info.object.orig_image)
         print ("highpass finished")
 
     def img_coord_action(self,info):
-        """ img_coord_action - runs detection function by using ptv.py_detection_proc_c() binding. results are extracted
-        with help of ptv.py_get_pix(x,y) binding and plotted on the screen
+        """ img_coord_action - runs detection function by using ptv.py_detection_proc_c() 
+        binding. results are extracted with help of ptv.py_get_pix(x,y) binding 
+        and plotted on the screen
         """
         print ("detection proc started")
-        ptv.py_detection_proc_c()
+        detections = ptv.py_detection_proc_c(info.object.orig_image)
         print ("detection proc finished")
-        x=[]
-        y=[]
-        ptv.py_get_pix(x,y) # extract detected points from C with help of py_get_pix binding
+        x = [[i.pos()[0] for i in row] for row in detections]
+        y = [[i.pos()[1] for i in row] for row in detections]
         info.object.drawcross("x","y",x,y,"blue",3)
 
 
@@ -995,6 +1004,7 @@ class MainGUI (HasTraits):
 
 
     def update_plots(self,images,is_float=False):
+        print("inside update plots, images changed\n")
         for i in range(len(images)):
             self.camera_list[i].update_image(images[i],is_float)
             self.camera_list[i]._plot.request_redraw()
