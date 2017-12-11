@@ -1,3 +1,4 @@
+#!/Users/alex/anaconda3/envs/py27/bin/python
 """ PyPTV_GUI is the GUI for the 3D-PTV (http://ptv.origo.ethz.ch) written in
 Python/Enthought Traits GUI/Numpy/Chaco
 
@@ -7,28 +8,14 @@ The software is distributed under the terms of MIT-like license
 http://opensource.org/licenses/MIT
 
 """
-import os, sys
+import os
+import sys
 import time
-import numpy as np
 
-from traits.api \
-    import HasTraits, Str, Int, List, Bool, Enum, Instance, Any
-from traitsui.api \
-    import TreeEditor, TreeNode, View, Item, \
-            Handler, Group
-
-
-from enable.component_editor import ComponentEditor
-from chaco.api import Plot, ArrayPlotData, gray
-from traitsui.menu import MenuBar, Menu, Action
-from chaco.tools.api import  ZoomTool,PanTool
-from skimage.io import imread
-from skimage.color import rgb2gray
 from skimage import img_as_ubyte
-from threading import Thread
-from pyface.api import GUI
-
-
+from skimage.color import rgb2gray
+from skimage.io import imread
+from traitsui.menu import MenuBar
 
 # Parse inputs:
 
@@ -62,12 +49,10 @@ if not os.path.isdir(src_path):
     print("Wrong src_c path %s" % src_path)
 sys.path.append(src_path)
 
-import ptv1 as ptv
+# import ptv1 as ptv
 from optv.tracking_framebuf import read_targets
 
 # pyPTV specific imports
-import general
-import parameters as par
 from parameter_gui import *
 from calibration_gui import *
 from directory_editor import DirectoryEditorDialog

@@ -1,3 +1,4 @@
+#!/Users/alex/anaconda3/envs/py27/bin/python
 """
 Copyright (c) 2008-2013, Tel Aviv University
 Copyright (c) 2013 - the OpenPTV team
@@ -30,7 +31,7 @@ src_path = os.path.join(os.path.split(
 sys.path.append(src_path)
 
 
-import ptv1 as ptv
+# import ptv1 as ptv
 import parameter_gui as exp
 import parameters as par
 
@@ -55,8 +56,8 @@ class clicker_tool(ImageInspectorTool):
             image_data = plot.value
             self.x = (x_index)
             self.y = (y_index)
-            print self.x
-            print self.y
+            print(self.x)
+            print(self.y)
             self.left_changed = 1 - self.left_changed
             self.last_mouse_position = (event.x, event.y)
 
@@ -117,8 +118,8 @@ class plot_window (HasTraits):
         if len(self._x) < 4:
             self._x.append(self._click_tool.x)
             self._y.append(self._click_tool.y)
-        print self._x
-        print self._y
+            print(self._click_tool.x, self._click_tool.y)
+        
         self.drawcross("coord_x", "coord_y", self._x, self._y, "red", 5)
         self._plot.overlays = []
         self.plot_num_overlay(self._x, self._y, self.man_ori)
@@ -617,7 +618,7 @@ class calibration_gui(HasTraits):
                 print("Error reading image " + self.ori_img_name[i])
                 break
             self.ori_img.append(img1)
-            self.ptv.py_set_img(self.ori_img[i], i)
+            # self.ptv.py_set_img(self.ori_img[i], i)
 
         self.reset_show_images()
         # Loading manual parameters here
@@ -631,7 +632,7 @@ class calibration_gui(HasTraits):
             for i in range(len(self.camera)):
                 for j in range(4):
                     self.camera[i].man_ori[j] = int(f.readline().strip())
-        f.close()
+            f.close()
 
     def reset_plots(self):
         for i in range(len(self.camera)):
@@ -738,7 +739,7 @@ class calibration_gui(HasTraits):
         man_ori_path = os.path.join(os.getcwd(), 'parameters', 'man_ori.par')
         f = open(man_ori_path, 'r')
         if f == None:
-            printf('\nError loading man_ori.par')
+            print('\nError loading man_ori.par')
         else:
             for i in range(len(self.camera)):
                 for j in range(4):
@@ -762,6 +763,6 @@ class calibration_gui(HasTraits):
         super(calibration_gui, self).__init__()
         self.need_reset = 0
         self.par_path = par_path
-        self.ptv = ptv
+        # self.ptv = ptv
         # self.ptv.py_init_proc_c() - likely that this created memory overflow
         # on Mac
