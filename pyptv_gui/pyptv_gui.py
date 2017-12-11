@@ -503,11 +503,11 @@ class TreeMenuHandler (Handler):
             ptv.py_correspondences_proc_c(info.object.n_camera, info.object.detections, \
                                             info.object.corrected)
         # import pdb; pdb.set_trace()
-        info.object.clear_plots(remove_background=False)
-        info.object.drawcross("quad_x","quad_y",quadruplets[:,0],quadruplets[:,1],"red",3) 
-        info.object.drawcross("tripl_x","tripl_y",triplets[:,0],triplets[:,1],"green",3)
-        info.object.drawcross("pair_x","pair_y",pairs[:,0],pairs[:,1],"yellow",3)
-        info.object.drawcross("unused_x","unused_y",unused[:,0],unused[:,1],"blue",3)
+        # info.object.clear_plots(remove_background=False)
+        info.object.drawcross("quad_x","quad_y",quadruplets[:,:,0],quadruplets[:,:,1],"red",3) 
+        info.object.drawcross("tripl_x","tripl_y",triplets[:,:,0],triplets[:,:,1],"green",3)
+        info.object.drawcross("pair_x","pair_y",pairs[:,:,0],pairs[:,:,1],"yellow",3)
+        # info.object.drawcross("unused_x","unused_y",unused[:,0],unused[:,1],"blue",3)
 
     def init_action(self,info):
         """ init_action - clears existing plots from the camera windows,
