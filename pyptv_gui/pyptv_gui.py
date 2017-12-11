@@ -483,29 +483,31 @@ class TreeMenuHandler (Handler):
         and plotted on the screen
         """
         print ("detection proc started")
-        detections = ptv.py_detection_proc_c(info.object.orig_image)
+        detections, corrected = ptv.py_detection_proc_c(info.object.orig_image)
         print ("detection proc finished")
         x = [[i.pos()[0] for i in row] for row in detections]
         y = [[i.pos()[1] for i in row] for row in detections]
         info.object.drawcross("x","y",x,y,"blue",3)
+        # store for the next step
+        info.object.detections = detections
+        info.object.corrected  = corrected
 
 
     def corresp_action(self,info):
-        """ corresp_action - calls ptv.py_correspondences_proc_c(quadriplets,triplets,pairs, unused) binding.
-        Result of correspondence action is filled to uadriplets,triplets,pairs, unused arrays
+        """ corresp_action calls ptv.py_correspondences_proc_c() 
+            Result of correspondence action is filled to uadriplets,triplets, pairs,
+            and unused arrays
         """
         print ("correspondence proc started")
-        quadriplets=[]
-        triplets=[]
-        pairs=[]
-        unused=[]
-        ptv.py_correspondences_proc_c(quadriplets,triplets,pairs, unused)
+        quadruplets, triplets, pairs, unused = \
+            ptv.py_correspondences_proc_c(info.object.n_camera, info.object.detections, \
+                                            info.object.corrected)
+        # import pdb; pdb.set_trace()
         info.object.clear_plots(remove_background=False)
-        #info.object.update_plots(info.object.orig_image)
-        info.object.drawcross("quad_x","quad_y",quadriplets[0],quadriplets[1],"red",3) #draw quadriplets, triplets, etc...
-        info.object.drawcross("tripl_x","tripl_y",triplets[0],triplets[1],"green",3)
-        info.object.drawcross("pair_x","pair_y",pairs[0],pairs[1],"yellow",3)
-        info.object.drawcross("unused_x","unused_y",unused[0],unused[1],"blue",3)
+        info.object.drawcross("quad_x","quad_y",quadruplets[:,0],quadruplets[:,1],"red",3) 
+        info.object.drawcross("tripl_x","tripl_y",triplets[:,0],triplets[:,1],"green",3)
+        info.object.drawcross("pair_x","pair_y",pairs[:,0],pairs[:,1],"yellow",3)
+        info.object.drawcross("unused_x","unused_y",unused[:,0],unused[:,1],"blue",3)
 
     def init_action(self,info):
         """ init_action - clears existing plots from the camera windows,
