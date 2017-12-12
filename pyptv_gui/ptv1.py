@@ -8,8 +8,11 @@ from optv.calibration import Calibration
 from optv.parameters import ControlParams, VolumeParams, TrackingParams, \
     SequenceParams, TargetParams
     
-    
+from skimage.io import imread
 import numpy as np
+
+def simple_highpass(img, cpar):
+    return preprocess_image(img, 0, cpar, 12)
 
 
 def py_init_proc_c():
@@ -20,10 +23,10 @@ def py_set_img(img,i):
     """ Not used anymore, was transferring images to the C """
     pass
     
-def py_start_proc_c():
+def py_start_proc_c(n_cams):
     """ Read parameters """
-    with open('parameters/ptv.par','r') as f:
-        n_cams = int(f.readline())
+#     with open('parameters/ptv.par','r') as f:
+#         n_cams = int(f.readline())
 
     # Control parameters
     cpar = ControlParams(n_cams)
@@ -55,6 +58,8 @@ def py_start_proc_c():
         tmp = cpar.get_cal_img_base_name(i_cam)
         cal.from_file(tmp+'.ori', tmp+'.addpar')
         cals.append(cal)
+        
+    return cpar, spar, vpar, track_par, tpar, cals
         
 def py_pre_processing_c(list_of_images):
     """ Image pre-processing, mostly highpass filter, could be extended in the future """
@@ -129,13 +134,6 @@ def py_correspondences_proc_c(n_cams, detections, corrected):
     # Corresp. + positions.
     sorted_pos, sorted_corresp, num_targs = correspondences(
         detections, corrected, cals, vpar, cpar)
-        
-        
-    quadruplets = sorted_pos[0]
-    triplets = sorted_pos[1]
-    pairs = sorted_pos[2]
-    unused = [] # temporary solution 
-    
 
     # Save targets only after they've been modified:
     for i_cam in xrange(n_cams):
@@ -144,9 +142,24 @@ def py_correspondences_proc_c(n_cams, detections, corrected):
 
     print("Frame " + str(frame) + " had " \
           + repr([s.shape[1] for s in sorted_pos]) + " correspondences.")
-          
-    # import pdb; pdb.set_trace()
+              
+    return sorted_pos, sorted_corresp, num_targs
+    
+def py_determination_proc_c(n_cams, sorted_pos, sorted_corresp, corrected):
+    """ Returns 3d positions """
+    
+    # Control parameters
+    cpar = ControlParams(n_cams)
+    cpar.read_control_par('parameters/ptv.par')
+        
+    cals =[]
+    for i_cam in xrange(n_cams):
+        cal = Calibration()
+        tmp = cpar.get_cal_img_base_name(i_cam)
+        cal.from_file(tmp+'.ori', tmp+'.addpar')
+        cals.append(cal)
 
+    
     # Distinction between quad/trip irrelevant here.
     sorted_pos = np.concatenate(sorted_pos, axis=1)
     sorted_corresp = np.concatenate(sorted_corresp, axis=1)
@@ -156,48 +169,105 @@ def py_correspondences_proc_c(n_cams, detections, corrected):
     pos, rcm = point_positions(
         flat.transpose(1,0,2), cpar, cals)
 
-    # Save rt_is
-    rt_is = open(default_naming['corres']+'.'+str(frame), 'w')
-    rt_is.write(str(pos.shape[0]) + '\n')
-    for pix, pt in enumerate(pos):
-        pt_args = (pix + 1,) + tuple(pt) + tuple(sorted_corresp[:,pix])
-        rt_is.write("%4d %9.3f %9.3f %9.3f %4d %4d %4d %4d\n" % pt_args)
-    rt_is.close()
-    
-    
-#     import copy
-#     quadruplets = [[] for i in xrange(n_cams)]
-#     triplets  = copy.copy(quadruplets)
-#     pairs = copy.copy(triplets)
-#     unused = copy.copy(pairs)
-# 
-#     
-# 
-# 
-#     for row in sorted_corresp.T:
-#         if sum(row != -1) == 4:
-#             print('quadruplet')
-#             for i_cam, ix in enumerate(row):
-#                 print(i_cam,ix,sorted_pos[i_cam][ix])
-#                 quadruplets[i_cam].append(sorted_pos[i_cam][ix])
-#     
-#         elif sum(row != -1) == 3:
-#             # triplets
-#             for i_cam, ix in enumerate(row):
-#                 if ix == -1:
-#                     continue
-#                 triplets[i_cam].append(sorted_pos[i_cam][ix])
-#                 
-#         elif sum(row != -1) == 2:
-#             # pairs
-#             for i_cam, ix in enumerate(row):
-#                 if ix == -1:
-#                     continue
-#                 pairs[i_cam].append(sorted_pos[i_cam][ix])
-#         else:
-#             # unused
-#                 unused[i_cam].append(sorted_pos[i_cam][ix])
+    # Save rt_is in a temporary file 
+    frame = 123456789 # just a temporary workaround. todo: think how to write
+    with open(default_naming['corres']+'.'+str(frame), 'w') as rt_is:
+        rt_is.write(str(pos.shape[0]) + '\n')
+        for pix, pt in enumerate(pos):
+            pt_args = (pix + 1,) + tuple(pt) + tuple(sorted_corresp[:,pix])
+            rt_is.write("%4d %9.3f %9.3f %9.3f %4d %4d %4d %4d\n" % pt_args)
+    # rt_is.close()
+ 
+ 
+def py_sequence_loop(n_cams, cpar, spar, vpar, track_par, tpar, cals):
+    """ Runs a sequence of detection, stereo-correspondence, determination and stores
+        the data in the cam#.XXX_targets (rewritten) and rt_is.XXX files. Basically 
+        it is to run the batch as in pyptv_batch.py without tracking
+    """
 
-    return quadruplets,triplets,pairs,unused
+    # sequence loop for all frames
+    for frame in xrange(spar.get_first(), spar.get_last()+1):
+        print("processing frame %d" % frame)
+
+        detections = []
+        corrected = []
+        for i_cam in xrange(n_cams):
+            imname = spar.get_img_base_name(i_cam) + str(frame)
+            img = imread(imname)
+            hp = simple_highpass(img, cpar)
+            targs = target_recognition(hp, tpar, i_cam, cpar)
+            # print(targs)
+
+            targs.sort_y()
+            detections.append(targs)
+            mc = MatchedCoords(targs, cpar, cals[i_cam])
+            pos, pnr = mc.as_arrays()
+            # print(i_cam)
+            corrected.append(mc)
+
+
+        #        if any([len(det) == 0 for det in detections]):
+        #            return False
+
+        # Corresp. + positions.
+        sorted_pos, sorted_corresp, num_targs = correspondences(
+            detections, corrected, cals, vpar, cpar)
+
+        # Save targets only after they've been modified:
+        for i_cam in xrange(n_cams):
+            detections[i_cam].write(spar.get_img_base_name(i_cam),frame)
+
+
+        print("Frame " + str(frame) + " had " \
+              + repr([s.shape[1] for s in sorted_pos]) + " correspondences.")
+
+        # Distinction between quad/trip irrelevant here.
+        sorted_pos = np.concatenate(sorted_pos, axis=1)
+        sorted_corresp = np.concatenate(sorted_corresp, axis=1)
+
+        flat = np.array([corrected[i].get_by_pnrs(sorted_corresp[i]) \
+                         for i in xrange(len(cals))])
+        pos, rcm = point_positions(
+            flat.transpose(1,0,2), cpar, cals)
+
+        # Save rt_is
+        rt_is = open(default_naming['corres']+'.'+str(frame), 'w')
+        rt_is.write(str(pos.shape[0]) + '\n')
+        for pix, pt in enumerate(pos):
+            pt_args = (pix + 1,) + tuple(pt) + tuple(sorted_corresp[:,pix])
+            rt_is.write("%4d %9.3f %9.3f %9.3f %4d %4d %4d %4d\n" % pt_args)
+        rt_is.close()
+    # end of a sequence loop    
+           
+
+def py_right_click(coord_x, coord_y, n_image):
+#     global rclick_intx1,rclick_inty1,rclick_intx2,rclick_inty2,rclick_points_x1, rclick_points_y1,rclick_count,rclick_points_intx1, rclick_points_inty1
+#     
+#     x2_points,y2_points,x1,y1,x2,y2=[],[],[],[],[],[]
+#     
+#     cdef volume_par *vpar = read_volume_par("parameters/criteria.par")
+#     r = mouse_proc_c (coord_x, coord_y, 3, n_image, vpar, cpar)
+#     free(vpar)
+#     
+#     if r == -1:
+#         return -1,-1,-1,-1,-1,-1,-1,-1
+#     for i in range(cpar[0].num_cams):
+#         x2_temp,y2_temp=[],[]
+#         for j in range(rclick_count[i]):
+#             x2_temp.append(rclick_points_x1[i][j])
+#             y2_temp.append(rclick_points_y1[i][j])
+#     
+#         x2_points.append(x2_temp)
+#         y2_points.append(y2_temp)
+#         x1.append(rclick_intx1[i])
+#         y1.append(rclick_inty1[i])
+#         x2.append(rclick_intx2[i])
+#         y2.append(rclick_inty2[i])
+#     
+#     return  x1,y1,x2,y2,x2_points,y2_points,rclick_points_intx1, rclick_points_inty1
+    pass
+    
+
+
     
     

@@ -483,14 +483,12 @@ class TreeMenuHandler (Handler):
         and plotted on the screen
         """
         print ("detection proc started")
-        detections, corrected = ptv.py_detection_proc_c(info.object.orig_image)
+        info.object.detections, info.object.corrected = \
+                                            ptv.py_detection_proc_c(info.object.orig_image)
         print ("detection proc finished")
-        x = [[i.pos()[0] for i in row] for row in detections]
-        y = [[i.pos()[1] for i in row] for row in detections]
+        x = [[i.pos()[0] for i in row] for row in info.object.detections]
+        y = [[i.pos()[1] for i in row] for row in info.object.corrected]
         info.object.drawcross("x","y",x,y,"blue",3)
-        # store for the next step
-        info.object.detections = detections
-        info.object.corrected  = corrected
 
 
     def corresp_action(self,info):
@@ -499,13 +497,20 @@ class TreeMenuHandler (Handler):
             and unused arrays
         """
         print ("correspondence proc started")
-        quadruplets, triplets, pairs, unused = \
+        info.object.sorted_pos, info.object.sorted_corresp, info.object.num_targs = \
             ptv.py_correspondences_proc_c(info.object.n_camera, info.object.detections, \
                                             info.object.corrected)
+        quadruplets = info.object.sorted_pos[0]
+        triplets = info.object.sorted_pos[1]
+        pairs = info.object.sorted_pos[2]
+        unused = [] # temporary solution
+        
         # import pdb; pdb.set_trace()
         # info.object.clear_plots(remove_background=False)
-        info.object.drawcross("quad_x","quad_y",quadruplets[:,:,0],quadruplets[:,:,1],"red",3) 
-        info.object.drawcross("tripl_x","tripl_y",triplets[:,:,0],triplets[:,:,1],"green",3)
+        info.object.drawcross("quad_x","quad_y",quadruplets[:,:,0],quadruplets[:,:,1], \
+                                                                                "red",3) 
+        info.object.drawcross("tripl_x","tripl_y",triplets[:,:,0],triplets[:,:,1], \
+                                                                                "green",3)
         info.object.drawcross("pair_x","pair_y",pairs[:,:,0],pairs[:,:,1],"yellow",3)
         # info.object.drawcross("unused_x","unused_y",unused[:,0],unused[:,1],"blue",3)
 
@@ -517,7 +522,7 @@ class TreeMenuHandler (Handler):
         mainGui = info.object
         mainGui.exp1.syncActiveDir() #synchronize the active run params dir with the temp params dir
 
-        for i in range (0,len(mainGui.camera_list)):
+        for i in xrange(len(mainGui.camera_list)):
             try:
                 exec("mainGui.orig_image[%d]=img_as_ubyte(imread(mainGui.exp1.active_params.m_params.Name_%d_Image))" %(i,i+1))
             except IOError:
@@ -529,13 +534,14 @@ class TreeMenuHandler (Handler):
             if hasattr(mainGui.camera_list[i],'_img_plot'):
                 del mainGui.camera_list[i]._img_plot
         mainGui.clear_plots()
-        print("\nInit action\n")
+        print("\n Init action \n")
         mainGui.update_plots(mainGui.orig_image,is_float=False)
         mainGui.set_images(mainGui.orig_image)
 
-        ptv.py_start_proc_c()
-        mainGui.pass_init=True
-        print ("done")
+        info.object.cpar, info.object.spar, info.object.vpar, info.object.track_par, \
+            info.object.tpar, info.object.cals = ptv.py_start_proc_c(info.object.n_camera)
+        mainGui.pass_init = True
+        print ("Read all the parameters and calibrations successfully ")
 
 
 
@@ -575,44 +581,19 @@ class TreeMenuHandler (Handler):
                 os.chdir(software_path) #change to software path, to load tracking module
                 seq=__import__(extern_sequence) #import choosen tracker from software dir
             except:
-                print "Error loading "+extern_sequence+". Falling back to default sequence algorithm"
+                print("Error loading "+extern_sequence+ \
+                                    ". Falling back to default sequence algorithm")
                 extern_sequence='default'
             os.chdir(current_path) # change back to working path
+            
         if extern_sequence=='default':
-            n_camera=len(info.object.camera_list)
-            print ("Starting sequence action (default algorithm)")
-            seq_first=info.object.exp1.active_params.m_params.Seq_First
-            seq_last=info.object.exp1.active_params.m_params.Seq_Last
-            print seq_first,seq_last
-            base_name=[]
-            for i in range (n_camera):
-                exec("base_name.append(info.object.exp1.active_params.m_params.Basename_%d_Seq)" %(i+1))
-                print base_name[i]
+            ptv.py_sequence_loop(info.object.n_camera, info.object.cpar,info.object.spar,\
+            info.object.vpar, info.object.track_par, info.object.tpar, info.object.cals)
 
-            ptv.py_sequence_init(0) #init C sequence function
-            stepshake=ptv.py_get_from_sequence_init() #get parameters and pass to main loop
-            if not stepshake:
-                stepshake=1
-
-            print stepshake
-            temp_img=np.array([],dtype=np.ubyte)
-            # main loop - format image name, read it and call v.py_sequence_loop(..) for current step
-            for i in range(seq_first,seq_last+1,stepshake):
-                seq_ch="%04d" % i
-                for j in range (n_camera):
-                    img_name=base_name[j]+seq_ch
-                    print ("Setting image: %s" % img_name)
-                    try:
-                        temp_img = img_as_ubyte(imread(img_name))
-                    except:
-                        print "Error reading file"
-
-                    ptv.py_set_img(temp_img,j)
-
-                ptv.py_sequence_loop(0,i)
         else:
             print "Sequence by using "+extern_sequence
-            sequence=seq.Sequence(ptv=ptv, exp1=info.object.exp1,camera_list=info.object.camera_list)
+            sequence=seq.Sequence(ptv=ptv, exp1=info.object.exp1, \
+                                                camera_list=info.object.camera_list)
             sequence.do_sequence()
             #print "Sequence by using "+extern_sequence+" has failed."
 
@@ -662,7 +643,9 @@ class TreeMenuHandler (Handler):
         ptv.py_trackback_c()
 
     def threed_positions(self,info):
-        ptv.py_determination_proc_c(0)
+        """ Extracts and saves 3D positions from the list of correspondences """
+        ptv.py_determination_proc_c(info.object.n_camera, info.object.sorted_pos, \
+                                    info.object.sorted_corresp, info.object.corrected)
 
     def multigrid_demo(self,info):
         demo_window=DemoGUI(ptv=ptv, exp1=info.object.exp1)
@@ -696,7 +679,11 @@ class TreeMenuHandler (Handler):
         for i_seq in range(seq_first, seq_last+1): #loop over sequences
             for i_img in range(n_images):
                 intx_green,inty_green,intx_blue,inty_blue=[],[],[],[]
-                imx, imy, zoomx, zoomy, zoomf = ptv.py_get_mark_track_c(i_img)
+                # import pdb; pdb.set_trace()
+                imx, imy = info.object.cpar.get_image_size()
+                zoomx = zoomy = 0
+                zoomf = 1 # temporary
+                
                 targets = read_targets(base_names[i_img], i_seq)
 
                 for h in range(len(targets)):
