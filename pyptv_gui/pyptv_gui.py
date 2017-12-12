@@ -573,12 +573,12 @@ class TreeMenuHandler (Handler):
         passes to calib class pointer to ptv module and to exp1 class,
         invokes the calibration GUI
         """
-        print ("Starting calibration dialog")
+        print ("\n Starting calibration dialog \n")
 
         # reset the main GUI so the user will have to press Start again
         info.object.pass_init = False
-
-        calib_gui = CalibrationGUI(info)        
+        active_path = info.exp1.selected.active_params.par_path
+        calib_gui = CalibrationGUI(active_path)        
         calib_gui.configure_traits()
 
     def sequence_action(self,info):

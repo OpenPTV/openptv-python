@@ -291,16 +291,18 @@ class CalibrationGUI(HasTraits):
     #---------------------------------------------------
     # Constructor
     #---------------------------------------------------
-    def __init__(self, info):
+    def __init__(self, active_path):
         """ Initialize CalibrationGUI """
         
         super(CalibrationGUI, self).__init__()
         self.need_reset = 0
-        self.info = info # thi is a copy of info.object from pyptv_gui.py
-        self.par_path = self.info.exp1.selected.active_params.par_path
+        self.par_path = active_path
         
+        # read parameters
+        with open(os.path.join(self.par_path,'ptv.par'),'r') as f:
+            self.n_cams = f.readline()        
 
-        for i in xrange(self.info.object.n_cams):
+        for i in xrange(self.n_cams):
                 self.camera.append(PlotWindow())
                 self.camera[i].name = "Camera"+str(i+1)
                 self.camera[i].cameraN = i
@@ -378,14 +380,17 @@ class CalibrationGUI(HasTraits):
 
     def _button_showimg_fired(self):
         
+        print("Load Image fired \n")
+        
+        print("\n Copying man_ori.dat \n")
         if os.path.isfile(os.path.join(self.par_path, 'man_ori.dat')):
             shutil.copyfile(os.path.join(self.par_path, 'man_ori.dat'),
                             os.path.join(os.getcwd(), 'man_ori.dat'))
 
-        print("Load Image fired")
-        self.load_init_v1()  
-        print(len(self.ori_img))
-        self.ptv.py_calibration(1)
+        self.load_init_v1() # got images and parameters in Python.   
+        # ptv.py_calibration(1)
+        self.cpar, self.spar, self.vpar, self.track_par, self.tpar, \
+            self.cals = ptv.py_start_proc_c(self.n_cams)
         self.pass_init = True
         self.status_text = "Initialization finished."
         import pdb; pdb.set_trace()
@@ -395,10 +400,10 @@ class CalibrationGUI(HasTraits):
             self.reset_show_images()
             self.need_reset = 0
         print("Detection procedure")
-        self.ptv.py_calibration(2)
+        ptv.py_calibration(2)
         x = []
         y = []
-        x,y = self.ptv.py_get_pix(x, y)
+        x,y = ptv.py_get_pix(x, y)
         self.drawcross("x", "y", x, y, "blue", 4)
         for i in range(len(self.camera)):
             self.camera[i]._right_click_avail = 1
@@ -463,17 +468,17 @@ class CalibrationGUI(HasTraits):
                 self.status_text = "man_ori.par loded."
                 self.camera[i].left_clicked_event()
             f.close()
-            self.ptv.py_calibration(4)
+            ptv.py_calibration(4)
             self.status_text = "Loading orientation data from file finished."
 
     def _button_init_guess_fired(self):
         if self.need_reset:
             self.reset_show_images()
             self.need_reset = 0
-        self.ptv.py_calibration(9)
+        ptv.py_calibration(9)
         x = []
         y = []
-        self.ptv.py_get_from_calib(x, y)
+        ptv.py_get_from_calib(x, y)
         self.drawcross("init_x", "init_y", x, y, "yellow", 3)
         self.status_text = "Initial guess finished."
 
@@ -481,13 +486,13 @@ class CalibrationGUI(HasTraits):
         if self.need_reset:
             self.reset_show_images()
             self.need_reset = 0
-        self.ptv.py_calibration(5)
+        ptv.py_calibration(5)
         x = []
         y = []
         x1_cyan = []
         y1_cyan = []
         pnr = []
-        self.ptv.py_get_from_sortgrid(x, y, pnr)
+        ptv.py_get_from_sortgrid(x, y, pnr)
         
         # filter out -999 which is returned for the missing points:
         for i in range(len(self.camera)):
@@ -498,7 +503,7 @@ class CalibrationGUI(HasTraits):
                 del pnr[i][id]
 
         self.drawcross("sort_x", "sort_y", x, y, "white", 4)
-        self.ptv.py_get_from_calib(x1_cyan, y1_cyan)
+        ptv.py_get_from_calib(x1_cyan, y1_cyan)
         self.drawcross("init_x", "init_y", x1_cyan, y1_cyan, "cyan", 4)
         for i in range(len(self.camera)):
             self.camera[i]._plot.overlays = []
@@ -509,15 +514,15 @@ class CalibrationGUI(HasTraits):
         if self.need_reset:
             self.reset_show_images()
             self.need_reset = 0
-        self.ptv.py_calibration(14)
+        ptv.py_calibration(14)
         x = []
         y = []
         x1_cyan = []
         y1_cyan = []
         pnr = []
-        self.ptv.py_get_from_sortgrid(x, y, pnr)
+        ptv.py_get_from_sortgrid(x, y, pnr)
         self.drawcross("sort_x_init", "sort_y_init", x, y, "white", 4)
-        self.ptv.py_get_from_calib(x1_cyan, y1_cyan)
+        ptv.py_get_from_calib(x1_cyan, y1_cyan)
         self.drawcross("init_x", "init_y", x1_cyan, y1_cyan, "cyan", 4)
         for i in range(len(self.camera)):
             self.camera[i]._plot.overlays = []
@@ -527,14 +532,14 @@ class CalibrationGUI(HasTraits):
     def _button_orient_fired(self):
         # backup the ORI/ADDPAR files first
         self.backup_ori_files()
-        self.ptv.py_calibration(6)
+        ptv.py_calibration(6)
         self.protect_ori_files()
         self.need_reset = 1
         x1 = []
         y1 = []
         x2 = []
         y2 = []
-        self.ptv.py_get_from_orient(x1, y1, x2, y2)
+        ptv.py_get_from_orient(x1, y1, x2, y2)
 
         self.reset_plots()
         for i in range(len(self.camera)):
@@ -551,9 +556,9 @@ class CalibrationGUI(HasTraits):
 
     def _button_orient_part_fired(self):
         self.backup_ori_files()
-        self.ptv.py_calibration(10)
+        ptv.py_calibration(10)
         x1, y1, x2, y2 = [], [], [], []
-        self.ptv.py_get_from_orient(x1, y1, x2, y2)
+        ptv.py_get_from_orient(x1, y1, x2, y2)
 
         self.reset_plots()
         for i in range(len(self.camera)):
@@ -571,7 +576,7 @@ class CalibrationGUI(HasTraits):
     def _button_orient_dumbbell_fired(self):
         print "Starting orientation from dumbbell"
         self.backup_ori_files()
-        self.ptv.py_ptv_set_dumbbell(1)
+        ptv.py_ptv_set_dumbbell(1)
         n_camera = len(self.camera)
         print ("Starting sequence action")
         seq_first = self.exp1.active_params.m_params.Seq_First
@@ -582,8 +587,8 @@ class CalibrationGUI(HasTraits):
             exec(
                 "base_name.append(self.exp1.active_params.m_params.Basename_%d_Seq)" % (i + 1))
             print base_name[i]
-            self.ptv.py_sequence_init(1)
-            stepshake = self.ptv.py_get_from_sequence_init()
+            ptv.py_sequence_init(1)
+            stepshake = ptv.py_get_from_sequence_init()
             if not stepshake:
                 stepshake = 1
 
@@ -599,20 +604,20 @@ class CalibrationGUI(HasTraits):
                     temp_img = imread(img_name).astype(np.ubyte)
                 except:
                     print "Error reading file"
-                    self.ptv.py_set_img(temp_img, j)
+                    ptv.py_set_img(temp_img, j)
 
-            self.ptv.py_sequence_loop(1, i)
+            ptv.py_sequence_loop(1, i)
 
         print "Orientation from dumbbell - sequence finished"
-        self.ptv.py_calibration(12)
-        self.ptv.py_ptv_set_dumbbell(1)
+        ptv.py_calibration(12)
+        ptv.py_ptv_set_dumbbell(1)
         print "Orientation from dumbbell finished"
 
     def _button_restore_orient_fired(self):
         self.restore_ori_files()
 
     def load_init_v1(self):
-        calOriParams = par.CalOriParams(len(self.camera), path=self.par_path)
+        calOriParams = par.CalOriParams(self.n_cams, path=self.par_path)
         calOriParams.read()
         (fixp_name, img_cal_name, img_ori, tiff_flag, pair_flag, chfield) = \
             (calOriParams.fixp_name, calOriParams.img_cal_name, calOriParams.img_ori,
@@ -628,8 +633,6 @@ class CalibrationGUI(HasTraits):
         self.v_pixel = imy
 
         self.ori_img = []
-        print("len(self.camera)")
-        print(len(self.camera))
         for i in range(len(self.camera)):
             print ("reading " + self.ori_img_name[i])
             try:
@@ -639,7 +642,7 @@ class CalibrationGUI(HasTraits):
                 print("Error reading image " + self.ori_img_name[i])
                 break
             self.ori_img.append(img1)
-            self.ptv.py_set_img(self.ori_img[i], i)
+            ptv.py_set_img(self.ori_img[i], i)
 
         self.reset_show_images()
         # Loading manual parameters here
@@ -752,7 +755,7 @@ class CalibrationGUI(HasTraits):
             self.camera[i].attach_tools()
             self.camera[i]._plot.request_redraw()
 
-            self.ptv.py_set_img(self.ori_img[i], i)
+            ptv.py_set_img(self.ori_img[i], i)
 
         f.close()
 # Loading manual parameters here
@@ -777,3 +780,7 @@ class CalibrationGUI(HasTraits):
             self.camera[i].update_image(images[i], is_float)
 
 
+if __name__ == "__main__":
+    active_path = '/Users/alex/Documents/OpenPTV/test_cavity/parametersRun1'
+    calib_gui = CalibrationGUI(active_path)
+    calib_gui.configure_traits()
