@@ -1,3 +1,4 @@
+#!/Users/alex/anaconda3/envs/py27/bin/pythonw
 """ PyPTV_GUI is the GUI for the 3D-PTV (http://ptv.origo.ethz.ch) written in
 Python/Enthought Traits GUI/Numpy/Chaco
 
@@ -7,9 +8,13 @@ The software is distributed under the terms of MIT-like license
 http://opensource.org/licenses/MIT
 
 """
+from __future__ import division
 import os, sys
 import time
 import numpy as np
+
+from traits.etsconfig.api import ETSConfig
+ETSConfig.toolkit = 'qt4' 
 
 from traits.api \
     import HasTraits, Str, Int, List, Bool, Enum, Instance, Any
@@ -84,9 +89,10 @@ from quiverplot import QuiverPlot
 from demo import *
 
 if len(sys.argv) < 2:
-    directory_dialog = DirectoryEditorDialog()
-    directory_dialog.configure_traits()
-    exp_path = directory_dialog.dir_name # default_path+os.sep+'exp1'
+    # directory_dialog = DirectoryEditorDialog()
+    # directory_dialog.configure_traits()
+    # exp_path = directory_dialog.dir_name # default_path+os.sep+'exp1'
+    exp_path = '/Users/alex/Documents/OpenPTV/test_cavity'
 
 cwd = os.getcwd()
 
@@ -484,10 +490,11 @@ class TreeMenuHandler (Handler):
         """
         print ("detection proc started")
         info.object.detections, info.object.corrected = \
-                                            ptv.py_detection_proc_c(info.object.orig_image)
+        ptv.py_detection_proc_c(info.object.orig_image, info.object.cpar, \
+        info.object.tpar, info.object.cals)
         print ("detection proc finished")
         x = [[i.pos()[0] for i in row] for row in info.object.detections]
-        y = [[i.pos()[1] for i in row] for row in info.object.corrected]
+        y = [[i.pos()[1] for i in row] for row in info.object.detections]
         info.object.drawcross("x","y",x,y,"blue",3)
 
 
@@ -498,8 +505,7 @@ class TreeMenuHandler (Handler):
         """
         print ("correspondence proc started")
         info.object.sorted_pos, info.object.sorted_corresp, info.object.num_targs = \
-            ptv.py_correspondences_proc_c(info.object.n_camera, info.object.detections, \
-                                            info.object.corrected)
+            ptv.py_correspondences_proc_c(info.object)
         quadruplets = info.object.sorted_pos[0]
         triplets = info.object.sorted_pos[1]
         pairs = info.object.sorted_pos[2]
@@ -539,7 +545,7 @@ class TreeMenuHandler (Handler):
         mainGui.set_images(mainGui.orig_image)
 
         info.object.cpar, info.object.spar, info.object.vpar, info.object.track_par, \
-            info.object.tpar, info.object.cals = ptv.py_start_proc_c(info.object.n_camera)
+            info.object.tpar, info.object.cals = ptv.py_start_proc_c(info.object.n_cams)
         mainGui.pass_init = True
         print ("Read all the parameters and calibrations successfully ")
 
@@ -587,8 +593,7 @@ class TreeMenuHandler (Handler):
             os.chdir(current_path) # change back to working path
             
         if extern_sequence=='default':
-            ptv.py_sequence_loop(info.object.n_camera, info.object.cpar,info.object.spar,\
-            info.object.vpar, info.object.track_par, info.object.tpar, info.object.cals)
+            ptv.py_sequence_loop(info.object)
 
         else:
             print "Sequence by using "+extern_sequence
@@ -644,7 +649,7 @@ class TreeMenuHandler (Handler):
 
     def threed_positions(self,info):
         """ Extracts and saves 3D positions from the list of correspondences """
-        ptv.py_determination_proc_c(info.object.n_camera, info.object.sorted_pos, \
+        ptv.py_determination_proc_c(info.object.n_cams, info.object.sorted_pos, \
                                     info.object.sorted_corresp, info.object.corrected)
 
     def multigrid_demo(self,info):
@@ -665,34 +670,39 @@ class TreeMenuHandler (Handler):
         seq_last = prm.Seq_Last
         base_names = [prm.Basename_1_Seq, prm.Basename_2_Seq,
             prm.Basename_3_Seq, prm.Basename_4_Seq]
+            
+            
+        #load first seq image and set appropriate C array
+        info.object.load_set_seq_image(seq_first) 
 
-        info.object.load_set_seq_image(seq_first) #load first seq image and set appropriate C array
-        n_images=len(info.object.camera_list)
         print "Starting detect_part_track"
         x1_a,x2_a,y1_a,y2_a=[],[],[],[]
-        for i in range (n_images): #initialize result arrays
+        for i in xrange(info.object.n_cams): #initialize result arrays
             x1_a.append([])
             x2_a.append([])
             y1_a.append([])
             y2_a.append([])
 
+        imx, imy = info.object.cpar.get_image_size()
+        # some old stuff that is probably obsolete, left for the future
+        # see jw_ptv.c for the origins
+        zoomx = imx/2
+        zoomy = imx/2
+        zoomf = 1 
+        
         for i_seq in range(seq_first, seq_last+1): #loop over sequences
-            for i_img in range(n_images):
+            for i_img in range(info.object.n_cams):
                 intx_green,inty_green,intx_blue,inty_blue=[],[],[],[]
                 # import pdb; pdb.set_trace()
-                imx, imy = info.object.cpar.get_image_size()
-                zoomx = zoomy = 0
-                zoomf = 1 # temporary
-                
                 targets = read_targets(base_names[i_img], i_seq)
 
-                for h in range(len(targets)):
-                    #get data from C
-                    tx, ty = targets[h].pos()
-
-                    if (targets[h].tnr() > -1):
-                        intx_green.append(int(imx/2 + zoomf*(tx - zoomx)))
-                        inty_green.append(int(imy/2 + zoomf*(ty - zoomy)))
+                for t in targets:
+                    
+                    if (t.tnr() > -1):
+                        # intx_green.append(int(imx/2 + zoomf*(tx - zoomx)))
+                        # inty_green.append(int(imy/2 + zoomf*(ty - zoomy)))
+                        intx_green.append(t.pos()[0])
+                        inty_green.append(t.pos()[1])
 #                    else:
 #                        intx_blue.append(int(imx/2 + zoomf*(tx - zoomx)))
 #                        inty_blue.append(int(imy/2 + zoomf*(ty - zoomy)))
@@ -704,7 +714,7 @@ class TreeMenuHandler (Handler):
 #                info.object.camera_list[i_img].drawcross(str(i_seq)+"x_tr_gr",str(i_seq)+"y_tr_gr",intx_green,inty_green,"green",3)
 #                info.object.camera_list[i_img].drawcross(str(i_seq)+"x_tr_bl",str(i_seq)+"y_tr_bl",intx_blue,inty_blue,"blue",2)
         #plot result arrays
-        for i_img in range(n_images):
+        for i_img in range(info.object.n_cams):
             info.object.camera_list[i_img].drawcross("x_tr_gr","y_tr_gr",x1_a[i_img],y1_a[i_img],"green",3)
 #            info.object.camera_list[i_img].drawcross("x_tr_bl","y_tr_bl",x2_a[i_img],y2_a[i_img],"blue",2)
             info.object.camera_list[i_img]._plot.request_redraw()
@@ -720,22 +730,22 @@ class TreeMenuHandler (Handler):
         seq_first=info.object.exp1.active_params.m_params.Seq_First
         seq_last=info.object.exp1.active_params.m_params.Seq_Last
         info.object.load_set_seq_image(seq_first,display_only=True)
-        n_camera=len(info.object.camera_list)
+        n_cams=len(info.object.camera_list)
         x1_a,x2_a,y1_a,y2_a=[],[],[],[]
-        for i in range (n_camera): #initialize result arrays
+        for i in range (n_cams): #initialize result arrays
             x1_a.append([])
             x2_a.append([])
             y1_a.append([])
             y2_a.append([])
         for i_seq in range(seq_first, seq_last):
             x1,y1,x2,y2,m1_tr=ptv.py_traject_loop(i_seq)
-            for i in range(n_camera):
+            for i in range(n_cams):
                 x1_a[i]=x1_a[i]+x1[i]
                 x2_a[i]=x2_a[i]+x2[i]
                 y1_a[i]=y1_a[i]+y1[i]
                 y2_a[i]=y2_a[i]+y2[i]
         print "Show trajectories finished"
-        for i in range(n_camera):
+        for i in range(n_cams):
             info.object.camera_list[i].drawcross("trajx1","trajy1",x1_a[i],y1_a[i],"blue",2)
             info.object.camera_list[i].drawcross("trajx2","trajy2",x2_a[i],y2_a[i],"red",2)
             info.object.camera_list[i].drawquiver(x1_a[i],y1_a[i],x2_a[i],y2_a[i],"green",linewidth=3.0)
@@ -939,13 +949,13 @@ class MainGUI (HasTraits):
         self.exp1=Experiment()
         self.exp1.populate_runs(exp_path)
         self.plugins=Plugins()
-        self.n_camera=self.exp1.active_params.m_params.Num_Cam
-        print self.n_camera
+        self.n_cams=self.exp1.active_params.m_params.Num_Cam
+        print self.n_cams
         self.orig_image=[]
         self.hp_image=[]
         self.current_camera=0
         self.camera_list = []
-        for i in range(self.n_camera):
+        for i in range(self.n_cams):
             self.camera_list.append(CameraWindow(colors[i]))
             self.camera_list[i].name="Camera "+str(i+1)
             self.camera_list[i].on_trait_change(self.right_click_process, 'rclicked')
@@ -955,37 +965,37 @@ class MainGUI (HasTraits):
 
     #------------------------------------------------------
     def right_click_process(self):
-        x_clicked,y_clicked,n_camera=0,0,0
+        x_clicked,y_clicked,n_cams=0,0,0
         h_img=self.exp1.active_params.m_params.imx
         v_img=self.exp1.active_params.m_params.imy
         print h_img,v_img
         for i in range(len(self.camera_list)):
 
-                n_camera=i
+                n_cams=i
                 x_clicked,y_clicked=self.camera_list[i]._click_tool.x,\
                                     self.camera_list[i]._click_tool.y
-                x1,y1,x2,y2,x1_points,y1_points,intx1,inty1=ptv.py_right_click(x_clicked,y_clicked,n_camera)
+                x1,y1,x2,y2,x1_points,y1_points,intx1,inty1=ptv.py_right_click(x_clicked,y_clicked,n_cams)
                 if (x1!=-1 and y1!=-1):
-                    self.camera_list[n_camera].right_p_x0.append(intx1)
-                    self.camera_list[n_camera].right_p_y0.append(inty1)
-                    self.camera_list[n_camera].drawcross("right_p_x0","right_p_y0",
-                        self.camera_list[n_camera].right_p_x0\
-                    ,self.camera_list[n_camera].right_p_y0,"cyan",3,marker1="circle")
-                    self.camera_list[n_camera]._plot.request_redraw()
+                    self.camera_list[n_cams].right_p_x0.append(intx1)
+                    self.camera_list[n_cams].right_p_y0.append(inty1)
+                    self.camera_list[n_cams].drawcross("right_p_x0","right_p_y0",
+                        self.camera_list[n_cams].right_p_x0\
+                    ,self.camera_list[n_cams].right_p_y0,"cyan",3,marker1="circle")
+                    self.camera_list[n_cams]._plot.request_redraw()
                     print "right click process"
                     print x1,y1,x2,y2,x1_points,y1_points
                     color_camera=['yellow','red','blue','green']
                     #print [x1[i]],[y1[i]],[x2[i]],[y2[i]]
                     for j in range(len(self.camera_list)):
-                        if j is not n_camera:
+                        if j is not n_cams:
                             count=self.camera_list[i]._plot.plots.keys()
                             self.camera_list[j].drawline("right_cl_x"+str(len(count)),\
                             "right_cl_y"+str(len(count)),x1[j],y1[j],x2[j],y2[j],\
-                            color_camera[n_camera])
+                            color_camera[n_cams])
                             self.camera_list[j]._plot.index_mapper.range.set_bounds(0,h_img)
                             self.camera_list[j]._plot.value_mapper.range.set_bounds(0,v_img)
                             self.camera_list[j].drawcross("right_p_x1","right_p_y1",x1_points[j],y1_points[j],\
-                            color_camera[n_camera],2)
+                            color_camera[n_cams],2)
                             self.camera_list[j]._plot.request_redraw()
                 else:
                     print ("No nearby points for epipolar lines")
@@ -1041,7 +1051,7 @@ class MainGUI (HasTraits):
 
 
     def _update_thread_plot_changed(self):
-        n_camera=len(self.camera_list)
+        n_cams=len(self.camera_list)
 
         if self.update_thread_plot and self.tr_thread:
             print "updating plots..\n"
@@ -1051,7 +1061,7 @@ class MainGUI (HasTraits):
             self.tr_thread.intx0,self.tr_thread.intx1,self.tr_thread.intx2,\
             self.tr_thread.inty0,self.tr_thread.inty1,self.tr_thread.inty2,self.tr_thread.pnr1,\
             self.tr_thread.pnr2,self.tr_thread.pnr3,self.tr_thread.m_tr
-            for i in range (n_camera):
+            for i in range (n_cams):
                 self.camera_list[i].drawcross(str(step)+"x0",str(step)+"y0",x0[i],y0[i],"green",2)
                 self.camera_list[i].drawcross(str(step)+"x1",str(step)+"y1",x1[i],y1[i],"yellow",2)
                 self.camera_list[i].drawcross(str(step)+"x2",str(step)+"y2",x2[i],y2[i],"white",2)
@@ -1072,10 +1082,10 @@ class MainGUI (HasTraits):
 
 
     def load_set_seq_image(self,seq, update_all=True,display_only=False):
-        n_camera=len(self.camera_list)
+        n_cams=len(self.camera_list)
         if not hasattr(self,'base_name'):
             self.base_name=[]
-            for i in range (n_camera):
+            for i in range (n_cams):
                 exec("self.base_name.append(self.exp1.active_params.m_params.Basename_%d_Seq)" %(i+1))
                 print self.base_name[i]
 
@@ -1087,7 +1097,7 @@ class MainGUI (HasTraits):
             img_name=self.base_name[j]+seq_ch
             self.load_disp_image(img_name,j,display_only)
         else:
-            for j in range (n_camera):
+            for j in range (n_cams):
                 img_name=self.base_name[j]+seq_ch
                 self.load_disp_image(img_name,j,display_only)
 

@@ -8,11 +8,12 @@ from optv.calibration import Calibration
 from optv.parameters import ControlParams, VolumeParams, TrackingParams, \
     SequenceParams, TargetParams
     
-from skimage.io import imread
+from scipy.misc import imread
 import numpy as np
+import time
 
 def simple_highpass(img, cpar):
-    return preprocess_image(img, 0, cpar, 12)
+    return preprocess_image(img, 0, cpar, 25)
 
 
 def py_init_proc_c():
@@ -25,9 +26,7 @@ def py_set_img(img,i):
     
 def py_start_proc_c(n_cams):
     """ Read parameters """
-#     with open('parameters/ptv.par','r') as f:
-#         n_cams = int(f.readline())
-
+    
     # Control parameters
     cpar = ControlParams(n_cams)
     cpar.read_control_par('parameters/ptv.par')
@@ -70,21 +69,8 @@ def py_pre_processing_c(list_of_images):
         newlist.append(preprocess_image(img, 0, cpar, 12))
     return newlist
     
-def py_detection_proc_c(list_of_images):
+def py_detection_proc_c(list_of_images, cpar, tpar, cals):
     """ Detection of targets """
-    cpar = ControlParams(len(list_of_images))
-    cpar.read_control_par('parameters/ptv.par')
-    tpar = TargetParams()
-    tpar.read('parameters/targ_rec.par')
-    
-    # Calibration parameters
-
-    cals =[]
-    for i_cam in xrange(len(list_of_images)):
-        cal = Calibration()
-        tmp = cpar.get_cal_img_base_name(i_cam)
-        cal.from_file(tmp+'.ori', tmp+'.addpar')
-        cals.append(cal)
 
     detections, corrected = [],[]
     for i_cam, img in enumerate(list_of_images):
@@ -96,36 +82,16 @@ def py_detection_proc_c(list_of_images):
         
     return detections, corrected
     
-def py_correspondences_proc_c(n_cams, detections, corrected):
+def py_correspondences_proc_c(exp):
     """ Provides correspondences 
     Inputs: 
-        detections, corrected: output of the py_detection_proc_c
+        exp = info.object from the pyptv_gui
     Outputs:
         quadruplets, ... : four empty lists filled later with the 
     correspondences of quadruplets, triplets, pairs, and so on
     """
     
     frame = 123456789 # just a temporary workaround. todo: think how to write
-    
-    # Control parameters
-    cpar = ControlParams(n_cams)
-    cpar.read_control_par('parameters/ptv.par')
-        
-    cals =[]
-    for i_cam in xrange(n_cams):
-        cal = Calibration()
-        tmp = cpar.get_cal_img_base_name(i_cam)
-        cal.from_file(tmp+'.ori', tmp+'.addpar')
-        cals.append(cal)
-
-
-    # Sequence parameters
-    spar = SequenceParams(num_cams=n_cams)
-    spar.read_sequence_par('parameters/sequence.par',n_cams)
-    
-    # Volume parameters
-    vpar = VolumeParams()
-    vpar.read_volume_par('parameters/criteria.par')
 
 
 #        if any([len(det) == 0 for det in detections]):
@@ -133,12 +99,11 @@ def py_correspondences_proc_c(n_cams, detections, corrected):
 
     # Corresp. + positions.
     sorted_pos, sorted_corresp, num_targs = correspondences(
-        detections, corrected, cals, vpar, cpar)
+        exp.detections, exp.corrected, exp.cals, exp.vpar, exp.cpar)
 
     # Save targets only after they've been modified:
-    for i_cam in xrange(n_cams):
-        detections[i_cam].write(spar.get_img_base_name(i_cam),frame)
-
+    for i_cam in xrange(exp.n_cams):
+        exp.detections[i_cam].write(exp.spar.get_img_base_name(i_cam),frame)
 
     print("Frame " + str(frame) + " had " \
           + repr([s.shape[1] for s in sorted_pos]) + " correspondences.")
@@ -179,12 +144,13 @@ def py_determination_proc_c(n_cams, sorted_pos, sorted_corresp, corrected):
     # rt_is.close()
  
  
-def py_sequence_loop(n_cams, cpar, spar, vpar, track_par, tpar, cals):
+def py_sequence_loop(exp):
     """ Runs a sequence of detection, stereo-correspondence, determination and stores
         the data in the cam#.XXX_targets (rewritten) and rt_is.XXX files. Basically 
         it is to run the batch as in pyptv_batch.py without tracking
     """
-
+    n_cams, cpar, spar, vpar, track_par, tpar, cals = \
+        exp.n_cams, exp.cpar, exp.spar, exp.vpar, exp.track_par, exp.tpar, exp.cals
     # sequence loop for all frames
     for frame in xrange(spar.get_first(), spar.get_last()+1):
         print("processing frame %d" % frame)
@@ -194,6 +160,9 @@ def py_sequence_loop(n_cams, cpar, spar, vpar, track_par, tpar, cals):
         for i_cam in xrange(n_cams):
             imname = spar.get_img_base_name(i_cam) + str(frame)
             img = imread(imname)
+            # import pdb; pdb.set_trace()
+            print(imname,img.shape)
+            time.sleep(.1)
             hp = simple_highpass(img, cpar)
             targs = target_recognition(hp, tpar, i_cam, cpar)
             # print(targs)
