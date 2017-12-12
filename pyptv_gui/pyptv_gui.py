@@ -496,7 +496,8 @@ class TreeMenuHandler (Handler):
         on working images (object.orig_image) that were set with init action
         """
         print("highpass started")
-        info.object.orig_image = ptv.py_pre_processing_c(info.object.orig_image)
+        info.object.orig_image = \
+            ptv.py_pre_processing_c(info.object.orig_image, info.object.cpar)
         info.object.update_plots(info.object.orig_image)
         print ("highpass finished")
 

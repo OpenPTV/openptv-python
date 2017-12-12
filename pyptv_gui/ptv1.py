@@ -57,15 +57,20 @@ def py_start_proc_c(n_cams):
     for i_cam in xrange(n_cams):
         cal = Calibration()
         tmp = cpar.get_cal_img_base_name(i_cam)
+        print(tmp)
         cal.from_file(tmp+'.ori', tmp+'.addpar')
         cals.append(cal)
         
     return cpar, spar, vpar, track_par, tpar, cals
         
-def py_pre_processing_c(list_of_images):
-    """ Image pre-processing, mostly highpass filter, could be extended in the future """
-    cpar = ControlParams(len(list_of_images))
-    cpar.read_control_par('parameters/ptv.par')
+def py_pre_processing_c(list_of_images, cpar):
+    """ Image pre-processing, mostly highpass filter, could be extended in 
+    the future 
+    
+    Inputs:
+        list of images
+        cpar ControlParams() 
+    """
     newlist = []
     for img in list_of_images:
         newlist.append(preprocess_image(img, 0, cpar, 12))
@@ -78,6 +83,7 @@ def py_detection_proc_c(list_of_images, cpar, tpar, cals):
     for i_cam, img in enumerate(list_of_images):
         targs = target_recognition(img, tpar, i_cam, cpar)
         targs.sort_y()
+        print(i_cam,targs)
         detections.append(targs)
         mc = MatchedCoords(targs, cpar, cals[i_cam])
         corrected.append(mc)

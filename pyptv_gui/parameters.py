@@ -12,6 +12,7 @@ from traits.api \
     import HasTraits, Str, Float, Int, List, Bool, Enum, Instance, Button, File, Any
 
 import general
+import pyface.api as pyfaceapi
 
 # Next line is for debug (unbuffer stdout)
 #sys.stdout = sys.stderr
@@ -54,7 +55,7 @@ class Parameters(HasTraits):
         raise NotImplementedError()
 
 
-# Print detailed error to the console and show the user a friendly error window
+# # Print detailed error to the console and show the user a friendly error window
 def error(owner, msg):
     print "Exception caught, message: %s" % (msg)
     general.printException()
@@ -266,46 +267,48 @@ class CalOriParams(Parameters):
         self.set(n_img, fixp_name, img_cal_name,
                  img_ori, tiff_flag, pair_flag, chfield)
 
-    def set(self, n_img=Int, fixp_name=Str, img_cal_name=List, img_ori=List, tiff_flag=Bool, pair_flag=Bool, chfield=Int):
+    def set(self, n_img=Int, fixp_name=Str, img_cal_name=List, img_ori=List, \
+            tiff_flag=Bool, pair_flag=Bool, chfield=Int):
         self.n_img = n_img
-        (self.fixp_name, self.img_cal_name, self.img_ori, self.tiff_flag, self.pair_flag, self.chfield) = \
-            (fixp_name, img_cal_name, img_ori, tiff_flag, pair_flag, chfield)
+        (self.fixp_name, self.img_cal_name, self.img_ori, self.tiff_flag, \
+         self.pair_flag, self.chfield) = (fixp_name, img_cal_name, img_ori, \
+                                     tiff_flag, pair_flag, chfield)
 
     def filename(self):
         return "cal_ori.par"
+    
+    def fullpath(self, filename):
+        """ Creates a full path for a filename """
+        return os.path.split(self.filepath())[0].replace('parameters', \
+                         filename)
 
     def read(self):
-        # print "inside CalOriParams.read"
         try:
-            f = open(self.filepath(), 'r')
-
-            self.fixp_name = g(f)
-            if not os.path.isfile(self.fixp_name):
-                error(None, "Error reading %s." % self.fixp_name)
-
-            self.img_cal_name = []
-            self.img_ori = []
-#            for i in range(self.n_img):
-            for i in range(max_camera):
-                self.img_cal_name.append(g(f))
-                self.img_ori.append(g(f))
-
-            # test if files are present, protects from segfaults
-            for i in range(max_camera):
-                fname = self.img_cal_name[i]
-                if not os.path.isfile(fname):
-                    warning("Error reading %s." % fname)
-                fname = self.img_ori[i]
-                if not os.path.isfile(fname):
-                    warning("Error reading %s." % fname)
-
-            self.tiff_flag = (int(g(f)) != 0)  # <-- overwrites the above
-            self.pair_flag = (int(g(f)) != 0)
-            self.chfield = int(g(f))
-
-            f.close()
+            with open(self.filepath(), 'r') as f:
+                self.fixp_name = g(f)
+                if not os.path.isfile(self.fullpath(self.fixp_name)):
+                    error(None, "Error reading %s." % self.fullpath(self.fixp_name))
+    
+                self.img_cal_name = []
+                self.img_ori = []
+    #            for i in range(self.n_img):
+                for i in range(self.n_img):
+                    self.img_cal_name.append(self.fullpath(g(f)))
+                    self.img_ori.append(self.fullpath(g(f)))
+    
+                # test if files are present, protects from segfaults
+                for i in range(self.n_img):
+                    if not os.path.isfile(self.img_cal_name[i]):
+                        warning("Error reading %s." % self.img_cal_name[i])
+                    
+                    if not os.path.isfile(self.img_ori[i]):
+                        warning("Error reading %s." % self.img_ori[i])
+    
+                self.tiff_flag = (int(g(f)) != 0)  # <-- overwrites the above
+                self.pair_flag = (int(g(f)) != 0)
+                self.chfield = int(g(f))
         except:
-            error(None, "Error reading %s." % self.filepath())
+            error(None, "Error reading from %s." % self.filepath())
 
     def write(self):
         # print "inside CalOriParams.write"

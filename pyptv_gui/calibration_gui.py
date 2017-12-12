@@ -1,9 +1,15 @@
+#!/Users/alex/anaconda3/envs/py27/bin/pythonw
 """
 Copyright (c) 2008-2013, Tel Aviv University
 Copyright (c) 2013 - the OpenPTV team
 The software is distributed under the terms of MIT-like license
 http://opensource.org/licenses/MIT
 """
+
+from traits.etsconfig.api import ETSConfig
+ETSConfig.toolkit = 'qt4' 
+
+
 from traits.api \
     import HasTraits, Str, Int, List, Bool, Instance, Button
 from traitsui.api \
@@ -15,20 +21,17 @@ from chaco.api import Plot, ArrayPlotData, gray, \
 from chaco.tools.image_inspector_tool import ImageInspectorTool
 from chaco.tools.simple_zoom import SimpleZoom
 from text_box_overlay import TextBoxOverlay
+
+
+
 from scipy.misc import imread
 import os
-import sys
+
 import shutil
 from code_editor import codeEditor
 import numpy as np
 
 from quiverplot import QuiverPlot
-
-src_path = os.path.join(os.path.split(
-    os.path.abspath(os.getcwd()))[0], 'src_c')
-# print src_path
-sys.path.append(src_path)
-
 
 import ptv1 as ptv
 import parameter_gui as exp
@@ -292,15 +295,23 @@ class CalibrationGUI(HasTraits):
     # Constructor
     #---------------------------------------------------
     def __init__(self, active_path):
-        """ Initialize CalibrationGUI """
+        """ Initialize CalibrationGUI 
+        
+            Inputs:
+                active_path is the active parameters path
+        """
         
         super(CalibrationGUI, self).__init__()
         self.need_reset = 0
-        self.par_path = active_path
+        self.active_path = active_path
+        self.par_path = os.path.join(os.path.split(self.active_path)[0],\
+                                     'parameters')
         
+        os.chdir(os.path.split(self.active_path)[0])
+        print(os.getcwd())
         # read parameters
-        with open(os.path.join(self.par_path,'ptv.par'),'r') as f:
-            self.n_cams = f.readline()        
+        with open(os.path.join(self.active_path,'ptv.par'),'r') as f:
+            self.n_cams = int(f.readline())        
 
         for i in xrange(self.n_cams):
                 self.camera.append(PlotWindow())
@@ -382,29 +393,45 @@ class CalibrationGUI(HasTraits):
         
         print("Load Image fired \n")
         
+        # Initialize what is needed, copy necessary things
+        
         print("\n Copying man_ori.dat \n")
         if os.path.isfile(os.path.join(self.par_path, 'man_ori.dat')):
             shutil.copyfile(os.path.join(self.par_path, 'man_ori.dat'),
                             os.path.join(os.getcwd(), 'man_ori.dat'))
 
-        self.load_init_v1() # got images and parameters in Python.   
-        # ptv.py_calibration(1)
+        # copy parameters from active to default folder parameters/
+        par.copy_params_dir(self.active_path, self.par_path)
+                 
+        # read from parameters
         self.cpar, self.spar, self.vpar, self.track_par, self.tpar, \
             self.cals = ptv.py_start_proc_c(self.n_cams)
+            
+        self.load_init() 
+        
         self.pass_init = True
         self.status_text = "Initialization finished."
-        import pdb; pdb.set_trace()
 
     def _button_detection_fired(self):
         if self.need_reset:
             self.reset_show_images()
-            self.need_reset = 0
-        print("Detection procedure")
-        ptv.py_calibration(2)
-        x = []
-        y = []
-        x,y = ptv.py_get_pix(x, y)
-        self.drawcross("x", "y", x, y, "blue", 4)
+            self.need_reset = False
+        print(" Detection procedure \n")
+        self.status_text = "Detection procedure"
+        
+        if self.cpar.get_hp_flag():
+            self.ori_img = ptv.py_pre_processing_c(self.ori_img, self.cpar)
+        
+        self.reset_show_images()
+        
+        detections, corrected = \
+        ptv.py_detection_proc_c(self.ori_img, self.cpar, self.tpar, self.cals)
+        print ("detection proc finished")
+        x = [[i.pos()[0] for i in row] for row in detections]
+        y = [[i.pos()[1] for i in row] for row in detections]
+        print(x,y)
+        self.drawcross("x","y",x,y,"blue",4)
+        
         for i in range(len(self.camera)):
             self.camera[i]._right_click_avail = 1
 
@@ -616,39 +643,30 @@ class CalibrationGUI(HasTraits):
     def _button_restore_orient_fired(self):
         self.restore_ori_files()
 
-    def load_init_v1(self):
+    def load_init(self):
+        
+        
         calOriParams = par.CalOriParams(self.n_cams, path=self.par_path)
         calOriParams.read()
-        (fixp_name, img_cal_name, img_ori, tiff_flag, pair_flag, chfield) = \
-            (calOriParams.fixp_name, calOriParams.img_cal_name, calOriParams.img_ori,
-             calOriParams.tiff_flag, calOriParams.pair_flag, calOriParams.chfield)
-        self.ori_img_name = img_cal_name
-
-        ptvParams = par.PtvParams(path=self.par_path)
-        ptvParams.read()
-        (n_img, img_name, img_cal, hp_flag, allCam_flag, tiff_flag, imx, imy, pix_x, pix_y, chfield, mmp_n1, mmp_n2, mmp_n3, mmp_d) = \
-            (ptvParams.n_img, ptvParams.img_name, ptvParams.img_cal, ptvParams.hp_flag, ptvParams.allCam_flag, ptvParams.tiff_flag,
-             ptvParams.imx, ptvParams.imy, ptvParams.pix_x, ptvParams.pix_y, ptvParams.chfield, ptvParams.mmp_n1, ptvParams.mmp_n2, ptvParams.mmp_n3, ptvParams.mmp_d)
-        self.h_pixel = imx
-        self.v_pixel = imy
+        self.ori_img_name = calOriParams.img_cal_name
 
         self.ori_img = []
-        for i in range(len(self.camera)):
-            print ("reading " + self.ori_img_name[i])
+        for i in range(self.n_cams):
+            print ("Reading " + self.ori_img_name[i])
             try:
-                img1 = imread(self.ori_img_name[i], flatten=1).astype(np.ubyte)
-                print img1.shape
+                self.ori_img.append(imread(self.ori_img_name[i], \
+                                           flatten=True).astype(np.ubyte))
             except:
                 print("Error reading image " + self.ori_img_name[i])
                 break
-            self.ori_img.append(img1)
-            ptv.py_set_img(self.ori_img[i], i)
+            
+            # ptv.py_set_img(self.ori_img[i], i)
 
         self.reset_show_images()
+        
         # Loading manual parameters here
-
-        # TODO: rewrite using Parameters subclass
-        man_ori_path = os.path.join(os.getcwd(), 'parameters', 'man_ori.par')
+        man_ori_path = os.path.join(self.par_path, 'man_ori.par')
+        
         f = open(man_ori_path, 'r')
         if f is None:
             print('\n Error loading man_ori.par')
@@ -725,55 +743,7 @@ class CalibrationGUI(HasTraits):
                 print "protected ORI file %s " % f
                 shutil.copyfile(f + '.bck', f)
 
-    def load_init(self):
-        calOriParams = par.CalOriParams(len(self.camera), path=self.par_path)
-        calOriParams.read()
-        (fixp_name, img_cal_name, img_ori, tiff_flag, pair_flag, chfield) = \
-            (calOriParams.fixp_name, calOriParams.img_cal_name, calOriParams.img_ori,
-             calOriParams.tiff_flag, calOriParams.pair_flag, calOriParams.chfield)
-        self.ori_img_name = img_cal_name
-        for i in range(len(self.camera)):
-            print ("reading " + self.ori_img_name[i])
-            try:
-                img1 = imread(self.ori_img_name[i]).astype(np.ubyte)
-            except:
-                print("Error reading image " + self.ori_img_name[i])
-                break
-            self.ori_img.append(img1)
-            if self.camera[i]._plot is not None:
-                self.camera[i]._plot.delplot(
-                    *self.camera[i]._plot.plots.keys()[0:])
-            self.camera[i]._plot_data.set_data(
-                'imagedata', self.ori_img[i].astype(np.byte))
-            self.camera[i]._img_plot = self.camera[
-                i]._plot.img_plot('imagedata', colormap=gray)[0]
 
-            self.camera[i]._x = []
-            self.camera[i]._y = []
-            self.camera[i]._plot.overlays = []
-            self.camera[i]._img_plot.tools = []
-            self.camera[i].attach_tools()
-            self.camera[i]._plot.request_redraw()
-
-            ptv.py_set_img(self.ori_img[i], i)
-
-        f.close()
-# Loading manual parameters here
-        # TODO: rewrite using Parameters subclass
-        man_ori_path = os.path.join(os.getcwd(), 'parameters', 'man_ori.par')
-        f = open(man_ori_path, 'r')
-        if f == None:
-            printf('\nError loading man_ori.par')
-        else:
-            for i in range(len(self.camera)):
-                for j in range(4):
-                    self.camera[i].man_ori[j] = int(f.readline().strip())
-
-
-#
-#   def drawcross(self,str_x,str_y,x,y,color1,size1):
-#           for i in range(len(self.camera)):
-#                   self.camera[i].drawcross(str_x,str_y,x[i],y[i],color1,size1)
 
     def update_plots(self, images, is_float=0):
         for i in range(len(images)):
