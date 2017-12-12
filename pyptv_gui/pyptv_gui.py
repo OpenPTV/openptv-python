@@ -1,9 +1,8 @@
 #!/Users/alex/anaconda3/envs/py27/bin/pythonw
-""" PyPTV_GUI is the GUI for the 3D-PTV (http://ptv.origo.ethz.ch) written in
-Python/Enthought Traits GUI/Numpy/Chaco
+""" PyPTV_GUI is the GUI for the OpenPTV (www.openptv.net) written in
+Python with Traits, TraitsUI, Numpy, Scipy and Chaco
 
-Copyright (c) 2008-2013, Tel Aviv University
-Copyright (c) 2013 - the OpenPTV team
+Copyright (c) 2008-2017, Tel Aviv University
 The software is distributed under the terms of MIT-like license
 http://opensource.org/licenses/MIT
 
@@ -20,10 +19,11 @@ from traits.api \
     import HasTraits, Str, Int, List, Bool, Enum, Instance, Any
 from traitsui.api \
     import TreeEditor, TreeNode, View, Item, \
-            Handler, Group
+            Handler, Group, Separator, ListEditor
 
 
 from enable.component_editor import ComponentEditor
+from chaco.tools.image_inspector_tool import ImageInspectorTool
 from chaco.api import Plot, ArrayPlotData, gray
 from traitsui.menu import MenuBar, Menu, Action
 from chaco.tools.api import  ZoomTool,PanTool
@@ -84,7 +84,7 @@ from optv.tracking_framebuf import read_targets
 import general
 import parameters as par
 from parameter_gui import *
-from calibration_gui import *
+from calibration_gui import CalibrationGUI, PlotWindow
 from directory_editor import DirectoryEditorDialog
 from quiverplot import QuiverPlot
 from demo import *
@@ -196,7 +196,7 @@ class CameraWindow (HasTraits):
         self._img_plot.tools.append(pan)
 
 
-    def left_clicked_event(self): #TODO: why do we need the clicker_tool if we can handle mouse clicks here?
+    def left_clicked_event(self): #TODO: why do we need the ClickerTool if we can handle mouse clicks here?
         """ left_clicked_event - processes left click mouse avents and displays coordinate and grey value information
         on the screen
         """
@@ -364,13 +364,15 @@ class TrackThread(Thread):
         print("tracking with display thread finished")
 
 class TreeMenuHandler (Handler):
-    """ TreeMenuHanlder contains all the callback actions of menu bar, processing of tree editor, and reactions of the GUI to the user clicks
+    """ TreeMenuHanlder contains all the callback actions of menu bar, 
+    processing of tree editor, and reactions of the GUI to the user clicks
     possible function declarations:
         1) to process menubar actions:
             def function(self, info):
         parameters: self - needed for member function declaration,
                 info - contains pointer to calling parent class (e.g main_gui)
-                To access parent class objects use info.object, for example info.object.exp1 gives access to exp1 member of main_gui class
+                To access parent class objects use info.object, for example 
+                info.object.exp1 gives access to exp1 member of main_gui class
         2) to process tree editor actions:
             def function(self,editor,object) - see examples below
 
@@ -572,23 +574,12 @@ class TreeMenuHandler (Handler):
         invokes the calibration GUI
         """
         print ("Starting calibration dialog")
-        mainGui = info.object
-        mainGui.pass_init=False
-        num_cams=len(mainGui.camera_list)
-        #TODO: calibration_params should work with the actual parameters of the current run (not par.temp_path)
-        # Right. I replace par_path with info.object.exp1.active_params.par_path, Alex, 20.01. 10:43
-        mainGui.calib = calibration_gui(info.object.exp1.active_params.par_path)
-        for i in range (0,num_cams):
-                mainGui.calib.camera.append(plot_window())
-                mainGui.calib.camera[i].name="Camera"+str(i+1)
-                mainGui.calib.camera[i].cameraN=i
-                mainGui.calib.camera[i].py_rclick_delete=ptv.py_rclick_delete
-                mainGui.calib.camera[i].py_get_pix_N=ptv.py_get_pix_N
 
+        # reset the main GUI so the user will have to press Start again
+        info.object.pass_init = False
 
-        mainGui.calib.ptv=ptv
-        mainGui.calib.exp1=mainGui.exp1 #pass all the parameters to calib class
-        mainGui.calib.configure_traits()
+        calib_gui = CalibrationGUI(info)        
+        calib_gui.configure_traits()
 
     def sequence_action(self,info):
         """sequence action - implements binding to C sequence function. Original function was split into 2 parts:
@@ -820,17 +811,14 @@ menu_bar = MenuBar(
                     name='Preprocess'
                 ),
                 Menu(
-                    Action(name='3D positions',action='threed_positions'),
-                    name='3D Positions'
-                ),
+                    Action(name='3D positions',action='threed_positions',enabled_when='pass_init'),
+                    name='3D Positions'),
                 Menu(
-                    Action(name='Create calibration',action='calib_action'), #,enabled_when='pass_init'),
-                    name='Calibration'
-                ),
+                    Action(name='Create calibration',action='calib_action',enabled_when='pass_init'),
+                    name='Calibration'),
                   Menu(
                     Action(name='Sequence without display',action='sequence_action',enabled_when='pass_init'),
-                    name='Sequence'
-                ),
+                    name='Sequence'),
                 Menu(
                     Action(name='Detected Particles',action='detect_part_track',enabled_when='pass_init'),
                     Action(name='Tracking without display',action='track_no_disp_action', enabled_when='pass_init'),

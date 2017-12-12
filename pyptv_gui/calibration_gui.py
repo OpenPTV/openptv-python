@@ -36,7 +36,7 @@ import parameters as par
 
 
 # -------------------------------------------
-class clicker_tool(ImageInspectorTool):
+class ClickerTool(ImageInspectorTool):
     left_changed = Int(1)
     right_changed = Int(1)
     x = 0
@@ -52,7 +52,7 @@ class clicker_tool(ImageInspectorTool):
             ndx = plot.map_index((event.x, event.y))
 
             x_index, y_index = ndx
-            image_data = plot.value
+            # image_data = plot.value
             self.x = (x_index)
             self.y = (y_index)
             print self.x
@@ -66,7 +66,7 @@ class clicker_tool(ImageInspectorTool):
             ndx = plot.map_index((event.x, event.y))
 
             x_index, y_index = ndx
-            image_data = plot.value
+            # image_data = plot.value
             self.x = (x_index)
             self.y = (y_index)
 
@@ -80,15 +80,15 @@ class clicker_tool(ImageInspectorTool):
         pass
 
     def __init__(self, *args, **kwargs):
-        super(clicker_tool, self).__init__(*args, **kwargs)
+        super(ClickerTool, self).__init__(*args, **kwargs)
 
 
 # ----------------------------------------------------------
 
-class plot_window (HasTraits):
+class PlotWindow (HasTraits):
     _plot_data = Instance(ArrayPlotData)
     _plot = Instance(Plot)
-    _click_tool = Instance(clicker_tool)
+    _click_tool = Instance(ClickerTool)
     _img_plot = Instance(ImagePlot)
     _right_click_avail = 0
     name = Str
@@ -144,7 +144,7 @@ class plot_window (HasTraits):
                 self.drawcross("x", "y", x[0], y[0], "blue", 4)
 
     def attach_tools(self):
-        self._click_tool = clicker_tool(self._img_plot)
+        self._click_tool = ClickerTool(self._img_plot)
         self._click_tool.on_trait_change(
             self.left_clicked_event, 'left_changed')
         self._click_tool.on_trait_change(
@@ -260,7 +260,7 @@ class plot_window (HasTraits):
 # ---------------------------------------------------------
 
 
-class calibration_gui(HasTraits):
+class CalibrationGUI(HasTraits):
 
     camera = List
     status_text = Str("")
@@ -286,6 +286,26 @@ class calibration_gui(HasTraits):
     button_ap_figures = Button()
     button_edit_ori_files = Button()
     button_test = Button()
+    
+    
+    #---------------------------------------------------
+    # Constructor
+    #---------------------------------------------------
+    def __init__(self, info):
+        """ Initialize CalibrationGUI """
+        
+        super(CalibrationGUI, self).__init__()
+        self.need_reset = 0
+        self.info = info # thi is a copy of info.object from pyptv_gui.py
+        self.par_path = self.info.exp1.selected.active_params.par_path
+        
+
+        for i in xrange(self.info.object.n_cams):
+                self.camera.append(PlotWindow())
+                self.camera[i].name = "Camera"+str(i+1)
+                self.camera[i].cameraN = i
+                self.camera[i].py_rclick_delete = ptv.py_rclick_delete
+                self.camera[i].py_get_pix_N=ptv.py_get_pix_N
 
     # Defines GUI view --------------------------
 
@@ -357,16 +377,18 @@ class calibration_gui(HasTraits):
         par.copy_params_dir(self.par_path, par.temp_path)
 
     def _button_showimg_fired(self):
-        if os.path.isfile(os.path.join(self.exp1.active_params.par_path, 'man_ori.dat')):
-            shutil.copyfile(os.path.join(self.exp1.active_params.par_path, 'man_ori.dat'),
+        
+        if os.path.isfile(os.path.join(self.par_path, 'man_ori.dat')):
+            shutil.copyfile(os.path.join(self.par_path, 'man_ori.dat'),
                             os.path.join(os.getcwd(), 'man_ori.dat'))
 
         print("Load Image fired")
-        self.load_init_v1()  # < - this should be united with the Calib_Params in experiment_01a.py
+        self.load_init_v1()  
         print(len(self.ori_img))
         self.ptv.py_calibration(1)
         self.pass_init = True
         self.status_text = "Initialization finished."
+        import pdb; pdb.set_trace()
 
     def _button_detection_fired(self):
         if self.need_reset:
@@ -376,7 +398,7 @@ class calibration_gui(HasTraits):
         self.ptv.py_calibration(2)
         x = []
         y = []
-        self.ptv.py_get_pix(x, y)
+        x,y = self.ptv.py_get_pix(x, y)
         self.drawcross("x", "y", x, y, "blue", 4)
         for i in range(len(self.camera)):
             self.camera[i]._right_click_avail = 1
@@ -754,14 +776,4 @@ class calibration_gui(HasTraits):
         for i in range(len(images)):
             self.camera[i].update_image(images[i], is_float)
 
-    #---------------------------------------------------
-    # Constructor
-    #---------------------------------------------------
-    def __init__(self, par_path):
-        # this is needed according to chaco documentation
-        super(calibration_gui, self).__init__()
-        self.need_reset = 0
-        self.par_path = par_path
-        self.ptv = ptv
-        # self.ptv.py_init_proc_c() - likely that this created memory overflow
-        # on Mac
+

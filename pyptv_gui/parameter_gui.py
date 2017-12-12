@@ -1,14 +1,11 @@
 import os
-import sys
 
 from traits.api \
-    import HasTraits, Str, Float, Int, List, Bool, Enum, Instance, Button, Float
+    import HasTraits, Str, Float, Int, List, Bool, Enum, Instance
 from traitsui.api \
-    import TreeEditor, TreeNode, View, Item, VSplit, \
+    import View, Item, \
     HGroup, VGroup, Handler, Group, Tabbed, spring
-from traitsui.menu \
-    import Menu, Action, Separator
-
+    
 from traits.etsconfig.api import ETSConfig
 
 if (ETSConfig.toolkit == 'wx'):
