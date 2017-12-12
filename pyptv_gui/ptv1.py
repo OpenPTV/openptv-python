@@ -209,6 +209,15 @@ def py_sequence_loop(exp):
     # end of a sequence loop    
            
 
+def py_trackcorr_init(exp):
+    """ Reads all the necessary stuff into Tracker """
+    tracker = Tracker(exp.cpar, exp.vpar, exp.track_par, exp.spar, exp.cals, \
+                                                                        default_naming)
+    return tracker
+
+
+# ------- Utilities ----------#
+
 def py_right_click(coord_x, coord_y, n_image):
 #     global rclick_intx1,rclick_inty1,rclick_intx2,rclick_inty2,rclick_points_x1, rclick_points_y1,rclick_count,rclick_points_intx1, rclick_points_inty1
 #     

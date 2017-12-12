@@ -324,7 +324,8 @@ class CameraWindow (HasTraits):
 
 
 class TrackThread(Thread):
-    """ TrackThread is used by tracking with display function - runs separate thread that updates the gui
+    """ TrackThread is used by tracking with display function, it 
+        runs a separate thread that updates the GUI
     """
     def run(self):
         print("tracking with display thread started")
@@ -616,15 +617,9 @@ class TreeMenuHandler (Handler):
                 extern_tracker='default'
             os.chdir(current_path) # change back to working path
         if extern_tracker=='default':
-            print "Using default tracker"
-            run_info = ptv.py_trackcorr_init()
-            print run_info.get_sequence_range()
-            for step in range(*run_info.get_sequence_range()):
-                print step
-                ptv.py_trackcorr_loop(run_info, step, display=0)
-
-            #finalize tracking
-            ptv.py_trackcorr_finish(run_info, step + 1)
+            print "Using default liboptv tracker"
+            info.object.tracker = ptv.py_trackcorr_init(info.object)
+            info.object.tracker.full_forward()
         else:
             print "Tracking by using "+extern_tracker
             tracker=track.Tracking(ptv=ptv, exp1=info.object.exp1)
@@ -645,7 +640,7 @@ class TreeMenuHandler (Handler):
         """ tracking back action is handled by ptv.py_trackback_c() binding
         """
         print ("Starting back tracking")
-        ptv.py_trackback_c()
+        info.object.tracker.full_backward()
 
     def threed_positions(self,info):
         """ Extracts and saves 3D positions from the list of correspondences """
