@@ -42,7 +42,8 @@ from optv.tracker import Tracker, default_naming
 from optv.calibration import Calibration
 from optv.parameters import ControlParams, VolumeParams, TrackingParams, \
     SequenceParams, TargetParams
-
+from optv.imgcoord import image_coordinates
+from optv.transforms import convert_arr_metric_to_pixel
 
 # Parse inputs:
 
@@ -327,23 +328,36 @@ class TrackThread(Thread):
     """ TrackThread is used by tracking with display function, it 
         runs a separate thread that updates the GUI
     """
+    from collections import namedtuple
     def run(self):
         print("tracking with display thread started")
-        run_info = ptv.py_trackcorr_init() #init the relevant C function
-        for step in range(*run_info.get_sequence_range()): #Loop over each step in sequence
-            self.track_step=step
-
-            #Call C function to process current step and store results for plotting
-            self.intx0, self.intx1, self.intx2, self.inty0, self.inty1, \
-                self.inty2, self.pnr1, self.pnr2, self.pnr3, self.m_tr = \
-                ptv.py_trackcorr_loop(run_info, step, display=1)
-            self.can_continue=False
-            GUI.invoke_later(setattr, main_gui, 'update_thread_plot', True) #invoke plotting when system is ready to process it
-            while not self.can_continue: # wait while plotting of the current step is finished, then continue for the next step
+        # run_info = ptv.py_trackcorr_init() #init the relevant C function
+        # import pdb; pdb.set_trace()
+        main_gui.n_camera = len(main_gui.camera_list)
+        tracker = ptv.py_trackcorr_init(main_gui)
+        for step in range(main_gui.spar.get_first(), main_gui.spar.get_last()):
+            self.track_step = step 
+            tracker.step_forward()
+            print("Need to learn how to read frame and reproject tracked particles\n")
+            # Call C function to process current step and store results for plotting
+#             self.intx0, self.intx1, self.intx2, self.inty0, self.inty1, \
+#                 self.inty2, self.pnr1, self.pnr2, self.pnr3, self.m_tr = \
+#                 ptv.py_trackcorr_loop(run_info, step, display=1)
+            self.can_continue = True
+            
+            #invoke plotting when system is ready to process it
+            GUI.invoke_later(setattr, main_gui, 'update_thread_plot', True) 
+            
+            # wait while plotting of the current step is finished, 
+            # then continue for the next step
+            while not self.can_continue: 
                 pass
-            del self.intx0,self.intx1
-
-        ptv.py_trackcorr_finish(run_info, step + 1) # call finishing C function (after all the steps in the loop are processed)
+            
+            # del self.intx0,self.intx1
+            
+        # call finishing C function (after all the steps in the loop are processed)
+        tracker.finalize()
+         
         for i in range(len(main_gui.camera_list)): # refresh cameras
             main_gui.camera_list[i]._plot.request_redraw()
 
@@ -725,26 +739,45 @@ class TreeMenuHandler (Handler):
         seq_first=info.object.exp1.active_params.m_params.Seq_First
         seq_last=info.object.exp1.active_params.m_params.Seq_Last
         info.object.load_set_seq_image(seq_first,display_only=True)
-        n_cams=len(info.object.camera_list)
+        
+        # borrowed from flowtracks that does much better job on this
+        # I think it's too much to import also postptv here, later
+        # we will make a single conda package for the full stack
+        # todo: replace with flowtracks
+        
+        # import pdb; pdb.set_trace()
+        
+        fmt = np.dtype([('prev', 'i4'), ('next', 'i4'), ('pos', '3f8')])
+        _read_frame = lambda fix: np.atleast_1d( np.loadtxt('res/ptv_is.%d' % fix, \
+                            dtype=fmt, skiprows=1))
+        
         x1_a,x2_a,y1_a,y2_a=[],[],[],[]
-        for i in range (n_cams): #initialize result arrays
-            x1_a.append([])
-            x2_a.append([])
-            y1_a.append([])
-            y2_a.append([])
-        for i_seq in range(seq_first, seq_last):
-            x1,y1,x2,y2,m1_tr=ptv.py_traject_loop(i_seq)
-            for i in range(n_cams):
-                x1_a[i]=x1_a[i]+x1[i]
-                x2_a[i]=x2_a[i]+x2[i]
-                y1_a[i]=y1_a[i]+y1[i]
-                y2_a[i]=y2_a[i]+y2[i]
+        
+        
+        for i_cam in range (info.object.n_cams): #initialize result arrays
+            for i_seq in range(seq_first, seq_last):
+                x1,y1 = [],[]
+                frame = _read_frame(i_seq)
+                for row in frame:
+                    if row['next'] > -1:
+                        projected = image_coordinates(np.atleast_2d(row['pos']), \
+                        info.object.cals[i_cam], info.object.cpar.get_multimedia_params())
+                        pos = convert_arr_metric_to_pixel(projected, info.object.cpar)
+                        # import pdb; pdb.set_trace()
+                        
+                        x1.append(pos[0][0])
+                        y1.append(pos[0][1])
+                    
+                x1_a += x1
+                y1_a += y1
+        # for i in range(info.object.n_cams):
+            info.object.camera_list[i_cam].drawcross("trajx1","trajy1",x1_a,y1_a,"red",2)
+            # info.object.camera_list[i].drawcross("trajx2","trajy2",x2_a[i],y2_a[i],"red",2)
+            # info.object.camera_list[i].drawquiver(x1_a[i],y1_a[i],x2_a[i],y2_a[i],"green",linewidth=3.0)
+            info.object.camera_list[i_cam]._plot.request_redraw()
+        
         print "Show trajectories finished"
-        for i in range(n_cams):
-            info.object.camera_list[i].drawcross("trajx1","trajy1",x1_a[i],y1_a[i],"blue",2)
-            info.object.camera_list[i].drawcross("trajx2","trajy2",x2_a[i],y2_a[i],"red",2)
-            info.object.camera_list[i].drawquiver(x1_a[i],y1_a[i],x2_a[i],y2_a[i],"green",linewidth=3.0)
-            info.object.camera_list[i]._plot.request_redraw()
+
 
 
     def plugin_action(self,info):
@@ -800,8 +833,8 @@ menu_bar = MenuBar(
                 ),
                 Menu(
                     Action(name='Detected Particles',action='detect_part_track',enabled_when='pass_init'),
-                    Action(name='Tracking without display',action='track_no_disp_action',enabled_when='pass_init'),
-                    Action(name='Tracking with display',action='track_disp_action',enabled_when='pass_init'),
+                    Action(name='Tracking without display',action='track_no_disp_action', enabled_when='pass_init'),
+                    # not implemented Action(name='Tracking with display',action='track_disp_action',enabled_when='pass_init'),
                     Action(name='Tracking backwards',action='track_back_action',enabled_when='pass_init'),
                     Action(name='Show trajectories',action='traject_action',enabled_when='pass_init'),
                     name='Tracking'

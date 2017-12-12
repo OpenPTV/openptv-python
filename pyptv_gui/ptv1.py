@@ -7,6 +7,8 @@ from optv.tracker import Tracker, default_naming
 from optv.calibration import Calibration
 from optv.parameters import ControlParams, VolumeParams, TrackingParams, \
     SequenceParams, TargetParams
+
+
     
 from scipy.misc import imread
 import numpy as np
@@ -215,6 +217,33 @@ def py_trackcorr_init(exp):
                                                                         default_naming)
     return tracker
 
+def py_trackcorr_loop():
+    """ Supposedly returns some lists of the linked targets at every step of a tracker """
+    pass
+
+def py_traject_loop():
+    """ Used to plot trajectories after the full run 
+    
+    def py_traject_loop(seq):
+    global intx1_tr,intx2_tr,inty1_tr,inty2_tr,m1_tr
+    trajectories_c(seq, cpar)
+    intx1,intx2,inty1,inty2=[],[],[],[]
+    
+    for i in range(cpar[0].num_cams):
+        intx1_t,intx2_t,inty1_t,inty2_t=[],[],[],[]
+        for j in range(m1_tr):
+            intx1_t.append(intx1_tr[i][j])
+            inty1_t.append(inty1_tr[i][j])
+            intx2_t.append(intx2_tr[i][j])
+            inty2_t.append(inty2_tr[i][j])
+        intx1.append(intx1_t)
+        inty1.append(inty1_t)
+        intx2.append(intx2_t)
+        inty2.append(inty2_t)
+    return intx1,inty1,intx2,inty2,m1_tr
+
+    """
+    
 
 # ------- Utilities ----------#
 
