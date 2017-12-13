@@ -648,17 +648,15 @@ class CalibrationGUI(HasTraits):
         
         calOriParams = par.CalOriParams(self.n_cams, path=self.par_path)
         calOriParams.read()
-        self.ori_img_name = calOriParams.img_cal_name
+        self.img_cal_name = calOriParams.img_cal_name
 
-        self.ori_img = []
-        for i in range(self.n_cams):
-            print ("Reading " + self.ori_img_name[i])
+        self.cal_images = []
+        for imname in self.img_cal_name:
+            print ("Reading " + imname)
             try:
-                self.ori_img.append(imread(self.ori_img_name[i], \
-                                           flatten=True).astype(np.ubyte))
-            except:
-                print("Error reading image " + self.ori_img_name[i])
-                break
+                self.cal_images(imread(imname))
+            except IOError:
+                raise("Error reading image " + imname)
             
             # ptv.py_set_img(self.ori_img[i], i)
 

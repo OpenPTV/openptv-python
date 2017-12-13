@@ -73,7 +73,7 @@ def py_pre_processing_c(list_of_images, cpar):
     """
     newlist = []
     for img in list_of_images:
-        newlist.append(preprocess_image(img, 0, cpar, 12))
+        newlist.append(simple_highpass(img, cpar))
     return newlist
     
 def py_detection_proc_c(list_of_images, cpar, tpar, cals):
@@ -157,8 +157,8 @@ def py_sequence_loop(exp):
         the data in the cam#.XXX_targets (rewritten) and rt_is.XXX files. Basically 
         it is to run the batch as in pyptv_batch.py without tracking
     """
-    n_cams, cpar, spar, vpar, track_par, tpar, cals = \
-        exp.n_cams, exp.cpar, exp.spar, exp.vpar, exp.track_par, exp.tpar, exp.cals
+    n_cams, cpar, spar, vpar, tpar, cals = \
+        exp.n_cams, exp.cpar, exp.spar, exp.vpar, exp.tpar, exp.cals
     # sequence loop for all frames
     for frame in xrange(spar.get_first(), spar.get_last()+1):
         print("processing frame %d" % frame)
