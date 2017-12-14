@@ -23,7 +23,9 @@ from text_box_overlay import TextBoxOverlay
 
 from optv.imgcoord import image_coordinates
 from optv.transforms import convert_arr_metric_to_pixel
-
+from optv.orientation import match_detection_to_ref
+from optv.segmentation import target_recognition
+from optv.orientation import external_calibration, full_calibration
 
 from scipy.misc import imread
 import os
@@ -121,8 +123,8 @@ class PlotWindow (HasTraits):
         if len(self._x) < 4:
             self._x.append(self._click_tool.x)
             self._y.append(self._click_tool.y)
-        print self._x
-        print self._y
+        print(self._x, self._y)
+
         self.drawcross("coord_x", "coord_y", self._x, self._y, "red", 5)
         self._plot.overlays = []
         self.plot_num_overlay(self._x, self._y, self.man_ori)
@@ -132,8 +134,8 @@ class PlotWindow (HasTraits):
         if len(self._x) > 0:
             self._x.pop()
             self._y.pop()
-            print self._x
-            print self._y
+            print(self._x, sefl._y)
+
             self.drawcross("coord_x", "coord_y", self._x, self._y, "red", 5)
             self._plot.overlays = []
             self.plot_num_overlay(self._x, self._y, self.man_ori)
@@ -259,6 +261,7 @@ class PlotWindow (HasTraits):
             self._plot_data.set_data('imagedata', image.astype(np.float))
         else:
             self._plot_data.set_data('imagedata', image.astype(np.byte))
+
         self._plot.request_redraw()
 
 # ---------------------------------------------------------
@@ -344,8 +347,8 @@ class CalibrationGUI(HasTraits):
                          show_label=False, enabled_when='pass_init'),
                     Item(name='button_sort_grid', label='Sortgrid',
                          show_label=False, enabled_when='pass_init'),
-                    Item(name='button_sort_grid_init', label='Sortgrid = initial guess',
-                         show_label=False, enabled_when='pass_init'),
+                    #Item(name='button_sort_grid_init', label='Sortgrid = initial guess',
+                    #     show_label=False, enabled_when='pass_init'),
                     Item(name='button_orient', label='Orientation',
                          show_label=False, enabled_when='pass_init'),
                     Item(name='button_orient_part', label='Orientation with particles',
@@ -457,20 +460,20 @@ class CalibrationGUI(HasTraits):
         
         self.reset_show_images()
         
-        detections, corrected = \
+        self.detections, corrected = \
         ptv.py_detection_proc_c(self.cal_images, self.cpar, self.tpar, self.cals)
         
-        x = [[i.pos()[0] for i in row] for row in detections]
-        y = [[i.pos()[1] for i in row] for row in detections]
+        x = [[i.pos()[0] for i in row] for row in self.detections]
+        y = [[i.pos()[1] for i in row] for row in self.detections]
         
         self.drawcross("x","y",x,y,"blue",4)
         
-        for i in range(len(self.camera)):
+        for i in range(self.n_cams):
             self.camera[i]._right_click_avail = 1
 
     def _button_manual_fired(self):
         points_set = True
-        for i in range(len(self.camera)):
+        for i in range(self.n_cams):
             if len(self.camera[i]._x) < 4:
                 print "inside manual click"
                 print self.camera[i]._x
@@ -482,7 +485,7 @@ class CalibrationGUI(HasTraits):
             if f is None:
                 self.status_text = "Error saving man_ori.dat."
             else:
-                for i in range(len(self.camera)):
+                for i in range(self.n_cams):
                     for j in range(4):
                         f.write("%f %f\n" %
                                 (self.camera[i]._x[j], self.camera[i]._y[j]))
@@ -500,13 +503,13 @@ class CalibrationGUI(HasTraits):
         man_ori_path = os.path.join(self.working_folder, 'man_ori.dat')
         try:
             f = open(man_ori_path, 'r')
-        except:
+        except IOError:
             self.status_text = "Error loading man_ori.dat."
         else:
-            for i in range(len(self.camera)):
+            for i in range(self.n_cams):
                 self.camera[i]._x = []
                 self.camera[i]._y = []
-                for j in range(4):
+                for j in range(4): # 4 orientation points
                     line = f.readline().split()
                     self.camera[i]._x.append(float(line[0]))
                     self.camera[i]._y.append(float(line[1]))
@@ -516,31 +519,34 @@ class CalibrationGUI(HasTraits):
                 self.par_path, 'man_ori.dat'))
 
         # TODO: rewrite using Parameters subclass
-        man_ori_par_path = os.path.join(
-            os.getcwd(), 'parameters', 'man_ori.par')
+        man_ori_par_path = os.path.join(self.par_path, 'man_ori.par')
         f = open(man_ori_par_path, 'r')
         if f is None:
             self.status_text = "Error loading man_ori.par."
         else:
-            for i in range(len(self.camera)):
+            for i in range(self.n_cams):
                 for j in range(4):
                     self.camera[i].man_ori[j] = int(f.readline().split()[0])
-                self.status_text = "man_ori.par loded."
+                self.status_text = "man_ori.par loaded."
                 self.camera[i].left_clicked_event()
             f.close()
-            ptv.py_calibration(4)
-            self.status_text = "Loading orientation data from file finished."
+
+        self.status_text = "Loading orientation data from file finished."
 
     def _button_init_guess_fired(self):
         if self.need_reset:
             self.reset_show_images()
             self.need_reset = 0
 
-        points = self._read_cal_points()
+        self.cal_points = self._read_cal_points()
+        self._project_cal_points()
+
+
+    def _project_cal_points(self):
         x, y = [], []
         for i_cam in range(self.n_cams):  # initialize result arrays
             x1,y1 = [],[]
-            for row in points:
+            for row in self.cal_points:
                 projected = image_coordinates(np.atleast_2d(row['pos']), \
                                               self.cals[i_cam], self.cpar.get_multimedia_params())
                 pos = convert_arr_metric_to_pixel(projected, self.cpar)
@@ -555,66 +561,101 @@ class CalibrationGUI(HasTraits):
         self.status_text = "Initial guess finished."
 
     def _button_sort_grid_fired(self):
+        """
+        Uses sortgrid function of liboptv to match between the
+        calibration points in the fixp target file and the targets
+        detected in the images
+        """
         if self.need_reset:
             self.reset_show_images()
             self.need_reset = 0
-        ptv.py_calibration(5)
-        x = []
-        y = []
-        x1_cyan = []
-        y1_cyan = []
-        pnr = []
-        ptv.py_get_from_sortgrid(x, y, pnr)
-        
-        # filter out -999 which is returned for the missing points:
-        for i in range(len(self.camera)):
-            while -999 in x[i]:
-                id = x[i].index(-999)
-                del x[i][id]
-                del y[i][id]
-                del pnr[i][id]
 
-        self.drawcross("sort_x", "sort_y", x, y, "white", 4)
-        ptv.py_get_from_calib(x1_cyan, y1_cyan)
-        self.drawcross("init_x", "init_y", x1_cyan, y1_cyan, "cyan", 4)
-        for i in range(len(self.camera)):
-            self.camera[i]._plot.overlays = []
-            self.camera[i].plot_num_overlay(x[i], y[i], pnr[i])
+        for i_cam in range(self.n_cams):
+
+            # if len(self.cal_points) > len(self.detections[i_cam]):
+            #     raise ValueError("Insufficient detected points, need at least as"
+            #                  "many as fixed points")
+
+            self.sorted_targs = match_detection_to_ref(self.cals[i_cam], self.cal_points['pos'],
+                                              self.detections[i_cam], self.cpar)
+            x, y, pnr = [],[], []
+            for t in self.sorted_targs:
+                if t.pnr() != -999:
+                    pnr.append(t.pnr())
+                    x.append(t.pos()[0])
+                    y.append(t.pos()[1])
+
+            self.camera[i_cam]._plot.overlays = []
+            self.camera[i_cam].plot_num_overlay(x, y, pnr)
+
+
         self.status_text = "Sort grid finished."
 
-    def _button_sort_grid_init_fired(self):
-        if self.need_reset:
-            self.reset_show_images()
-            self.need_reset = 0
-        ptv.py_calibration(14)
-        x = []
-        y = []
-        x1_cyan = []
-        y1_cyan = []
-        pnr = []
-        ptv.py_get_from_sortgrid(x, y, pnr)
-        self.drawcross("sort_x_init", "sort_y_init", x, y, "white", 4)
-        ptv.py_get_from_calib(x1_cyan, y1_cyan)
-        self.drawcross("init_x", "init_y", x1_cyan, y1_cyan, "cyan", 4)
-        for i in range(len(self.camera)):
-            self.camera[i]._plot.overlays = []
-            self.camera[i].plot_num_overlay(x[i], y[i], pnr[i])
-        self.status_text = "Sort grid initial guess finished."
+    # def _button_sort_grid_init_fired(self):
+    #     """ TODO: Not implemented yet """
+    #     if self.need_reset:
+    #         self.reset_show_images()
+    #         self.need_reset = 0
+    #
+    #
+    #     ptv.py_calibration(14)
+    #     x = []
+    #     y = []
+    #     x1_cyan = []
+    #     y1_cyan = []
+    #     pnr = []
+    #     ptv.py_get_from_sortgrid(x, y, pnr)
+    #     self.drawcross("sort_x_init", "sort_y_init", x, y, "white", 4)
+    #     ptv.py_get_from_calib(x1_cyan, y1_cyan)
+    #     self.drawcross("init_x", "init_y", x1_cyan, y1_cyan, "cyan", 4)
+    #     for i in range(len(self.camera)):
+    #         self.camera[i]._plot.overlays = []
+    #         self.camera[i].plot_num_overlay(x[i], y[i], pnr[i])
+    #     self.status_text = "Sort grid initial guess finished."
 
     def _button_orient_fired(self):
+        """
+        update the external calibration with results of raw orientation, i.e.
+        the iterative process that adjust the initial guess' external
+        parameters (position and angle of cameras) without internal or
+        distortions.
+
+        Arguments:
+        cal_points - (n,3) array, the 3D calibration points to project.
+        manual_matching - n-length boolean array, True where the corresponding
+            row of cal_points represents the position of a manual detection
+            point. Should be in the same order that manual points are entered,
+            i.e. the order of manual detection numbers given at construction.
+        """
         # backup the ORI/ADDPAR files first
         self.backup_ori_files()
-        ptv.py_calibration(6)
-        self.protect_ori_files()
-        self.need_reset = 1
-        x1 = []
-        y1 = []
-        x2 = []
-        y2 = []
-        ptv.py_get_from_orient(x1, y1, x2, y2)
+
+        # get manual points from cal_points and use ids from man_ori.par
+        selected_points = []
+        for i_cam in range(self.n_cams):
+            for i, cp_id in enumerate(self.cal_points['id']):
+                    for j in range(4):
+                        if cp_id == self.camera[i_cam].man_ori[j]:
+                            selected_points.append(self.cal_points['pos'][i,:])
+
+            # in 3D
+            selected_points = np.array(selected_points)
+            # in pixels:
+            manual_detection_points = np.array((self.camera[i_cam]._x,self.camera[i_cam]._y))
+
+
+            success = external_calibration(self.cals[i_cam], selected_points, \
+                                           manual_detection_points, self.cpar)
+
+            if success is False:
+                print "y u no good initial guess?"
+            else:
+                self._project_cal_points()
+                # self.cal_changed.emit(self.calibration())
+
 
         self.reset_plots()
-        for i in range(len(self.camera)):
+        for i in range(self.n_cams):
             self.camera[i]._plot_data.set_data(
                 'imagedata', self.ori_img[i].astype(np.float))
             self.camera[i]._img_plot = self.camera[
@@ -726,20 +767,20 @@ class CalibrationGUI(HasTraits):
             self.camera[i].drawcross(str_x, str_y, x[i], y[i], color1, size1)
 
     def backup_ori_files(self):
-        # backup ORI/ADDPAR files to the backup_cal directory
-        calOriParams = par.CalOriParams(len(self.camera), path=self.par_path)
+        """ backup ORI/ADDPAR files to the backup_cal directory """
+        calOriParams = par.CalOriParams(self.n_cams, path=self.par_path)
         calOriParams.read()
-        for f in calOriParams.img_ori[:len(self.camera)]:
+        for f in calOriParams.img_ori[:self.n_cams]:
             shutil.copyfile(f, f + '.bck')
             g = f.replace('ori', 'addpar')
             shutil.copyfile(g, g + '.bck')
 
     def restore_ori_files(self):
         # backup ORI/ADDPAR files to the backup_cal directory
-        calOriParams = par.CalOriParams(len(self.camera), path=self.par_path)
+        calOriParams = par.CalOriParams(self.n_cams, path=self.par_path)
         calOriParams.read()
 
-        for f in calOriParams.img_ori[:len(self.camera)]:
+        for f in calOriParams.img_ori[:self.n_cams]:
             print "restored %s " % f
             shutil.copyfile(f + '.bck', f)
             g = f.replace('ori', 'addpar')
@@ -747,13 +788,14 @@ class CalibrationGUI(HasTraits):
 
     def protect_ori_files(self):
         # backup ORI/ADDPAR files to the backup_cal directory
-        calOriParams = par.CalOriParams(len(self.camera), path=self.par_path)
+        calOriParams = par.CalOriParams(self.n_cams, path=self.par_path)
         calOriParams.read()
-        for f in calOriParams.img_ori[:len(self.camera)]:
-            d = file(f, 'r').read().split()
-            if not np.all(np.isfinite(np.asarray(d).astype('f'))):
-                print "protected ORI file %s " % f
-                shutil.copyfile(f + '.bck', f)
+        for f in calOriParams.img_ori[:self.n_cams]:
+            with open(f,'r') as d:
+                d.read().split()
+                if not np.all(np.isfinite(np.asarray(d).astype('f'))): # if there NaN for instance
+                    print "protected ORI file %s " % f
+                    shutil.copyfile(f + '.bck', f)
 
 
 
@@ -762,6 +804,7 @@ class CalibrationGUI(HasTraits):
             self.camera[i].update_image(images[i], is_float)
 
     def _read_cal_points(self):
+        # type: () -> numpy.ndarray
         return np.atleast_1d(np.loadtxt(self.calParams.fixp_name, dtype=[('id', 'i4'), ('pos', '3f8')], skiprows=0))
 
 if __name__ == "__main__":

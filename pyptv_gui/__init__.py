@@ -4,8 +4,3 @@ based on Python/Enthought Traits GUI/Numpy/Chaco
 .. moduleauthors:: OpenPTV group
 
 """
-
-import os
-import sys
-
-sys.path.append(os.path.abspath('../src_c'))
