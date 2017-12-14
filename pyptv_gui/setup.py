@@ -6,14 +6,14 @@ The software is distributed under the terms of MIT-like license
 http://opensource.org/licenses/MIT
 """
 
+import os
+import sys
 from distutils.core import setup
+
+import numpy as np
 from Cython.Distutils import build_ext
 from Cython.Distutils.extension import Extension
 
-import numpy as np
-import os
-
-import sys
 if sys.platform.startswith(("linux", "darwin")):
     output_name = 'ptv1.so'
 else:

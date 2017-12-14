@@ -14,28 +14,23 @@ the present "active" parameters are kept intact except the sequence
 # from scipy.misc import imread
 import os
 import sys
-import numpy as np
-from skimage.io import imread
-
-# project specific inputs
-
 import time
 
-
-
-
-
-# import pdb; pdb.set_trace()
-
-from optv.correspondences import correspondences, MatchedCoords
-from optv.segmentation import target_recognition
-from optv.orientation import point_positions
-from optv.image_processing import preprocess_image
-#from optv.tracking_framebuf import CORRES_NONE
-from optv.tracker import Tracker, default_naming
+import numpy as np
 from optv.calibration import Calibration
+from optv.correspondences import correspondences, MatchedCoords
+from optv.image_processing import preprocess_image
+from optv.orientation import point_positions
 from optv.parameters import ControlParams, VolumeParams, TrackingParams, \
     SequenceParams, TargetParams
+from optv.segmentation import target_recognition
+# from optv.tracking_framebuf import CORRES_NONE
+from optv.tracker import Tracker, default_naming
+from skimage.io import imread
+
+
+# project specific inputs
+# import pdb; pdb.set_trace()
 
 def simple_highpass(img, cpar):
     return preprocess_image(img, 0, cpar, 12)

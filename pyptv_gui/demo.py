@@ -1,16 +1,12 @@
-from traits.api import HasTraits, Str, Float, Int,  Instance, Button,  Any, List, Bool
-from traitsui.api import Item, View
-from enable.component_editor import ComponentEditor
-from chaco.api import Plot, ArrayPlotData, gray, GridPlotContainer, ImageData, ImagePlot
-
-from chaco.tools.api import ZoomTool, PanTool
-from scipy.misc import imread, imresize
-
 from threading import Thread
-from pyface.api import GUI
-
 
 import numpy as np
+from chaco.api import Plot, ArrayPlotData, gray, GridPlotContainer
+from chaco.tools.api import ZoomTool, PanTool
+from enable.component_editor import ComponentEditor
+from scipy.misc import imread, imresize
+from traits.api import HasTraits, Str, Instance, Button, List, Bool
+from traitsui.api import Item, View
 
 
 class DemoWindow (HasTraits):

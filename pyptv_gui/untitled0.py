@@ -5,7 +5,9 @@ Created on Wed Dec 13 22:47:14 2017
 @author: alex
 """
 
-import sys, os
+import os
+import sys
+
 sys.path.append(os.path.abspath('../openptv-python/pyptv_gui/'))
 
 from ptv1 import *

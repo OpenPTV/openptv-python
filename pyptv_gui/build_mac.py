@@ -2,7 +2,6 @@
 some trick to get it compiled on mac
 """
 import os
-import shutil
 
 cwd = os.getcwd()
 

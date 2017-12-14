@@ -16,7 +16,7 @@ from traits.etsconfig.api import ETSConfig
 ETSConfig.toolkit = 'qt4' 
 
 from traits.api \
-    import HasTraits, Str, Int, List, Bool, Enum, Instance, Any
+    import Str, Int, List, Bool, Enum, Any
 from traitsui.api \
     import TreeEditor, TreeNode, View, Item, \
             Handler, Group, Separator, ListEditor
@@ -33,15 +33,9 @@ from skimage import img_as_ubyte
 from threading import Thread
 from pyface.api import GUI
 
-from optv.correspondences import correspondences, MatchedCoords
 from optv.segmentation import target_recognition
-from optv.orientation import point_positions
-from optv.image_processing import preprocess_image
 #from optv.tracking_framebuf import CORRES_NONE
-from optv.tracker import Tracker, default_naming
 from optv.calibration import Calibration
-from optv.parameters import ControlParams, VolumeParams, TrackingParams, \
-    SequenceParams, TargetParams
 from optv.imgcoord import image_coordinates
 from optv.transforms import convert_arr_metric_to_pixel
 
@@ -328,7 +322,7 @@ class TrackThread(Thread):
     """ TrackThread is used by tracking with display function, it 
         runs a separate thread that updates the GUI
     """
-    from collections import namedtuple
+
     def run(self):
         print("tracking with display thread started")
         # run_info = ptv.py_trackcorr_init() #init the relevant C function

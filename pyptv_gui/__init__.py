@@ -5,5 +5,7 @@ based on Python/Enthought Traits GUI/Numpy/Chaco
 
 """
 
-import os, sys
+import os
+import sys
+
 sys.path.append(os.path.abspath('../src_c'))

@@ -1,6 +1,7 @@
+import random
+
 import numpy as np
 from scipy.misc import imread
-import random
 
 
 class Sequence():

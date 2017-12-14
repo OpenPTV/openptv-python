@@ -6,10 +6,8 @@ from traits.api \
     import HasTraits, Code, Int, List, Str, Button, Float, Instance, Directory, File
 
 from traitsui.api \
-    import Item, Group, View, Handler, Tabbed, ListEditor
+    import Item, Group, View, Handler, ListEditor
 
-
-from traitsui.menu import MenuBar, ToolBar, Menu, Action, OKCancelButtons
 import os
 import parameters as par
 

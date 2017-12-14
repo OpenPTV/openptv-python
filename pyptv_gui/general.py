@@ -1,7 +1,6 @@
-import sys
 import os
+import sys
 import traceback
-
 
 par_dir_prefix = 'parameters'
 

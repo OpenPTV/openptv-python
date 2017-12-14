@@ -12,8 +12,7 @@ ETSConfig.toolkit = 'qt4'
 
 from traits.api \
     import HasTraits, Str, Int, List, Bool, Instance, Button
-from traits.api \
-    import View, Item, HGroup, VGroup, ListEditor
+from traitsui.api import View, Item, HGroup, VGroup, ListEditor
 from enable.component_editor import ComponentEditor
 from chaco.api import Plot, ArrayPlotData, gray, \
     ImagePlot, ArrayDataSource, LinearMapper
@@ -537,34 +536,21 @@ class CalibrationGUI(HasTraits):
             self.reset_show_images()
             self.need_reset = 0
 
+        points = self._read_cal_points()
+        x, y = [], []
+        for i_cam in range(self.n_cams):  # initialize result arrays
+            x1,y1 = [],[]
+            for row in points:
+                projected = image_coordinates(np.atleast_2d(row['pos']), \
+                                              self.cals[i_cam], self.cpar.get_multimedia_params())
+                pos = convert_arr_metric_to_pixel(projected, self.cpar)
 
+                x1.append(pos[0][0])
+                y1.append(pos[0][1])
 
+            x.append(x1)
+            y.append(y1)
 
-        x1_a, x2_a, y1_a, y2_a = [], [], [], []
-
-        for i_cam in range(info.object.n_cams):  # initialize result arrays
-            for i_seq in range(seq_first, seq_last):
-                x1, y1 = [], []
-                frame = _read_frame(i_seq)
-                for row in frame:
-                    if row['next'] > -1:
-                        projected = image_coordinates(np.atleast_2d(row['pos']), \
-                                                      info.object.cals[i_cam], info.object.cpar.get_multimedia_params())
-                        pos = convert_arr_metric_to_pixel(projected, info.object.cpar)
-                        # import pdb; pdb.set_trace()
-
-                        x1.append(pos[0][0])
-                        y1.append(pos[0][1])
-
-                x1_a += x1
-                y1_a += y1
-            # for i in range(info.object.n_cams):
-            info.object.camera_list[i_cam].drawcross("trajx1", "trajy1", x1_a, y1_a, "red", 2)
-            # info.object.camera_list[i].drawcross("trajx2","trajy2",x2_a[i],y2_a[i],"red",2)
-            # info.object.camera_list[i].drawquiver(x1_a[i],y1_a[i],x2_a[i],y2_a[i],"green",linewidth=3.0)
-            info.object.camera_list[i_cam]._plot.request_redraw()
-
-        x,y = ptv.py_calibration()
         self.drawcross("init_x", "init_y", x, y, "yellow", 3)
         self.status_text = "Initial guess finished."
 

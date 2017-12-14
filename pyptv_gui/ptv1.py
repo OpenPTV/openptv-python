@@ -1,18 +1,17 @@
-from optv.correspondences import correspondences, MatchedCoords
-from optv.segmentation import target_recognition
-from optv.orientation import point_positions
-from optv.image_processing import preprocess_image
-#from optv.tracking_framebuf import CORRES_NONE
-from optv.tracker import Tracker, default_naming
+import time
+
+import numpy as np
 from optv.calibration import Calibration
+from optv.correspondences import correspondences, MatchedCoords
+from optv.image_processing import preprocess_image
+from optv.orientation import point_positions
 from optv.parameters import ControlParams, VolumeParams, TrackingParams, \
     SequenceParams, TargetParams
-
-
-    
+from optv.segmentation import target_recognition
+# from optv.tracking_framebuf import CORRES_NONE
+from optv.tracker import Tracker, default_naming
 from scipy.misc import imread
-import numpy as np
-import time
+
 
 def simple_highpass(img, cpar):
     return preprocess_image(img, 0, cpar, 25)

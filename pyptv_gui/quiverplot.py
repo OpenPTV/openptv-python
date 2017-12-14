@@ -1,14 +1,11 @@
 
-from numpy import array, compress, matrix, newaxis, sqrt, zeros, transpose, invert, abs, argmin, around,  asarray, isnan, \
-    sum, where
-
-# Enthought library imports
-from enable.api import ColorTrait
-from traits.api import Array, Enum, Float, Instance, Int
-
 # Chaco relative imports
 from chaco.api import AbstractDataSource
 from chaco.api import ScatterPlot
+# Enthought library imports
+from enable.api import ColorTrait
+from numpy import array, compress, matrix, newaxis, sqrt, transpose, invert, isnan
+from traits.api import Array, Enum, Float, Instance, Int
 
 
 class QuiverPlot(ScatterPlot):

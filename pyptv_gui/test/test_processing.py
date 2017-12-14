@@ -1,8 +1,12 @@
 # Regression tests for the post-processing tests: sequencing, tracking, tracking 
 # back, etc.
 
+import glob
+import os
+import re
+import shutil
+import sys
 import unittest
-import os, shutil, glob, re, sys
 
 from scipy.misc import imread
 

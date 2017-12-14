@@ -4,7 +4,9 @@ To run the test, 'parameters' directory should exists in the 'tests' directory w
 The parameters directory is iterated, and .par files are read (using the suitable param classes). Then they are written back, and the files are compared.
 """
 
-import sys, os
+import os
+import sys
+
 sys.path += ['..']
 import parameters
 

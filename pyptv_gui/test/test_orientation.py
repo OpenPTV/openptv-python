@@ -1,7 +1,11 @@
 # Regression tests for the orienbtation.
 
+import glob
+import os
+import shutil
+import sys
 import unittest
-import os, shutil, glob, sys
+
 import numpy as np
 
 sys.path.append('../../src_c')

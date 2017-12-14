@@ -8,7 +8,7 @@ from traits.api \
     import HasTraits, Directory
 
 from traitsui.api \
-    import Item, Group, View
+    import Item, View
 # Define the demo class:
 
 
