@@ -539,25 +539,24 @@ class CalibrationGUI(HasTraits):
             self.need_reset = 0
 
         self.cal_points = self._read_cal_points()
-        self._project_cal_points()
+        for i_cam in range(self.n_cams):
+            self._project_cal_points(i_cam)
 
 
-    def _project_cal_points(self):
+    def _project_cal_points(self, i_cam,color="yellow"):
         x, y = [], []
-        for i_cam in range(self.n_cams):  # initialize result arrays
-            x1,y1 = [],[]
-            for row in self.cal_points:
-                projected = image_coordinates(np.atleast_2d(row['pos']), \
-                                              self.cals[i_cam], self.cpar.get_multimedia_params())
-                pos = convert_arr_metric_to_pixel(projected, self.cpar)
+        for row in self.cal_points:
+            projected = image_coordinates(np.atleast_2d(row['pos']), \
+                                          self.cals[i_cam], self.cpar.get_multimedia_params())
+            pos = convert_arr_metric_to_pixel(projected, self.cpar)
 
-                x1.append(pos[0][0])
-                y1.append(pos[0][1])
+            x.append(pos[0][0])
+            y.append(pos[0][1])
 
-            x.append(x1)
-            y.append(y1)
+        # x.append(x1)
+        # y.append(y1)
 
-        self.drawcross("init_x", "init_y", x, y, "yellow", 3)
+        self.drawcross("init_x", "init_y", x, y, color, 3,i_cam=i_cam)
         self.status_text = "Initial guess finished."
 
     def _button_sort_grid_fired(self):
@@ -627,21 +626,29 @@ class CalibrationGUI(HasTraits):
             point. Should be in the same order that manual points are entered,
             i.e. the order of manual detection numbers given at construction.
         """
+        if self.need_reset:
+            self.reset_show_images()
+            self.need_reset = 0
+
         # backup the ORI/ADDPAR files first
         self.backup_ori_files()
 
         # get manual points from cal_points and use ids from man_ori.par
-        selected_points = []
+
         for i_cam in range(self.n_cams):
+            selected_points = np.zeros((4,3))
             for i, cp_id in enumerate(self.cal_points['id']):
                     for j in range(4):
                         if cp_id == self.camera[i_cam].man_ori[j]:
-                            selected_points.append(self.cal_points['pos'][i,:])
+                            selected_points[j,:] = self.cal_points['pos'][i,:]
+                            continue
 
-            # in 3D
-            selected_points = np.array(selected_points)
             # in pixels:
             manual_detection_points = np.array((self.camera[i_cam]._x,self.camera[i_cam]._y))
+
+            print(selected_points)
+
+            print(manual_detection_points)
 
 
             success = external_calibration(self.cals[i_cam], selected_points, \
@@ -650,21 +657,22 @@ class CalibrationGUI(HasTraits):
             if success is False:
                 print "y u no good initial guess?"
             else:
-                self._project_cal_points()
+                self.camera[i_cam]._plot.overlays = []
+                self._project_cal_points(i_cam,color="red")
                 # self.cal_changed.emit(self.calibration())
 
 
-        self.reset_plots()
-        for i in range(self.n_cams):
-            self.camera[i]._plot_data.set_data(
-                'imagedata', self.ori_img[i].astype(np.float))
-            self.camera[i]._img_plot = self.camera[
-                i]._plot.img_plot('imagedata', colormap=gray)[0]
-            self.camera[i].drawquiver(x1[i], y1[i], x2[i], y2[i], "red",scale=10.0)
-            self.camera[i]._plot.index_mapper.range.set_bounds(0, self.h_pixel)
-            self.camera[i]._plot.value_mapper.range.set_bounds(0, self.v_pixel)
+        # self.reset_plots()
+        # for i in range(self.n_cams):
+        #     self.camera[i]._plot_data.set_data(
+        #         'imagedata', self.ori_img[i].astype(np.float))
+        #     self.camera[i]._img_plot = self.camera[
+        #         i]._plot.img_plot('imagedata', colormap=gray)[0]
+        #     self.camera[i].drawquiver(x1[i], y1[i], x2[i], y2[i], "red",scale=10.0)
+        #     self.camera[i]._plot.index_mapper.range.set_bounds(0, self.h_pixel)
+        #     self.camera[i]._plot.value_mapper.range.set_bounds(0, self.v_pixel)
 
-        self.drawcross("orient_x", "orient_y", x1, y1, "orange", 4)
+        # self.drawcross("orient_x", "orient_y", x1, y1, "orange", 4)
         self.status_text = "Orientation finished."
 
     def _button_orient_part_fired(self):
@@ -762,9 +770,12 @@ class CalibrationGUI(HasTraits):
         editor = codeEditor(path=self.par_path)
         editor.edit_traits(kind='livemodal')
 
-    def drawcross(self, str_x, str_y, x, y, color1, size1):
-        for i in range(len(self.camera)):
-            self.camera[i].drawcross(str_x, str_y, x[i], y[i], color1, size1)
+    def drawcross(self, str_x, str_y, x, y, color1, size1,i_cam = None):
+        if i_cam is None:
+            for i in range(self.n_cams):
+                self.camera[i].drawcross(str_x, str_y, x[i], y[i], color1, size1)
+        else:
+            self.camera[i_cam].drawcross(str_x, str_y, x, y, color1, size1)
 
     def backup_ori_files(self):
         """ backup ORI/ADDPAR files to the backup_cal directory """
