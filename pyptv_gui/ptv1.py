@@ -360,9 +360,14 @@ def py_calibration(selection):
     
     if selection == 2: # run detection of targets
         pass
-        
-        
-        
+
+    if selection == 9: # initial guess
+        """ Reads from a target file the 3D points and projects them on 
+        the calibration images
+        It is the same function as show trajectories, just read from a different
+        file 
+        """
+
     
     
     

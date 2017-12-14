@@ -12,7 +12,7 @@ ETSConfig.toolkit = 'qt4'
 
 from traits.api \
     import HasTraits, Str, Int, List, Bool, Instance, Button
-from traitsui.api \
+from traits.api \
     import View, Item, HGroup, VGroup, ListEditor
 from enable.component_editor import ComponentEditor
 from chaco.api import Plot, ArrayPlotData, gray, \
@@ -22,6 +22,8 @@ from chaco.tools.image_inspector_tool import ImageInspectorTool
 from chaco.tools.simple_zoom import SimpleZoom
 from text_box_overlay import TextBoxOverlay
 
+from optv.imgcoord import image_coordinates
+from optv.transforms import convert_arr_metric_to_pixel
 
 
 from scipy.misc import imread
@@ -298,19 +300,24 @@ class CalibrationGUI(HasTraits):
         """ Initialize CalibrationGUI 
         
             Inputs:
-                active_path is the active parameters path
+                active_path is the path to the folder of prameters
+                active_path is a subfolder of a working folder with a
+                structure of /parameters, /res, /cal, /img and so on
         """
         
         super(CalibrationGUI, self).__init__()
         self.need_reset = 0
-        self.active_path = active_path
-        self.par_path = os.path.join(os.path.split(self.active_path)[0],\
-                                     'parameters')
         
-        os.chdir(os.path.split(self.active_path)[0])
-        print(os.getcwd())
+        self.active_path = active_path
+        self.working_folder = os.path.split(self.active_path)[0]
+        self.par_path = os.path.join(self.working_folder,'parameters')
+        
+        par.copy_params_dir(self.active_path, self.par_path)
+        
+        os.chdir(os.path.abspath(self.working_folder))
+        print("Inside a folder: ", os.getcwd())
         # read parameters
-        with open(os.path.join(self.active_path,'ptv.par'),'r') as f:
+        with open(os.path.join(self.par_path,'ptv.par'),'r') as f:
             self.n_cams = int(f.readline())        
 
         for i in xrange(self.n_cams):
@@ -387,7 +394,10 @@ class CalibrationGUI(HasTraits):
     def _button_edit_cal_parameters_fired(self):
         cp = exp.Calib_Params(par_path=self.par_path)
         cp.edit_traits(kind='modal')
-        par.copy_params_dir(self.par_path, par.temp_path)
+        # at the end of a modification, copy the parameters
+        par.copy_params_dir(self.par_path, self.active_path)
+        self.cpar, self.spar, self.vpar, self.track_par, self.tpar, \
+            self.cals = ptv.py_start_proc_c(self.n_cams)
 
     def _button_showimg_fired(self):
         
@@ -398,7 +408,7 @@ class CalibrationGUI(HasTraits):
         print("\n Copying man_ori.dat \n")
         if os.path.isfile(os.path.join(self.par_path, 'man_ori.dat')):
             shutil.copyfile(os.path.join(self.par_path, 'man_ori.dat'),
-                            os.path.join(os.getcwd(), 'man_ori.dat'))
+                            os.path.join(self.working_folder, 'man_ori.dat'))
 
         # copy parameters from active to default folder parameters/
         par.copy_params_dir(self.active_path, self.par_path)
@@ -406,8 +416,32 @@ class CalibrationGUI(HasTraits):
         # read from parameters
         self.cpar, self.spar, self.vpar, self.track_par, self.tpar, \
             self.cals = ptv.py_start_proc_c(self.n_cams)
+
+        self.tpar.read('parameters/detect_plate.par')
             
-        self.load_init() 
+        print(self.tpar.get_grey_thresholds())
+            
+        self.calParams = par.CalOriParams(self.n_cams,self.par_path)
+        self.calParams.read()
+        
+        # read calibration images        
+        self.cal_images = []
+        for imname in self.calParams.img_cal_name:
+            self.cal_images.append(imread(imname))
+        
+        self.reset_show_images()
+        
+        # Loading manual parameters here
+        man_ori_path = os.path.join(self.par_path, 'man_ori.par')
+        
+        f = open(man_ori_path, 'r')
+        if f is None:
+            print('\n Error loading man_ori.par')
+        else:
+            for i in range(len(self.camera)):
+                for j in range(4):
+                    self.camera[i].man_ori[j] = int(f.readline().strip())
+        f.close()
         
         self.pass_init = True
         self.status_text = "Initialization finished."
@@ -420,16 +454,16 @@ class CalibrationGUI(HasTraits):
         self.status_text = "Detection procedure"
         
         if self.cpar.get_hp_flag():
-            self.ori_img = ptv.py_pre_processing_c(self.ori_img, self.cpar)
+            self.cal_images = ptv.py_pre_processing_c(self.cal_images, self.cpar)
         
         self.reset_show_images()
         
         detections, corrected = \
-        ptv.py_detection_proc_c(self.ori_img, self.cpar, self.tpar, self.cals)
-        print ("detection proc finished")
+        ptv.py_detection_proc_c(self.cal_images, self.cpar, self.tpar, self.cals)
+        
         x = [[i.pos()[0] for i in row] for row in detections]
         y = [[i.pos()[1] for i in row] for row in detections]
-        print(x,y)
+        
         self.drawcross("x","y",x,y,"blue",4)
         
         for i in range(len(self.camera)):
@@ -464,7 +498,7 @@ class CalibrationGUI(HasTraits):
             self.reset_show_images()
             self.need_reset = 0
 
-        man_ori_path = os.path.join(os.getcwd(), 'man_ori.dat')
+        man_ori_path = os.path.join(self.working_folder, 'man_ori.dat')
         try:
             f = open(man_ori_path, 'r')
         except:
@@ -480,7 +514,7 @@ class CalibrationGUI(HasTraits):
             self.status_text = "man_ori.dat loaded."
             f.close()
             shutil.copyfile(man_ori_path, os.path.join(
-                self.exp1.active_params.par_path, 'man_ori.dat'))
+                self.par_path, 'man_ori.dat'))
 
         # TODO: rewrite using Parameters subclass
         man_ori_par_path = os.path.join(
@@ -502,10 +536,35 @@ class CalibrationGUI(HasTraits):
         if self.need_reset:
             self.reset_show_images()
             self.need_reset = 0
-        ptv.py_calibration(9)
-        x = []
-        y = []
-        ptv.py_get_from_calib(x, y)
+
+
+
+
+        x1_a, x2_a, y1_a, y2_a = [], [], [], []
+
+        for i_cam in range(info.object.n_cams):  # initialize result arrays
+            for i_seq in range(seq_first, seq_last):
+                x1, y1 = [], []
+                frame = _read_frame(i_seq)
+                for row in frame:
+                    if row['next'] > -1:
+                        projected = image_coordinates(np.atleast_2d(row['pos']), \
+                                                      info.object.cals[i_cam], info.object.cpar.get_multimedia_params())
+                        pos = convert_arr_metric_to_pixel(projected, info.object.cpar)
+                        # import pdb; pdb.set_trace()
+
+                        x1.append(pos[0][0])
+                        y1.append(pos[0][1])
+
+                x1_a += x1
+                y1_a += y1
+            # for i in range(info.object.n_cams):
+            info.object.camera_list[i_cam].drawcross("trajx1", "trajy1", x1_a, y1_a, "red", 2)
+            # info.object.camera_list[i].drawcross("trajx2","trajy2",x2_a[i],y2_a[i],"red",2)
+            # info.object.camera_list[i].drawquiver(x1_a[i],y1_a[i],x2_a[i],y2_a[i],"green",linewidth=3.0)
+            info.object.camera_list[i_cam]._plot.request_redraw()
+
+        x,y = ptv.py_calibration()
         self.drawcross("init_x", "init_y", x, y, "yellow", 3)
         self.status_text = "Initial guess finished."
 
@@ -643,37 +702,6 @@ class CalibrationGUI(HasTraits):
     def _button_restore_orient_fired(self):
         self.restore_ori_files()
 
-    def load_init(self):
-        
-        
-        calOriParams = par.CalOriParams(self.n_cams, path=self.par_path)
-        calOriParams.read()
-        self.img_cal_name = calOriParams.img_cal_name
-
-        self.cal_images = []
-        for imname in self.img_cal_name:
-            print ("Reading " + imname)
-            try:
-                self.cal_images(imread(imname))
-            except IOError:
-                raise("Error reading image " + imname)
-            
-            # ptv.py_set_img(self.ori_img[i], i)
-
-        self.reset_show_images()
-        
-        # Loading manual parameters here
-        man_ori_path = os.path.join(self.par_path, 'man_ori.par')
-        
-        f = open(man_ori_path, 'r')
-        if f is None:
-            print('\n Error loading man_ori.par')
-        else:
-            for i in range(len(self.camera)):
-                for j in range(4):
-                    self.camera[i].man_ori[j] = int(f.readline().strip())
-        f.close()
-
     def reset_plots(self):
         for i in range(len(self.camera)):
             self.camera[i]._plot.delplot(
@@ -684,13 +712,13 @@ class CalibrationGUI(HasTraits):
             self.camera[i]._quiverplots = []
 
     def reset_show_images(self):
-        for i in range(len(self.camera)):
+        for i in range(self.n_cams):
             self.camera[i]._plot.delplot(
                 *self.camera[i]._plot.plots.keys()[0:])
             self.camera[i]._plot.overlays = []
             # self.camera[i]._plot_data.set_data('imagedata',self.ori_img[i].astype(np.byte))
             self.camera[i]._plot_data.set_data(
-                'imagedata', self.ori_img[i].astype(np.ubyte))
+                'imagedata', self.cal_images[i].astype(np.ubyte))
 
             self.camera[i]._img_plot = self.camera[
                 i]._plot.img_plot('imagedata', colormap=gray)[0]
@@ -747,8 +775,16 @@ class CalibrationGUI(HasTraits):
         for i in range(len(images)):
             self.camera[i].update_image(images[i], is_float)
 
+    def _read_cal_points(self):
+        return np.atleast_1d(np.loadtxt(self.calParams.fixp_name, dtype=[('id', 'i4'), ('pos', '3f8')], skiprows=0))
 
 if __name__ == "__main__":
-    active_path = '/Users/alex/Documents/OpenPTV/test_cavity/parametersRun1'
+    import sys
+    
+    if len(sys.argv) == 1:
+        active_path = '/Users/alex/Documents/OpenPTV/test_cavity/parametersRun1'
+    else:
+        active_path = sys.argv[0]
+        
     calib_gui = CalibrationGUI(active_path)
     calib_gui.configure_traits()

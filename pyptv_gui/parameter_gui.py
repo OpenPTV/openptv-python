@@ -16,12 +16,8 @@ elif (ETSConfig.toolkit == 'qt4'):
         DeleteAction, RenameAction
 
 import parameters as par
-import numpy as n
-
+import numpy as np
 import general
-
-# TODO: Maybe Xxx_Params classes should hold an array of xxxParams objects (e.g. ptvParams, calibParams etc.), so the correct path is always read/written
-# Answer: I do not understand the question, Alex.
 
 # define handler function for main parameters
 
@@ -83,6 +79,7 @@ class CalHandler(Handler):
     def closed(self, info, is_ok):
         calibParams = info.object
         par_path = calibParams.par_path
+        print("inside CalHandler ", par_path)
         Handler.closed(self, info, is_ok)
         if is_ok:
             img_cal_name = [calibParams.cam_1, calibParams.cam_2,
@@ -183,7 +180,7 @@ class Tracking_Params(HasTraits):
         self.dvzmax = TrackingParams.dvzmax
         self.angle = TrackingParams.angle
         self.dacc = TrackingParams.dacc
-        self.flagNewParticles = n.bool(TrackingParams.flagNewParticles)
+        self.flagNewParticles = np.bool(TrackingParams.flagNewParticles)
 
     Tracking_Params_View = View(HGroup(Item(name='dvxmin', label='dvxmin:'),
                                        Item(name='dvxmax', label='dvxmax:')), HGroup(Item(name='dvymin',
@@ -502,11 +499,11 @@ class Main_Params (HasTraits):
         self.Refr_Glass = mmp_n2
         self.Refr_Water = mmp_n3
         self.Thick_Glass = mmp_d
-        self.Accept_OnlyAllCameras = n.bool(allCam_flag)
+        self.Accept_OnlyAllCameras = np.bool(allCam_flag)
         self.Num_Cam = n_img
-        self.HighPass = n.bool(hp_flag)
+        self.HighPass = np.bool(hp_flag)
         # load unused
-        self.tiff_flag = n.bool(tiff_flag)
+        self.tiff_flag = np.bool(tiff_flag)
         self.imx = imx
         self.imy = imy
         self.pix_x = pix_x
@@ -519,7 +516,7 @@ class Main_Params (HasTraits):
         (fixp_name, img_cal_name, img_ori, tiff_flag, pair_flag, chfield) = \
             (calOriParams.fixp_name, calOriParams.img_cal_name, calOriParams.img_ori,
              calOriParams.tiff_flag, calOriParams.pair_flag, calOriParams.chfield)
-        self.pair_Flag = n.bool(pair_flag)
+        self.pair_Flag = np.bool(pair_flag)
         self.img_cal_name = img_cal_name
         self.img_ori = img_ori
         self.fixp_name = fixp_name
@@ -547,7 +544,7 @@ class Main_Params (HasTraits):
         # load pft_version
         pftVersionParams = par.PftVersionParams(path=self.par_path)
         pftVersionParams.read()
-        self.Existing_Target = n.bool(pftVersionParams.Existing_Target)
+        self.Existing_Target = np.bool(pftVersionParams.Existing_Target)
 
         # load sequence_par
         sequenceParams = par.SequenceParams(n_img, path=self.par_path)
@@ -878,8 +875,8 @@ class Calib_Params(HasTraits):
 
         self.n_img = n_img
         self.img_name = img_name
-        self.hp_flag = n.bool(hp_flag)
-        self.allCam_flag = n.bool(allCam_flag)
+        self.hp_flag = np.bool(hp_flag)
+        self.allCam_flag = np.bool(allCam_flag)
         self.mmp_n1 = mmp_n1
         self.mmp_n2 = mmp_n2
         self.mmp_n3 = mmp_n3
@@ -900,8 +897,8 @@ class Calib_Params(HasTraits):
         self.ori_cam_2 = img_ori[1]
         self.ori_cam_3 = img_ori[2]
         self.ori_cam_4 = img_ori[3]
-        self.tiff_head = n.bool(tiff_flag)
-        self.pair_head = n.bool(pair_flag)
+        self.tiff_head = np.bool(tiff_flag)
+        self.pair_head = np.bool(pair_flag)
         self.fixp_name = fixp_name
         if chfield == 0:
             self.chfield = "Frame"
@@ -971,17 +968,17 @@ class Calib_Params(HasTraits):
              orientParams.p1, orientParams.p2, orientParams.scx, orientParams.she, orientParams.interf)
 
         self.point_number_of_orientation = po_num_of_ori
-        self.principle_distance = n.bool(pri_dist)
-        self.xp = n.bool(xp)
-        self.yp = n.bool(yp)
-        self.k1 = n.bool(k1)
-        self.k2 = n.bool(k2)
-        self.k3 = n.bool(k3)
-        self.p1 = n.bool(p1)
-        self.p2 = n.bool(p2)
-        self.scx = n.bool(scx)
-        self.she = n.bool(she)
-        self.interf = n.bool(interf)
+        self.principle_distance = np.bool(pri_dist)
+        self.xp = np.bool(xp)
+        self.yp = np.bool(yp)
+        self.k1 = np.bool(k1)
+        self.k2 = np.bool(k2)
+        self.k3 = np.bool(k3)
+        self.p1 = np.bool(p1)
+        self.p2 = np.bool(p2)
+        self.scx = np.bool(scx)
+        self.she = np.bool(she)
+        self.interf = np.bool(interf)
 
         dumbbellParams = par.DumbbellParams(path=self.par_path)
         dumbbellParams.read()

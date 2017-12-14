@@ -4,6 +4,8 @@ Created on Wed Dec 13 22:47:14 2017
 
 @author: alex
 """
+from traits.etsconfig.api import ETSConfig
+ETSConfig.toolkit = 'qt4' 
 
 import sys, os
 sys.path.append(os.path.abspath('../openptv-python/pyptv_gui/'))
@@ -22,8 +24,8 @@ print(n_cams)
 im = imread('cal/cam1.tif')
 im1 = simple_highpass(im,cpar)
 
-plt.imshow(im); plt.show()
-plt.imshow(im1); plt.show()
+# plt.imshow(im); plt.show()
+# plt.imshow(im1); plt.show()
 
 
 # Sequence parameters
@@ -41,6 +43,10 @@ track_par.read_track_par('parameters/track.par')
 # Target parameters
 tpar = TargetParams()
 tpar.read('parameters/targ_rec.par')
+tpar.set_grey_thresholds([100,100,100,100])
+
+
+
 cpar = ControlParams(n_cams)
 cpar.read_control_par('parameters/ptv.par')
 
@@ -80,9 +86,24 @@ list_of_images = py_pre_processing_c(list_of_images,cpar)
 detections, _ = py_detection_proc_c(list_of_images,cpar,tpar,cals)
 
 
+
 x = [[i.pos()[0] for i in row] for row in detections]
 y = [[i.pos()[1] for i in row] for row in detections]
 
 plt.figure()
 plt.imshow(im,cmap=plt.cm.gray)
 plt.plot(x[0],y[0],'x')
+plt.show()
+
+
+detections, corrected = py_detection_proc_c(list_of_images,cpar,tpar,cals)
+
+
+
+x = [[i.pos()[0] for i in row] for row in detections]
+y = [[i.pos()[1] for i in row] for row in detections]
+
+plt.figure()
+plt.imshow(im,cmap=plt.cm.gray)
+plt.plot(x[0],y[0],'x')
+plt.show()

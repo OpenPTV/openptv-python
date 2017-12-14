@@ -69,3 +69,8 @@ tracking_framebuf.c
 tests_c/*.log
 tests_c/*.trs
 
+pyptv_gui/.idea/misc.xml
+pyptv_gui/.idea/modules.xml
+pyptv_gui/.idea/pyptv_gui.iml
+pyptv_gui/.idea/workspace.xml
+pyptv_gui/.idea/inspectionProfiles/Project_Default.xml

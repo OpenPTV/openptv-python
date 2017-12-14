@@ -2,14 +2,15 @@
 # TODO: change set() functions to either have no default values, or have
 # None value signify 'no change to parameter'.
 
+from traits.etsconfig.api import ETSConfig
+ETSConfig.toolkit = 'qt4' 
+
 import os
-import sys
-import traceback
 import shutil
 # from traits.api import *
 # import pyface.api as pyfaceapi
 from traits.api \
-    import HasTraits, Str, Float, Int, List, Bool, Enum, Instance, Button, File, Any
+    import HasTraits, Str, Float, Int, List, Bool
 
 import general
 import pyface.api as pyfaceapi
@@ -264,45 +265,40 @@ class CalOriParams(Parameters):
                  img_ori=List, tiff_flag=Bool, pair_flag=Bool,
                  chfield=Int, path=Parameters.default_path):
         Parameters.__init__(self, path)
-        self.set(n_img, fixp_name, img_cal_name,
-                 img_ori, tiff_flag, pair_flag, chfield)
-
-    def set(self, n_img=Int, fixp_name=Str, img_cal_name=List, img_ori=List, \
-            tiff_flag=Bool, pair_flag=Bool, chfield=Int):
+        
+        
         self.n_img = n_img
-        (self.fixp_name, self.img_cal_name, self.img_ori, self.tiff_flag, \
-         self.pair_flag, self.chfield) = (fixp_name, img_cal_name, img_ori, \
-                                     tiff_flag, pair_flag, chfield)
-
+        self.fixp_name, self.img_cal_name, self.img_ori, self.tiff_flag, \
+        self.pair_flag, self.chfield = fixp_name, img_cal_name, img_ori, \
+                                     tiff_flag, pair_flag, chfield
+    
     def filename(self):
         return "cal_ori.par"
-    
-    def fullpath(self, filename):
-        """ Creates a full path for a filename """
-        return os.path.split(self.filepath())[0].replace('parameters', \
-                         filename)
 
     def read(self):
+        print("Inside CalOriParams, path is ", self.filepath())
         try:
             with open(self.filepath(), 'r') as f:
                 self.fixp_name = g(f)
-                if not os.path.isfile(self.fullpath(self.fixp_name)):
-                    error(None, "Error reading %s." % self.fullpath(self.fixp_name))
+                if not os.path.isfile(self.fixp_name):
+                    error(None, "Error reading %s." % self.fixp_name)
     
                 self.img_cal_name = []
                 self.img_ori = []
     #            for i in range(self.n_img):
                 for i in range(self.n_img):
-                    self.img_cal_name.append(self.fullpath(g(f)))
-                    self.img_ori.append(self.fullpath(g(f)))
+                    self.img_cal_name.append(g(f))
+                    self.img_ori.append(g(f))
     
                 # test if files are present, protects from segfaults
-                for i in range(self.n_img):
-                    if not os.path.isfile(self.img_cal_name[i]):
-                        warning("Error reading %s." % self.img_cal_name[i])
+                for im in self.img_cal_name:
+                    if not os.path.isfile(im):
+                        warning("Error reading %s." % im)
                     
-                    if not os.path.isfile(self.img_ori[i]):
-                        warning("Error reading %s." % self.img_ori[i])
+
+                for ori in self.img_ori:
+                    if not os.path.isfile(ori):
+                        warning("Error reading %s." % ori)
     
                 self.tiff_flag = (int(g(f)) != 0)  # <-- overwrites the above
                 self.pair_flag = (int(g(f)) != 0)
@@ -311,7 +307,7 @@ class CalOriParams(Parameters):
             error(None, "Error reading from %s." % self.filepath())
 
     def write(self):
-        # print "inside CalOriParams.write"
+        print "inside CalOriParams.write \n"
         try:
             f = open(self.filepath(), 'w')
 
