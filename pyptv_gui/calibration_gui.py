@@ -619,12 +619,7 @@ class CalibrationGUI(HasTraits):
         parameters (position and angle of cameras) without internal or
         distortions.
 
-        Arguments:
-        cal_points - (n,3) array, the 3D calibration points to project.
-        manual_matching - n-length boolean array, True where the corresponding
-            row of cal_points represents the position of a manual detection
-            point. Should be in the same order that manual points are entered,
-            i.e. the order of manual detection numbers given at construction.
+        See: https://github.com/alexlib/openptv/blob/e39e7078d84d36bd1339e5b6dce97b97175845e2/liboptv/src/orientation.c#L591
         """
         if self.need_reset:
             self.reset_show_images()
@@ -655,21 +650,35 @@ class CalibrationGUI(HasTraits):
             else:
                 self.camera[i_cam]._plot.overlays = []
                 self._project_cal_points(i_cam,color="red")
+                self._write_ori(i_cam)
                 # self.cal_changed.emit(self.calibration())
 
+           # self.reset_plots()
+            # for i in range(self.n_cams):
+            #     self.camera[i]._plot_data.set_data(
+            #         'imagedata', self.ori_img[i].astype(np.float))
+            #     self.camera[i]._img_plot = self.camera[
+            #         i]._plot.img_plot('imagedata', colormap=gray)[0]
+            #     self.camera[i].drawquiver(x1[i], y1[i], x2[i], y2[i], "red",scale=10.0)
+            #     self.camera[i]._plot.index_mapper.range.set_bounds(0, self.h_pixel)
+            #     self.camera[i]._plot.value_mapper.range.set_bounds(0, self.v_pixel)
 
-        # self.reset_plots()
-        # for i in range(self.n_cams):
-        #     self.camera[i]._plot_data.set_data(
-        #         'imagedata', self.ori_img[i].astype(np.float))
-        #     self.camera[i]._img_plot = self.camera[
-        #         i]._plot.img_plot('imagedata', colormap=gray)[0]
-        #     self.camera[i].drawquiver(x1[i], y1[i], x2[i], y2[i], "red",scale=10.0)
-        #     self.camera[i]._plot.index_mapper.range.set_bounds(0, self.h_pixel)
-        #     self.camera[i]._plot.value_mapper.range.set_bounds(0, self.v_pixel)
+            # self.drawcross("orient_x", "orient_y", x1, y1, "orange", 4)
 
-        # self.drawcross("orient_x", "orient_y", x1, y1, "orange", 4)
-        self.status_text = "Orientation finished."
+
+
+            self.status_text = "Orientation finished."
+
+
+
+    def _write_ori(self, i_cam):
+        """ Writes ORI and ADDPAR files for a single calibration result
+        """
+        tmp = self.cpar.get_cal_img_base_name(i_cam)
+        print("Saving ORI and ADDPAR of ", tmp)
+        self.cals[i_cam].write(tmp+'.ori', tmp+'.addpar')
+
+
 
     def _button_orient_part_fired(self):
         self.backup_ori_files()
