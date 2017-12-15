@@ -556,7 +556,7 @@ class CalibrationGUI(HasTraits):
         # x.append(x1)
         # y.append(y1)
 
-        self.drawcross("init_x", "init_y", x, y, color, 3,i_cam=i_cam)
+        self.drawcross("init_x", "init_y", x, y, color, 3, i_cam=i_cam)
         self.status_text = "Initial guess finished."
 
     def _button_sort_grid_fired(self):
@@ -644,11 +644,7 @@ class CalibrationGUI(HasTraits):
                             continue
 
             # in pixels:
-            manual_detection_points = np.array((self.camera[i_cam]._x,self.camera[i_cam]._y))
-
-            print(selected_points)
-
-            print(manual_detection_points)
+            manual_detection_points = np.array((self.camera[i_cam]._x,self.camera[i_cam]._y)).T
 
 
             success = external_calibration(self.cals[i_cam], selected_points, \
