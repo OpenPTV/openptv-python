@@ -284,7 +284,8 @@ class CalibrationGUI(HasTraits):
     button_init_guess = Button()
     button_sort_grid = Button()
     button_sort_grid_init = Button()
-    button_orient = Button()
+    button_raw_orient = Button()
+    button_fine_orient = Button()
     button_orient_part = Button()
     button_orient_shaking = Button()
     button_orient_dumbbell = Button()
@@ -349,7 +350,9 @@ class CalibrationGUI(HasTraits):
                          show_label=False, enabled_when='pass_init'),
                     #Item(name='button_sort_grid_init', label='Sortgrid = initial guess',
                     #     show_label=False, enabled_when='pass_init'),
-                    Item(name='button_orient', label='Orientation',
+                    Item(name='button_raw_orient', label='Raw orientation',
+                         show_label=False, enabled_when='pass_init'),
+                    Item(name='button_fine_orient', label='Fine tuning',
                          show_label=False, enabled_when='pass_init'),
                     Item(name='button_orient_part', label='Orientation with particles',
                          show_label=False, enabled_when='pass_init'),
@@ -612,14 +615,14 @@ class CalibrationGUI(HasTraits):
     #         self.camera[i].plot_num_overlay(x[i], y[i], pnr[i])
     #     self.status_text = "Sort grid initial guess finished."
 
-    def _button_orient_fired(self):
+    def _button_raw_orient_fired(self):
         """
         update the external calibration with results of raw orientation, i.e.
         the iterative process that adjust the initial guess' external
         parameters (position and angle of cameras) without internal or
         distortions.
 
-        See: https://github.com/alexlib/openptv/blob/e39e7078d84d36bd1339e5b6dce97b97175845e2/liboptv/src/orientation.c#L591
+        See: https://github.com/openptv/openptv/liboptv/src/orientation.c#L591
         """
         if self.need_reset:
             self.reset_show_images()
@@ -669,15 +672,51 @@ class CalibrationGUI(HasTraits):
 
             self.status_text = "Orientation finished."
 
+    def _button_fine_orient_fired(self):
+        """
+        fine tuning of ORI and ADDPAR
 
+        """
+        if self.need_reset:
+            self.reset_show_images()
+            self.need_reset = 0
+
+        # backup the ORI/ADDPAR files first
+        self.backup_ori_files()
+
+        # get manual points from cal_points and use ids from man_ori.par
+
+        for i_cam in range(self.n_cams):
+            selected_points = np.zeros((4,3))
+            for i, cp_id in enumerate(self.cal_points['id']):
+                    for j in range(4):
+                        if cp_id == self.camera[i_cam].man_ori[j]:
+                            selected_points[j,:] = self.cal_points['pos'][i,:]
+                            continue
+
+            # in pixels:
+            manual_detection_points = np.array((self.camera[i_cam]._x,self.camera[i_cam]._y)).T
+
+
+            success = external_calibration(self.cals[i_cam], selected_points, \
+                                           manual_detection_points, self.cpar)
+
+            if success is False:
+                print "y u no good initial guess?"
+            else:
+                self.camera[i_cam]._plot.overlays = []
+                self._project_cal_points(i_cam,color="red")
+                self._write_ori(i_cam)
+
+            self.status_text = "Orientation finished."
 
     def _write_ori(self, i_cam):
         """ Writes ORI and ADDPAR files for a single calibration result
         """
-        tmp = self.cpar.get_cal_img_base_name(i_cam)
-        print("Saving ORI and ADDPAR of ", tmp)
-        self.cals[i_cam].write(tmp+'.ori', tmp+'.addpar')
-
+        ori = self.calParams.img_ori[i_cam]
+        addpar = ori.replace('ori','addpar')
+        print("Saving ORI and ADDPAR of ", ori, addpar)
+        self.cals[i_cam].write(ori, addpar)
 
 
     def _button_orient_part_fired(self):
