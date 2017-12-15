@@ -767,11 +767,19 @@ class OrientParams(Parameters):
 
     def __init__(self, pnfo=Int, cc=Int, xh=Int, yh=Int, k1=Int, k2=Int, k3=Int, p1=Int, p2=Int, scale=Int, shear=Int, interf=Int, path=Parameters.default_path):
         Parameters.__init__(self, path)
-        self.set(pnfo, cc, xh, yh, k1, k2, k3, p1, p2, scale, shear, interf)
-
-    def set(self, pnfo=Int, cc=Int, xh=Int, yh=Int, k1=Int, k2=Int, k3=Int, p1=Int, p2=Int, scale=Int, shear=Int, interf=Int):
-        (self.pnfo, self.prin_dis, self.xp, self.yp, self.k1, self.k2, self.k3, self.p1, self.p2, self.scx, self.she, self.interf) = \
-            (pnfo, cc, xh, yh, k1, k2, k3, p1, p2, scale, shear, interf)
+        self.pnfo = pnfo
+        self.cc = cc
+        self.xh = xh
+        self.yh = yh
+        self.k1 = k1
+        self.k2 = k2
+        self.k3 = k3
+        self.p1 = p1
+        self.p2 = p2
+        self.scale = scale
+        self.shear =shear
+        self.interf = interf
+        self.path = path
 
     def filename(self):
         return "orient.par"

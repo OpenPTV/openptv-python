@@ -126,10 +126,10 @@ class CalHandler(Handler):
             par.ManOriParams(calibParams.n_img, 4, nr, path=par_path).write()
             par.ExamineParams(calibParams.Examine_Flag,
                               calibParams.Combine_Flag, path=par_path).write()
-            par.OrientParams(calibParams.point_number_of_orientation, calibParams.principle_distance,
-                             calibParams.xp, calibParams.yp, calibParams.k1, calibParams.k2,
+            par.OrientParams(calibParams.point_number_of_orientation, calibParams.cc,
+                             calibParams.xh, calibParams.yh, calibParams.k1, calibParams.k2,
                              calibParams.k3, calibParams.p1, calibParams.p2,
-                             calibParams.scx, calibParams.she, calibParams.interf, path=par_path).write()
+                             calibParams.scale, calibParams.shear, calibParams.interf, path=par_path).write()
             par.ShakingParams(calibParams.shaking_first_frame, calibParams.shaking_last_frame,
                               calibParams.shaking_max_num_points, calibParams.shaking_max_num_frames, path=par_path).write()
 
@@ -749,25 +749,25 @@ class Calib_Params(HasTraits):
     Combine_Flag = Bool('', label='Combine preprocessed planes')
 
     point_number_of_orientation = Int('', label='Point number of orientation')
-    principle_distance = Bool(False, label='Princple distance')
-    xp = Bool(False, label='xp')
-    yp = Bool(False, label='yp')
-    k1 = Bool(False, label='K1')
-    k2 = Bool(False, label='K2')
-    k3 = Bool(False, label='K3')
-    p1 = Bool(False, label='P1')
-    p2 = Bool(False, label='P2')
-    scx = Bool(False, label='scx')
-    she = Bool(False, label='she')
+    cc = Bool(False, label='cc')
+    xh = Bool(False, label='xh')
+    yh = Bool(False, label='yh')
+    k1 = Bool(False, label='k1')
+    k2 = Bool(False, label='k2')
+    k3 = Bool(False, label='k3')
+    p1 = Bool(False, label='p1')
+    p2 = Bool(False, label='p2')
+    scale = Bool(False, label='scale')
+    shear = Bool(False, label='shear')
     interf = Bool(False, label='interfaces check box are available')
 
     Group4_0 = Group(Item(name='Examine_Flag'),
                      Item(name='Combine_Flag'),
                      show_border=True)
 
-    Group4_1 = Group(Item(name='principle_distance'),
-                     Item(name='xp'),
-                     Item(name='yp'),
+    Group4_1 = Group(Item(name='cc'),
+                     Item(name='xh'),
+                     Item(name='yh'),
                      orientation='vertical', columns=3)
     Group4_2 = Group(Item(name='k1'),
                      Item(name='k2'),
@@ -777,8 +777,8 @@ class Calib_Params(HasTraits):
                      orientation='vertical', columns=5,
                      label='Lens distortion(Brown)',
                      show_border=True)
-    Group4_3 = Group(Item(name='scx'),
-                     Item(name='she'),
+    Group4_3 = Group(Item(name='scale'),
+                     Item(name='shear'),
                      orientation='vertical', columns=2,
                      label='Affin transformation',
                      show_border=True)
@@ -961,21 +961,21 @@ class Calib_Params(HasTraits):
         # orientation parameters
         orientParams = par.OrientParams(path=self.par_path)
         orientParams.read()
-        (po_num_of_ori, pri_dist, xp, yp, k1, k2, k3, p1, p2, scx, she, interf) = \
-            (orientParams.pnfo, orientParams.prin_dis, orientParams.xp, orientParams.yp, orientParams.k1, orientParams.k2, orientParams.k3,
-             orientParams.p1, orientParams.p2, orientParams.scx, orientParams.she, orientParams.interf)
+        (po_num_of_ori, cc, xh, yh, k1, k2, k3, p1, p2, scale, shear, interf) = \
+            (orientParams.pnfo, orientParams.cc, orientParams.xh, orientParams.yh, orientParams.k1, orientParams.k2, orientParams.k3,
+             orientParams.p1, orientParams.p2, orientParams.scale, orientParams.shear, orientParams.interf)
 
         self.point_number_of_orientation = po_num_of_ori
-        self.principle_distance = np.bool(pri_dist)
-        self.xp = np.bool(xp)
-        self.yp = np.bool(yp)
+        self.cc = np.bool(cc)
+        self.xh = np.bool(xh)
+        self.yh = np.bool(yh)
         self.k1 = np.bool(k1)
         self.k2 = np.bool(k2)
         self.k3 = np.bool(k3)
         self.p1 = np.bool(p1)
         self.p2 = np.bool(p2)
-        self.scx = np.bool(scx)
-        self.she = np.bool(she)
+        self.scale = np.bool(scale)
+        self.shear = np.bool(shear)
         self.interf = np.bool(interf)
 
         dumbbellParams = par.DumbbellParams(path=self.par_path)

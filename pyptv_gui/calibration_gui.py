@@ -133,7 +133,7 @@ class PlotWindow(HasTraits):
         if len(self._x) > 0:
             self._x.pop()
             self._y.pop()
-            print(self._x, sefl._y)
+            print(self._x, self._y)
 
             self.drawcross("coord_x", "coord_y", self._x, self._y, "red", 5)
             self._plot.overlays = []
