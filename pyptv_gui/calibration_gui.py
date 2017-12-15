@@ -7,8 +7,8 @@ http://opensource.org/licenses/MIT
 """
 
 from traits.etsconfig.api import ETSConfig
-ETSConfig.toolkit = 'qt4' 
 
+ETSConfig.toolkit = 'qt4'
 
 from traits.api \
     import HasTraits, Str, Int, List, Bool, Instance, Button
@@ -20,21 +20,19 @@ from chaco.api import Plot, ArrayPlotData, gray, \
 from chaco.tools.image_inspector_tool import ImageInspectorTool
 from chaco.tools.simple_zoom import SimpleZoom
 from text_box_overlay import TextBoxOverlay
+from code_editor import codeEditor
+from quiverplot import QuiverPlot
+
+import numpy as np
+from scipy.misc import imread
+import os
+import shutil
 
 from optv.imgcoord import image_coordinates
 from optv.transforms import convert_arr_metric_to_pixel
 from optv.orientation import match_detection_to_ref
 from optv.segmentation import target_recognition
 from optv.orientation import external_calibration, full_calibration
-
-from scipy.misc import imread
-import os
-
-import shutil
-from code_editor import codeEditor
-import numpy as np
-
-from quiverplot import QuiverPlot
 
 import ptv1 as ptv
 import parameter_gui as exp
@@ -91,7 +89,7 @@ class ClickerTool(ImageInspectorTool):
 
 # ----------------------------------------------------------
 
-class PlotWindow (HasTraits):
+class PlotWindow(HasTraits):
     _plot_data = Instance(ArrayPlotData)
     _plot = Instance(Plot)
     _click_tool = Instance(ClickerTool)
@@ -118,6 +116,7 @@ class PlotWindow (HasTraits):
         self._quiverplots = []
 
         # -------------------------------------------------------------
+
     def left_clicked_event(self):
         print ("left clicked")
         if len(self._x) < 4:
@@ -168,6 +167,9 @@ class PlotWindow (HasTraits):
                 self.handle_mapper, 'updated', remove=False)
 
     def drawcross(self, str_x, str_y, x, y, color1, mrk_size):
+        """
+        Draws crosses on images
+        """
         self._plot_data.set_data(str_x, x)
         self._plot_data.set_data(str_y, y)
         self._plot.plot((str_x, str_y), type="scatter",
@@ -205,9 +207,9 @@ class PlotWindow (HasTraits):
                                     value_mapper=LinearMapper(
                                         range=self._plot.value_mapper.range),
                                     origin=self._plot.origin, arrow_size=0,
-                                    line_color=color, line_width=linewidth, 
-                                    ep_index=np.array(x2)*scale, 
-                                    ep_value=np.array(y2)*scale
+                                    line_color=color, line_width=linewidth,
+                                    ep_index=np.array(x2) * scale,
+                                    ep_value=np.array(y2) * scale
                                     )
             self._plot.add(quiverplot)
             # we need this to track how many quiverplots are in the current
@@ -264,16 +266,18 @@ class PlotWindow (HasTraits):
 
         self._plot.request_redraw()
 
+
 # ---------------------------------------------------------
 
 
 class CalibrationGUI(HasTraits):
-
     camera = List
     status_text = Str("")
     ori_img_name = []
     ori_img = []
     pass_init = Bool(False)
+    pass_sortgrid = Bool(False)
+    pass_raw_orient = Bool(False)
     pass_init_disabled = Bool(False)
     # -------------------------------------------------------------
     button_edit_cal_parameters = Button()
@@ -294,11 +298,10 @@ class CalibrationGUI(HasTraits):
     button_ap_figures = Button()
     button_edit_ori_files = Button()
     button_test = Button()
-    
-    
-    #---------------------------------------------------
+
+    # ---------------------------------------------------
     # Constructor
-    #---------------------------------------------------
+    # ---------------------------------------------------
     def __init__(self, active_path):
         """ Initialize CalibrationGUI 
         
@@ -307,28 +310,28 @@ class CalibrationGUI(HasTraits):
                 active_path is a subfolder of a working folder with a
                 structure of /parameters, /res, /cal, /img and so on
         """
-        
+
         super(CalibrationGUI, self).__init__()
         self.need_reset = 0
-        
+
         self.active_path = active_path
         self.working_folder = os.path.split(self.active_path)[0]
-        self.par_path = os.path.join(self.working_folder,'parameters')
-        
+        self.par_path = os.path.join(self.working_folder, 'parameters')
+
         par.copy_params_dir(self.active_path, self.par_path)
-        
+
         os.chdir(os.path.abspath(self.working_folder))
         print("Inside a folder: ", os.getcwd())
         # read parameters
-        with open(os.path.join(self.par_path,'ptv.par'),'r') as f:
-            self.n_cams = int(f.readline())        
+        with open(os.path.join(self.par_path, 'ptv.par'), 'r') as f:
+            self.n_cams = int(f.readline())
 
         for i in xrange(self.n_cams):
-                self.camera.append(PlotWindow())
-                self.camera[i].name = "Camera"+str(i+1)
-                self.camera[i].cameraN = i
-                self.camera[i].py_rclick_delete = ptv.py_rclick_delete
-                self.camera[i].py_get_pix_N=ptv.py_get_pix_N
+            self.camera.append(PlotWindow())
+            self.camera[i].name = "Camera" + str(i + 1)
+            self.camera[i].cameraN = i
+            self.camera[i].py_rclick_delete = ptv.py_rclick_delete
+            self.camera[i].py_get_pix_N = ptv.py_get_pix_N
 
     # Defines GUI view --------------------------
 
@@ -348,12 +351,12 @@ class CalibrationGUI(HasTraits):
                          show_label=False, enabled_when='pass_init'),
                     Item(name='button_sort_grid', label='Sortgrid',
                          show_label=False, enabled_when='pass_init'),
-                    #Item(name='button_sort_grid_init', label='Sortgrid = initial guess',
+                    # Item(name='button_sort_grid_init', label='Sortgrid = initial guess',
                     #     show_label=False, enabled_when='pass_init'),
                     Item(name='button_raw_orient', label='Raw orientation',
-                         show_label=False, enabled_when='pass_init'),
+                         show_label=False, enabled_when='pass_sortgrid'),
                     Item(name='button_fine_orient', label='Fine tuning',
-                         show_label=False, enabled_when='pass_init'),
+                         show_label=False, enabled_when='pass_raw_orient'),
                     Item(name='button_orient_part', label='Orientation with particles',
                          show_label=False, enabled_when='pass_init'),
                     Item(name='button_orient_dumbbell', label='Orientation from dumbbell',
@@ -371,7 +374,7 @@ class CalibrationGUI(HasTraits):
                     Item(name='button_edit_cal_parameters',
                          label='Edit calibration parameters', show_label=False),
                     Item(name='button_edit_ori_files',
-                         label='Edit ori files', show_label=False,),
+                         label='Edit ori files', show_label=False, ),
                     show_left=False,
                 ),
             ),
@@ -394,7 +397,8 @@ class CalibrationGUI(HasTraits):
         resizable=True,
         statusbar='status_text'
     )
-    #--------------------------------------------------
+
+    # --------------------------------------------------
 
     def _button_edit_cal_parameters_fired(self):
         cp = exp.Calib_Params(par_path=self.par_path)
@@ -402,14 +406,14 @@ class CalibrationGUI(HasTraits):
         # at the end of a modification, copy the parameters
         par.copy_params_dir(self.par_path, self.active_path)
         self.cpar, self.spar, self.vpar, self.track_par, self.tpar, \
-            self.cals = ptv.py_start_proc_c(self.n_cams)
+        self.cals = ptv.py_start_proc_c(self.n_cams)
 
     def _button_showimg_fired(self):
-        
+
         print("Load Image fired \n")
-        
+
         # Initialize what is needed, copy necessary things
-        
+
         print("\n Copying man_ori.dat \n")
         if os.path.isfile(os.path.join(self.par_path, 'man_ori.dat')):
             shutil.copyfile(os.path.join(self.par_path, 'man_ori.dat'),
@@ -417,28 +421,28 @@ class CalibrationGUI(HasTraits):
 
         # copy parameters from active to default folder parameters/
         par.copy_params_dir(self.active_path, self.par_path)
-                 
+
         # read from parameters
         self.cpar, self.spar, self.vpar, self.track_par, self.tpar, \
-            self.cals = ptv.py_start_proc_c(self.n_cams)
+        self.cals = ptv.py_start_proc_c(self.n_cams)
 
         self.tpar.read('parameters/detect_plate.par')
-            
+
         print(self.tpar.get_grey_thresholds())
-            
-        self.calParams = par.CalOriParams(self.n_cams,self.par_path)
+
+        self.calParams = par.CalOriParams(self.n_cams, self.par_path)
         self.calParams.read()
-        
+
         # read calibration images        
         self.cal_images = []
         for imname in self.calParams.img_cal_name:
             self.cal_images.append(imread(imname))
-        
+
         self.reset_show_images()
-        
+
         # Loading manual parameters here
         man_ori_path = os.path.join(self.par_path, 'man_ori.par')
-        
+
         f = open(man_ori_path, 'r')
         if f is None:
             print('\n Error loading man_ori.par')
@@ -447,7 +451,7 @@ class CalibrationGUI(HasTraits):
                 for j in range(4):
                     self.camera[i].man_ori[j] = int(f.readline().strip())
         f.close()
-        
+
         self.pass_init = True
         self.status_text = "Initialization finished."
 
@@ -457,20 +461,20 @@ class CalibrationGUI(HasTraits):
             self.need_reset = False
         print(" Detection procedure \n")
         self.status_text = "Detection procedure"
-        
+
         if self.cpar.get_hp_flag():
             self.cal_images = ptv.py_pre_processing_c(self.cal_images, self.cpar)
-        
+
         self.reset_show_images()
-        
+
         self.detections, corrected = \
-        ptv.py_detection_proc_c(self.cal_images, self.cpar, self.tpar, self.cals)
-        
+            ptv.py_detection_proc_c(self.cal_images, self.cpar, self.tpar, self.cals)
+
         x = [[i.pos()[0] for i in row] for row in self.detections]
         y = [[i.pos()[1] for i in row] for row in self.detections]
-        
-        self.drawcross("x","y",x,y,"blue",4)
-        
+
+        self.drawcross("x", "y", x, y, "blue", 4)
+
         for i in range(self.n_cams):
             self.camera[i]._right_click_avail = 1
 
@@ -512,7 +516,7 @@ class CalibrationGUI(HasTraits):
             for i in range(self.n_cams):
                 self.camera[i]._x = []
                 self.camera[i]._y = []
-                for j in range(4): # 4 orientation points
+                for j in range(4):  # 4 orientation points
                     line = f.readline().split()
                     self.camera[i]._x.append(float(line[0]))
                     self.camera[i]._y.append(float(line[1]))
@@ -545,8 +549,7 @@ class CalibrationGUI(HasTraits):
         for i_cam in range(self.n_cams):
             self._project_cal_points(i_cam)
 
-
-    def _project_cal_points(self, i_cam,color="yellow"):
+    def _project_cal_points(self, i_cam, color="yellow"):
         x, y = [], []
         for row in self.cal_points:
             projected = image_coordinates(np.atleast_2d(row['pos']), \
@@ -572,26 +575,29 @@ class CalibrationGUI(HasTraits):
             self.reset_show_images()
             self.need_reset = 0
 
+        self.sorted_targs = []
+
         for i_cam in range(self.n_cams):
 
             # if len(self.cal_points) > len(self.detections[i_cam]):
             #     raise ValueError("Insufficient detected points, need at least as"
             #                  "many as fixed points")
 
-            self.sorted_targs = match_detection_to_ref(self.cals[i_cam], self.cal_points['pos'],
-                                              self.detections[i_cam], self.cpar)
-            x, y, pnr = [],[], []
-            for t in self.sorted_targs:
+            targs = match_detection_to_ref(self.cals[i_cam], self.cal_points['pos'],
+                                           self.detections[i_cam], self.cpar)
+            x, y, pnr = [], [], []
+            for t in targs:
                 if t.pnr() != -999:
                     pnr.append(t.pnr())
                     x.append(t.pos()[0])
                     y.append(t.pos()[1])
 
+            self.sorted_targs.append(targs)
             self.camera[i_cam]._plot.overlays = []
             self.camera[i_cam].plot_num_overlay(x, y, pnr)
 
-
         self.status_text = "Sort grid finished."
+        self.pass_sortgrid = True
 
     # def _button_sort_grid_init_fired(self):
     #     """ TODO: Not implemented yet """
@@ -634,49 +640,36 @@ class CalibrationGUI(HasTraits):
         # get manual points from cal_points and use ids from man_ori.par
 
         for i_cam in range(self.n_cams):
-            selected_points = np.zeros((4,3))
+            selected_points = np.zeros((4, 3))
             for i, cp_id in enumerate(self.cal_points['id']):
-                    for j in range(4):
-                        if cp_id == self.camera[i_cam].man_ori[j]:
-                            selected_points[j,:] = self.cal_points['pos'][i,:]
-                            continue
+                for j in range(4):
+                    if cp_id == self.camera[i_cam].man_ori[j]:
+                        selected_points[j, :] = self.cal_points['pos'][i, :]
+                        continue
 
             # in pixels:
-            manual_detection_points = np.array((self.camera[i_cam]._x,self.camera[i_cam]._y)).T
-
+            manual_detection_points = np.array((self.camera[i_cam]._x, self.camera[i_cam]._y)).T
 
             success = external_calibration(self.cals[i_cam], selected_points, \
                                            manual_detection_points, self.cpar)
 
             if success is False:
-                print "y u no good initial guess?"
+                print("Initial guess has not been successful\n")
             else:
                 self.camera[i_cam]._plot.overlays = []
-                self._project_cal_points(i_cam,color="red")
+                self._project_cal_points(i_cam, color="red")
                 self._write_ori(i_cam)
-                # self.cal_changed.emit(self.calibration())
 
-           # self.reset_plots()
-            # for i in range(self.n_cams):
-            #     self.camera[i]._plot_data.set_data(
-            #         'imagedata', self.ori_img[i].astype(np.float))
-            #     self.camera[i]._img_plot = self.camera[
-            #         i]._plot.img_plot('imagedata', colormap=gray)[0]
-            #     self.camera[i].drawquiver(x1[i], y1[i], x2[i], y2[i], "red",scale=10.0)
-            #     self.camera[i]._plot.index_mapper.range.set_bounds(0, self.h_pixel)
-            #     self.camera[i]._plot.value_mapper.range.set_bounds(0, self.v_pixel)
-
-            # self.drawcross("orient_x", "orient_y", x1, y1, "orange", 4)
-
-
-
-            self.status_text = "Orientation finished."
+        self.status_text = "Orientation finished"
+        self.pass_raw_orient = True
 
     def _button_fine_orient_fired(self):
         """
         fine tuning of ORI and ADDPAR
 
         """
+        scale = 5000
+
         if self.need_reset:
             self.reset_show_images()
             self.need_reset = 0
@@ -684,40 +677,45 @@ class CalibrationGUI(HasTraits):
         # backup the ORI/ADDPAR files first
         self.backup_ori_files()
 
-        # get manual points from cal_points and use ids from man_ori.par
+        op = par.OrientParams()
+        op.read()
+
+        # recognized names for the flags:
+        names = ['cc', 'xh', 'yh', 'k1', 'k2', 'k3', 'p1', 'p2', 'scale', 'shear']
+        op_names = [op.cc, op.xh, op.yh, op.k1, op.k2, op.k3, op.p1, op.p2, op.scale, op.shear]
+
+        flags = []
+        for name, op_name in zip(names, op_names):
+            if op_name is True:
+                flags.append(name)
+
+        print(flags)
 
         for i_cam in range(self.n_cams):
-            selected_points = np.zeros((4,3))
-            for i, cp_id in enumerate(self.cal_points['id']):
-                    for j in range(4):
-                        if cp_id == self.camera[i_cam].man_ori[j]:
-                            selected_points[j,:] = self.cal_points['pos'][i,:]
-                            continue
+            targs = self.sorted_targs[i_cam]
+            residuals, targ_ix, err_est = full_calibration(self.cals[i_cam], self.cal_points['pos'], \
+                                                           targs, self.cpar, flags)
 
-            # in pixels:
-            manual_detection_points = np.array((self.camera[i_cam]._x,self.camera[i_cam]._y)).T
+            x, y = [], []
+            for r, t in zip(residuals, targ_ix):
+                if t != -999:
+                    pos = targs[t].pos()
+                    x.append(pos[0])
+                    y.append(pos[1])
 
+            self.camera[i_cam]._plot.overlays = []
+            self.drawcross("init_x", "init_y", x, y, 'orange', 5, i_cam=i_cam)
+            self._write_ori(i_cam)
 
-            success = external_calibration(self.cals[i_cam], selected_points, \
-                                           manual_detection_points, self.cpar)
-
-            if success is False:
-                print "y u no good initial guess?"
-            else:
-                self.camera[i_cam]._plot.overlays = []
-                self._project_cal_points(i_cam,color="red")
-                self._write_ori(i_cam)
-
-            self.status_text = "Orientation finished."
+        self.status_text = "Orientation finished."
 
     def _write_ori(self, i_cam):
         """ Writes ORI and ADDPAR files for a single calibration result
         """
         ori = self.calParams.img_ori[i_cam]
-        addpar = ori.replace('ori','addpar')
-        print("Saving ORI and ADDPAR of ", ori, addpar)
+        addpar = ori.replace('ori', 'addpar')
+        print("Saving:", ori, addpar)
         self.cals[i_cam].write(ori, addpar)
-
 
     def _button_orient_part_fired(self):
         self.backup_ori_files()
@@ -749,8 +747,8 @@ class CalibrationGUI(HasTraits):
         print seq_first, seq_last
         base_name = []
         for i in range(n_camera):
-            exec(
-                "base_name.append(self.exp1.active_params.m_params.Basename_%d_Seq)" % (i + 1))
+            exec (
+                    "base_name.append(self.exp1.active_params.m_params.Basename_%d_Seq)" % (i + 1))
             print base_name[i]
             ptv.py_sequence_init(1)
             stepshake = ptv.py_get_from_sequence_init()
@@ -814,7 +812,11 @@ class CalibrationGUI(HasTraits):
         editor = codeEditor(path=self.par_path)
         editor.edit_traits(kind='livemodal')
 
-    def drawcross(self, str_x, str_y, x, y, color1, size1,i_cam = None):
+    def drawcross(self, str_x, str_y, x, y, color1, size1, i_cam=None):
+        """
+
+        :rtype: None
+        """
         if i_cam is None:
             for i in range(self.n_cams):
                 self.camera[i].drawcross(str_x, str_y, x[i], y[i], color1, size1)
@@ -846,13 +848,11 @@ class CalibrationGUI(HasTraits):
         calOriParams = par.CalOriParams(self.n_cams, path=self.par_path)
         calOriParams.read()
         for f in calOriParams.img_ori[:self.n_cams]:
-            with open(f,'r') as d:
+            with open(f, 'r') as d:
                 d.read().split()
-                if not np.all(np.isfinite(np.asarray(d).astype('f'))): # if there NaN for instance
+                if not np.all(np.isfinite(np.asarray(d).astype('f'))):  # if there NaN for instance
                     print "protected ORI file %s " % f
                     shutil.copyfile(f + '.bck', f)
-
-
 
     def update_plots(self, images, is_float=0):
         for i in range(len(images)):
@@ -862,13 +862,14 @@ class CalibrationGUI(HasTraits):
         # type: () -> numpy.ndarray
         return np.atleast_1d(np.loadtxt(self.calParams.fixp_name, dtype=[('id', 'i4'), ('pos', '3f8')], skiprows=0))
 
+
 if __name__ == "__main__":
     import sys
-    
+
     if len(sys.argv) == 1:
         active_path = '/Users/alex/Documents/OpenPTV/test_cavity/parametersRun1'
     else:
         active_path = sys.argv[0]
-        
+
     calib_gui = CalibrationGUI(active_path)
     calib_gui.configure_traits()

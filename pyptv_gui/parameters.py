@@ -752,25 +752,26 @@ class OrientParams(Parameters):
     """
 
 #     pnfo = Int
-#     prin_dis = Int
-#     xp = Int
-#     yp = Int
+#     cc = Int
+#     xh = Int
+#     yh = Int
 #     k1 = Int
 #     k2 = Int
 #     k3 = Int
 #     p1 = Int
 #     p2 = Int
-#     scx = Int
-#     she = Int
+#     scale = Int
+#     shear = Int
 #     interf = Int
+# names = ['cc', 'xh', 'yh', 'k1', 'k2', 'k3', 'p1', 'p2', 'scale', 'shear']
 
-    def __init__(self, pnfo=Int, prin_dis=Int, xp=Int, yp=Int, k1=Int, k2=Int, k3=Int, p1=Int, p2=Int, scx=Int, she=Int, interf=Int, path=Parameters.default_path):
+    def __init__(self, pnfo=Int, cc=Int, xh=Int, yh=Int, k1=Int, k2=Int, k3=Int, p1=Int, p2=Int, scale=Int, shear=Int, interf=Int, path=Parameters.default_path):
         Parameters.__init__(self, path)
-        self.set(pnfo, prin_dis, xp, yp, k1, k2, k3, p1, p2, scx, she, interf)
+        self.set(pnfo, cc, xh, yh, k1, k2, k3, p1, p2, scale, shear, interf)
 
-    def set(self, pnfo=Int, prin_dis=Int, xp=Int, yp=Int, k1=Int, k2=Int, k3=Int, p1=Int, p2=Int, scx=Int, she=Int, interf=Int):
+    def set(self, pnfo=Int, cc=Int, xh=Int, yh=Int, k1=Int, k2=Int, k3=Int, p1=Int, p2=Int, scale=Int, shear=Int, interf=Int):
         (self.pnfo, self.prin_dis, self.xp, self.yp, self.k1, self.k2, self.k3, self.p1, self.p2, self.scx, self.she, self.interf) = \
-            (pnfo, prin_dis, xp, yp, k1, k2, k3, p1, p2, scx, she, interf)
+            (pnfo, cc, xh, yh, k1, k2, k3, p1, p2, scale, shear, interf)
 
     def filename(self):
         return "orient.par"
@@ -781,16 +782,16 @@ class OrientParams(Parameters):
             f = open(self.filepath(), 'r')
 
             self.pnfo = int(g(f))
-            self.prin_dis = int(g(f))
-            self.xp = int(g(f))
-            self.yp = int(g(f))
+            self.cc = int(g(f))
+            self.xh = int(g(f))
+            self.yh = int(g(f))
             self.k1 = int(g(f))
             self.k2 = int(g(f))
             self.k3 = int(g(f))
             self.p1 = int(g(f))
             self.p2 = int(g(f))
-            self.scx = int(g(f))
-            self.she = int(g(f))
+            self.scale = int(g(f))
+            self.shear = int(g(f))
             self.interf = int(g(f))
 
             f.close()
@@ -803,16 +804,16 @@ class OrientParams(Parameters):
             f = open(self.filepath(), 'w')
 
             f.write("%d\n" % int(self.pnfo))
-            f.write("%d\n" % int(self.prin_dis))
-            f.write("%d\n" % int(self.xp))
-            f.write("%d\n" % int(self.yp))
+            f.write("%d\n" % int(self.cc))
+            f.write("%d\n" % int(self.xh))
+            f.write("%d\n" % int(self.yh))
             f.write("%d\n" % int(self.k1))
             f.write("%d\n" % int(self.k2))
             f.write("%d\n" % int(self.k3))
             f.write("%d\n" % int(self.p1))
             f.write("%d\n" % int(self.p2))
-            f.write("%d\n" % int(self.scx))
-            f.write("%d\n" % int(self.she))
+            f.write("%d\n" % int(self.scale))
+            f.write("%d\n" % int(self.shear))
             f.write("%d\n" % int(self.interf))
 
             f.close()

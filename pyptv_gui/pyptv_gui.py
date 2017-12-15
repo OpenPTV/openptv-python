@@ -244,6 +244,7 @@ class CameraWindow (HasTraits):
         example usage:
             drawcross("coord_x","coord_y",[100,200,300],[100,200,300],2)
             draws plus markers of size 2 at points (100,100),(200,200),(200,300)
+            :rtype:
         """
         self._plot_data.set_data(str_x,x)
         self._plot_data.set_data(str_y,y)
@@ -1029,6 +1030,10 @@ class MainGUI (HasTraits):
             ptv.py_get_img(images[i],i)
 
     def drawcross(self,str_x,str_y,x,y,color1,size1):
+        """
+
+        :rtype:
+        """
         for i in range(len(self.camera_list)):
             self.camera_list[i].drawcross(str_x,str_y,x[i],y[i],color1,size1)
             self.camera_list[i]._plot.request_redraw()
