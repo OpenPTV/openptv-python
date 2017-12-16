@@ -695,6 +695,12 @@ class CalibrationGUI(HasTraits):
             targs = self.sorted_targs[i_cam]
             residuals, targ_ix, err_est = full_calibration(self.cals[i_cam], self.cal_points['pos'], \
                                                            targs, self.cpar, flags)
+            # save the results
+            self._write_ori(i_cam)
+
+
+            # Plot the output
+            # self.reset_plots()
 
             x, y = [], []
             for r, t in zip(residuals, targ_ix):
@@ -704,8 +710,15 @@ class CalibrationGUI(HasTraits):
                     y.append(pos[1])
 
             self.camera[i_cam]._plot.overlays = []
-            self.drawcross("init_x", "init_y", x, y, 'orange', 5, i_cam=i_cam)
-            self._write_ori(i_cam)
+            self.drawcross("orient_x", "orient_y", x, y, 'orange', 5, i_cam=i_cam)
+
+            # self.camera[i]._plot_data.set_data(
+            #     'imagedata', self.ori_img[i].astype(np.float))
+            # self.camera[i]._img_plot = self.camera[
+            #     i]._plot.img_plot('imagedata', colormap=gray)[0]
+            self.camera[i_cam].drawquiver(x, y, x+scale*residuals[:len(x),0], y+scale*residuals[:len(x),1], "red")
+            # self.camera[i]._plot.index_mapper.range.set_bounds(0, self.h_pixel)
+            # self.camera[i]._plot.value_mapper.range.set_bounds(0, self.v_pixel)
 
         self.status_text = "Orientation finished."
 
