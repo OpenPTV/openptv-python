@@ -33,6 +33,7 @@ from optv.transforms import convert_arr_metric_to_pixel
 from optv.orientation import match_detection_to_ref
 from optv.segmentation import target_recognition
 from optv.orientation import external_calibration, full_calibration
+from optv.calibration import Calibration
 
 import ptv1 as ptv
 import parameter_gui as exp
@@ -546,6 +547,14 @@ class CalibrationGUI(HasTraits):
             self.need_reset = 0
 
         self.cal_points = self._read_cal_points()
+
+        self.cals = []
+        for i_cam in xrange(self.n_cams):
+            cal = Calibration()
+            tmp = self.cpar.get_cal_img_base_name(i_cam)
+            cal.from_file(tmp + '.ori', tmp + '.addpar')
+            self.cals.append(cal)
+
         for i_cam in range(self.n_cams):
             self._project_cal_points(i_cam)
 

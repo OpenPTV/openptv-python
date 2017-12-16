@@ -1,4 +1,3 @@
-#!/Users/alex/anaconda3/envs/py27/bin/pythonw
 """ PyPTV_GUI is the GUI for the OpenPTV (www.openptv.net) written in
 Python with Traits, TraitsUI, Numpy, Scipy and Chaco
 
@@ -81,6 +80,9 @@ from parameter_gui import *
 from calibration_gui import CalibrationGUI, PlotWindow
 from directory_editor import DirectoryEditorDialog
 from quiverplot import QuiverPlot
+from chaco.api import Plot, ArrayPlotData, gray,  ImageData, ImagePlot, CMapImagePlot, ArrayDataSource, \
+    MultiArrayDataSource, LinearMapper
+
 from demo import *
 
 if len(sys.argv) < 2:
@@ -510,6 +512,17 @@ class TreeMenuHandler (Handler):
         y = [[i.pos()[1] for i in row] for row in info.object.detections]
         info.object.drawcross("x","y",x,y,"blue",3)
 
+    def _clean_correspondences(self,tmp):
+        """ arr is a (n_cams,N,2) array that contains four lists of
+        correspondences (each per camera)
+        """
+        x1,y1 = [],[]
+        for x in tmp:
+            tmp = x[(x != -999).any(axis=1)] # remove all rows with -999
+            x1.append(tmp[:,0])
+            y1.append(tmp[:,1])
+
+        return x1,y1
 
     def corresp_action(self,info):
         """ corresp_action calls ptv.py_correspondences_proc_c() 
@@ -526,11 +539,13 @@ class TreeMenuHandler (Handler):
         
         # import pdb; pdb.set_trace()
         # info.object.clear_plots(remove_background=False)
-        info.object.drawcross("quad_x","quad_y",quadruplets[:,:,0],quadruplets[:,:,1], \
-                                                                                "red",3) 
-        info.object.drawcross("tripl_x","tripl_y",triplets[:,:,0],triplets[:,:,1], \
-                                                                                "green",3)
-        info.object.drawcross("pair_x","pair_y",pairs[:,:,0],pairs[:,:,1],"yellow",3)
+
+        x,y = self._clean_correspondences(quadruplets)
+        info.object.drawcross("quad_x","quad_y",x,y, "red", 3)
+        x, y = self._clean_correspondences(triplets)
+        info.object.drawcross("tripl_x","tripl_y",x,y,"green",3)
+        x, y = self._clean_correspondences(pairs)
+        info.object.drawcross("pair_x","pair_y",x,y,"yellow",3)
         # info.object.drawcross("unused_x","unused_y",unused[:,0],unused[:,1],"blue",3)
 
     def init_action(self,info):
@@ -860,7 +875,7 @@ tree_editor_exp=TreeEditor(
                         children='',
                         label= 'name',
                         menu=Menu(
-                                NewAction,
+                                # NewAction,
                                 CopySetParams,
                                 RenameSetParams,
                                 DeleteSetParams,
