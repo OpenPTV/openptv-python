@@ -15,7 +15,7 @@ from traits.etsconfig.api import ETSConfig
 ETSConfig.toolkit = 'qt4' 
 
 from traits.api \
-    import Str, Int, List, Bool, Enum, Any
+    import HasTraits, Instance, Str, Int, List, Bool, Enum, Any
 from traitsui.api \
     import TreeEditor, TreeNode, View, Item, \
             Handler, Group, Separator, ListEditor
@@ -32,23 +32,12 @@ from skimage import img_as_ubyte
 from threading import Thread
 from pyface.api import GUI
 
-from optv.segmentation import target_recognition
-#from optv.tracking_framebuf import CORRES_NONE
-from optv.calibration import Calibration
 from optv.imgcoord import image_coordinates
 from optv.transforms import convert_arr_metric_to_pixel
+from optv.epipolar import epipolar_curve
+from optv.tracking_framebuf import read_targets
 
 # Parse inputs:
-
-# Get the path to the software
-if len(sys.argv) > 0:
-    software_path = os.path.split(os.path.abspath(sys.argv[0]))[0]
-else:
-    software_path = os.path.abspath(os.getcwd())
-
-if not os.path.isdir(software_path):
-    print ("Wrong experimental directory %s " % software_path)
-
 
 # Path to the experiment
 if len(sys.argv) > 1:
@@ -56,34 +45,19 @@ if len(sys.argv) > 1:
     if not os.path.isdir(exp_path):
         print ("Wrong experimental directory %s " % exp_path)
 
-
-# change directory to the software path
-try:
-    os.chdir(software_path)
-except:
-    print("Wrong software path %s " % software_path)
-
-
-src_path = os.path.join(os.path.split(software_path)[0],'src_c')
-print('src_path=', src_path)
-if not os.path.isdir(src_path):
-    print("Wrong src_c path %s" % src_path)
-sys.path.append(src_path)
-
 import ptv1 as ptv
-from optv.tracking_framebuf import read_targets
 
 # pyPTV specific imports
 import general
 import parameters as par
-from parameter_gui import *
+from parameter_gui import Experiment, Paramset
 from calibration_gui import CalibrationGUI, PlotWindow
 from directory_editor import DirectoryEditorDialog
 from quiverplot import QuiverPlot
 from chaco.api import Plot, ArrayPlotData, gray,  ImageData, ImagePlot, CMapImagePlot, ArrayDataSource, \
     MultiArrayDataSource, LinearMapper
 
-from demo import *
+# from demo import *
 
 if len(sys.argv) < 2:
     # directory_dialog = DirectoryEditorDialog()
@@ -242,16 +216,16 @@ class CameraWindow (HasTraits):
             x - array of x coordinates
             y - array of y coordinates
             mrk_size - marker size
-            makrer1 - type of marker, e.g "plus","circle"
+            marker1 - type of marker, e.g "plus","circle"
         example usage:
             drawcross("coord_x","coord_y",[100,200,300],[100,200,300],2)
             draws plus markers of size 2 at points (100,100),(200,200),(200,300)
             :rtype:
         """
-        self._plot_data.set_data(str_x,x)
-        self._plot_data.set_data(str_y,y)
+        self._plot_data.set_data(str_x,np.atleast_1d(x))
+        self._plot_data.set_data(str_y,np.atleast_1d(y))
         self._plot.plot((str_x,str_y),type="scatter",color=color1,marker=marker1,marker_size=mrk_size)
-        #self._plot.request_redraw()
+        self._plot.request_redraw()
 
     def drawquiver(self,x1c,y1c,x2c,y2c,color,linewidth=1.0):
         """ drawquiver draws multiple lines at once on the screen x1,y1->x2,y2 in the current camera window
@@ -570,7 +544,7 @@ class TreeMenuHandler (Handler):
         mainGui.clear_plots()
         print("\n Init action \n")
         mainGui.update_plots(mainGui.orig_image,is_float=False)
-        mainGui.set_images(mainGui.orig_image)
+        # mainGui.set_images(mainGui.orig_image)
 
         info.object.cpar, info.object.spar, info.object.vpar, info.object.track_par, \
             info.object.tpar, info.object.cals = ptv.py_start_proc_c(info.object.n_cams)
@@ -973,60 +947,56 @@ class MainGUI (HasTraits):
     def __init__(self):
         super(MainGUI, self).__init__()
         colors = ['yellow','green','red','blue']
-        self.exp1=Experiment()
+        self.exp1 = Experiment()
         self.exp1.populate_runs(exp_path)
-        self.plugins=Plugins()
-        self.n_cams=self.exp1.active_params.m_params.Num_Cam
-        print self.n_cams
+        self.plugins = Plugins()
+        self.n_cams = self.exp1.active_params.m_params.Num_Cam
         self.orig_image=[]
-        self.hp_image=[]
-        self.current_camera=0
+        self.current_camera = 0
         self.camera_list = []
         for i in range(self.n_cams):
             self.camera_list.append(CameraWindow(colors[i]))
             self.camera_list[i].name="Camera "+str(i+1)
             self.camera_list[i].on_trait_change(self.right_click_process, 'rclicked')
             self.orig_image.append(np.array([],dtype=np.ubyte))
-            self.hp_image.append(np.array([]))
-        ptv.py_init_proc_c() #intialization of globals in ptv C module
 
-    #------------------------------------------------------
     def right_click_process(self):
+        """
+        Shows a line in camera color code corresponding to a point on another
+        camera's view plane.
+        """
+        num_points = 2
 
-        x_clicked, y_clicked = self.camera_list[i]._click_tool.x, \
-                               self.camera_list[i]._click_tool.y
 
-        for i_cam in range(self.n_cams):
+        for i in range(self.n_cams):
+            # get the clicked point (i guess it won't exist in cameras not clicked)
+            point = np.array([self.camera_list[i]._click_tool.x, self.camera_list[i]._click_tool.y],dtype='float64')
 
+            if ~np.allclose(point,[0.,0.]):
+            # mark the point with a circle
+                self.camera_list[i].rclicked = 0
+                self.camera_list[i].drawcross("right_p_x0", "right_p_y0", point[0],point[1],"cyan", 3, marker1="circle")
+                # self.camera_list[i]._plot.request_redraw()
+                # look for points along epipolars for other cameras
+                for j in range(self.n_cams):
+                    if i == j:
+                        continue
+                    pts = epipolar_curve(point, self.cals[i],self.cals[j], num_points,
+                                     self.cpar, self.vpar)
 
-                n_cams=i
-
-                x1,y1,x2,y2,x1_points,y1_points,intx1,inty1=ptv.py_right_click(x_clicked,y_clicked,n_cams)
-                if (x1!=-1 and y1!=-1):
-                    self.camera_list[n_cams].right_p_x0.append(intx1)
-                    self.camera_list[n_cams].right_p_y0.append(inty1)
-                    self.camera_list[n_cams].drawcross("right_p_x0","right_p_y0",
-                        self.camera_list[n_cams].right_p_x0\
-                    ,self.camera_list[n_cams].right_p_y0,"cyan",3,marker1="circle")
-                    self.camera_list[n_cams]._plot.request_redraw()
-                    print "right click process"
-                    print x1,y1,x2,y2,x1_points,y1_points
-                    color_camera=['yellow','red','blue','green']
-                    #print [x1[i]],[y1[i]],[x2[i]],[y2[i]]
-                    for j in range(len(self.camera_list)):
-                        if j is not n_cams:
-                            count=self.camera_list[i]._plot.plots.keys()
-                            self.camera_list[j].drawline("right_cl_x"+str(len(count)),\
-                            "right_cl_y"+str(len(count)),x1[j],y1[j],x2[j],y2[j],\
-                            color_camera[n_cams])
-                            self.camera_list[j]._plot.index_mapper.range.set_bounds(0,h_img)
-                            self.camera_list[j]._plot.value_mapper.range.set_bounds(0,v_img)
-                            self.camera_list[j].drawcross("right_p_x1","right_p_y1",x1_points[j],y1_points[j],\
-                            color_camera[n_cams],2)
-                            self.camera_list[j]._plot.request_redraw()
-                else:
-                    print ("No nearby points for epipolar lines")
-                self.camera_list[i].rclicked=0
+                    if len(pts) > 1:
+                        # for p in xrange(pts.shape[0]-1):
+                        #     self.camera_list[j].drawline("right_cl_x", "right_cl_y",pts[p,0],pts[p,1],\
+                        #                                  pts[p+1,0],pts[p+1,1],color_camera[j])
+                        self.camera_list[j].drawline("right_cl_x", "right_cl_y", pts[0, 0], pts[0, 1], \
+                                                     pts[-1,0],pts[-1,1], color_camera[j])
+                                                     #                                  pts[p+1,0],pts[p+1,1],
+                        #self.camera_list[j]._plot.index_mapper.range.set_bounds(0,h_img)
+                        # self.camera_list[j]._plot.value_mapper.range.set_bounds(0,v_img)
+                        # self.camera_list[j].drawcross("right_p_x1","right_p_y1",pts[:,0],pts[:,1], color_camera[j],3)
+                        # self.camera_list[j]._plot.request_redraw()
+                    # else:
+                        # print ("No nearby points for epipolar lines")
 
 
     def update_plots(self,images,is_float=False):
@@ -1035,23 +1005,22 @@ class MainGUI (HasTraits):
             self.camera_list[i].update_image(images[i],is_float)
             self.camera_list[i]._plot.request_redraw()
 
-    # set_images sets ptv's C module img[] array
-    def set_images(self,images):
-        for i in range(len(images)):
-            ptv.py_set_img(images[i],i)
-
-    def get_images(self,plot_index,images):
-        for i in plot_index:
-            ptv.py_get_img(images[i],i)
+    # # set_images sets ptv's C module img[] array
+    # def set_images(self,images):
+    #     for i in range(len(images)):
+    #         ptv.py_set_img(images[i],i)
+    #
+    # def get_images(self,plot_index,images):
+    #     for i in plot_index:
+    #         ptv.py_get_img(images[i],i)
 
     def drawcross(self,str_x,str_y,x,y,color1,size1):
         """
-
-        :rtype:
+        Draws crosses
         """
-        for i in range(len(self.camera_list)):
-            self.camera_list[i].drawcross(str_x,str_y,x[i],y[i],color1,size1)
-            self.camera_list[i]._plot.request_redraw()
+        for i,cam in enumerate(self.camera_list):
+            cam.drawcross(str_x,str_y,x[i],y[i],color1,size1)
+            cam._plot.request_redraw()
 
     def clear_plots(self,remove_background=True):
         # this function deletes all plotes except basic image plot
@@ -1117,8 +1086,8 @@ class MainGUI (HasTraits):
         if not hasattr(self,'base_name'):
             self.base_name=[]
             for i in range (n_cams):
-                exec("self.base_name.append(self.exp1.active_params.m_params.Basename_%d_Seq)" %(i+1))
-                print self.base_name[i]
+                exec("self.base_name.append(self.exp1.active_params.m_params.Basename_%d_Seq)" % (i+1))
+                print(self.base_name[i])
 
         i=seq
         seq_ch = "%04d" % i

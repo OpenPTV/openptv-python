@@ -21,7 +21,7 @@ class DirectoryEditorDialog (HasTraits):
     # Demo view:
     view = View(
         dir_item,
-        title='Choose the Experiments directory',
+        title='Choose the experimental directory',
         buttons=['OK'],
         width=0.5,
         resizable=True,

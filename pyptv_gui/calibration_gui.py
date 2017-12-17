@@ -811,24 +811,21 @@ class CalibrationGUI(HasTraits):
             self.camera[i]._quiverplots = []
 
     def reset_show_images(self):
-        for i in range(self.n_cams):
-            self.camera[i]._plot.delplot(
-                *self.camera[i]._plot.plots.keys()[0:])
-            self.camera[i]._plot.overlays = []
+        for cam in self.camera:
+            cam._plot.delplot(*cam._plot.plots.keys()[0:])
+            cam._plot.overlays = []
             # self.camera[i]._plot_data.set_data('imagedata',self.ori_img[i].astype(np.byte))
-            self.camera[i]._plot_data.set_data(
-                'imagedata', self.cal_images[i].astype(np.ubyte))
+            cam._plot_data.set_data('imagedata', cam.astype(np.ubyte))
 
-            self.camera[i]._img_plot = self.camera[
-                i]._plot.img_plot('imagedata', colormap=gray)[0]
-            self.camera[i]._x = []
-            self.camera[i]._y = []
-            self.camera[i]._img_plot.tools = []
-            self.camera[i].attach_tools()
-            self.camera[i]._plot.request_redraw()
-            for j in range(len(self.camera[i]._quiverplots)):
-                self.camera[i]._plot.remove(self.camera[i]._quiverplots[j])
-            self.camera[i]._quiverplots = []
+            cam._img_plot = cam._plot.img_plot('imagedata', colormap=gray)[0]
+            cam._x = []
+            cam._y = []
+            cam._img_plot.tools = []
+            cam.attach_tools()
+            cam._plot.request_redraw()
+            for j in range(len(cam._quiverplots)):
+                cam._plot.remove(cam._quiverplots[j])
+            cam._quiverplots = []
 
     def _button_edit_ori_files_fired(self):
         editor = codeEditor(path=self.par_path)

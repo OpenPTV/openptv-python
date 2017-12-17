@@ -17,10 +17,6 @@ from scipy.misc import imread
 def simple_highpass(img, cpar):
     return preprocess_image(img, 0, cpar, 25)
 
-
-def py_init_proc_c():
-    """ Was supposed to read/set globals that do not exist anymore """
-    pass
     
 def py_set_img(img,i):
     """ Not used anymore, was transferring images to the C """
