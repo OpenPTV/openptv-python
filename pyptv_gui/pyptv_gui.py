@@ -992,15 +992,15 @@ class MainGUI (HasTraits):
 
     #------------------------------------------------------
     def right_click_process(self):
-        x_clicked,y_clicked,n_cams=0,0,0
-        h_img=self.exp1.active_params.m_params.imx
-        v_img=self.exp1.active_params.m_params.imy
-        print h_img,v_img
-        for i in range(len(self.camera_list)):
+
+        x_clicked, y_clicked = self.camera_list[i]._click_tool.x, \
+                               self.camera_list[i]._click_tool.y
+
+        for i_cam in range(self.n_cams):
+
 
                 n_cams=i
-                x_clicked,y_clicked=self.camera_list[i]._click_tool.x,\
-                                    self.camera_list[i]._click_tool.y
+
                 x1,y1,x2,y2,x1_points,y1_points,intx1,inty1=ptv.py_right_click(x_clicked,y_clicked,n_cams)
                 if (x1!=-1 and y1!=-1):
                     self.camera_list[n_cams].right_p_x0.append(intx1)

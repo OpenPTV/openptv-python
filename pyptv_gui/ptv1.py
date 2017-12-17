@@ -8,8 +8,9 @@ from optv.orientation import point_positions
 from optv.parameters import ControlParams, VolumeParams, TrackingParams, \
     SequenceParams, TargetParams
 from optv.segmentation import target_recognition
-# from optv.tracking_framebuf import CORRES_NONE
+from optv.tracking_framebuf import CORRES_NONE
 from optv.tracker import Tracker, default_naming
+from optv.epipolar import epipolar_curve
 from scipy.misc import imread
 
 
@@ -251,33 +252,6 @@ def py_traject_loop():
     
 
 # ------- Utilities ----------#
-
-def py_right_click(coord_x, coord_y, n_image):
-#     global rclick_intx1,rclick_inty1,rclick_intx2,rclick_inty2,rclick_points_x1, rclick_points_y1,rclick_count,rclick_points_intx1, rclick_points_inty1
-#     
-#     x2_points,y2_points,x1,y1,x2,y2=[],[],[],[],[],[]
-#     
-#     cdef volume_par *vpar = read_volume_par("parameters/criteria.par")
-#     r = mouse_proc_c (coord_x, coord_y, 3, n_image, vpar, cpar)
-#     free(vpar)
-#     
-#     if r == -1:
-#         return -1,-1,-1,-1,-1,-1,-1,-1
-#     for i in range(cpar[0].num_cams):
-#         x2_temp,y2_temp=[],[]
-#         for j in range(rclick_count[i]):
-#             x2_temp.append(rclick_points_x1[i][j])
-#             y2_temp.append(rclick_points_y1[i][j])
-#     
-#         x2_points.append(x2_temp)
-#         y2_points.append(y2_temp)
-#         x1.append(rclick_intx1[i])
-#         y1.append(rclick_inty1[i])
-#         x2.append(rclick_intx2[i])
-#         y2.append(rclick_inty2[i])
-#     
-#     return  x1,y1,x2,y2,x2_points,y2_points,rclick_points_intx1, rclick_points_inty1
-    pass
     
 def py_rclick_delete():
     """ a tool to delete clicked points 
