@@ -25,6 +25,7 @@ from traitsui.api \
 
 from enable.component_editor import ComponentEditor
 from chaco.tools.image_inspector_tool import ImageInspectorTool
+from chaco.api import create_line_plot
 
 # from chaco.api import Plot, ArrayPlotData, gray
 from traitsui.menu import MenuBar, Menu, Action
@@ -312,6 +313,25 @@ class CameraWindow(HasTraits):
         # self._plot.add_xy_plot((str_x,str_y),type="line",color=color1)
         # self._plot.request_redraw()
 
+    def add_line(self,str_x,str_y,x1,y1,x2,y2,color1):
+        """ drawline draws 1 line on the screen by using lineplot x1,y1->x2,y2
+        parameters:
+            str_x - label of x coordinate
+            str_y - label of y coordinate
+            x1,y1,x2,y2 - start and end coordinates of the line
+            color1 - color of the line
+        example usage:
+            drawline("x_coord","y_coord",100,100,200,200,red)
+            draws a red line 100,100->200,200
+        """
+        # self._plot_data.set_data(str_x,[x1,x2])
+        # self._plot_data.set_data(str_y,[y1,y2])
+
+        self._plot_data.set_data(str_x,[x1,x2])
+        self._plot_data.set_data(str_y,[y1,y2])
+        self._plot.add(Plot((str_x,str_y),type="line",color=color1))
+        # self._plot.add_xy_plot((str_x,str_y),type="line",color=color1)
+        #self._plot.request_redraw()
 
 class TrackThread(Thread):
     """ TrackThread is used by tracking with display function, it 
@@ -1011,8 +1031,7 @@ class MainGUI(HasTraits):
                         #                                  pts[p+1,0],pts[p+1,1],color_camera[j])
                         self.camera_list[j].drawline("right_cl_x" + c, "right_cl_y" + c, pts[0, 0], pts[0, 1],
                                                      pts[-1, 0], pts[-1, 1], self.camera_list[i].cam_color)
-                        #                                  pts[p+1,0],pts[p+1,1],
-                        # self.camera_list[j]._plot.index_mapper.range.set_bounds(0,h_img)
+                        #self.camera_list[j]._plot.index_mapper.range.set_bounds(0,h_img)
                         # self.camera_list[j]._plot.value_mapper.range.set_bounds(0,v_img)
                         # self.camera_list[j].drawcross("right_p_x1","right_p_y1",pts[:,0],pts[:,1], color_camera[j],3)
                         # self.camera_list[j]._plot.request_redraw()
