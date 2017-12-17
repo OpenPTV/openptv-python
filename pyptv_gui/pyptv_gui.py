@@ -23,7 +23,9 @@ from traitsui.api \
 
 from enable.component_editor import ComponentEditor
 from chaco.tools.image_inspector_tool import ImageInspectorTool
-from chaco.api import Plot, ArrayPlotData, gray
+from chaco.api import create_line_plot
+
+# from chaco.api import Plot, ArrayPlotData, gray
 from traitsui.menu import MenuBar, Menu, Action
 from chaco.tools.api import  ZoomTool,PanTool
 from skimage.io import imread
@@ -294,6 +296,25 @@ class CameraWindow (HasTraits):
         self._plot.plot((str_x,str_y),type="line",color=color1)
         #self._plot.request_redraw()
 
+    def add_line(self,str_x,str_y,x1,y1,x2,y2,color1):
+        """ drawline draws 1 line on the screen by using lineplot x1,y1->x2,y2
+        parameters:
+            str_x - label of x coordinate
+            str_y - label of y coordinate
+            x1,y1,x2,y2 - start and end coordinates of the line
+            color1 - color of the line
+        example usage:
+            drawline("x_coord","y_coord",100,100,200,200,red)
+            draws a red line 100,100->200,200
+        """
+        # self._plot_data.set_data(str_x,[x1,x2])
+        # self._plot_data.set_data(str_y,[y1,y2])
+
+        self._plot_data.set_data(str_x,[x1,x2])
+        self._plot_data.set_data(str_y,[y1,y2])
+        self._plot.add(Plot((str_x,str_y),type="line",color=color1))
+        # self._plot.add_xy_plot((str_x,str_y),type="line",color=color1)
+        #self._plot.request_redraw()
 
 class TrackThread(Thread):
     """ TrackThread is used by tracking with display function, it 
@@ -967,15 +988,15 @@ class MainGUI (HasTraits):
         """
         num_points = 2
 
-
         for i in range(self.n_cams):
             # get the clicked point (i guess it won't exist in cameras not clicked)
             point = np.array([self.camera_list[i]._click_tool.x, self.camera_list[i]._click_tool.y],dtype='float64')
 
             if ~np.allclose(point,[0.,0.]):
             # mark the point with a circle
+                c = str(np.random.rand())[2:]
                 self.camera_list[i].rclicked = 0
-                self.camera_list[i].drawcross("right_p_x0", "right_p_y0", point[0],point[1],"cyan", 3, marker1="circle")
+                self.camera_list[i].drawcross("right_p_x0"+c, "right_p_y0"+c, point[0],point[1],"cyan", 3, marker1="circle")
                 # self.camera_list[i]._plot.request_redraw()
                 # look for points along epipolars for other cameras
                 for j in range(self.n_cams):
@@ -988,8 +1009,8 @@ class MainGUI (HasTraits):
                         # for p in xrange(pts.shape[0]-1):
                         #     self.camera_list[j].drawline("right_cl_x", "right_cl_y",pts[p,0],pts[p,1],\
                         #                                  pts[p+1,0],pts[p+1,1],color_camera[j])
-                        self.camera_list[j].drawline("right_cl_x", "right_cl_y", pts[0, 0], pts[0, 1], \
-                                                     pts[-1,0],pts[-1,1], color_camera[j])
+                        self.camera_list[j].drawline("right_cl_x" + c, "right_cl_y" + c, pts[0, 0], pts[0, 1], \
+                                                     pts[-1,0],pts[-1,1], self.camera_list[i].cam_color)
                                                      #                                  pts[p+1,0],pts[p+1,1],
                         #self.camera_list[j]._plot.index_mapper.range.set_bounds(0,h_img)
                         # self.camera_list[j]._plot.value_mapper.range.set_bounds(0,v_img)
