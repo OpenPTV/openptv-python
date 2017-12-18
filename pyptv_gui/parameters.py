@@ -254,7 +254,10 @@ class CalOriParams(Parameters):
         0   flag for frame (0), odd (1) or even fields (2)
     """
 
-#     fixp_name = Str
+    def set(self, *vars):
+        pass
+
+    #     fixp_name = Str
 #     img_cal_name = List
 #     img_ori = List
 #     tiff_flag = Bool
@@ -751,7 +754,10 @@ class OrientParams(Parameters):
         0 interf
     """
 
-#     pnfo = Int
+    def set(self, *vars):
+        pass
+
+    #     pnfo = Int
 #     cc = Int
 #     xh = Int
 #     yh = Int

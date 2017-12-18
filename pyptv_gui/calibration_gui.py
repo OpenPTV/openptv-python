@@ -758,45 +758,45 @@ class CalibrationGUI(HasTraits):
 
         self.status_text = "Orientation with particles finished."
 
-    def _button_orient_dumbbell_fired(self):
-        print "Starting orientation from dumbbell"
-        self.backup_ori_files()
-        ptv.py_ptv_set_dumbbell(1)
-        n_camera = len(self.camera)
-        print ("Starting sequence action")
-        seq_first = self.exp1.active_params.m_params.Seq_First
-        seq_last = self.exp1.active_params.m_params.Seq_Last
-        print seq_first, seq_last
-        base_name = []
-        for i in range(n_camera):
-            exec (
-                    "base_name.append(self.exp1.active_params.m_params.Basename_%d_Seq)" % (i + 1))
-            print base_name[i]
-            ptv.py_sequence_init(1)
-            stepshake = ptv.py_get_from_sequence_init()
-            if not stepshake:
-                stepshake = 1
-
-        temp_img = np.array([], dtype=np.ubyte)
-        for i in range(seq_first, seq_last + 1, stepshake):
-            seq_ch = "%04d" % i
-            print seq_ch
-            for j in range(n_camera):
-                print ("j %d" % j)
-                img_name = base_name[j] + seq_ch
-                print ("Setting image: ", img_name)
-                try:
-                    temp_img = imread(img_name).astype(np.ubyte)
-                except:
-                    print "Error reading file"
-                    ptv.py_set_img(temp_img, j)
-
-            ptv.py_sequence_loop(1, i)
-
-        print "Orientation from dumbbell - sequence finished"
-        ptv.py_calibration(12)
-        ptv.py_ptv_set_dumbbell(1)
-        print "Orientation from dumbbell finished"
+    # def _button_orient_dumbbell_fired(self):
+    #     print "Starting orientation from dumbbell"
+    #     self.backup_ori_files()
+    #     ptv.py_ptv_set_dumbbell(1)
+    #     n_camera = len(self.camera)
+    #     print ("Starting sequence action")
+    #     seq_first = self.exp1.active_params.m_params.Seq_First
+    #     seq_last = self.exp1.active_params.m_params.Seq_Last
+    #     print seq_first, seq_last
+    #     base_name = []
+    #     for i in range(n_camera):
+    #         exec (
+    #                 "base_name.append(self.exp1.active_params.m_params.Basename_%d_Seq)" % (i + 1))
+    #         print base_name[i]
+    #         ptv.py_sequence_init(1)
+    #         stepshake = ptv.py_get_from_sequence_init()
+    #         if not stepshake:
+    #             stepshake = 1
+    #
+    #     temp_img = np.array([], dtype=np.ubyte)
+    #     for i in range(seq_first, seq_last + 1, stepshake):
+    #         seq_ch = "%04d" % i
+    #         print seq_ch
+    #         for j in range(n_camera):
+    #             print ("j %d" % j)
+    #             img_name = base_name[j] + seq_ch
+    #             print ("Setting image: ", img_name)
+    #             try:
+    #                 temp_img = imread(img_name).astype(np.ubyte)
+    #             except:
+    #                 print "Error reading file"
+    #                 ptv.py_set_img(temp_img, j)
+    #
+    #         ptv.py_sequence_loop(1, i)
+    #
+    #     print "Orientation from dumbbell - sequence finished"
+    #     ptv.py_calibration(12)
+    #     ptv.py_ptv_set_dumbbell(1)
+    #     print "Orientation from dumbbell finished"
 
     def _button_restore_orient_fired(self):
         self.restore_ori_files()

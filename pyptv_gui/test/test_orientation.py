@@ -66,8 +66,8 @@ class TestOrient(unittest.TestCase):
             shutil.rmtree("cal_bk/")
         shutil.copytree("cal/", "cal_bk/")
         
-        py_init_proc_c()
-        py_start_proc_c()
+        py_init_proc_c(n_cams = 4)
+        py_start_proc_c(n_cams = 4)
         
         py_calibration(10)
         pix, crd = get_pix_crd(4)
@@ -89,8 +89,8 @@ class TestOrient(unittest.TestCase):
         """Check that raw_orient doesn't ruin the results for just_plot()."""
         shutil.copytree("db_targ/", "scene83_event1/")
         
-        py_init_proc_c()
-        py_start_proc_c()
+        py_init_proc_c(n_cams = 4)
+        py_start_proc_c(n_cams = 4)
         
         py_calibration(9)
         calib = get_xy_calib(4)
