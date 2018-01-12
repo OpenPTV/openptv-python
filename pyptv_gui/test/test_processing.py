@@ -12,10 +12,10 @@ from scipy.misc import imread
 
 sys.path.append('../../src_c')
 
-from ptv1 import py_start_proc_c, py_init_proc_c
-from ptv1 import py_sequence_init, py_sequence_loop, py_set_img
-from ptv1 import py_trackcorr_init, py_trackcorr_loop, py_trackcorr_finish
-from ptv1 import py_trackback_c
+from ptv import py_start_proc_c, py_init_proc_c
+from ptv import py_sequence_init, py_sequence_loop, py_set_img
+from ptv import py_trackcorr_init, py_trackcorr_loop, py_trackcorr_finish
+from ptv import py_trackback_c
 
 def compare_directories(dir1, dir2, mask=None):
     """

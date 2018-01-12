@@ -35,7 +35,7 @@ from optv.segmentation import target_recognition
 from optv.orientation import external_calibration, full_calibration
 from optv.calibration import Calibration
 
-import ptv1 as ptv
+import ptv as ptv
 import parameter_gui as exp
 import parameters as par
 

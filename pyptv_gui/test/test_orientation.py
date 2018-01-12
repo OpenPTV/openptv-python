@@ -10,8 +10,8 @@ import numpy as np
 
 sys.path.append('../../src_c')
 
-from ptv1 import py_start_proc_c, py_init_proc_c, py_prepare_eval, get_pix_crd
-from ptv1 import py_calibration, get_xy_calib
+from ptv import py_start_proc_c, py_init_proc_c, py_prepare_eval, get_pix_crd
+from ptv import py_calibration, get_xy_calib
 
 class TestOrient(unittest.TestCase):
     def setUp(self):

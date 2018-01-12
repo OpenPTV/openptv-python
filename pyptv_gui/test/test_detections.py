@@ -10,7 +10,7 @@ ETSConfig.toolkit = 'qt4'
 import sys, os
 sys.path.append(os.path.abspath('../openptv-python/pyptv_gui/'))
 
-from ptv1 import *
+from ptv import *
 import parameters as par
 import matplotlib.pyplot as plt
 

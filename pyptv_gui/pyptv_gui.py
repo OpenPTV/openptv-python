@@ -41,14 +41,19 @@ from optv.epipolar import epipolar_curve
 from optv.tracking_framebuf import read_targets
 
 # Parse inputs:
+cwd = os.getcwd()
+print(cwd)
 
 # Path to the experiment
 if len(sys.argv) > 1:
     exp_path = os.path.abspath(sys.argv[1])
     if not os.path.isdir(exp_path):
         print ("Wrong experimental directory %s " % exp_path)
+else:
+    print('Please provide an experimental directory as an input, fallback to a default\n')
+    exp_path = '../../test_cavity'
 
-import ptv1 as ptv
+import ptv as ptv
 
 # pyPTV specific imports
 import general
@@ -60,20 +65,7 @@ from quiverplot import QuiverPlot
 from chaco.api import Plot, ArrayPlotData, gray, ImagePlot, ArrayDataSource, \
     LinearMapper
 
-# from demo import *
 
-if len(sys.argv) < 2:
-    # directory_dialog = DirectoryEditorDialog()
-    # directory_dialog.configure_traits()
-    # exp_path = directory_dialog.dir_name # default_path+os.sep+'exp1'
-    exp_path = '/Users/alex/Documents/OpenPTV/test_cavity'
-
-cwd = os.getcwd()
-
-try:
-    os.chdir(exp_path)
-except:
-    print('Wrong experimental directory %s' % exp_path)
 
 
 #
