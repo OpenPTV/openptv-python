@@ -35,10 +35,12 @@ from skimage import img_as_ubyte
 from threading import Thread
 from pyface.api import GUI
 
-from optv.imgcoord import image_coordinates
-from optv.transforms import convert_arr_metric_to_pixel
-from optv.epipolar import epipolar_curve
-from optv.tracking_framebuf import read_targets
+from optv import imgcoord, transforms, epipolar, tracking_framebuf
+
+# from optv.imgcoord import image_coordinates
+# from optv.transforms import convert_arr_metric_to_pixel
+# from optv.epipolar import epipolar_curve
+# from optv.tracking_framebuf import read_targets
 
 # Parse inputs:
 cwd = os.getcwd()
@@ -48,7 +50,9 @@ print(cwd)
 if len(sys.argv) > 1:
     exp_path = os.path.abspath(sys.argv[1])
     if not os.path.isdir(exp_path):
-        print ("Wrong experimental directory %s " % exp_path)
+        raise OSError("Wrong experimental directory %s " % exp_path)
+
+    os.chdir(exp_path)
 else:
     print('Please provide an experimental directory as an input, fallback to a default\n')
     exp_path = '../../test_cavity'
@@ -383,7 +387,7 @@ class TreeMenuHandler(Handler):
         print(len(experiment.paramsets))
         if paramset.c_params is None:
             # TODO: is it possible that control reaches here? If not, probably the if should be removed.
-            paramset.c_params = Calib_Params()
+            paramset.c_params = par.Calib_Params()
         else:
             paramset.c_params._reload()
         paramset.c_params.edit_traits(kind='modal')
@@ -394,7 +398,7 @@ class TreeMenuHandler(Handler):
         print(len(experiment.paramsets))
         if paramset.t_params is None:
             # TODO: is it possible that control reaches here? If not, probably the if should be removed.
-            paramset.t_params = Tracking_Params()
+            paramset.t_params = par.Tracking_Params()
         paramset.t_params.edit_traits(kind='modal')
 
     def set_active(self, editor, object):
@@ -901,7 +905,7 @@ class Plugins(HasTraits):
     def read(self):
         # reading external tracking
         try:
-            f = open(os.path.join(software_path, "external_tracker_list.txt"), 'r')
+            f = open(os.path.join(os.path.abspath(os.curdir), "external_tracker_list.txt"), 'r')
             trackers = f.read().split('\n')
             trackers.insert(0, 'default')
             self.track_list = trackers
@@ -910,7 +914,7 @@ class Plugins(HasTraits):
             self.track_list = ['default']
         # reading external sequence
         try:
-            f = open(os.path.join(software_path, "external_sequence_list.txt"), 'r')
+            f = open(os.path.join(os.path.abspath(os.curdir), "external_sequence_list.txt"), 'r')
             seq = f.read().split('\n')
             seq.insert(0, 'default')
             self.seq_list = seq
@@ -995,7 +999,7 @@ class MainGUI(HasTraits):
                 for j in range(self.n_cams):
                     if i == j:
                         continue
-                    pts = epipolar_curve(point, self.cals[i], self.cals[j], num_points,
+                    pts = epipolar.epipolar_curve(point, self.cals[i], self.cals[j], num_points,
                                          self.cpar, self.vpar)
 
                     if len(pts) > 1:
