@@ -466,8 +466,6 @@ class CalibrationGUI(HasTraits):
         if self.cpar.get_hp_flag():
             self.cal_images = ptv.py_pre_processing_c(self.cal_images, self.cpar)
 
-        self.reset_show_images()
-
         self.detections, corrected = \
             ptv.py_detection_proc_c(self.cal_images, self.cpar, self.tpar, self.cals)
 
@@ -811,11 +809,11 @@ class CalibrationGUI(HasTraits):
             self.camera[i]._quiverplots = []
 
     def reset_show_images(self):
-        for cam in self.camera:
+        for i,cam in enumerate(self.camera):
             cam._plot.delplot(*cam._plot.plots.keys()[0:])
             cam._plot.overlays = []
             # self.camera[i]._plot_data.set_data('imagedata',self.ori_img[i].astype(np.byte))
-            cam._plot_data.set_data('imagedata', cam.astype(np.ubyte))
+            cam._plot_data.set_data('imagedata', self.cal_images[i].astype(np.byte))
 
             cam._img_plot = cam._plot.img_plot('imagedata', colormap=gray)[0]
             cam._x = []

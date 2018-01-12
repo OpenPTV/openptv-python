@@ -582,7 +582,10 @@ class TreeMenuHandler(Handler):
 
         # reset the main GUI so the user will have to press Start again
         info.object.pass_init = False
-        active_path = info.exp1.selected.active_params.par_path
+        try:
+            active_path = info.exp1.selected.active_params.par_path
+        except:
+            active_path = info.exp1.selected.m_params.par_path
         calib_gui = CalibrationGUI(active_path)
         calib_gui.configure_traits()
 
