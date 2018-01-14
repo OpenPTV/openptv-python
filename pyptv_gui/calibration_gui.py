@@ -547,7 +547,7 @@ class CalibrationGUI(HasTraits):
         self.cal_points = self._read_cal_points()
 
         self.cals = []
-        for i_cam in xrange(self.n_cams):
+        for i_cam in range(self.n_cams):
             cal = Calibration()
             tmp = self.cpar.get_cal_img_base_name(i_cam)
             cal.from_file(tmp + '.ori', tmp + '.addpar')
@@ -570,7 +570,7 @@ class CalibrationGUI(HasTraits):
         # y.append(y1)
 
         self.drawcross("init_x", "init_y", x, y, color, 3, i_cam=i_cam)
-        self.status_text = "Initial guess finished."
+        self.status_text = 'Initial guess finished.'
 
     def _button_sort_grid_fired(self):
         """
@@ -855,7 +855,7 @@ class CalibrationGUI(HasTraits):
         calOriParams.read()
 
         for f in calOriParams.img_ori[:self.n_cams]:
-            print "restored %s " % f
+            print('restored %s ' % f)
             shutil.copyfile(f + '.bck', f)
             g = f.replace('ori', 'addpar')
             shutil.copyfile(g + '.bck', g)
@@ -868,7 +868,7 @@ class CalibrationGUI(HasTraits):
             with open(f, 'r') as d:
                 d.read().split()
                 if not np.all(np.isfinite(np.asarray(d).astype('f'))):  # if there NaN for instance
-                    print "protected ORI file %s " % f
+                    print("protected ORI file %s " % f)
                     shutil.copyfile(f + '.bck', f)
 
     def update_plots(self, images, is_float=0):
