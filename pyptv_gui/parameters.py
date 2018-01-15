@@ -21,7 +21,6 @@ import pyface.api as pyfaceapi
 
 # Temporary path for parameters (active run will be copied here)
 temp_path = 'parameters'
-max_camera = 4
 
 g = lambda f: f.readline().strip()
 
@@ -177,11 +176,11 @@ class PtvParams(Parameters):
             self.img_name = []
             self.img_cal = []
 #            for i in range(self.n_img):
-            for i in range(max_camera):
+            for i in range(self.n_img):
                 self.img_name.append(g(f))
                 self.img_cal.append(g(f))
 
-            for i in range(max_camera):
+            for i in range(self.n_img):
                 fname = self.img_name[i]
                 if not os.path.isfile(fname):
                     warning("Error reading %s." % fname)
@@ -212,7 +211,7 @@ class PtvParams(Parameters):
             f = open(self.filepath(), 'w')
             f.write("%d\n" % self.n_img)
 #            for i in range(self.n_img):
-            for i in range(max_camera):
+            for i in range(sel.n_img):
                 f.write("%s\n" % self.img_name[i])
                 f.write("%s\n" % self.img_cal[i])
 
@@ -315,8 +314,7 @@ class CalOriParams(Parameters):
             f = open(self.filepath(), 'w')
 
             f.write("%s\n" % self.fixp_name)
-#            for i in range(self.n_img):
-            for i in range(max_camera):
+            for i in range(self.n_img):
                 f.write("%s\n" % self.img_cal_name[i])
                 f.write("%s\n" % self.img_ori[i])
 
@@ -363,8 +361,7 @@ class SequenceParams(Parameters):
         try:
             f = open(self.filepath(), 'r')
             self.base_name = []
-#            for i in range(self.n_img):
-            for i in range(max_camera):
+            for i in range(self.n_img):
                 self.base_name.append(g(f))
 
             self.first = int(g(f))
@@ -378,8 +375,7 @@ class SequenceParams(Parameters):
         # print "inside SequenceParams.write"
         try:
             f = open(self.filepath(), 'w')
-#            for i in range(self.n_img):
-            for i in range(max_camera):
+            for i in range(self.n_img):
                 f.write("%s\n" % self.base_name[i])
 
             f.write("%d\n" % self.first)
@@ -529,8 +525,7 @@ class TargRecParams(Parameters):
             f = open(self.filepath(), 'r')
 
             self.gvthres = []
-#            for i in range(self.n_img):
-            for i in range(max_camera):
+            for i in range(self.n_img):
                 self.gvthres.append(int(g(f)))
 
             self.disco = int(g(f))
@@ -551,8 +546,7 @@ class TargRecParams(Parameters):
         # print "inside TargRecParams.write"
         try:
             f = open(self.filepath(), 'w')
-#            for i in range(self.n_img):
-            for i in range(max_camera):
+            for i in range(self.n_img):
                 f.write("%d\n" % self.gvthres[i])
 
             f.write("%d\n" % self.disco)
@@ -613,8 +607,7 @@ class ManOriParams(Parameters):
             f = open(self.filepath(), 'r')
 
             self.nr = []
-#            for i in range(self.n_img):
-            for i in range(max_camera):
+            for i in range(self.n_img):
                 self.nr.append([])
                 for j in range(self.n_pts):
                     self.nr[i].append(int(g(f)))
@@ -627,8 +620,7 @@ class ManOriParams(Parameters):
         # print "inside # Params.write"
         try:
             f = open(self.filepath(), 'w')
-#            for i in range(self.n_img):
-            for i in range(max_camera):
+            for i in range(self.n_img):
                 for j in range(self.n_pts):
                     f.write("%d\n" % self.nr[i][j])
 

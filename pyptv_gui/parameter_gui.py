@@ -485,14 +485,10 @@ class Main_Params (HasTraits):
             (ptvParams.n_img, ptvParams.img_name, ptvParams.img_cal, ptvParams.hp_flag, ptvParams.allCam_flag, ptvParams.tiff_flag,
              ptvParams.imx, ptvParams.imy, ptvParams.pix_x, ptvParams.pix_y, ptvParams.chfield, ptvParams.mmp_n1, ptvParams.mmp_n2, ptvParams.mmp_n3, ptvParams.mmp_d)
 
-        self.Name_1_Image = img_name[0]
-        self.Name_2_Image = img_name[1]
-        self.Name_3_Image = img_name[2]
-        self.Name_4_Image = img_name[3]
-        self.Cali_1_Image = img_cal[0]
-        self.Cali_2_Image = img_cal[1]
-        self.Cali_3_Image = img_cal[2]
-        self.Cali_4_Image = img_cal[3]
+        for i in range(n_img):
+            exec('self.Name_%d_Image = img_name[%d]' % (i+1,i))
+            exec ('self.Cali_%d_Image = img_cal[%d]' % (i + 1, i))
+
         self.Refr_Air = mmp_n1
         self.Refr_Glass = mmp_n2
         self.Refr_Water = mmp_n3
@@ -525,10 +521,10 @@ class Main_Params (HasTraits):
         (gvthres, disco, nnmin, nnmax, nxmin, nxmax, nymin, nymax, sumg_min, cr_sz) = \
             (targRecParams.gvthres, targRecParams.disco, targRecParams.nnmin, targRecParams.nnmax, targRecParams.nxmin,
              targRecParams.nxmax, targRecParams.nymin, targRecParams.nymax, targRecParams.sumg_min, targRecParams.cr_sz)
-        self.Gray_Tresh_1 = gvthres[0]
-        self.Gray_Tresh_2 = gvthres[1]
-        self.Gray_Tresh_3 = gvthres[2]
-        self.Gray_Tresh_4 = gvthres[3]
+
+        for i in range(n_img):
+            exec('self.Gray_Tresh_%d = gvthres[%d]' %(i+1,i))
+
         self.Min_Npix = nnmin
         self.Max_Npix = nnmax
         self.Min_Npix_x = nxmin
@@ -549,10 +545,10 @@ class Main_Params (HasTraits):
         sequenceParams.read()
         (base_name, first, last) = \
             (sequenceParams.base_name, sequenceParams.first, sequenceParams.last)
-        self.Basename_1_Seq = base_name[0]
-        self.Basename_2_Seq = base_name[1]
-        self.Basename_3_Seq = base_name[2]
-        self.Basename_4_Seq = base_name[3]
+
+        for i in range(n_img):
+            exec ('self.Basename_%d_Seq = base_name[%d]' % (i + 1, i))
+
         self.Seq_First = first
         self.Seq_Last = last
 
@@ -577,6 +573,7 @@ class Main_Params (HasTraits):
 
     # create initfunc
     def __init__(self, par_path):
+        HasTraits.__init__(self)
         self.par_path = par_path
         self._reload()
 
@@ -887,14 +884,10 @@ class Calib_Params(HasTraits):
             (calOriParams.fixp_name, calOriParams.img_cal_name, calOriParams.img_ori,
              calOriParams.tiff_flag, calOriParams.pair_flag, calOriParams.chfield)
 
-        self.cam_1 = img_cal_name[0]
-        self.cam_2 = img_cal_name[1]
-        self.cam_3 = img_cal_name[2]
-        self.cam_4 = img_cal_name[3]
-        self.ori_cam_1 = img_ori[0]
-        self.ori_cam_2 = img_ori[1]
-        self.ori_cam_3 = img_ori[2]
-        self.ori_cam_4 = img_ori[3]
+        for i in range(n_img):
+            exec('self.cam_%d = img_cal_name[%d]' % (i+1,i))
+            exec ('self.ori_cam_%d = img_ori[%d]' % (i + 1, i))
+
         self.tiff_head = np.bool(tiff_flag)
         self.pair_head = np.bool(pair_flag)
         self.fixp_name = fixp_name
@@ -916,10 +909,10 @@ class Calib_Params(HasTraits):
              detectPlateParams.max_npix_x, detectPlateParams.min_npix_y, detectPlateParams.max_npix_y, detectPlateParams.sum_grey,
              detectPlateParams.size_cross)
 
-        self.grey_value_treshold_1 = gv_th1
-        self.grey_value_treshold_2 = gv_th2
-        self.grey_value_treshold_3 = gv_th3
-        self.grey_value_treshold_4 = gv_th4
+
+        for i in range(n_img):
+            exec('self.grey_value_treshold_%d = gv_th%d' % (i+1,i+1))
+
         self.tolerable_discontinuity = tolerable_discontinuity
         self.min_npix = min_npix
         self.min_npix_x = min_npix_x
@@ -935,22 +928,11 @@ class Calib_Params(HasTraits):
         manOriParams.read()
         nr = manOriParams.nr
 
-        self.img_1_p1 = nr[0][0]
-        self.img_1_p2 = nr[0][1]
-        self.img_1_p3 = nr[0][2]
-        self.img_1_p4 = nr[0][3]
-        self.img_2_p1 = nr[1][0]
-        self.img_2_p2 = nr[1][1]
-        self.img_2_p3 = nr[1][2]
-        self.img_2_p4 = nr[1][3]
-        self.img_3_p1 = nr[2][0]
-        self.img_3_p2 = nr[2][1]
-        self.img_3_p3 = nr[2][2]
-        self.img_3_p4 = nr[2][3]
-        self.img_4_p1 = nr[3][0]
-        self.img_4_p2 = nr[3][1]
-        self.img_4_p3 = nr[3][2]
-        self.img_4_p4 = nr[3][3]
+
+        for i in range(n_img):
+            for j in range(4): # 4 points per image
+                exec('self.img_%d_p%d = nr[%d][%d]' % (i+1,j,i,j))
+
 
         # examine arameters
         examineParams = par.ExamineParams(path=self.par_path)
@@ -993,6 +975,7 @@ class Calib_Params(HasTraits):
                                             shakingParams.shaking_max_num_points, shakingParams.shaking_max_num_frames)
 
     def __init__(self, par_path):
+        HasTraits.__init__(self)
         self.par_path = par_path
         self._reload()
 
