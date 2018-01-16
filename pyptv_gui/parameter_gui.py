@@ -123,7 +123,7 @@ class CalHandler(Handler):
                                   calibParams.sum_of_grey,
                                   calibParams.size_of_crosses, path=par_path).write()
 
-            par.ManOriParams(calibParams.n_img, 4, nr, path=par_path).write()
+            par.ManOriParams(calibParams.n_img, n_img, nr, path=par_path).write()
             par.ExamineParams(calibParams.Examine_Flag,
                               calibParams.Combine_Flag, path=par_path).write()
             par.OrientParams(calibParams.point_number_of_orientation, calibParams.cc,

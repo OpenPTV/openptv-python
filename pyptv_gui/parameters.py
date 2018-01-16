@@ -211,7 +211,7 @@ class PtvParams(Parameters):
             f = open(self.filepath(), 'w')
             f.write("%d\n" % self.n_img)
 #            for i in range(self.n_img):
-            for i in range(sel.n_img):
+            for i in range(self.n_img):
                 f.write("%s\n" % self.img_name[i])
                 f.write("%s\n" % self.img_cal[i])
 
