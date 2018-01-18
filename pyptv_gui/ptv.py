@@ -43,7 +43,7 @@ def py_start_proc_c(n_cams):
 
     # Target parameters
     tpar = TargetParams(n_cams)
-    tpar.read('parameters/targ_rec.par',n_cams)
+    tpar.read('parameters/targ_rec.par')
 
     # 
 

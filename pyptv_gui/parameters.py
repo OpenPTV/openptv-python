@@ -15,6 +15,9 @@ from traits.api \
 import general
 import pyface.api as pyfaceapi
 
+from optv.parameters import MultimediaParams, ControlParams, VolumeParams, \
+    SequenceParams, TrackingParams, TargetParams
+
 # Next line is for debug (unbuffer stdout)
 #sys.stdout = sys.stderr
 
@@ -23,6 +26,8 @@ import pyface.api as pyfaceapi
 temp_path = 'parameters'
 
 g = lambda f: f.readline().strip()
+
+MAX_CAM = 4
 
 # Base class for all parameters classes
 
@@ -175,18 +180,20 @@ class PtvParams(Parameters):
             self.n_img = int(g(f))
             self.img_name = []
             self.img_cal = []
-#            for i in range(self.n_img):
-            for i in range(self.n_img):
+            for i in range(MAX_CAM):
+            # for i in range(self.n_img):
                 self.img_name.append(g(f))
                 self.img_cal.append(g(f))
 
             for i in range(self.n_img):
                 fname = self.img_name[i]
                 if not os.path.isfile(fname):
-                    warning("Error reading %s." % fname)
+                    warning("File not found %s." % fname)
                 fname = self.img_cal[i]
                 if not os.path.isfile(fname):
-                    warning("Error reading %s." % fname)
+                    warning("File not found %s." % fname)
+
+
 
             self.hp_flag = (int(g(f)) != 0)
             self.allCam_flag = (int(g(f)) != 0)
@@ -210,8 +217,8 @@ class PtvParams(Parameters):
         try:
             f = open(self.filepath(), 'w')
             f.write("%d\n" % self.n_img)
-#            for i in range(self.n_img):
-            for i in range(self.n_img):
+            for i in range(MAX_CAM):
+            # for i in range(self.n_img):
                 f.write("%s\n" % self.img_name[i])
                 f.write("%s\n" % self.img_cal[i])
 
@@ -233,6 +240,13 @@ class PtvParams(Parameters):
         except:
             error(None, "Error writing %s." % self.filepath())
             return False
+
+
+class NewControlParams():
+    """
+    Attempt to use only optv.parameters
+    """
+    pass
 
 
 class CalOriParams(Parameters):
@@ -287,8 +301,8 @@ class CalOriParams(Parameters):
     
                 self.img_cal_name = []
                 self.img_ori = []
-    #            for i in range(self.n_img):
-                for i in range(self.n_img):
+                for i in range(MAX_CAM):
+                # for i in range(self.n_img):
                     self.img_cal_name.append(g(f))
                     self.img_ori.append(g(f))
     
@@ -309,12 +323,13 @@ class CalOriParams(Parameters):
             error(None, "Error reading from %s." % self.filepath())
 
     def write(self):
-        print "inside CalOriParams.write \n"
+        print("inside CalOriParams.write \n")
         try:
             f = open(self.filepath(), 'w')
 
             f.write("%s\n" % self.fixp_name)
-            for i in range(self.n_img):
+            for i in range(MAX_CAM):
+            # for i in range(self.n_img):
                 f.write("%s\n" % self.img_cal_name[i])
                 f.write("%s\n" % self.img_ori[i])
 
@@ -361,7 +376,8 @@ class SequenceParams(Parameters):
         try:
             f = open(self.filepath(), 'r')
             self.base_name = []
-            for i in range(self.n_img):
+            for i in range(MAX_CAM):
+            # for i in range(self.n_img):
                 self.base_name.append(g(f))
 
             self.first = int(g(f))
@@ -375,7 +391,8 @@ class SequenceParams(Parameters):
         # print "inside SequenceParams.write"
         try:
             f = open(self.filepath(), 'w')
-            for i in range(self.n_img):
+            for i in range(MAX_CAM):
+            # for i in range(self.n_img):
                 f.write("%s\n" % self.base_name[i])
 
             f.write("%d\n" % self.first)
@@ -525,7 +542,8 @@ class TargRecParams(Parameters):
             f = open(self.filepath(), 'r')
 
             self.gvthres = []
-            for i in range(self.n_img):
+            for i in range(MAX_CAM):
+            # for i in range(self.n_img):
                 self.gvthres.append(int(g(f)))
 
             self.disco = int(g(f))
@@ -546,7 +564,8 @@ class TargRecParams(Parameters):
         # print "inside TargRecParams.write"
         try:
             f = open(self.filepath(), 'w')
-            for i in range(self.n_img):
+            for i in range(MAX_CAM):
+            # for i in range(self.n_img):
                 f.write("%d\n" % self.gvthres[i])
 
             f.write("%d\n" % self.disco)
@@ -607,7 +626,8 @@ class ManOriParams(Parameters):
             f = open(self.filepath(), 'r')
 
             self.nr = []
-            for i in range(self.n_img):
+            for i in range(MAX_CAM):
+            # for i in range(self.n_img):
                 self.nr.append([])
                 for j in range(self.n_pts):
                     self.nr[i].append(int(g(f)))
@@ -620,7 +640,8 @@ class ManOriParams(Parameters):
         # print "inside # Params.write"
         try:
             f = open(self.filepath(), 'w')
-            for i in range(self.n_img):
+            for i in range(MAX_CAM):
+            # for i in range(self.n_img):
                 for j in range(self.n_pts):
                     f.write("%d\n" % self.nr[i][j])
 

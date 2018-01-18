@@ -123,7 +123,7 @@ class CalHandler(Handler):
                                   calibParams.sum_of_grey,
                                   calibParams.size_of_crosses, path=par_path).write()
 
-            par.ManOriParams(calibParams.n_img, n_img, nr, path=par_path).write()
+            par.ManOriParams(calibParams.n_img, nr, path=par_path).write()
             par.ExamineParams(calibParams.Examine_Flag,
                               calibParams.Combine_Flag, path=par_path).write()
             par.OrientParams(calibParams.point_number_of_orientation, calibParams.cc,
@@ -931,7 +931,7 @@ class Calib_Params(HasTraits):
 
         for i in range(n_img):
             for j in range(4): # 4 points per image
-                exec('self.img_%d_p%d = nr[%d][%d]' % (i+1,j,i,j))
+                exec('self.img_%d_p%d = nr[%d][%d]' % (i+1,j+1,i,j))
 
 
         # examine arameters

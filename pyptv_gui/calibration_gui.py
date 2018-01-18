@@ -427,7 +427,7 @@ class CalibrationGUI(HasTraits):
         self.cpar, self.spar, self.vpar, self.track_par, self.tpar, \
         self.cals = ptv.py_start_proc_c(self.n_cams)
 
-        self.tpar.read('parameters/detect_plate.par',self.n_cams    )
+        self.tpar.read('parameters/detect_plate.par')
 
         print(self.tpar.get_grey_thresholds())
 
@@ -436,7 +436,9 @@ class CalibrationGUI(HasTraits):
 
         # read calibration images        
         self.cal_images = []
-        for imname in self.calParams.img_cal_name:
+        for i in range(len(self.camera)):
+            imname = self.calParams.img_cal_name[i]
+        # for imname in self.calParams.img_cal_name:
             self.cal_images.append(imread(imname))
 
         self.reset_show_images()
@@ -481,7 +483,7 @@ class CalibrationGUI(HasTraits):
         points_set = True
         for i in range(self.n_cams):
             if len(self.camera[i]._x) < 4:
-                print "inside manual click"
+                print("inside manual click")
                 print self.camera[i]._x
                 points_set = False
 
