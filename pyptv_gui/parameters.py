@@ -119,7 +119,7 @@ def copy_params_dir(src, dest):
 ####### Specific parameter classes #######
 
 class PtvParams(Parameters):
-    """ ptv.par
+    """
         ptv.par:        main parameter file
         4       number of cameras
         cam3.100        image of first camera
@@ -376,8 +376,7 @@ class SequenceParams(Parameters):
         try:
             f = open(self.filepath(), 'r')
             self.base_name = []
-            for i in range(MAX_CAM):
-            # for i in range(self.n_img):
+            for i in range(self.n_img):
                 self.base_name.append(g(f))
 
             self.first = int(g(f))
@@ -391,8 +390,7 @@ class SequenceParams(Parameters):
         # print "inside SequenceParams.write"
         try:
             f = open(self.filepath(), 'w')
-            for i in range(MAX_CAM):
-            # for i in range(self.n_img):
+            for i in range(self.n_img):
                 f.write("%s\n" % self.base_name[i])
 
             f.write("%d\n" % self.first)
