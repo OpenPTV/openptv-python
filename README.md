@@ -10,7 +10,7 @@ Both PyPTV and the OpenPTV library are in the development phase and continuously
 
 ## Documentation, including installation instructions
 
-http://alexlib.github.io/docs/index.html
+http://openpiv.readthedocs.io
 
 ## Getting started:
 
