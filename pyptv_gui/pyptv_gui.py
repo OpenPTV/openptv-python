@@ -1011,7 +1011,7 @@ class MainGUI(HasTraits):
             # get the clicked point (i guess it won't exist in cameras not clicked)
             point = np.array([self.camera_list[i]._click_tool.x, self.camera_list[i]._click_tool.y], dtype='float64')
 
-            if ~np.allclose(point, [0., 0.]):
+            if not np.allclose(point, [0., 0.]):
                 # mark the point with a circle
                 c = str(np.random.rand())[2:]
                 self.camera_list[i].rclicked = 0
