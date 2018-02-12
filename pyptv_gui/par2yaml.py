@@ -1,19 +1,15 @@
 """
-This file uses Python nose to test the correctness of writing and reading parameter files.
-To run the test, 'parameters' directory should exists in the 'tests' directory with all .par files (with the correct names).
-The parameters directory is iterated, and .par files are read (using the suitable param classes). Then they are written back, and the files are compared.
+This file converts all the parameter files that are recognizable by the parameters.py 
+Classes to YAML files
+Usage:
+    par2yaml ~/test_cavity
+
 """
 from __future__ import print_function
 from __future__ import absolute_import
 
-from builtins import range
 import sys, os
-sys.path.append('..')
 import parameters
-
-
-referenceParamsDir = "testing_fodder/parameters"
-testParamsDir = "parameters_test"
 
 
 def paramsFactory(filename, n_img, n_pts = 4):
@@ -52,38 +48,31 @@ def paramsFactory(filename, n_img, n_pts = 4):
         
     return None
 
-    
-def setup_func():
-    if not os.path.exists(testParamsDir):
-        os.mkdir(testParamsDir)
-
-def teardown_func():
-    #print "Finished testing", __file__
-    pass
-
-    
-def testReadWrite():
-    #get n_img from ptv.par
+        
+def main(referenceParamsDir):
+    print('inside run')
     ptvParams = parameters.PtvParams()
     ptvParams.path = referenceParamsDir
+    print(ptvParams.path)
+    import pdb; pdb.set_trace()
     ptvParams.read()
     n_img = ptvParams.n_img
+    print(n_img)
     n_pts = 4
     
     
     #loop all .par files in the parameters directory
     paramdirfiles = os.listdir(referenceParamsDir)
+    print(paramdirfiles)
     for paramfile in paramdirfiles:
         if paramfile.endswith('.par'):
-            yield checkSingleParamFile, paramfile, n_img, n_pts
-(testReadWrite.setup, testReadWrite.teardown) = (setup_func, teardown_func)
+            yield SingleParamFile_to_yaml, paramfile, n_img, n_pts
 
 
-def checkSingleParamFile(paramfile, n_img, n_pts):
+def SingleParamFile_to_yaml(paramfile, n_img, n_pts):
     params = paramsFactory(paramfile, n_img, n_pts)
     if params is None:
         print("No parameters class found for file %s." % (paramfile))
-        assert False
         return
     
     params.path = referenceParamsDir
@@ -98,56 +87,30 @@ def checkSingleParamFile(paramfile, n_img, n_pts):
         params._to_yaml()
     except:
         print("Error writing YAML %s " % paramfile.replace('.par','.yaml') )
-        assert False
-    
-    params.path = testParamsDir
-    testFile = params.filepath()
-    try:
-        params.write()
-    except:
-        print("Error writing %s to %s:" % (paramfile, params.path), sys.exc_info())
-        assert False
-
-    if not compareFiles(referenceFile, testFile, True):
-        assert False
-    
-
-
-
-def compareFiles(f1, f2, verbose = False):
-    readlines = lambda f: open(f, "r").readlines()
-    lns1 = readlines(f1)
-    lns2 = readlines(f2)
-    
-    def getLen(lns):
-        for i in reversed(list(range(len(lns)))):
-            if lns[i].strip() != '':
-                return i
-        return 0
-    
-    nlns1 = getLen(lns1)
-    nlns2 = getLen(lns2)
-    if nlns1 != nlns2:
-        if verbose:
-            print("Files %s and %s have different amount of lines (%d/%d)." % (f1, f2, nlns1, nlns2))
-        return False
-        
-    for n in range(nlns1):
-        l1 = lns1[n].strip()
-        l2 = lns2[n].strip()
-        if l1 != l2:
-            try: #check for float values
-                if abs(float(l1)-float(l2)) > 1e-10: #l1!=l2
-                    raise                    
-            except:
-                if verbose:
-                    print("Files %s and %s differ at line %d (%s/%s)" % (f1, f2, n+1, l1, l2))
-                return False
-    return True
+        assert False    
     
     
     
+if __name__ == '__main__':
+    if len(sys.argv) > 1:
+        referenceParamsDir  = os.path.join(os.path.abspath(sys.argv[1]),'parameters')
+    else:
+        referenceParamsDir = '/Users/alex/Documents/OpenPTV/test_cavity/parameters'
+    ptvParams = parameters.PtvParams()
+    ptvParams.path = referenceParamsDir
+    print('Working in %s' % ptvParams.path)
+    ptvParams.read()
+    n_img = ptvParams.n_img
+    print(n_img)
+    n_pts = 4
     
+    
+    #loop all .par files in the parameters directory
+    paramdirfiles = os.listdir(referenceParamsDir)
+    print(paramdirfiles)
+    for paramfile in paramdirfiles:
+        if paramfile.endswith('.par'):
+            SingleParamFile_to_yaml(paramfile, n_img, n_pts)
     
     
     

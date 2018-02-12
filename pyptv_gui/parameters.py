@@ -1,10 +1,10 @@
+from __future__ import print_function
+from __future__ import absolute_import
 # TODO: check if OrientParams should contain Bools or Ints
 # TODO: change set() functions to either have no default values, or have
 # None value signify 'no change to parameter'.
 
-from traits.etsconfig.api import ETSConfig
-ETSConfig.toolkit = 'qt4' 
-
+from builtins import range
 import os
 import shutil
 # from traits.api import *
@@ -12,22 +12,13 @@ import shutil
 from traits.api \
     import HasTraits, Str, Float, Int, List, Bool
 
-import general
-import pyface.api as pyfaceapi
-
-from optv.parameters import MultimediaParams, ControlParams, VolumeParams, \
-    SequenceParams, TrackingParams, TargetParams
-
-# Next line is for debug (unbuffer stdout)
-#sys.stdout = sys.stderr
-
+import yaml
 
 # Temporary path for parameters (active run will be copied here)
 temp_path = 'parameters'
+max_camera = 4
 
 g = lambda f: f.readline().strip()
-
-MAX_CAM = 4
 
 # Base class for all parameters classes
 
@@ -58,17 +49,24 @@ class Parameters(HasTraits):
     # writes values from the object to a file
     def write(self):
         raise NotImplementedError()
+        
+    def _to_yaml(self):
+        """ Creates YAML file """
+        yaml_file = self.filepath().replace('.par','.yaml')
+        with open(yaml_file, 'w') as outfile:
+            yaml.dump(self.__dict__, outfile, default_flow_style=False)
 
 
-# # Print detailed error to the console and show the user a friendly error window
+
+# Print detailed error to the console and show the user a friendly error window
 def error(owner, msg):
-    print "Exception caught, message: %s" % (msg)
-    general.printException()
-    pyfaceapi.error(owner, msg)
+    print("Exception caught, message: %s" % (msg))
+    # general.printException()
+    # pyfaceapi.error(owner, msg)
 
 
 def warning(msg):
-    print "Warning message: %s" % (msg)
+    print("Warning message: %s" % (msg))
 
 
 # Reads a parameters directory and returns a dictionary with all parameter
@@ -95,7 +93,7 @@ def readParamsDir(par_path):
            ShakingParams: ShakingParams(path=par_path)
            }
 
-    for parType in ret.keys():
+    for parType in list(ret.keys()):
         if parType == PtvParams:
             continue
         parObj = ret[parType]
@@ -110,7 +108,7 @@ def copy_params_dir(src, dest):
     files = [f for f in os.listdir(src) if f.endswith('.par')]
     if not os.path.exists(dest):
         os.mkdir(dest)
-    print "copy from %s to %s" % (src, dest)
+    print("copy from %s to %s" % (src, dest))
     for f in files:
         shutil.copyfile(os.path.abspath(os.path.join(src, f)),
                         os.path.abspath(os.path.join(dest, f)))
@@ -119,7 +117,7 @@ def copy_params_dir(src, dest):
 ####### Specific parameter classes #######
 
 class PtvParams(Parameters):
-    """
+    """ ptv.par
         ptv.par:        main parameter file
         4       number of cameras
         cam3.100        image of first camera
@@ -180,20 +178,18 @@ class PtvParams(Parameters):
             self.n_img = int(g(f))
             self.img_name = []
             self.img_cal = []
-            for i in range(MAX_CAM):
-            # for i in range(self.n_img):
+#            for i in range(self.n_img):
+            for i in range(max_camera):
                 self.img_name.append(g(f))
                 self.img_cal.append(g(f))
 
-            for i in range(self.n_img):
+            for i in range(max_camera):
                 fname = self.img_name[i]
                 if not os.path.isfile(fname):
-                    warning("File not found %s." % fname)
+                    warning("Error reading %s." % fname)
                 fname = self.img_cal[i]
                 if not os.path.isfile(fname):
-                    warning("File not found %s." % fname)
-
-
+                    warning("Error reading %s." % fname)
 
             self.hp_flag = (int(g(f)) != 0)
             self.allCam_flag = (int(g(f)) != 0)
@@ -217,8 +213,8 @@ class PtvParams(Parameters):
         try:
             f = open(self.filepath(), 'w')
             f.write("%d\n" % self.n_img)
-            for i in range(MAX_CAM):
-            # for i in range(self.n_img):
+#            for i in range(self.n_img):
+            for i in range(max_camera):
                 f.write("%s\n" % self.img_name[i])
                 f.write("%s\n" % self.img_cal[i])
 
@@ -240,13 +236,7 @@ class PtvParams(Parameters):
         except:
             error(None, "Error writing %s." % self.filepath())
             return False
-
-
-class NewControlParams():
-    """
-    Attempt to use only optv.parameters
-    """
-    pass
+        
 
 
 class CalOriParams(Parameters):
@@ -267,10 +257,7 @@ class CalOriParams(Parameters):
         0   flag for frame (0), odd (1) or even fields (2)
     """
 
-    def set(self, *vars):
-        pass
-
-    #     fixp_name = Str
+#     fixp_name = Str
 #     img_cal_name = List
 #     img_ori = List
 #     tiff_flag = Bool
@@ -281,55 +268,58 @@ class CalOriParams(Parameters):
                  img_ori=List, tiff_flag=Bool, pair_flag=Bool,
                  chfield=Int, path=Parameters.default_path):
         Parameters.__init__(self, path)
-        
-        
+        self.set(n_img, fixp_name, img_cal_name,
+                 img_ori, tiff_flag, pair_flag, chfield)
+
+    def set(self, n_img=Int, fixp_name=Str, img_cal_name=List, img_ori=List, tiff_flag=Bool, pair_flag=Bool, chfield=Int):
         self.n_img = n_img
-        self.fixp_name, self.img_cal_name, self.img_ori, self.tiff_flag, \
-        self.pair_flag, self.chfield = fixp_name, img_cal_name, img_ori, \
-                                     tiff_flag, pair_flag, chfield
-    
+        (self.fixp_name, self.img_cal_name, self.img_ori, self.tiff_flag, self.pair_flag, self.chfield) = \
+            (fixp_name, img_cal_name, img_ori, tiff_flag, pair_flag, chfield)
+
     def filename(self):
         return "cal_ori.par"
 
     def read(self):
-        print("Inside CalOriParams, path is ", self.filepath())
+        # print "inside CalOriParams.read"
         try:
-            with open(self.filepath(), 'r') as f:
-                self.fixp_name = g(f)
-                if not os.path.isfile(self.fixp_name):
-                    error(None, "Error reading %s." % self.fixp_name)
-    
-                self.img_cal_name = []
-                self.img_ori = []
-                for i in range(MAX_CAM):
-                # for i in range(self.n_img):
-                    self.img_cal_name.append(g(f))
-                    self.img_ori.append(g(f))
-    
-                # test if files are present, protects from segfaults
-                for im in self.img_cal_name:
-                    if not os.path.isfile(im):
-                        warning("Error reading %s." % im)
-                    
+            f = open(self.filepath(), 'r')
 
-                for ori in self.img_ori:
-                    if not os.path.isfile(ori):
-                        warning("Error reading %s." % ori)
-    
-                self.tiff_flag = (int(g(f)) != 0)  # <-- overwrites the above
-                self.pair_flag = (int(g(f)) != 0)
-                self.chfield = int(g(f))
+            self.fixp_name = g(f)
+            if not os.path.isfile(self.fixp_name):
+                error(None, "Error reading %s." % self.fixp_name)
+
+            self.img_cal_name = []
+            self.img_ori = []
+#            for i in range(self.n_img):
+            for i in range(max_camera):
+                self.img_cal_name.append(g(f))
+                self.img_ori.append(g(f))
+
+            # test if files are present, protects from segfaults
+            for i in range(max_camera):
+                fname = self.img_cal_name[i]
+                if not os.path.isfile(fname):
+                    warning("Error reading %s." % fname)
+                fname = self.img_ori[i]
+                if not os.path.isfile(fname):
+                    warning("Error reading %s." % fname)
+
+            self.tiff_flag = (int(g(f)) != 0)  # <-- overwrites the above
+            self.pair_flag = (int(g(f)) != 0)
+            self.chfield = int(g(f))
+
+            f.close()
         except:
-            error(None, "Error reading from %s." % self.filepath())
+            error(None, "Error reading %s." % self.filepath())
 
     def write(self):
-        print("inside CalOriParams.write \n")
+        # print "inside CalOriParams.write"
         try:
             f = open(self.filepath(), 'w')
 
             f.write("%s\n" % self.fixp_name)
-            for i in range(MAX_CAM):
-            # for i in range(self.n_img):
+#            for i in range(self.n_img):
+            for i in range(max_camera):
                 f.write("%s\n" % self.img_cal_name[i])
                 f.write("%s\n" % self.img_ori[i])
 
@@ -376,7 +366,8 @@ class SequenceParams(Parameters):
         try:
             f = open(self.filepath(), 'r')
             self.base_name = []
-            for i in range(self.n_img):
+#            for i in range(self.n_img):
+            for i in range(max_camera):
                 self.base_name.append(g(f))
 
             self.first = int(g(f))
@@ -390,7 +381,8 @@ class SequenceParams(Parameters):
         # print "inside SequenceParams.write"
         try:
             f = open(self.filepath(), 'w')
-            for i in range(self.n_img):
+#            for i in range(self.n_img):
+            for i in range(max_camera):
                 f.write("%s\n" % self.base_name[i])
 
             f.write("%d\n" % self.first)
@@ -540,8 +532,8 @@ class TargRecParams(Parameters):
             f = open(self.filepath(), 'r')
 
             self.gvthres = []
-            for i in range(MAX_CAM):
-            # for i in range(self.n_img):
+#            for i in range(self.n_img):
+            for i in range(max_camera):
                 self.gvthres.append(int(g(f)))
 
             self.disco = int(g(f))
@@ -562,8 +554,8 @@ class TargRecParams(Parameters):
         # print "inside TargRecParams.write"
         try:
             f = open(self.filepath(), 'w')
-            for i in range(MAX_CAM):
-            # for i in range(self.n_img):
+#            for i in range(self.n_img):
+            for i in range(max_camera):
                 f.write("%d\n" % self.gvthres[i])
 
             f.write("%d\n" % self.disco)
@@ -624,8 +616,8 @@ class ManOriParams(Parameters):
             f = open(self.filepath(), 'r')
 
             self.nr = []
-            for i in range(MAX_CAM):
-            # for i in range(self.n_img):
+#            for i in range(self.n_img):
+            for i in range(max_camera):
                 self.nr.append([])
                 for j in range(self.n_pts):
                     self.nr[i].append(int(g(f)))
@@ -638,8 +630,8 @@ class ManOriParams(Parameters):
         # print "inside # Params.write"
         try:
             f = open(self.filepath(), 'w')
-            for i in range(MAX_CAM):
-            # for i in range(self.n_img):
+#            for i in range(self.n_img):
+            for i in range(max_camera):
                 for j in range(self.n_pts):
                     f.write("%d\n" % self.nr[i][j])
 
@@ -765,38 +757,26 @@ class OrientParams(Parameters):
         0 interf
     """
 
-    def set(self, *vars):
-        pass
-
-    #     pnfo = Int
-#     cc = Int
-#     xh = Int
-#     yh = Int
+#     pnfo = Int
+#     prin_dis = Int
+#     xp = Int
+#     yp = Int
 #     k1 = Int
 #     k2 = Int
 #     k3 = Int
 #     p1 = Int
 #     p2 = Int
-#     scale = Int
-#     shear = Int
+#     scx = Int
+#     she = Int
 #     interf = Int
-# names = ['cc', 'xh', 'yh', 'k1', 'k2', 'k3', 'p1', 'p2', 'scale', 'shear']
 
     def __init__(self, pnfo=Int, cc=Int, xh=Int, yh=Int, k1=Int, k2=Int, k3=Int, p1=Int, p2=Int, scale=Int, shear=Int, interf=Int, path=Parameters.default_path):
         Parameters.__init__(self, path)
-        self.pnfo = pnfo
-        self.cc = cc
-        self.xh = xh
-        self.yh = yh
-        self.k1 = k1
-        self.k2 = k2
-        self.k3 = k3
-        self.p1 = p1
-        self.p2 = p2
-        self.scale = scale
-        self.shear =shear
-        self.interf = interf
-        self.path = path
+        self.set(pnfo, cc, xh, yh, k1, k2, k3, p1, p2, scale, shear, interf)
+
+    def set(self, pnfo=Int, cc=Int, xh=Int, yh=Int, k1=Int, k2=Int, k3=Int, p1=Int, p2=Int, scale=Int, shear=Int, interf=Int):
+        (self.pnfo, self.cc, self.xh, self.yh, self.k1, self.k2, self.k3, self.p1, self.p2, self.scale, self.shear, self.interf) = \
+            (pnfo, cc, xh, yh, k1, k2, k3, p1, p2, scale, shear, interf)
 
     def filename(self):
         return "orient.par"
@@ -1132,6 +1112,92 @@ class ShakingParams(Parameters):
             f.write("%d\n" % self.shaking_max_num_frames)
 
             f.close()
+            return True
+        except:
+            error(None, "Error writing %s." % self.filepath())
+            return False
+
+class MultiPlaneParams(Parameters):
+    # m parameters
+    """
+        3 :    number of planes
+        img/calib_a_cam  : name of the plane
+        img/calib_b_cam  : name of the plane
+        img/calib_c_cam  : name of the plane
+
+    """
+
+    def __init__(self, n_img=Int, n_planes=Int, plane_name=[], 
+                 path=Parameters.default_path):
+        Parameters.__init__(self, path)
+        self.set(n_img, n_planes, plane_name)
+
+    def set(self, n_img=Int, n_planes=Int, plane_name=[]):
+        self.n_img = n_img
+        (self.n_planes, self.plane_name) = (n_planes, plane_name)
+
+    def filename(self):
+        return "multi_planes.par"
+
+    def read(self):
+        try:
+            with open(self.filepath(), 'r') as f:
+                self.n_planes = int(g(f))
+                for i in range(self.n_planes):
+                    self.plane_name.append(g(f))
+                    if not os.path.isfile(self.plane_name[i]):
+                        print("%s is missing." % self.plane_name[i])
+
+        except:
+            error(None, "Error reading %s." % self.filepath())
+
+    def write(self):
+        # print "inside MultiPlane.write"
+        try:
+            with open(self.filepath(), 'w') as f:
+
+                f.write("%d\n" % self.n_planes)
+    #            for i in range(self.n_img):
+                for i in range(self.n_planes):
+                    f.write("%s\n" % self.plane_name[i])
+ 
+                return True
+        except:
+            error(None, "Error writing %s." % self.filepath())
+            return False
+        
+class SortGridParams(Parameters):
+    # m parameters
+    """
+        20 :    pixels, radius of search for a target point
+
+    """
+
+    def __init__(self, n_img=Int, radius = Int, 
+                 path=Parameters.default_path):
+        Parameters.__init__(self, path)
+        self.set(n_img, radius)
+
+    def set(self, n_img=Int, radius=Int):
+        self.n_img = n_img
+        self.radius = radius
+
+    def filename(self):
+        return "sortgrid.par"
+
+    def read(self):
+        try:
+            with open(self.filepath(), 'r') as f:
+                self.radius = int(g(f))
+
+        except:
+            error(None, "Error reading %s." % self.filepath())
+
+    def write(self):
+        try:
+            with open(self.filepath(), 'w') as f:
+                f.write("%d\n" % self.radius)
+
             return True
         except:
             error(None, "Error writing %s." % self.filepath())
