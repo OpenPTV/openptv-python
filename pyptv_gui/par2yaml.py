@@ -76,7 +76,7 @@ def SingleParamFile_to_yaml(paramfile, n_img, n_pts):
         return
     
     params.path = referenceParamsDir
-    referenceFile = params.filepath()
+    # referenceFile = params.filepath()
     try:
         params.read()
     except:
@@ -84,7 +84,7 @@ def SingleParamFile_to_yaml(paramfile, n_img, n_pts):
         assert False
 
     try:
-        params._to_yaml()
+        params.to_yaml()
     except:
         print("Error writing YAML %s " % paramfile.replace('.par','.yaml') )
         assert False    
@@ -113,4 +113,11 @@ if __name__ == '__main__':
             SingleParamFile_to_yaml(paramfile, n_img, n_pts)
     
     
-    
+
+
+    ptvParams_yaml = parameters.PtvParams()
+    ptvParams_yaml.path = referenceParamsDir
+    print('Working in %s' % ptvParams_yaml.path)
+    ptvParams_yaml.from_yaml()
+    assert(ptvParams.n_img == ptvParams_yaml.n_img)
+    assert (ptvParams.allCam_flag == ptvParams_yaml.allCam_flag)

@@ -91,7 +91,8 @@ def checkSingleParamFile(paramfile, n_img, n_pts):
     try:
         params.read()
     except:
-        print("Error reading %s from %s:" % (paramfile, params.path), sys.exc_info())
+        print("Error reading %s from %s:" % (paramfile, params.path),
+              sys.exc_info())
         assert False
 
     try:
@@ -105,7 +106,8 @@ def checkSingleParamFile(paramfile, n_img, n_pts):
     try:
         params.write()
     except:
-        print("Error writing %s to %s:" % (paramfile, params.path), sys.exc_info())
+        print("Error writing %s to %s:" % (paramfile, params.path),
+              sys.exc_info())
         assert False
 
     if not compareFiles(referenceFile, testFile, True):
@@ -129,7 +131,8 @@ def compareFiles(f1, f2, verbose = False):
     nlns2 = getLen(lns2)
     if nlns1 != nlns2:
         if verbose:
-            print("Files %s and %s have different amount of lines (%d/%d)." % (f1, f2, nlns1, nlns2))
+            print("Files %s and %s have different amount of lines (%d/%d)." %
+                  (f1, f2, nlns1, nlns2))
         return False
         
     for n in range(nlns1):
@@ -138,10 +141,11 @@ def compareFiles(f1, f2, verbose = False):
         if l1 != l2:
             try: #check for float values
                 if abs(float(l1)-float(l2)) > 1e-10: #l1!=l2
-                    raise                    
+                    print("two floats are different more than 1e-10")
             except:
                 if verbose:
-                    print("Files %s and %s differ at line %d (%s/%s)" % (f1, f2, n+1, l1, l2))
+                    print("Files %s and %s differ at line %d (%s/%s)" %
+                          (f1, f2, n+1, l1, l2))
                 return False
     return True
     

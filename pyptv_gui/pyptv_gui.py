@@ -17,15 +17,12 @@ from traits.etsconfig.api import ETSConfig
 
 ETSConfig.toolkit = 'qt4'
 
-from traits.api \
-    import HasTraits, Instance, Str, Int, List, Bool, Enum, Any
-from traitsui.api \
-    import TreeEditor, TreeNode, View, Item, \
-    Handler, Group, Separator, ListEditor
+import traits.api
+import traitsui.api
 
 from enable.component_editor import ComponentEditor
 from chaco.tools.image_inspector_tool import ImageInspectorTool
-from chaco.api import create_line_plot
+# from chaco.api import create_line_plot
 
 # from chaco.api import Plot, ArrayPlotData, gray
 from traitsui.menu import MenuBar, Menu, Action
@@ -35,21 +32,6 @@ from skimage.color import rgb2gray
 from skimage import img_as_ubyte
 from threading import Thread
 from pyface.api import GUI
-
-# Parse inputs:
-software_path = os.getcwd()
-print(software_path)
-
-# Path to the experiment
-if len(sys.argv) > 1:
-    exp_path = os.path.abspath(sys.argv[1])
-    if not os.path.isdir(exp_path):
-        raise OSError("Wrong experimental directory %s " % exp_path)
-
-    os.chdir(exp_path)
-else:
-    print('Please provide an experimental directory as an input, fallback to a default\n')
-    exp_path = '../../test_cavity'
 
 
 # Import from the liboptv bindings
@@ -71,8 +53,8 @@ from chaco.api import Plot, ArrayPlotData, gray, ImagePlot, ArrayDataSource, \
 class Clicker(ImageInspectorTool):
     """  Clicker class handles right mouse click actions from the tree and menubar actions
     """
-    left_changed = Int(1)
-    right_changed = Int(1)
+    left_changed = traits.api.Int(1)
+    right_changed = traits.api.Int(1)
     x = 0
     y = 0
 
@@ -117,22 +99,22 @@ class Clicker(ImageInspectorTool):
 
 
 # --------------------------------------------------------------
-class CameraWindow(HasTraits):
+class CameraWindow(traits.api.HasTraits):
     """ CameraWindow class contains the relevant information and functions for a single camera window: image, zoom, pan
     important members:
         _plot_data  - contains image data to display (used by update_image)
         _plot - instance of Plot class to use with _plot_data
         _click_tool - instance of Clicker tool for the single camera window, to handle mouse processing
     """
-    _plot_data = Instance(ArrayPlotData)
-    _plot = Instance(Plot)
-    _click_tool = Instance(Clicker)
-    rclicked = Int(0)
+    _plot_data = traits.api.Instance(ArrayPlotData)
+    _plot = traits.api.Instance(Plot)
+    _click_tool = traits.api.Instance(Clicker)
+    rclicked = traits.api.Int(0)
 
     cam_color = ''
 
-    name = Str
-    view = View(Item(name='_plot', editor=ComponentEditor(), show_label=False))
+    name = traits.api.Str
+    view = traitsui.api.View(traitsui.api.Item(name='_plot', editor=ComponentEditor(), show_label=False))
 
     # view = View( Item(name='_plot',show_label=False) )
 
@@ -140,7 +122,7 @@ class CameraWindow(HasTraits):
         """
             Initialization of plot system
         """
-        HasTraits.__init__(self)
+        traits.api.HasTraits.__init__(self)
         padd = 25
         self._plot_data = ArrayPlotData()
         self._plot = Plot(self._plot_data, default_origin="top left")
@@ -199,7 +181,7 @@ class CameraWindow(HasTraits):
             self._plot_data.set_data('imagedata', image.astype(np.byte))
 
         if not hasattr(self, '_img_plot'):  # make a new plot if there is nothing to update
-            self._img_plot = Instance(ImagePlot)
+            self._img_plot = traits.api.Instance(ImagePlot)
             self._img_plot = self._plot.img_plot('imagedata', colormap=gray)[0]
             self.attach_tools()
 
@@ -373,7 +355,7 @@ class TrackThread(Thread):
         print("tracking with display thread finished")
 
 
-class TreeMenuHandler(Handler):
+class TreeMenuHandler(traitsui.api.Handler):
     """ TreeMenuHanlder contains all the callback actions of menu bar, 
     processing of tree editor, and reactions of the GUI to the user clicks
     possible function declarations:
@@ -863,15 +845,15 @@ menu_bar = MenuBar(
 # ----------------------------------------
 # tree editor for the Experiment() class
 #
-tree_editor_exp = TreeEditor(
+tree_editor_exp = traitsui.api.TreeEditor(
     nodes=[
-        TreeNode(
+        traitsui.api.TreeNode(
             node_for=[Experiment],
             auto_open=True,
             children='',
             label='=Experiment',
         ),
-        TreeNode(
+        traitsui.api.TreeNode(
             node_for=[Experiment],
             auto_open=True,
             children='paramsets',
@@ -881,7 +863,7 @@ tree_editor_exp = TreeEditor(
                 CopySetParams
             )
         ),
-        TreeNode(
+        traitsui.api.TreeNode(
             node_for=[Paramset],
             auto_open=True,
             children='',
@@ -891,11 +873,11 @@ tree_editor_exp = TreeEditor(
                 CopySetParams,
                 RenameSetParams,
                 DeleteSetParams,
-                Separator(),
+                traitsui.api.Separator(),
                 ConfigMainParams,
                 ConfigCalibParams,
                 ConfigTrackParams,
-                Separator(),
+                traitsui.api.Separator(),
                 SetAsDefault
             )
         )
@@ -907,15 +889,15 @@ tree_editor_exp = TreeEditor(
 
 
 # -------------------------------------------------------------------------
-class Plugins(HasTraits):
-    track_list = List
-    seq_list = List
-    track_alg = Enum(values='track_list')
-    sequence_alg = Enum(values='seq_list')
-    view = View(
-        Group(
-            Item(name='track_alg', label="Choose tracking algorithm:"),
-            Item(name='sequence_alg', label="Choose sequence algorithm:")
+class Plugins(traits.api.HasTraits):
+    track_list = traits.api.List
+    seq_list = traits.api.List
+    track_alg = traits.api.Enum(values='track_list')
+    sequence_alg = traits.api.Enum(values='seq_list')
+    view = traitsui.api.View(
+        traitsui.api.Group(
+            traitsui.api.Item(name='track_alg', label="Choose tracking algorithm:"),
+            traitsui.api.Item(name='sequence_alg', label="Choose sequence algorithm:")
 
         ),
         buttons=['OK'],
@@ -947,28 +929,28 @@ class Plugins(HasTraits):
 
 
 # ----------------------------------------------
-class MainGUI(HasTraits):
+class MainGUI(traits.api.HasTraits):
     """ MainGUI is the main class under which the Model-View-Control (MVC) model is defined
     """
-    camera_list = List
+    camera_list = traits.api.List
     imgplt_flag = 0
-    pass_init = Bool(False)
-    update_thread_plot = Bool(False)
-    tr_thread = Instance(TrackThread)
-    selected = Any
+    pass_init = traits.api.Bool(False)
+    update_thread_plot = traits.api.Bool(False)
+    tr_thread = traits.api.Instance(TrackThread)
+    selected = traits.api.Any
 
     # Defines GUI view --------------------------
-    view = View(
-        Group(
-            Group(Item(name='exp1', editor=tree_editor_exp, show_label=False, width=-400, resizable=False),
-                  Item('camera_list', style='custom', editor=
-                  ListEditor(use_notebook=True, deletable=False,
-                             dock_style='tab',
-                             page_name='.name',
-                             selected='selected'),
-                       show_label=False),
-                  orientation='horizontal',
-                  show_left=False),
+    view = traitsui.api.View(
+        traitsui.api.Group(
+            traitsui.api.Group(traitsui.api.Item(name='exp1', editor=tree_editor_exp, show_label=False, width=-400, resizable=False),
+                               traitsui.api.Item('camera_list', style='custom', editor=
+                  traitsui.api.ListEditor(use_notebook=True, deletable=False,
+                                          dock_style='tab',
+                                          page_name='.name',
+                                          selected='selected'),
+                                                 show_label=False),
+                               orientation='horizontal',
+                               show_left=False),
             orientation='vertical'),
         title='pyPTV',
         id='main_view',
@@ -984,7 +966,7 @@ class MainGUI(HasTraits):
     # ---------------------------------------------------
     # Constructor and Chaco windows initialization
     # ---------------------------------------------------
-    def __init__(self):
+    def __init__(self, exp_path):
         super(MainGUI, self).__init__()
         colors = ['yellow', 'green', 'red', 'blue']
         self.exp1 = Experiment()
@@ -1155,13 +1137,29 @@ class MainGUI(HasTraits):
 
 # -------------------------------------------------------------
 if __name__ == '__main__':
-    import general
+    from general import printException
+
+    # Parse inputs:
+    software_path = os.getcwd()
+    print('Software path is %s ' % software_path)
+
+    # Path to the experiment
+    if len(sys.argv) > 1:
+        exp_path = os.path.abspath(sys.argv[1])
+        if not os.path.isdir(exp_path):
+            raise OSError("Wrong experimental directory %s " % exp_path)
+
+        os.chdir(exp_path)
+    else:
+        print(
+            'Please provide an experimental directory as an input, fallback to a default\n')
+        exp_path = '../../test_cavity'
+
     try:
-        main_gui = MainGUI()
-        # gui1.exp1.populate_runs(exp_path)
+        main_gui = MainGUI(exp_path)
         main_gui.configure_traits()
     except:
         print("something wrong with the software or folder")
-        general.printException()
+        printException()
 
     os.chdir(software_path)  # get back to the original workdir

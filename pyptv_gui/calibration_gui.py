@@ -60,8 +60,8 @@ class ClickerTool(ImageInspectorTool):
             # image_data = plot.value
             self.x = (x_index)
             self.y = (y_index)
-            print self.x
-            print self.y
+            print(self.x)
+            print(self.y)
             self.left_changed = 1 - self.left_changed
             self.last_mouse_position = (event.x, event.y)
 
@@ -76,8 +76,8 @@ class ClickerTool(ImageInspectorTool):
             self.y = (y_index)
 
             self.right_changed = 1 - self.right_changed
-            print self.x
-            print self.y
+            print(self.x)
+            print(self.y)
 
             self.last_mouse_position = (event.x, event.y)
 
@@ -141,7 +141,7 @@ class PlotWindow(HasTraits):
             self.plot_num_overlay(self._x, self._y, self.man_ori)
         else:
             if (self._right_click_avail):
-                print "deleting point"
+                print("deleting point")
                 self.py_rclick_delete(self._click_tool.x,
                                       self._click_tool.y, self.cameraN)
                 x = []
@@ -484,7 +484,7 @@ class CalibrationGUI(HasTraits):
         for i in range(self.n_cams):
             if len(self.camera[i]._x) < 4:
                 print("inside manual click")
-                print self.camera[i]._x
+                print(self.camera[i]._x)
                 points_set = False
 
         if points_set:

@@ -24,24 +24,24 @@ class Sequence():
     def do_sequence(self):
         """ this function is callback for "tracking without display"
         """
-        print "inside denis_ext_sequence"
+        print("inside denis_ext_sequence")
         n_camera = self.exp1.active_params.m_params.Num_Cam
         print ("Starting sequence action")
         seq_first = self.exp1.active_params.m_params.Seq_First
         seq_last = self.exp1.active_params.m_params.Seq_Last
-        print seq_first, seq_last
+        print(seq_first, seq_last)
         base_name = []
         for i in range(n_camera):
             exec(
                 "base_name.append(self.exp1.active_params.m_params.Basename_%d_Seq)" % (i + 1))
-            print base_name[i]
+            print(base_name[i])
 
         self.ptv.py_sequence_init(0)  # init C sequence function
         # get parameters and pass to main loop
         stepshake = self.ptv.py_get_from_sequence_init()
         if not stepshake:
             stepshake = 1
-        print stepshake
+        print(stepshake)
         temp_img = np.array([], dtype=np.ubyte)
         # main loop - format image name, read it and call
         # v.py_sequence_loop(..) for current step
@@ -58,7 +58,7 @@ class Sequence():
                 try:
                     temp_img = imread(img_name).astype(np.ubyte)
                 except:
-                    print "Error reading file"
+                    print("Error reading file")
 
                 self.ptv.py_set_img(temp_img, j)
             self.ptv.py_sequence_loop(0, i)

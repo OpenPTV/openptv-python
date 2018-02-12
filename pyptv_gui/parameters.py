@@ -50,11 +50,27 @@ class Parameters(HasTraits):
     def write(self):
         raise NotImplementedError()
         
-    def _to_yaml(self):
+    def to_yaml(self):
         """ Creates YAML file """
         yaml_file = self.filepath().replace('.par','.yaml')
         with open(yaml_file, 'w') as outfile:
             yaml.dump(self.__dict__, outfile, default_flow_style=False)
+
+    def from_yaml(self):
+        yaml_file = self.filepath().replace('.par', '.yaml')
+        with open(yaml_file) as f:
+            yaml_args = yaml.load(f)
+
+
+        for k,v in yaml_args.items():
+            if isinstance(v,list) and len(v) > 1: # multi line
+                setattr(self,k,[])
+                tmp = []
+                for i,item in enumerate(v):
+                    tmp.append(item)
+                setattr(self, k, tmp)
+
+            setattr(self, k, v)
 
 
 
@@ -103,9 +119,7 @@ def readParamsDir(par_path):
 
 
 def copy_params_dir(src, dest):
-    # solves problem of copying under .svn
-    # import pdb; pdb.set_trace()
-    files = [f for f in os.listdir(src) if f.endswith('.par')]
+    files = [f for f in os.listdir(src) if f.endswith(('.par','.yaml'))]
     if not os.path.exists(dest):
         os.mkdir(dest)
     print("copy from %s to %s" % (src, dest))
@@ -186,10 +200,10 @@ class PtvParams(Parameters):
             for i in range(max_camera):
                 fname = self.img_name[i]
                 if not os.path.isfile(fname):
-                    warning("Error reading %s." % fname)
+                    warning("%s not found" % fname)
                 fname = self.img_cal[i]
                 if not os.path.isfile(fname):
-                    warning("Error reading %s." % fname)
+                    warning("%s not found" % fname)
 
             self.hp_flag = (int(g(f)) != 0)
             self.allCam_flag = (int(g(f)) != 0)
@@ -206,7 +220,7 @@ class PtvParams(Parameters):
 
             f.close()
         except:
-            error(None, "Error reading %s." % self.filepath())
+            error(None, "%s not found" % self.filepath())
 
     def write(self):
         # print "inside PtvParams.write"
@@ -286,7 +300,7 @@ class CalOriParams(Parameters):
 
             self.fixp_name = g(f)
             if not os.path.isfile(self.fixp_name):
-                error(None, "Error reading %s." % self.fixp_name)
+                error(None, "%s not found" % self.fixp_name)
 
             self.img_cal_name = []
             self.img_ori = []
@@ -299,10 +313,10 @@ class CalOriParams(Parameters):
             for i in range(max_camera):
                 fname = self.img_cal_name[i]
                 if not os.path.isfile(fname):
-                    warning("Error reading %s." % fname)
+                    warning("%s not found" % fname)
                 fname = self.img_ori[i]
                 if not os.path.isfile(fname):
-                    warning("Error reading %s." % fname)
+                    warning("%s not found" % fname)
 
             self.tiff_flag = (int(g(f)) != 0)  # <-- overwrites the above
             self.pair_flag = (int(g(f)) != 0)
@@ -310,7 +324,7 @@ class CalOriParams(Parameters):
 
             f.close()
         except:
-            error(None, "Error reading %s." % self.filepath())
+            error(None, "%s not found" % self.filepath())
 
     def write(self):
         # print "inside CalOriParams.write"
@@ -375,7 +389,7 @@ class SequenceParams(Parameters):
 
             f.close()
         except:
-            error(None, "Error reading %s." % self.filepath())
+            error(None, "%s not found" % self.filepath())
 
     def write(self):
         # print "inside SequenceParams.write"
@@ -456,7 +470,7 @@ class CriteriaParams(Parameters):
 
             f.close()
         except:
-            error(None, "Error reading %s." % self.filepath())
+            error(None, "%s not found" % self.filepath())
 
     def write(self):
         # print "inside CriteriaParams.write"
@@ -548,7 +562,7 @@ class TargRecParams(Parameters):
 
             f.close()
         except:
-            error(None, "Error reading %s." % self.filepath())
+            error(None, "%s not found" % self.filepath())
 
     def write(self):
         # print "inside TargRecParams.write"
@@ -624,7 +638,7 @@ class ManOriParams(Parameters):
 
             f.close()
         except:
-            error(None, "Error reading %s." % self.filepath())
+            error(None, "%s not found" % self.filepath())
 
     def write(self):
         # print "inside # Params.write"
@@ -708,7 +722,7 @@ class DetectPlateParams(Parameters):
 
             f.close()
         except:
-            error(None, "Error reading %s." % self.filepath())
+            error(None, "%s not found" % self.filepath())
 
     def write(self):
         # print "inside DetectPlateParams.write"
@@ -801,7 +815,7 @@ class OrientParams(Parameters):
 
             f.close()
         except:
-            error(None, "Error reading %s." % self.filepath())
+            error(None, "%s not found" % self.filepath())
 
     def write(self):
         # print "inside OrientParams.write"
@@ -869,7 +883,7 @@ class TrackingParams(Parameters):
             self.flagNewParticles = (int(g(f)) != 0)
             f.close()
         except:
-            error(None, "Error reading %s." % self.filepath())
+            error(None, "%s not found" % self.filepath())
 
     def write(self):
         try:
@@ -912,7 +926,7 @@ class PftVersionParams(Parameters):
 
             f.close()
         except:
-            error(None, "Error reading %s." % self.filepath())
+            error(None, "%s not found" % self.filepath())
 
     def write(self):
         # print "inside PftVersionParams.write"
@@ -959,7 +973,7 @@ class ExamineParams(Parameters):
 
             f.close()
         except:
-            error(None, "Error reading %s." % self.filepath())
+            error(None, "%s not found" % self.filepath())
 
     def write(self):
         # print "inside ExamineParams.write"
@@ -1031,7 +1045,7 @@ class DumbbellParams(Parameters):
 
             f.close()
         except:
-            error(None, "Error reading %s." % self.filepath())
+            error(None, "%s not found" % self.filepath())
 
     def write(self):
         # print "inside DumbbellParams.write"
@@ -1099,7 +1113,7 @@ class ShakingParams(Parameters):
 
             f.close()
         except:
-            error(None, "Error reading %s." % self.filepath())
+            error(None, "%s not found" % self.filepath())
 
     def write(self):
         # print "inside ShakingParams.write"
@@ -1149,7 +1163,7 @@ class MultiPlaneParams(Parameters):
                         print("%s is missing." % self.plane_name[i])
 
         except:
-            error(None, "Error reading %s." % self.filepath())
+            error(None, "%s not found" % self.filepath())
 
     def write(self):
         # print "inside MultiPlane.write"
@@ -1191,7 +1205,7 @@ class SortGridParams(Parameters):
                 self.radius = int(g(f))
 
         except:
-            error(None, "Error reading %s." % self.filepath())
+            error(None, "%s not found" % self.filepath())
 
     def write(self):
         try:
