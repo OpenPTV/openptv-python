@@ -52,7 +52,8 @@ setup(
     # this:
     #   py_modules=["my_module"],
 
-    install_requires=['numpy', 'scipy', 'chaco', 'traits', 'pyface', 'enable'],
+    install_requires=['numpy', 'scipy', 'chaco', 'traits', 'pyface', 'enable',
+                      'PyYAML'],
 
     # Will list examples once I add them in.
     # package_data={
