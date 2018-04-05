@@ -1,12 +1,14 @@
-OpenPTV-Python (PyPTV)
-======================
+"old" Python GUI for OpenPTV
+============================
 
-**OpenPTV-Python** (a.k.a **PyPTV**) is the Python version of [OpenPTV](http://www.openptv.net). It is basically the Python Traits GUI (from Enthought Inc.) that *interfaces* the OpenPTV library that includes all the core algorithms (correspondence, tracking, calibration, etc.) written in ANSI C. 
+**OpenPTV-Python** is the Python graphical user interface (GUI) for the [OpenPTV](http://www.openptv.net) library `liboptv`. It is basically the Traits, TraitsUI, Chaco, Enable based GUI (most are Enthought Inc. packages) that *interfaces* the OpenPTV library that includes all the core algorithms (correspondence, tracking, calibration, etc.) written in ANSI C. 
 
-Both PyPTV and the OpenPTV library are in the development phase and continuously refactored. Please follow the development on the community mailing list:
+Both the GUI and the OpenPTV library are in the development phase and continuously refactored. Please follow the development on the community mailing list:
 
 	openptv@googlegroups.com
 
+## Note that this GUI version is outdated, we move to PyPTV
+https://github.com/alexlib/pyptv
 
 ## Documentation, including installation instructions
 
