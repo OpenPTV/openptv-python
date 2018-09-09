@@ -64,7 +64,7 @@ void correspondences_4 (volume_par *vpar, control_par *cpar)
     con0[i].corr = 0;
   }
 
-  /* -------------if only one cam and 2D--------- */ //by Beat Lüthi June 2007
+  /* -------------if only one cam and 2D--------- */ //by Beat Lï¿½thi June 2007
   if(cpar->num_cams == 1){
 	  if(res_name[0]==0){
           sprintf (res_name, "rt_is");
@@ -169,7 +169,8 @@ void correspondences_4 (volume_par *vpar, control_par *cpar)
 				      con0[match0].p[1] = p2;
 				      con0[match0].p[2] = p3;
 				      con0[match0].p[3] = p4;
-				      con0[match0++].corr = corr;
+				      con0[match0].corr = corr;
+				      match0++;
 				      if (match0 == 4*nmax)	/* security */
 					{
 					  printf ("Overflow in correspondences:");
@@ -201,11 +202,12 @@ void correspondences_4 (volume_par *vpar, control_par *cpar)
 	  p2 = con0[i].p[1];	if (p2 > -1)	if (++tim[1][p2] > 1)	continue;
 	  p3 = con0[i].p[2];	if (p3 > -1)	if (++tim[2][p3] > 1)	continue;
 	  p4 = con0[i].p[3];	if (p4 > -1)	if (++tim[3][p4] > 1)	continue;
-	  con[match++] = con0[i];
+	  con[match] = con0[i];
+	  match++;
 	}
 
       match4 = match;
-      printf ("%d consistent quadruplets, \n", match4);	puts (buf);
+      printf ("%d consistent quadruplets, \n", match4);
     }
 
   /* ----------------------------------------------------------------------- */
@@ -246,7 +248,8 @@ void correspondences_4 (volume_par *vpar, control_par *cpar)
 									con0[match0].p[i1] = p1;
 									con0[match0].p[i2] = p2;
 									con0[match0].p[i3] = p3;
-									con0[match0++].corr = corr;
+									con0[match0].corr = corr;
+									match0++;
 								}
 								if (match0 == 4*nmax) {   /* security */
 									printf ("Overflow in correspondences:\n");
@@ -280,7 +283,7 @@ void correspondences_4 (volume_par *vpar, control_par *cpar)
 
       match3 = match - match4;
 
-	  printf ( "%d consistent quadruplets, %d triplets \n", match4, match3);
+	  printf ("%d consistent triplets \n", match3);
  		
       /* repair artifact (?) */
       if (cpar->num_cams == 3) for (i=0; i<match; i++)	con[i].p[3] = -1;
@@ -289,35 +292,53 @@ void correspondences_4 (volume_par *vpar, control_par *cpar)
   /* ----------------------------------------------------------------------- */
   /* ----------------------------------------------------------------------- */
 
+  for (i = 0; i < nmax; i++) {
+    for (j = 0; j < 4; j++) {
+        con0[i].p[j] = -1;
+    }
+    con0[i].corr = 0;
+  }
+
   /* search consistent pairs :  12, 13, 14, 23, 24, 34 */
-  /* only if an object model is available or if only 2 images are used */
+  /* only if an object model is available */
+
       if(cpar->num_cams > 1 && cpar->allCam_flag == 0){
-	printf("Search pairs");
+	      printf("Search pairs \n");
 
 
 		  match0 = 0;
-		  for (i1 = 0; i1 < cpar->num_cams - 1; i1++)
-			if ( cpar->num_cams == 2 || (num[0] < 64 && num[1] < 64 && num[2] < 64 && num[3] < 64))
-			  for (i2 = i1 + 1; i2 < cpar->num_cams; i2++)
-			for (i=0; i<num[i1]; i++)
-			  {
-				p1 = list[i1][i2][i].p1;
-				if (p1 > nmax  ||  tim[i1][p1] > 0)	continue;
+		  for (i1 = 0; i1 < cpar->num_cams - 1; i1++){
+			// if ( cpar->num_cams == 2 || (num[0] < 64 && num[1] < 64 && num[2] < 64 && num[3] < 64))
+			// printf("num array is: %d %d %d %d \n", num[0],num[1],num[2],num[3]);
+			if ( (num[0] < 64 && num[1] < 64 && num[2] < 64 && num[3] < 64)){
+			  for (i2 = i1 + 1; i2 < cpar->num_cams; i2++){
+			     printf(" cameras %d -> %d \n", i1, i2);
+			     for (i=0; i<num[i1]; i++){
+				    p1 = list[i1][i2][i].p1;
+				    if (p1 > nmax  ||  tim[i1][p1] > 0)	continue;
 
-				/* take only unambigous pairs */
-				if (list[i1][i2][i].n != 1)	continue;
+				     /* take only unambigous pairs */
+				     if (list[i1][i2][i].n != 1)	continue;
 
-				p2 = list[i1][i2][i].p2[0];
-				if (p2 > nmax  ||  tim[i2][p2] > 0)	continue;
+				     p2 = list[i1][i2][i].p2[0];
+				     if (p2 > nmax  ||  tim[i2][p2] > 0)	continue;
 
-				corr = list[i1][i2][i].corr[0] / list[i1][i2][i].dist[0];
+				      corr = list[i1][i2][i].corr[0] / list[i1][i2][i].dist[0];
 
-				if (corr > vpar->corrmin)
-				  {
-				con0[match0].p[i1] = p1;
-				con0[match0].p[i2] = p2;
-				con0[match0++].corr = corr;
-				  }
+
+				      if (corr > vpar->corrmin)
+				      {
+				          // printf("corr is %f\n",corr);
+				          // printf("match0 %d \n",match0);
+				          con0[match0].p[i1] = p1;
+				          con0[match0].p[i2] = p2;
+				          con0[match0].corr = corr;
+				          //printf(" con0 pointers %d p1,p2 %d %d \n",match0, con0[match0].p[i1],con0[match0].p[i2]);
+				          match0++;
+				       }
+			      }
+			     }
+			    } // num[0], [1], [2], [3] < 64
 			  }
 
 		  /* ----------------------------------------------------------------------- */
@@ -325,25 +346,50 @@ void correspondences_4 (volume_par *vpar, control_par *cpar)
 
 		  /* sort pairs for match quality (.corr) */
 		  quicksort_con (con0, match0);
+		  // printf("sorted match0 %d \n",match0);
 
 		  /* ----------------------------------------------------------------------- */
 
 
 		  /* take pairs from the top to the bottom of the sorted list */
 		  /* only if none of the points has already been used */
+		  // printf("match before pairs %d \n",match);
 		  for (i=0; i<match0; i++) {
-			  p1 = con0[i].p[0];	if (p1 > -1)	if (++tim[0][p1] > 1)	continue;
-			  p2 = con0[i].p[1];	if (p2 > -1)	if (++tim[1][p2] > 1)	continue;
-			  p3 = con0[i].p[2];	if (p3 > -1  && cpar->num_cams > 2)
-			  if (++tim[2][p3] > 1)	continue;
-			  p4 = con0[i].p[3];	if (p4 > -1  && cpar->num_cams > 3)
-			  if (++tim[3][p4] > 1)	continue;
-
-			  con[match++] = con0[i];
+		      //printf(" pointers p1,p2,p3,p4 %d %d %d %d \n",con0[i].p[0],con0[i].p[1],con0[i].p[2],con0[i].p[3]);
+			  p1 = con0[i].p[0];
+			    if (p1 > -1){
+			        if (++tim[0][p1] > 1) {
+			            //printf("tim[0][p1] %d \n", tim[0][p1]);
+                        //printf("%d p1 is -1 \n", p1);
+			            continue;
+			        }
+			     }
+			  p2 = con0[i].p[1];    if (p2 > -1){
+			    if (++tim[1][p2] > 1){
+			        //printf("tim[1][p2] %d \n", tim[1][p2]);
+                    //printf("%d p2 is used before \n", p2);
+			        continue;
+			        }
+			     }
+			  p3 = con0[i].p[2];	if (p3 > -1  && cpar->num_cams > 2){
+			    if (++tim[2][p3] > 1){
+			        //printf("tim[2][p3] %d \n", tim[2][p3]);
+			        continue;
+			    }
+			  }
+			  p4 = con0[i].p[3];	if (p4 > -1  && cpar->num_cams > 3){
+			            if (++tim[3][p4] > 1){
+			            continue;
+			            }
+                }
+              // printf("using %d %d %d %d \n",p1,p2,p3,p4);
+			  con[match] = con0[i];
+			  match++;
 			}
 		  } //end pairs?
+		  // printf("match after pairs %d \n",match);
 
-     match2 = match-match4-match3;
+    match2 = match-match4-match3;
     if(cpar->num_cams == 1){
        printf ( "determined %d points from 2D", match1);
        }
