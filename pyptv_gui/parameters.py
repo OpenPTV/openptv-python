@@ -1,21 +1,18 @@
+from __future__ import print_function
+from __future__ import absolute_import
 # TODO: check if OrientParams should contain Bools or Ints
 # TODO: change set() functions to either have no default values, or have
 # None value signify 'no change to parameter'.
 
+from builtins import range
 import os
-import sys
-import traceback
 import shutil
 # from traits.api import *
 # import pyface.api as pyfaceapi
 from traits.api \
-    import HasTraits, Str, Float, Int, List, Bool, Enum, Instance, Button, File, Any
+    import HasTraits, Str, Float, Int, List, Bool
 
-import general
-
-# Next line is for debug (unbuffer stdout)
-#sys.stdout = sys.stderr
-
+import yaml
 
 # Temporary path for parameters (active run will be copied here)
 temp_path = 'parameters'
@@ -52,17 +49,24 @@ class Parameters(HasTraits):
     # writes values from the object to a file
     def write(self):
         raise NotImplementedError()
+        
+    def _to_yaml(self):
+        """ Creates YAML file """
+        yaml_file = self.filepath().replace('.par','.yaml')
+        with open(yaml_file, 'w') as outfile:
+            yaml.dump(self.__dict__, outfile, default_flow_style=False)
+
 
 
 # Print detailed error to the console and show the user a friendly error window
 def error(owner, msg):
-    print "Exception caught, message: %s" % (msg)
-    general.printException()
-    pyfaceapi.error(owner, msg)
+    print("Exception caught, message: %s" % (msg))
+    # general.printException()
+    # pyfaceapi.error(owner, msg)
 
 
 def warning(msg):
-    print "Warning message: %s" % (msg)
+    print("Warning message: %s" % (msg))
 
 
 # Reads a parameters directory and returns a dictionary with all parameter
@@ -89,7 +93,7 @@ def readParamsDir(par_path):
            ShakingParams: ShakingParams(path=par_path)
            }
 
-    for parType in ret.keys():
+    for parType in list(ret.keys()):
         if parType == PtvParams:
             continue
         parObj = ret[parType]
@@ -104,7 +108,7 @@ def copy_params_dir(src, dest):
     files = [f for f in os.listdir(src) if f.endswith('.par')]
     if not os.path.exists(dest):
         os.mkdir(dest)
-    print "copy from %s to %s" % (src, dest)
+    print("copy from %s to %s" % (src, dest))
     for f in files:
         shutil.copyfile(os.path.abspath(os.path.join(src, f)),
                         os.path.abspath(os.path.join(dest, f)))
@@ -232,6 +236,7 @@ class PtvParams(Parameters):
         except:
             error(None, "Error writing %s." % self.filepath())
             return False
+        
 
 
 class CalOriParams(Parameters):
@@ -1107,6 +1112,92 @@ class ShakingParams(Parameters):
             f.write("%d\n" % self.shaking_max_num_frames)
 
             f.close()
+            return True
+        except:
+            error(None, "Error writing %s." % self.filepath())
+            return False
+
+class MultiPlaneParams(Parameters):
+    # m parameters
+    """
+        3 :    number of planes
+        img/calib_a_cam  : name of the plane
+        img/calib_b_cam  : name of the plane
+        img/calib_c_cam  : name of the plane
+
+    """
+
+    def __init__(self, n_img=Int, n_planes=Int, plane_name=[], 
+                 path=Parameters.default_path):
+        Parameters.__init__(self, path)
+        self.set(n_img, n_planes, plane_name)
+
+    def set(self, n_img=Int, n_planes=Int, plane_name=[]):
+        self.n_img = n_img
+        (self.n_planes, self.plane_name) = (n_planes, plane_name)
+
+    def filename(self):
+        return "multi_planes.par"
+
+    def read(self):
+        try:
+            with open(self.filepath(), 'r') as f:
+                self.n_planes = int(g(f))
+                for i in range(self.n_planes):
+                    self.plane_name.append(g(f))
+                    if not os.path.isfile(self.plane_name[i]):
+                        print("%s is missing." % self.plane_name[i])
+
+        except:
+            error(None, "Error reading %s." % self.filepath())
+
+    def write(self):
+        # print "inside MultiPlane.write"
+        try:
+            with open(self.filepath(), 'w') as f:
+
+                f.write("%d\n" % self.n_planes)
+    #            for i in range(self.n_img):
+                for i in range(self.n_planes):
+                    f.write("%s\n" % self.plane_name[i])
+ 
+                return True
+        except:
+            error(None, "Error writing %s." % self.filepath())
+            return False
+        
+class SortGridParams(Parameters):
+    # m parameters
+    """
+        20 :    pixels, radius of search for a target point
+
+    """
+
+    def __init__(self, n_img=Int, radius = Int, 
+                 path=Parameters.default_path):
+        Parameters.__init__(self, path)
+        self.set(n_img, radius)
+
+    def set(self, n_img=Int, radius=Int):
+        self.n_img = n_img
+        self.radius = radius
+
+    def filename(self):
+        return "sortgrid.par"
+
+    def read(self):
+        try:
+            with open(self.filepath(), 'r') as f:
+                self.radius = int(g(f))
+
+        except:
+            error(None, "Error reading %s." % self.filepath())
+
+    def write(self):
+        try:
+            with open(self.filepath(), 'w') as f:
+                f.write("%d\n" % self.radius)
+
             return True
         except:
             error(None, "Error writing %s." % self.filepath())
