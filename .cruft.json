@@ -1,0 +1,18 @@
+{
+  "template": "https://github.com/ecmwf-projects/cookiecutter-conda-package",
+  "commit": "7eaa7e75c7e2ce85eee1716fc9197f22d3500743",
+  "checkout": null,
+  "context": {
+    "cookiecutter": {
+      "project_name": "openptv-python",
+      "project_slug": "openptv_python",
+      "project_short_description": "Python version of the OpenPTV library",
+      "copyright_holder": "OpenPTV consortium",
+      "copyright_year": "2023",
+      "mypy_strict": "False",
+      "integration_tests": "True",
+      "_template": "https://github.com/ecmwf-projects/cookiecutter-conda-package"
+    }
+  },
+  "directory": null
+}
