@@ -1,53 +1,41 @@
-# Define a constant SEQ_FNAME_MAX_LEN as a length of basenames. Smaller enough than the buffer lengths used by the tracking framebuffer, that suffixes can be added.
-SEQ_FNAME_MAX_LEN = 240
+import os
+
+
+class mm_np:
+    def __init__(self):
+        self.nlay = 0
+        self.n1 = 0.0
+        self.n2 = [0.0, 0.0, 0.0]
+        self.d = [0.0, 0.0, 0.0]
+        self.n3 = 0.0
 
 
 # Define sequence_par as a struct with properties num_cams, img_base_name, first and last. Define functions read_sequence_par, new_sequence_par, free_sequence_par, and compare_sequence_par.
 class sequence_par:
-    def __init__(self, num_cams, img_base_name, first, last):
+    def __init__(self, num_cams=1, img_base_name="img/cam1.", first=0, last=1):
         self.num_cams = num_cams
         self.img_base_name = img_base_name
         self.first = first
         self.last = last
 
 
-def read_sequence_par(filename, num_cams):
-    # Read sequence parameter from filename and return sequence_par object
-    pass
-
-
-def new_sequence_par(num_cams):
-    # Create a new sequence_par object and return it
-    pass
-
-
-def free_sequence_par(sp):
-    # Free memory allocated by sequence_par object
-    pass
-
-
-def compare_sequence_par(sp1, sp2):
-    # Compare two sequence_par objects and return True if they are equal, false otherwise
-    pass
-
-
 # Define track_par as a struct with properties dacc, dangle, dvxmax, dvxmin, dvymax, dvymin, dvzmax, dvzmin, dsumg, dn, dnx, dny, add. Define functions read_track_par and compare_track_par.
 class track_par:
     def __init__(
         self,
-        dacc,
-        dangle,
-        dvxmax,
-        dvxmin,
-        dvymax,
-        dvymin,
-        dvzmax,
-        dvzmin,
-        dsumg,
-        dn,
-        dnx,
-        dny,
-        add,
+        dacc=0.0,
+        dangle=100.0,
+        dvxmax=1.0,
+        dvxmin=0.0,
+        dvymax=1.0,
+        dvymin=0.0,
+        dvzmax=1.0,
+        dvzmin=0.0,
+        dsumg=1.0,
+        dn=1.0,
+        dnx=1.0,
+        dny=1.0,
+        add=0,
     ):
         self.dacc = dacc
         self.dangle = dangle
@@ -64,19 +52,20 @@ class track_par:
         self.add = add
 
 
-def read_track_par(filename):
-    # Read track parameter from filename and return track_par object
-    pass
-
-
-def compare_track_par(t1, t2):
-    # Compare two track_par objects and return True if they are equal, false otherwise
-    pass
-
-
 # Define volume_par as a struct with properties X_lay, Zmin_lay, Zmax_lay, cn, cnx, cny, csumg, eps0, corrmin. Define functions read_volume_par and compare_volume_par.
 class volume_par:
-    def __init__(self, X_lay, Zmin_lay, Zmax_lay, cn, cnx, cny, csumg, eps0, corrmin):
+    def __init__(
+        self,
+        X_lay=(-100.0, 100.0),
+        Zmin_lay=-10,
+        Zmax_lay=10,
+        cn=1,
+        cnx=1,
+        cny=1,
+        csumg=1,
+        eps0=0.01,
+        corrmin=0.2,
+    ):
         self.X_lay = X_lay
         self.Zmin_lay = Zmin_lay
         self.Zmax_lay = Zmax_lay
@@ -88,32 +77,22 @@ class volume_par:
         self.corrmin = corrmin
 
 
-def read_volume_par(filename):
-    # Read volume parameter from filename and return volume_par object
-    pass
-
-
-def compare_volume_par(v1, v2):
-    # Compare two volume_par objects and return True if they are equal, false otherwise
-    pass
-
-
 # Define control_par as a struct with properties num_cams, img_base_name, cal_img_base_name, hp_flag, allCam_flag, tiff_flag, imx, imy, pix_x, pix_y, chfield and mm. Define functions new_control_par, read_control_par, and free_control_par.
 class control_par:
     def __init__(
         self,
-        num_cams,
-        img_base_name,
-        cal_img_base_name,
-        hp_flag,
-        allCam_flag,
-        tiff_flag,
-        imx,
-        imy,
-        pix_x,
-        pix_y,
-        chfield,
-        mm,
+        num_cams=1,
+        img_base_name="img/cam1.",
+        cal_img_base_name="cal/cam1.",
+        hp_flag=1,
+        allCam_flag=0,
+        tiff_flag=1,
+        imx=1024,
+        imy=1024,
+        pix_x=0.01,
+        pix_y=0.01,
+        chfield=1,
+        mm=mm_np(),
     ):
         self.num_cams = num_cams
         self.img_base_name = img_base_name
@@ -128,36 +107,29 @@ class control_par:
         self.chfield = chfield
         self.mm = mm
 
+    def set_image_size(self, imx, imy):
+        self.imx = imx
+        self.imy = imy
 
-def new_control_par(cams):
-    # Create new control_par object and return it
-    pass
-
-
-def read_control_par(filename):
-    # Read control parameter from filename and return control_par object
-    pass
-
-
-def free_control_par(cp):
-    # Free memory allocated by control_par object
-    pass
+    def set_pixel_size(self, pix_x, pix_y):
+        self.pix_x = pix_x
+        self.pix_y = pix_y
 
 
 # Define target_par as a struct with properties discont, gvthres, nnmin, nnmax, nxmin, nxmax, nymin, nymax, sumg_min, cr_sz.
 class target_par:
     def __init__(
         self,
-        discont,
-        gvthres,
-        nnmin,
-        nnmax,
-        nxmin,
-        nxmax,
-        nymin,
-        nymax,
-        sumg_min,
-        cr_sz,
+        discont=100,
+        gvthres=100,
+        nnmin=1,
+        nnmax=100,
+        nxmin=1,
+        nxmax=100,
+        nymin=1,
+        nymax=100,
+        sumg_min=10,
+        cr_sz=1,
     ):
         self.discont = discont
         self.gvthres = gvthres
@@ -186,9 +158,6 @@ def read_sequence_par(filename, num_cams):
     for cam in range(num_cams):
         line = par_file.readline().strip()
 
-        if not line:
-            goto_handle_error()
-
         ret.img_base_name[cam] = line
 
     ret.first = int(par_file.readline().strip())
@@ -196,13 +165,6 @@ def read_sequence_par(filename, num_cams):
 
     par_file.close()
     return ret
-
-
-def goto_handle_error():
-    print("Error reading sequence parameters from {}".format(filename))
-    free_sequence_par(ret)
-    par_file.close()
-    return None
 
 
 def new_sequence_par(num_cams):
@@ -233,41 +195,39 @@ def compare_sequence_par(sp1, sp2):
     return 1  # equal
 
 
-def free_sequence_par(sp):
-    cam = 0
-    while cam < sp.num_cams:
-        free(sp.img_base_name[cam])
-        sp.img_base_name[cam] = None
-        cam += 1
-    free(sp.img_base_name)
-    sp.img_base_name = None
-    free(sp)
-    sp = None
-
-
-def read_track_par(filename: str) -> TrackPar:
-    track = TrackPar()
-    locale.setlocale(locale.LC_NUMERIC, "C")
+def read_track_par(filename: str) -> track_par:
+    """Read tracking parameters from file and return track_par object."""
+    track = track_par()
     try:
-        with open(filename, "r") as fpp:
-            track["dvxmin"] = float(fpp.readline().rstrip())
-            track["dvxmax"] = float(fpp.readline().rstrip())
-            track["dvymin"] = float(fpp.readline().rstrip())
-            track["dvymax"] = float(fpp.readline().rstrip())
-            track["dvzmin"] = float(fpp.readline().rstrip())
-            track["dvzmax"] = float(fpp.readline().rstrip())
-            track["dangle"] = float(fpp.readline().rstrip())
-            track["dacc"] = float(fpp.readline().rstrip())
-            track["add"] = int(fpp.readline().rstrip())
-            fpp.close()
-            track["dsumg"] = track["dn"] = track["dnx"] = track["dny"] = 0
+        with open(filename, "r", encoding="utf-8") as fpp:
+            track.dvxmin = float(fpp.readline().rstrip())
+            track.dvxmax = float(fpp.readline().rstrip())
+            track.dvymin = float(fpp.readline().rstrip())
+            track.dvymax = float(fpp.readline().rstrip())
+            track.dvzmin = float(fpp.readline().rstrip())
+            track.dvzmax = float(fpp.readline().rstrip())
+            track.dangle = float(fpp.readline().rstrip())
+            track.dacc = float(fpp.readline().rstrip())
+            track.add = int(fpp.readline().rstrip())
+            track.dsumg = track.dn = track.dnx = track.dny = 0
             return track
-    except:
+    except IOError:
         print(f"Error reading tracking parameters from {filename}")
         return None
 
 
-def compare_track_par(t1, t2):
+def compare_track_par(t1, t2) -> bool:
+    """Compare two track_par objects.
+
+    Args:
+    ----
+        t1 (track_par): track_par object
+        t2 (track_par): track_par object
+
+    Returns:
+    -------
+        bool: True of False
+    """
     return (
         (t1.dvxmin == t2.dvxmin)
         and (t1.dvxmax == t2.dvxmax)
@@ -286,24 +246,33 @@ def compare_track_par(t1, t2):
 
 
 def read_volume_par(filename):
-    ret = ctypes.pointer(Volume_par())
-    libc = ctypes.CDLL(None)
-    libc.setlocale(libc.LC_NUMERIC, "C")
+    """Reads volume parameters from file and returns volume_par object.
 
-    with open(filename, "r") as fpp:
+    Args:
+    ----
+        filename (str): filename
+
+    Returns:
+    -------
+        volume_par: volume of interest parameters
+    """
+    ret = volume_par()
+
+    with open(filename, "r", encoding="utf-8") as fpp:
         lines = fpp.readlines()
-        ret.X_lay[0] = float(lines[0])
-        ret.Zmin_lay[0] = float(lines[1])
-        ret.Zmax_lay[0] = float(lines[2])
-        ret.X_lay[1] = float(lines[3])
-        ret.Zmin_lay[1] = float(lines[4])
-        ret.Zmax_lay[1] = float(lines[5])
-        ret.cnx = float(lines[6])
-        ret.cny = float(lines[7])
-        ret.cn = float(lines[8])
-        ret.csumg = float(lines[9])
-        ret.corrmin = float(lines[10])
-        ret.eps0 = float(lines[11])
+
+    ret.X_lay[0] = float(lines[0])
+    ret.Zmin_lay[0] = float(lines[1])
+    ret.Zmax_lay[0] = float(lines[2])
+    ret.X_lay[1] = float(lines[3])
+    ret.Zmin_lay[1] = float(lines[4])
+    ret.Zmax_lay[1] = float(lines[5])
+    ret.cnx = float(lines[6])
+    ret.cny = float(lines[7])
+    ret.cn = float(lines[8])
+    ret.csumg = float(lines[9])
+    ret.corrmin = float(lines[10])
+    ret.eps0 = float(lines[11])
 
     return ret
 
@@ -326,18 +295,17 @@ def compare_volume_par(v1, v2):
 
 
 def new_control_par(cams):
-    ret = control_par()
-    ret.num_cams = cams
-    ret.img_base_name = [None for i in range(ret.num_cams)]
-    ret.cal_img_base_name = [None for i in range(ret.num_cams)]
+    """Creates a set of new control parameters for a given number of cameras.
 
-    for cam in range(ret.num_cams):
-        ret.img_base_name[cam] = malloc(SEQ_FNAME_MAX_LEN)
-        ret.cal_img_base_name[cam] = malloc(SEQ_FNAME_MAX_LEN)
+    Args:
+    ----
+        cams (int): number of cameras
 
-    ret.mm = mm_np()
-
-    return ret
+    Returns:
+    -------
+        control_par: control parameters object
+    """
+    return control_par(num_cams=cams)
 
 
 def read_control_par(filename):
@@ -347,14 +315,12 @@ def read_control_par(filename):
 
     with open(filename, "r") as par_file:
         num_cams = int(par_file.readline().strip())
-        ret = new_control_par(num_cams)
+        ret = control_par(num_cams=num_cams)
 
         for cam in range(ret.num_cams):
-            line = par_file.readline().strip()
-            ret.img_base_name[cam] = line[:SEQ_FNAME_MAX_LEN]
+            ret.img_base_name[cam] = par_file.readline().strip()
 
-            line = par_file.readline().strip()
-            ret.cal_img_base_name[cam] = line[:SEQ_FNAME_MAX_LEN]
+            ret.cal_img_base_name[cam] = par_file.readline().strip()
 
         ret.hp_flag = int(par_file.readline().strip())
         ret.allCam_flag = int(par_file.readline().strip())
@@ -377,23 +343,22 @@ def read_control_par(filename):
 def free_control_par(cp):
     cam = 0
     while cam < cp.num_cams:
-        free(cp.img_base_name[cam])
+        del cp.img_base_name[cam]
         cp.img_base_name[cam] = None
-        free(cp.cal_img_base_name[cam])
+        del cp.cal_img_base_name[cam]
         cp.cal_img_base_name[cam] = None
         cam += 1
 
-    free(cp.img_base_name)
+    del cp.img_base_name
     cp.img_base_name = None
 
-    free(cp.cal_img_base_name)
+    del cp.cal_img_base_name
     cp.cal_img_base_name = None
 
-    free(cp.mm)
+    del cp.mm
     cp.mm = None
 
-    free(cp)
-    cp = None
+    del cp
 
 
 def compare_control_par(c1, c2):
@@ -402,15 +367,9 @@ def compare_control_par(c1, c2):
         return 0
 
     while cam < c1.num_cams:
-        if (
-            c1.img_base_name[cam][: SEQ_FNAME_MAX_LEN - 1]
-            != c2.img_base_name[cam][: SEQ_FNAME_MAX_LEN - 1]
-        ):
+        if c1.img_base_name[cam] != c2.img_base_name[cam]:
             return 0
-        if (
-            c1.cal_img_base_name[cam][: SEQ_FNAME_MAX_LEN - 1]
-            != c2.cal_img_base_name[cam][: SEQ_FNAME_MAX_LEN - 1]
-        ):
+        if c1.cal_img_base_name[cam] != c2.cal_img_base_name[cam]:
             return 0
         cam = cam + 1
 

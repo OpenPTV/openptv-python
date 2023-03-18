@@ -100,9 +100,9 @@ def weighted_dumbbell_precision(
 
 
 def num_deriv_exterior(cal, cpar, dpos, dang, pos):
-    """
-    Calculates the partial numerical derivative of image coordinates of a given 3D position,
-    over each of the 6 exterior orientation parameters (3 position parameters, 3 rotation angles).
+    """Calculates the partial numerical derivative of image coordinates of a
+    given 3D position, over each of the 6 exterior orientation parameters (3
+    position parameters, 3 rotation angles).
 
     Arguments:
     ---------
@@ -158,8 +158,7 @@ NPAR = 17
 
 
 def orient(cal_in, cpar, nfix, fix, pix, flags, sigmabeta):
-    """
-    orient() calculates orientation of the camera, updating its calibration
+    """orient() calculates orientation of the camera, updating its calibration
     structure using the definitions and algorithms well described in [1].
 
     Arguments:

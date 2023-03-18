@@ -1,48 +1,6 @@
-"""
-    /*******************************************************************.
-
-   Routine:	        track.c
-
-   Author/Copyright:        Jochen Willneff
-
-   Address:	        Institute of Geodesy and Photogrammetry
-                    ETH - Hoenggerberg
-                    CH - 8093 Zurich
-
-   Creation Date:		Beginning: February '98
-                        End: far away
-
-   Description:             Tracking of particles in image- and objectspace
-
-   Routines contained:      trackcorr_c
-
-   Updated:           Yosef Meller and Alex Liberzon
-   Address:           Tel Aviv University
-   For:               OpenPTV, http://www.openptv.net
-   Modification date: October 2016
-
-*******************************************************************/
-
-/* References:
-   [1] http://en.wikipedia.org/wiki/Gradian
- */
-
-"""
-
-
 import math
 
-from calibration import *
-from imgcoord import *
-from multimed import *
-from orientation import *
-from parameters import *
-
-# Definitions for tracking routines.
-from tracking_frame_buf import *
-from tracking_run import *
-from trafo import *
-from vec_utils import *
+import numpy as np
 
 TR_UNUSED = -1
 TR_BUFSPACE = 4
@@ -217,8 +175,7 @@ def trackback_c(run_info):
 
 
 def track_forward_start(tr: tracking_run):
-    """
-    Initializes the tracking frame buffer with the first frames.
+    """Initializes the tracking frame buffer with the first frames.
 
     Arguments:
     ---------
@@ -232,8 +189,8 @@ def track_forward_start(tr: tracking_run):
 
 
 def reset_foundpix_array(arr, arr_len, num_cams):
-    """
-    reset_foundpix_array() sets default values for foundpix objects in an array.
+    """reset_foundpix_array() sets default values for foundpix objects in an
+    array.
 
     Arguments:
     ---------
@@ -252,8 +209,7 @@ def reset_foundpix_array(arr, arr_len, num_cams):
 
 
 def copy_foundpix_array(dest, src, arr_len, num_cams):
-    """
-    copy_foundpix_array() copies foundpix objects from one array to another.
+    """copy_foundpix_array() copies foundpix objects from one array to another.
 
     Arguments:
     ---------
@@ -275,8 +231,7 @@ def copy_foundpix_array(dest, src, arr_len, num_cams):
 def register_closest_neighbs(
     targets, num_targets, cam, cent_x, cent_y, dl, dr, du, dd, reg, cpar
 ):
-    """
-    register_closest_neighbs() finds candidates for continuing a particle's
+    """register_closest_neighbs() finds candidates for continuing a particle's
     path in the search volume, and registers their data in a foundpix array
     that is later used by the tracking algorithm.
 
@@ -311,8 +266,8 @@ def register_closest_neighbs(
 
 
 def search_volume_center_moving(prev_pos, curr_pos, output):
-    """
-    Finds the position of the center of the search volume for a moving particle using the velocity of last step.
+    """Finds the position of the center of the search volume for a moving
+    particle using the velocity of last step.
 
     Args:
     ----
@@ -331,8 +286,8 @@ def search_volume_center_moving(prev_pos, curr_pos, output):
 
 
 def predict(prev_pos, curr_pos, output):
-    """
-    Predicts the position of a particle in the next frame, using the previous and current positions.
+    """Predicts the position of a particle in the next frame, using the
+    previous and current positions.
 
     Args:
     ----
@@ -350,8 +305,8 @@ def predict(prev_pos, curr_pos, output):
 
 
 def pos3d_in_bounds(pos, bounds):
-    """
-    Checks that all components of a pos3d are in their respective bounds taken from a track_par object.
+    """Checks that all components of a pos3d are in their respective bounds
+    taken from a track_par object.
 
     Args:
     ----
@@ -371,10 +326,10 @@ def pos3d_in_bounds(pos, bounds):
 
 
 def angle_acc(start, pred, cand):
-    """
-    Calculates the angle between the (1st order) numerical velocity vectors to the predicted next position and to the candidate actual position.
-    The angle is calculated in [gon], see [1].
-    The predicted position is the position if the particle continued at current velocity.
+    """Calculates the angle between the (1st order) numerical velocity vectors
+    to the predicted next position and to the candidate actual position. The
+    angle is calculated in [gon], see [1]. The predicted position is the
+    position if the particle continued at current velocity.
 
     Arguments:
     ---------
@@ -479,8 +434,7 @@ import numpy as np
 
 
 def candsearch_in_pix_rest(next, cent_x, cent_y, dl, dr, du, dd, cpar):
-    """
-    Searches for a nearest candidate in unmatched target list.
+    """Searches for a nearest candidate in unmatched target list.
 
     Arguments:
     ---------
@@ -661,8 +615,7 @@ import numpy as np
 
 
 def sort(a, b):
-    """
-    Sorts a float array 'a' and an integer array 'b' both of length n.
+    """Sorts a float array 'a' and an integer array 'b' both of length n.
 
     Arguments:
     ---------
@@ -684,8 +637,7 @@ import numpy as np
 
 
 def point_to_pixel(point, cal, cpar):
-    """
-    Returns vec2d with pixel positions (x,y) in the camera.
+    """Returns vec2d with pixel positions (x,y) in the camera.
 
     Arguments:
     ---------
@@ -744,10 +696,9 @@ def sorted_candidates_in_volume(center, center_proj, frm, run):
 
 
 def assess_new_position(pos, targ_pos, cand_inds, frm, run):
-    """
-    Determines the nearest target on each camera around a search position and
-    prepares the data structures accordingly with the determined target info or
-    the unused flag value.
+    """Determines the nearest target on each camera around a search position
+    and prepares the data structures accordingly with the determined target
+    info or the unused flag value.
 
     Arguments:
     ---------

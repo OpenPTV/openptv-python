@@ -1,6 +1,7 @@
-from .vec_utils import vec3d
+import math
+import unittest
 
-Dmatrix = [[0.0 for i in range(3)] for j in range(3)]
+from openptv_python.vec_utils import vec3d
 
 
 class Calibration:
@@ -52,8 +53,10 @@ class Calibration:
         self.mmlut = Calibration.mmlut()
 
 
-def write_ori(Ex, I, G, ap, filename, add_file):
-    """Write exterior and interior orientation, and - if available, parameters for
+def write_ori(Ex, In, G, ap, filename, add_file):
+    """Write exterior and interior orientation.
+
+    if available, also parameters for
     distortion corrections.
 
     Arguments:
@@ -81,7 +84,7 @@ def write_ori(Ex, I, G, ap, filename, add_file):
                         Ex.dm[i][0], Ex.dm[i][1], Ex.dm[i][2]
                     )
                 )
-            fp.write("\n    {:8.4f} {:8.4f}\n    {:8.4f}\n".format(I.xh, I.yh, I.cc))
+            fp.write("\n    {:8.4f} {:8.4f}\n    {:8.4f}\n".format(In.xh, In.yh, In.cc))
             fp.write(
                 "\n    {:20.15f} {:20.15f}  {:20.15f}\n".format(
                     G.vec_x, G.vec_y, G.vec_z
@@ -109,8 +112,8 @@ def write_ori(Ex, I, G, ap, filename, add_file):
     return success
 
 
-def read_ori(Ex, I, G, ori_file, addp, add_file, add_fallback):
-    """Reads the orientation file and the additional parameters file."""
+def read_ori(Ex, In, G, ori_file, addp, add_file, add_fallback):
+    """Read the orientation file and the additional parameters file."""
     try:
         fp = open(ori_file, "r", encoding="utf-8")
     except IOError:
@@ -132,7 +135,7 @@ def read_ori(Ex, I, G, ori_file, addp, add_file, add_fallback):
 
     # Interior
     scan_res = fp.readline().split()
-    I.xh, I.yh, I.cc = map(float, scan_res)
+    In.xh, In.yh, In.cc = map(float, scan_res)
     if len(scan_res) != 3:
         return 0
 
@@ -186,9 +189,12 @@ def compare_interior(i1, i2):
     return i1.xh == i2.xh and i1.yh == i2.yh and i1.cc == i2.cc
 
 
-def compare_glass(g1, g2):
-    """
-    This function takes two arguments `g1` and `g2`, which are `Glass` objects that need to be compared. The function then returns `1` if all `vec_x`, `vec_y` and `vec_z` values of `g1` are equal to the corresponding values in `g2`. Else, the function returns `0`.
+def compare_glass(g1: Glass, g2: Glass):
+    """Compare `Glass` parameters.
+
+    objects that need to be compared. The function then returns `1` if all
+    `vec_x`, `vec_y` and `vec_z` values of `g1` are equal to the corresponding
+    values in `g2`. Else, the function returns `0`.
 
     Args:
     ----
@@ -202,13 +208,8 @@ def compare_glass(g1, g2):
     return g1.vec_x == g2.vec_x and g1.vec_y == g2.vec_y and g1.vec_z == g2.vec_z
 
 
-import unittest
-
-from openptv_python.vec_utils import vec3d
-
-
 class ap_52:
-    def __init__(self, k1, k2, k3, p1, p2, scx, she):
+    def __init__(self, k1=0, k2=0, k3=0, p1=0, p2=0, scx=1, she=0):
         self.k1 = k1
         self.k2 = k2
         self.k3 = k3
@@ -270,8 +271,6 @@ def write_calibration(cal, ori_file, add_file):
 
 
 def rotation_matrix(Ex):
-    import math
-
     # Calculate the necessary trigonometric functions to rotate the Dmatrix of Exterior Ex
     cp = math.cos(Ex.phi)
     sp = math.sin(Ex.phi)
@@ -290,3 +289,5 @@ def rotation_matrix(Ex):
     Ex.dm[2][0] = so * sk - co * sp * ck
     Ex.dm[2][1] = so * ck + co * sp * sk
     Ex.dm[2][2] = co * cp
+
+    return Ex

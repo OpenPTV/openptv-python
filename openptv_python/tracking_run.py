@@ -1,3 +1,15 @@
+import math
+
+from openptv_python.multimed import volumedimension
+from openptv_python.parameters import (
+    read_control_par,
+    read_sequence_par,
+    read_track_par,
+    read_volume_par,
+)
+from openptv_python.tracking_frame_buf import fb_init, framebuf_base
+
+
 class tracking_run:
     def __init__(self):
         self.fb = None  # type: framebuf_base
@@ -65,7 +77,7 @@ def tr_new(
         seq_par.img_base_name,
     )
 
-    tr.lmax = norm(
+    tr.lmax = math.norm(
         tpar.dvxmin - tpar.dvxmax, tpar.dvymin - tpar.dvymax, tpar.dvzmin - tpar.dvzmax
     )
     volumedimension(
@@ -86,10 +98,10 @@ def tr_new(
     return tr
 
 
-def tr_free(tr):
-    free(tr.fb)
-    free(tr.seq_par.img_base_name)
-    free(tr.seq_par)
-    free(tr.tpar)
-    free(tr.vpar)
-    free_control_par(tr.cpar)
+# def tr_free(tr):
+#     free(tr.fb)
+#     free(tr.seq_par.img_base_name)
+#     free(tr.seq_par)
+#     free(tr.tpar)
+#     free(tr.vpar)
+#     free_control_par(tr.cpar)

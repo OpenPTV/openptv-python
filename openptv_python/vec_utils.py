@@ -6,25 +6,17 @@
 # the logical structure, and allow optimizing for size as well.
 
 import math
+from typing import List
 
-import numpy as np
-
-# Define the vec3d type
-vec3d = np.zeros(3)
+# Define the vec3d type as a list of floats
+vec3d = [0.0, 0.0, 0.0]
 
 
 # Define the nan value
-if np.isnan(np.nan):
-    EMPTY_CELL = np.nan
-else:
-    try:
-        EMPTY_CELL = 0.0 / 0.0
-    except:
-
-        def return_nan():
-            return np.nan
-
-        EMPTY_CELL = return_nan()
+try:
+    EMPTY_CELL = math.nan
+except ValueError:
+    EMPTY_CELL = 0.0 / 0.0
 
 
 # Define the helper functions
@@ -90,28 +82,38 @@ def vec_diff_norm(vec1, vec2):
     )
 
 
-def vec_norm(vec):
+def vec_norm(vec: List[float]) -> float:
     # vec_norm() calculates the norm of a vector.
 
     # Just plug into the macro
     return math.sqrt(vec[0] ** 2 + vec[1] ** 2 + vec[2] ** 2)
 
 
-def vec_dot(vec1, vec2):
-    # vec_dot() gives the dot product of two vectors.
-
+def vec_dot(vec1: List[float], vec2: List[float]):
+    """vec_dot() gives the dot product of two vectors as lists of floats."""
     sum_ = 0
     for ix in range(3):
         sum_ += vec1[ix] * vec2[ix]
     return sum_
 
 
-def vec_cross(vec1, vec2, out):
-    # vec_cross() calculates the cross product of two vectors.
+def vec_cross(vec1: List[float], vec2: List[float]) -> List[float]:
+    """Cross product of two vectors.
 
+    Args:
+    ----
+        vec1 (List[float]): first vector
+        vec2 (List[float]): second vector
+
+    Returns:
+    -------
+        List[float]: cross product of vec1 and vec2
+    """
+    out = [0, 0, 0]
     out[0] = vec1[1] * vec2[2] - vec1[2] * vec2[1]
     out[1] = vec1[2] * vec2[0] - vec1[0] * vec2[2]
     out[2] = vec1[0] * vec2[1] - vec1[1] * vec2[0]
+    return out
 
 
 def vec_cmp(vec1, vec2, tol):
@@ -123,9 +125,6 @@ def vec_cmp(vec1, vec2, tol):
     return True
 
 
-from typing import List
-
-
 def vec_approx_cmp(vec1: List[float], vec2: List[float], eps: float) -> int:
     for i in range(3):
         if abs(vec1[i] - vec2[i]) > eps:
@@ -134,7 +133,7 @@ def vec_approx_cmp(vec1: List[float], vec2: List[float], eps: float) -> int:
 
 
 def unit_vector(vec: List[float]) -> List[float]:
-    """creates unit vector as a list of floats."""
+    """Create unit vector as a list of floats."""
     normed = vec_norm(vec)
     if normed == 0:
         normed = 1.0

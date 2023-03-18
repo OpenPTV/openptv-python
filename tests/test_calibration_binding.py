@@ -70,7 +70,7 @@ class Test_Calibration(unittest.TestCase):
         self.assertRaises(ValueError, self.cal.set_pos, numpy.array([1, 2]))
 
     def test_set_angles(self):
-        """set angles correctly."""
+        """Set angles correctly."""
         dmatrix_before = self.cal.get_rotation_matrix()  # dmatrix before setting angles
         angles_np = numpy.array([0.1111, 0.2222, 0.3333])
         self.cal.set_angles(angles_np)

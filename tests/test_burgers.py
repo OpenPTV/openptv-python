@@ -1,13 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Tests for the Tracker with add_particles using Burgers vortex data
-with ground truth.
-
-Created on Mon Apr 24 10:57:01 2017
-
-@author: alexlib
-"""
-
 import os
 import shutil
 import unittest

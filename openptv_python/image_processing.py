@@ -144,8 +144,7 @@ def split(img: np.ndarray, half_selector: int, cpar: control_par) -> None:
 
 
 def subtract_img(img1: np.ndarray, img2: np.ndarray, img_new: np.ndarray):
-    """
-    Subtract img2 from img1 and store the result in img_new.
+    """Subtract img2 from img1 and store the result in img_new.
 
     Args:
     ----

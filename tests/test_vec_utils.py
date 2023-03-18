@@ -1,10 +1,24 @@
 import math
 
-from openptv_python.vec_utils import *
+from openptv_python.vec_utils import (
+    unit_vector,
+    vec_add,
+    vec_approx_cmp,
+    vec_cmp,
+    vec_copy,
+    vec_cross,
+    vec_diff_norm,
+    vec_dot,
+    vec_init,
+    vec_norm,
+    vec_scalar_mul,
+    vec_set,
+    vec_subt,
+)
 
 
 def test_vec_init():
-    """tests vec_init."""
+    """Tests vec_init."""
     init = [0.0, 0.0, 0.0]
     vec_init(init)
     for i in range(3):
@@ -89,7 +103,7 @@ def test_vec_approx_cmp():
 
 
 def test_unit_vector():
-    """tests unit vector as a list of floats with norm of 1.0."""
+    """Tests unit vector as a list of floats with norm of 1.0."""
     vec = [1.0, 2.0, 3.0]
     out = unit_vector(vec)
     assert math.isclose(vec_norm(out), 1.0, rel_tol=1e-4)

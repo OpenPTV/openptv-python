@@ -1,8 +1,3 @@
-"""
-Tests for the correspondences bindings, including supporting infrastructure
-such as the MatchedCoordinates structure.
-"""
-
 import unittest
 
 import numpy as np

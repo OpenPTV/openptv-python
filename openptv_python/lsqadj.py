@@ -2,9 +2,8 @@ import numpy as np
 
 
 def ata(a, ata, m, n, n_large):
-    """
-    Multiply transpose of a matrix A by matrix A itself, creating symmetric matrix
-    with the option of working with the sub-matrix only.
+    """Multiply transpose of a matrix A by matrix A itself, creating symmetric
+    matrix with the option of working with the sub-matrix only.
 
     Arguments:
     ---------
@@ -23,9 +22,8 @@ def ata(a, ata, m, n, n_large):
 
 
 def atl(u, a, l, m, n, n_large):
-    """
-    Multiply transpose of a matrix A by vector l, creating vector u
-    with the option of working with the sub-vector only, when n < n_large.
+    """Multiply transpose of a matrix A by vector l, creating vector u with the
+    option of working with the sub-vector only, when n < n_large.
 
     Arguments:
     ---------

@@ -2,7 +2,8 @@ import numpy as np
 
 
 def ray_tracing(x, y, cal, mm):
-    """Ray tracing
+    """Ray tracing.
+
         /*  ray_tracing () traces the optical ray through the multi-media interface of
         (presently) three layers, typically air - glass - water, and returns the
         position of the ray crossing point and the vector normal to the interface.

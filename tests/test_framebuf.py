@@ -1,13 +1,3 @@
-"""
-Check that the bindings do what they are expected to.
-The test expects to be run from the py_bind/test/ directory for now,
-using the nose test harness [1].
-
-References
-----------
-[1] https://nose.readthedocs.org/en/latest/
-"""
-
 import os
 import unittest
 
@@ -43,7 +33,7 @@ class TestTargets(unittest.TestCase):
         self.assertEqual([targ.pos()[1] for targ in targs], [796.0, 809.0])
 
     def test_sort_y(self):
-        """sorting on the Y coordinate in place."""
+        """Sorting on the Y coordinate in place."""
         targs = read_targets("testing_folder/frame/cam1.", 333)
         revs = read_targets("testing_folder/frame/cam1_reversed.", 333)
         revs.sort_y()
@@ -74,7 +64,7 @@ class TestTargets(unittest.TestCase):
 
 class TestFrame(unittest.TestCase):
     def test_read_frame(self):
-        """reading a frame."""
+        """Reading a frame."""
         targ_files = ["testing_folder/frame/cam%d.".encode() % c for c in range(1, 5)]
         frm = Frame(
             4,
