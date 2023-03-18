@@ -3,7 +3,7 @@ channels:
 - conda-forge
 - nodefaults
 # EXAMPLE:
-# dependencies:
-# - package1
+dependencies:
+- numpy
 # - package2
 # DO NOT EDIT ABOVE THIS LINE, ADD DEPENDENCIES BELOW AS SHOWN IN THE EXAMPLE
