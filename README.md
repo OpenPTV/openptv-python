@@ -2,14 +2,25 @@
 
 Python version of the OpenPTV library
 
-## Quick Start
+## How this is started
+
+This work started from the https://github.com/OpenPTV/openptv/tree/pure_python branch. It's a long 
+standing idea of converting all the C code to Python and now it's possible with chatgpt to save 
+a lot of typing time. 
+
+This repo is created using a *cookiecutter* and the rest of the readme describes the way to work with 
+this structure
+
+
+
+### Quick Start
 
 ```python
 >>> import openptv_python
 
 ```
 
-## Workflow for developers/contributors
+### Workflow for developers/contributors
 
 For best experience create a new conda environment (e.g. DEVELOP) with Python 3.10:
 
@@ -28,7 +39,7 @@ Before pushing to GitHub, run the following commands:
 1. Run the static type checker: `make type-check`
 1. Build the documentation (see [Sphinx tutorial](https://www.sphinx-doc.org/en/master/tutorial/)): `make docs-build`
 
-## License
+### License
 
 ```
 Copyright 2023, OpenPTV consortium.
