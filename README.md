@@ -4,14 +4,12 @@ Python version of the OpenPTV library
 
 ## How this is started
 
-This work started from the https://github.com/OpenPTV/openptv/tree/pure_python branch. It's a long 
-standing idea of converting all the C code to Python and now it's possible with chatgpt to save 
-a lot of typing time. 
+This work started from the https://github.com/OpenPTV/openptv/tree/pure_python branch. It's a long
+standing idea of converting all the C code to Python and now it's possible with chatgpt to save
+a lot of typing time.
 
-This repo is created using a *cookiecutter* and the rest of the readme describes the way to work with 
+This repo is created using a *cookiecutter* and the rest of the readme describes the way to work with
 this structure
-
-
 
 ### Quick Start
 

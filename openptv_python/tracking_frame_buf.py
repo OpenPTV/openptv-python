@@ -1,8 +1,8 @@
 from typing import List
 
-import numpy as np
-
 from openptv_python.vec_utils import vec3d
+
+POSI = 80
 
 
 class Target:
@@ -162,16 +162,16 @@ class PathInfo:
 
     def __init__(
         self,
-        x: vec3d,  # position
-        prv: int,  # pointer to prev or next link
-        nxt: int,  # next is preserved in python
-        prio: int,  # Prority of link is used for differen levels
-        decis: np.ndarray[
+        x: vec3d = [0.0, 0.0, 0.0],  # position
+        prv: int = PREV_NONE,  # pointer to prev or next link
+        nxt: int = NEXT_NONE,  # next is preserved in python
+        prio: int = PRIO_DEFAULT,  # Prority of link is used for differen levels
+        decis: List[
             float
-        ],  # Bin for decision critera of possible links to next dataset
-        finaldecis: float,  # final decision critera by which the link was established
-        linkdecis: List[int],  # pointer of possible links to next data set
-        inlist: int,  # Counter of number of possible links to next data set
+        ] = [],  # Bin for decision critera of possible links to next dataset
+        finaldecis: float = 0.0,  # final decision critera by which the link was established
+        linkdecis: List[int] = [],  # pointer of possible links to next data set
+        inlist: int = 0,  # Counter of number of possible links to next data set
     ):
         self.x = x
         self.prv = prv  # previous
@@ -196,10 +196,10 @@ class PathInfo:
         ):
             return False
 
-        for iter in range(self.POSI):
-            if self.decis[iter] != other.decis[iter]:
+        for itr in range(self.POSI):
+            if self.decis[itr] != other.decis[itr]:
                 return False
-            if self.linkdecis[iter] != other.linkdecis[iter]:
+            if self.linkdecis[itr] != other.linkdecis[itr]:
                 return False
 
         return True
@@ -573,8 +573,8 @@ class FramebufBase:
         self.buf_len = buf_len
         self.num_cams = num_cams
 
-    def fb_free(self):
-        self._vptr.free(self)
+    # def fb_free(self):
+    #     self._vptr.free(self)
 
     def fb_read_frame_at_end(self, frame_num, read_links):
         return self._vptr.read_frame_at_end(self, frame_num, read_links)
