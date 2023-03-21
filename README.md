@@ -1,6 +1,6 @@
 # openptv-python
 
-Python version of the OpenPTV library
+Python version of the OpenPTV library - this is *work in progress*
 
 ## How this is started
 
