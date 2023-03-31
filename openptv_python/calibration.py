@@ -1,59 +1,64 @@
-import math
-import unittest
-
-from openptv_python.vec_utils import vec3d
+import json
+from dataclasses import asdict, dataclass
 
 
+@dataclass
+class Exterior:
+    dm: list[list[float]] = [[0.0 for j in range(3)] for i in range(3)]
+    omega: float = 0.0
+    phi: float = 0.0
+    kappa: float = 0.0
+    x0: float = 0.0
+    y0: float = 0.0
+    z0: float = 0.0
+
+
+@dataclass
+class Interior:
+    xh: float = 0.0
+    yh: float = 0.0
+    cc: float = 0.0
+
+
+@dataclass
+class Glass:
+    vec_x: float = 0.0
+    vec_y: float = 0.0
+    vec_z: float = 0.0
+
+
+@dataclass
+class ap_52:
+    k1: float = 0.0
+    k2: float = 0.0
+    k3: float = 0.0
+    p1: float = 0.0
+    p2: float = 0.0
+    scx: float = 0.0
+    she: float = 0.0
+
+
+@dataclass
+class mmlut:
+    origin: vec3d = vec3d
+    nr: int = 0
+    nz: int = 0
+    rw: int = 0
+    data: list = []
+
+
+@dataclass
 class Calibration:
-    class Exterior:
-        def __init__(self):
-            self.dm = [[0 for j in range(3)] for i in range(3)]
-            self.omega = 0.0
-            self.phi = 0.0
-            self.kappa = 0.0
-            self.x0 = 0.0
-            self.y0 = 0.0
-            self.z0 = 0.0
-
-    class Interior:
-        def __init__(self):
-            self.xh = 0.0
-            self.yh = 0.0
-            self.cc = 0.0
-
-    class Glass:
-        def __init__(self):
-            self.vec_x = 0.0
-            self.vec_y = 0.0
-            self.vec_z = 0.0
-
-    class ap_52:
-        def __init__(self):
-            self.k1 = 0.0
-            self.k2 = 0.0
-            self.k3 = 0.0
-            self.p1 = 0.0
-            self.p2 = 0.0
-            self.scx = 0.0
-            self.she = 0.0
-
-    class mmlut:
-        def __init__(self):
-            self.origin = vec3d
-            self.nr = 0
-            self.nz = 0
-            self.rw = 0
-            self.data = []
-
-    def __init__(self):
-        self.ext_par = Calibration.Exterior()
-        self.int_par = Calibration.Interior()
-        self.glass_par = Calibration.Glass()
-        self.added_par = Calibration.ap_52()
-        self.mmlut = Calibration.mmlut()
+    ext_par: Exterior = Exterior()
+    int_par: Interior = Interior()
+    glass_par: Glass = Glass()
+    added_par: ap_52 = ap_52()
+    mmlut: mmlut = mmlut()
 
 
-def write_ori(Ex, In, G, ap, filename, add_file):
+def write_ori(
+    Ex: Exterior, In: Interior, G: Glass, ap: ap_52, filename: str, add_file: str = None
+):
     """Write exterior and interior orientation.
 
     if available, also parameters for
@@ -70,46 +75,47 @@ def write_ori(Ex, In, G, ap, filename, add_file):
        orientation data.
     char *add_file - path of file to contain added (distortions) parameters.
     """
-    success = 0
     try:
         with open(filename, "w", encoding="utf-8") as fp:
-            fp.write(
-                "{:11.8f} {:11.8f} {:11.8f}\n {:10.8f}  {:10.8f}  {:10.8f}\n\n".format(
-                    Ex.x0, Ex.y0, Ex.z0, Ex.omega, Ex.phi, Ex.kappa
-                )
-            )
-            for i in range(3):
-                fp.write(
-                    "    {:10.7f} {:10.7f} {:10.7f}\n".format(
-                        Ex.dm[i][0], Ex.dm[i][1], Ex.dm[i][2]
-                    )
-                )
-            fp.write("\n    {:8.4f} {:8.4f}\n    {:8.4f}\n".format(In.xh, In.yh, In.cc))
-            fp.write(
-                "\n    {:20.15f} {:20.15f}  {:20.15f}\n".format(
-                    G.vec_x, G.vec_y, G.vec_z
-                )
-            )
+            fp.write(json.dumps(asdict(Ex), indent=4) + "\n")
+            fp.write(json.dumps(asdict(In), indent=4) + "\n")
+            fp.write(json.dumps(asdict(G), indent=4) + "\n")
+            if ap:
+                fp.write(json.dumps(asdict(ap), indent=4) + "\n")
     except IOError:
-        print("Can't open ascii file: {}".format(filename))
-        return success
+        print("Can't open file: {}".format(filename))
+        return False
 
     if add_file is None:
-        return success
+        return True
 
     try:
         with open(add_file, "w", encoding="utf-8") as fp:
-            fp.write(
-                "{:.8f} {:.8f} {:.8f} {:.8f} {:.8f} {:.8f} {:.8f}".format(
-                    ap.k1, ap.k2, ap.k3, ap.p1, ap.p2, ap.scx, ap.she
-                )
-            )
-            success = 1
+            fp.write(json.dumps(asdict(ap), indent=4) + "\n")
     except IOError:
-        print("Can't open ascii file: {}".format(add_file))
-        return success
+        print("Can't open file: {}".format(add_file))
+        return False
 
-    return success
+    return True
+
+
+def read_ori(filename: str) -> Calibration:
+    with open(filename, "r") as f:
+        data = json.load(f)
+
+    ext_par = Exterior(**data["ext_par"])
+    int_par = Interior(**data["int_par"])
+    glass_par = Glass(**data["glass_par"])
+    added_par = ap_52(**data["added_par"])
+    mmlut = mmlut(**data["mmlut"])
+
+    return Calibration(
+        ext_par=ext_par,
+        int_par=int_par,
+        glass_par=glass_par,
+        added_par=added_par,
+        mmlut=mmlut,
+    )
 
 
 def read_ori(Ex, In, G, ori_file, addp, add_file, add_fallback):
