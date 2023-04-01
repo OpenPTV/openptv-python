@@ -295,3 +295,21 @@ class framebuf_target(framebuf_base):
     def free(self, self_ref):
         # Implementation for freeing memory
         pass
+
+
+# we can use https://pypi.org/project/dvg-ringbuffer/
+
+from dataclasses import dataclass
+from dvg_ringbuffer import RingBuffer
+
+@dataclass
+class Test:
+    x: int
+    y: float
+    
+
+x = RingBuffer(capacity=3, dtype=Test)
+
+x.append(Test(1, 2.0))
+x[0].x
+x[0].y
