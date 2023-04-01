@@ -1,52 +1,23 @@
 from typing import List
 
-from openptv_python.vec_utils import vec3d
-
 POSI = 80
 
 
+from dataclasses import dataclass
+
+
+@dataclass
 class Target:
-    def __init__(
-        self,
-        pnr: int,
-        x: float,
-        y: float,
-        n: int,
-        nx: int,
-        ny: int,
-        sumg: int,
-        tnr: int,
-    ):
-        self.pnr = pnr
-        self.x = x
-        self.y = y
-        self.n = n
-        self.nx = nx
-        self.ny = ny
-        self.sumg = sumg
-        self.tnr = tnr
+    pnr: int
+    x: float
+    y: float
+    n: int
+    nx: int
+    ny: int
+    sumg: int
+    tnr: int
 
-    def __eq__(self, other):
-        """Compare two targets.
-
-        /* Check that target self is equal to target other, i.e. all their fields are equal.
-            *
-            * Arguments:
-            * target *self, *other - the target structures to compare.
-            *
-            * Returns:
-            * true if all fields are equal, false otherwise.
-            */
-
-        Args:
-        ----
-            self (target): target
-            other (target): target
-
-        Returns:
-        -------
-            _type_: _description_
-        """
+    def __eq__(self, other: "Target") -> bool:
         return (
             self.pnr == other.pnr
             and self.x == other.x
@@ -61,71 +32,62 @@ class Target:
 
 def read_targets(file_base: str, frame_num: int) -> List[Target]:
     """Read targets from a file."""
-    tix = 0
-    num_targets = 0
-    filein = ""
+    buffer = []
 
     if frame_num > 0:
-        filein = f"{file_base}{frame_num:04}_targets"
+        filename = f"{file_base}{frame_num:04}_targets"
     else:
-        filein = f"{file_base}_targets"
+        filename = f"{file_base}_targets"
 
     try:
-        with open(filein, "r", encoding="utf-8") as f:
-            num_targets = int(f.readline().strip())
-            buffer = [Target] * num_targets
+        with open(filename, "r") as file:
+            num_targets = int(file.readline().strip())
 
-            for tix in range(num_targets):
-                line = f.readline().strip().split()
+            for _ in range(num_targets):
+                line = file.readline().strip().split()
+
                 if len(line) != 8:
-                    raise ValueError("Bad format for file: {}".format(filein))
-                buffer[tix].pnr = int(line[0])
-                buffer[tix].x = float(line[1])
-                buffer[tix].y = float(line[2])
-                buffer[tix].n = int(line[3])
-                buffer[tix].nx = int(line[4])
-                buffer[tix].ny = int(line[5])
-                buffer[tix].sumg = int(line[6])
-                buffer[tix].tnr = int(line[7])
-    except IOError:
-        print(f"Can't open ascii file: {filein}")
-    except ValueError as err:
-        print(str(err))
+                    raise ValueError(f"Bad format for file: {filename}")
+
+                target = Target(
+                    pnr=int(line[0]),
+                    x=float(line[1]),
+                    y=float(line[2]),
+                    n=int(line[3]),
+                    nx=int(line[4]),
+                    ny=int(line[5]),
+                    sumg=int(line[6]),
+                    tnr=int(line[7]),
+                )
+
+                buffer.append(target)
+
+    except IOError as err:
+        print(f"Can't open ascii file: {filename}")
+        raise err
 
     return buffer
 
 
-def write_targets(
-    buffer: List[Target], num_targets: int, file_base: str, frame_num: int
-) -> int:
-    FILEOUT = None
-    tix, printf_ok, success = 0, 0, 0
-    fileout = ""
-
-    if frame_num == 0:
-        fileout = file_base + "_targets"
-    else:
-        fileout = f"{file_base}{frame_num:04d}_targets"
+def write_targets(targets, num_targets, file_base, frame_num):
+    success = 0
+    file_name = (
+        file_base + "_targets"
+        if frame_num == 0
+        else f"{file_base}{frame_num:04d}_targets"
+    )
 
     try:
-        FILEOUT = open(fileout, "w", encoding="utf-8")
+        with open(file_name, "w", encoding="utf-8") as f:
+            f.write(f"{num_targets}\n")
+            for target in targets:
+                f.write(
+                    f"{target.pnr:4d} {target.x:9.4f} {target.y:9.4f} {target.n:5d} {target.nx:5d} {target.ny:5d} {target.sumg:5d} {target.tnr:5d}\n"
+                )
+        success = 1
     except IOError:
-        print(f"Can't open ascii file: {fileout}")
-        return success
+        print(f"Can't open ascii file: {file_name}")
 
-    if FILEOUT.write(f"{num_targets}\n") <= 0:
-        print(f"Write error in file {fileout}")
-        return success
-
-    for tix in range(num_targets):
-        t = buffer[tix]
-        printf_ok = FILEOUT.write(
-            f"{t.pnr:4d} {t.x:9.4f} {t.y:9.4f} {t.n:5d} {t.nx:5d} {t.ny:5d} {t.sumg:5d} {t.tnr:5d}\n"
-        )
-        if printf_ok != 0:
-            print(f"Write error in file {fileout}")
-            return success
-    success = 1
     return success
 
 
@@ -145,86 +107,76 @@ class Correspondence:
         -------
             bool: True if the two objects are equal, False otherwise.
         """
-        return (
-            (self.nr == other.nr)
-            and (self.p[0] == other.p[0])
-            and (self.p[1] == other.p[1])
-            and (self.p[2] == other.p[2])
-            and (self.p[3] == other.p[3])
-        )
+        return (self.nr == other.nr) and all(self.p[:4] == other.p[:4])
+
+
+from typing import List, Tuple
 
 
 class PathInfo:
-    POSI = 80
-    PREV_NONE = -1
-    NEXT_NONE = -2
-    PRIO_DEFAULT = 2
+    POSI: int = 80
+    PREV_NONE: int = -1
+    NEXT_NONE: int = -2
+    PRIO_DEFAULT: int = 2
 
     def __init__(
         self,
-        x: vec3d = [0.0, 0.0, 0.0],  # position
-        prv: int = PREV_NONE,  # pointer to prev or next link
-        nxt: int = NEXT_NONE,  # next is preserved in python
-        prio: int = PRIO_DEFAULT,  # Prority of link is used for differen levels
-        decis: List[
-            float
-        ] = [],  # Bin for decision critera of possible links to next dataset
-        finaldecis: float = 0.0,  # final decision critera by which the link was established
-        linkdecis: List[int] = [],  # pointer of possible links to next data set
-        inlist: int = 0,  # Counter of number of possible links to next data set
-    ):
-        self.x = x
-        self.prv = prv  # previous
-        self.nxt = nxt
-        self.prio = prio
-        self.decis = decis
-        self.finaldecis = finaldecis
-        self.linkdecis = linkdecis
-        self.inlist = inlist
+        position: Tuple[float, float, float] = (0.0, 0.0, 0.0),
+        prev_link: int = None,
+        next_link: int = None,
+        priority: int = PRIO_DEFAULT,
+        decision_criteria: List[float] = [],
+        final_decision_criteria: float = 0.0,
+        link_candidates: List[int] = [],
+        candidate_count: int = 0,
+    ) -> None:
+        self.position = position
+        self.prev_link = prev_link
+        self.next_link = next_link
+        self.priority = priority
+        self.decision_criteria = decision_criteria
+        self.final_decision_criteria = final_decision_criteria
+        self.link_candidates = link_candidates
+        self.candidate_count = candidate_count
 
-    def __eq__(self, other) -> bool:
-        """Compare two PathInfo objects."""
+    def __eq__(self, other: "PathInfo") -> bool:
         if not (
-            self.prv == other.prv  # previous
-            and self.nxt == other.nxt
-            and self.prio == other.prio
-            and self.finaldecis == other.finaldecis
-            and self.inlist == other.inlist
-            and self.x == other.x
-            and self.decis == other.decis
-            and self.linkdecis == other.linkdecis
+            self.prev_link == other.prev_link
+            and self.next_link == other.next_link
+            and self.priority == other.priority
+            and self.final_decision_criteria == other.final_decision_criteria
+            and self.candidate_count == other.candidate_count
+            and self.position == other.position
+            and self.decision_criteria == other.decision_criteria
+            and self.link_candidates == other.link_candidates
         ):
             return False
 
         for itr in range(self.POSI):
-            if self.decis[itr] != other.decis[itr]:
+            if self.decision_criteria[itr] != other.decision_criteria[itr]:
                 return False
-            if self.linkdecis[itr] != other.linkdecis[itr]:
+            if self.link_candidates[itr] != other.link_candidates[itr]:
                 return False
 
         return True
 
-    def register_link_candidate(self, fitness: float, cand: int):
-        """Register a link candidate for a target.
+    def register_link_candidate(self, fitness: float, candidate_index: int) -> None:
+        self.decision_criteria[self.candidate_count] = fitness
+        self.link_candidates[self.candidate_count] = candidate_index
+        self.candidate_count += 1
 
-        /* register_link_candidate() adds information on a possible link to a path info
-        * structure.
-        *
-        * Arguments:
-        * P *self - the path info structure to modify.
-        * fitness_t fitness - the likelihood of the link candidate to actually be the
-        *     correct link, based on physical criteria.
-        * int cand - the candidate's index in nxt frame's target list.
-        */
-        """
-        self.decis[self.inlist] = fitness
-        self.linkdecis[self.inlist] = cand
-        self.inlist += 1
+    def reset_links(self) -> None:
+        self.prev_link = self.PREV_NONE
+        self.next_link = self.NEXT_NONE
+        self.priority = self.PRIO_DEFAULT
 
-    def reset_links(self):
-        self.prv = self.PREV_NONE  # previous
-        self.nxt = self.NEXT_NONE
-        self.prio = self.PRIO_DEFAULT
+
+from typing import Any, List
+
+from correspondence import Correspondence
+from file_handler import read_path_frame, read_targets, write_path_frame, write_targets
+from path_info import PathInfo
+from target import Target
 
 
 class Frame:
@@ -235,9 +187,9 @@ class Frame:
         targets: List[Target],
         num_cams: int,
         max_targets: int,
-        num_parts: int,  # Number of 3D particles in the correspondence buffer
-        num_targets: List[int],  # Pointer to array of 2D particle counts per image.
-    ):
+        num_parts: int,
+        num_targets: List[int],
+    ) -> None:
         self.path_info = path_info
         self.correspond = correspond
         self.targets = targets
@@ -248,26 +200,13 @@ class Frame:
 
     def read_frame(
         self,
-        corres_file_base,
-        linkage_file_base,
-        prio_file_base,
-        target_file_base,
-        frame_num,
-    ):
-        """Read a frame from the disk.
-
-        Args:
-        ----
-            corres_file_base (_type_): _description_
-            linkage_file_base (_type_): _description_
-            prio_file_base (_type_): _description_
-            target_file_base (_type_): _description_
-            frame_num (_type_): _description_
-
-        Returns:
-        -------
-            _type_: _description_
-        """
+        corres_file_base: Any,
+        linkage_file_base: Any,
+        prio_file_base: Any,
+        target_file_base: List[Any],
+        frame_num: int,
+    ) -> bool:
+        """Read a frame from the disk."""
         self.num_parts = read_path_frame(
             self.correspond,
             self.path_info,
@@ -276,15 +215,17 @@ class Frame:
             prio_file_base,
             frame_num,
         )
+
         if self.num_parts == -1:
             return False
 
-        if self.num_targets == 0:
+        if self.num_targets == [0] * self.num_cams:
             return False
 
         for cam in range(self.num_cams):
             self.targets[cam] = read_targets(target_file_base[cam], frame_num)
             self.num_targets[cam] = len(self.targets[cam])
+
             if self.num_targets[cam] == -1:
                 return False
 
@@ -292,12 +233,13 @@ class Frame:
 
     def write_frame(
         self,
-        corres_file_base,
-        linkage_file_base,
-        prio_file_base,
-        target_file_base,
-        frame_num,
-    ):
+        corres_file_base: Any,
+        linkage_file_base: Any,
+        prio_file_base: Any,
+        target_file_base: List[Any],
+        frame_num: int,
+    ) -> bool:
+        """Write a frame to the disk."""
         status = write_path_frame(
             self.correspond,
             self.path_info,
@@ -307,6 +249,7 @@ class Frame:
             prio_file_base,
             frame_num,
         )
+
         if status == 0:
             return False
 
@@ -317,6 +260,7 @@ class Frame:
                 target_file_base[cam],
                 frame_num,
             )
+
             if status == 0:
                 return False
 
@@ -324,55 +268,55 @@ class Frame:
 
 
 def read_path_frame(
-    cor_buf, path_buf, corres_file_base, linkage_file_base, prio_file_base, frame_num
-):
-    """Read a frame of path and correspondence info.
-
-    /* Reads rt_is files. these files contain both the path info and the
-    * information on correspondence between targets on the different images.
-    * Sets fields not in file to default values.
-    *
-    * Arguments:
-    * corres *cor_buf - a buffer of corres structs to fill in from the file.
-    * P *path_buf - same for path info structures.
-    * char* corres_file_base, *linkage_file_base - base names of the output
-    *   correspondence and likage files respectively, to which a frame number
-    *   is added. Without separator.
-    * char *prio_file_base - for the linkage file with added 'prio' column.
-    * int frame_num - number of frame to add to file_base. A value of 0 or less
-    *   means that no frame number should be added. The '.' separator is added
-    * between the name and the frame number.
-    *
-    * Returns:
-    * The number of points read for this frame. -1 on failure.
-    */
+    cor_buf: "_type_",
+    path_buf: "_type_",
+    corres_file_base: "_type_",
+    linkage_file_base: "_type_",
+    prio_file_base: "_type_",
+    frame_num: "_type_",
+) -> "_type_":
+    """
+    Read a frame of path and correspondence info.
 
     Args:
     ----
-        cor_buf (_type_): _description_
-        path_buf (_type_): _description_
-        corres_file_base (_type_): _description_
-        linkage_file_base (_type_): _description_
-        prio_file_base (_type_): _description_
-        frame_num (_type_): _description_
+        cor_buf : _type_
+            a buffer of corres structs to fill in from the file.
+        path_buf : _type_
+            a buffer of path info structures.
+        corres_file_base : _type_
+            base name of the output correspondence file to which a frame number
+            is added without separator.
+        linkage_file_base : _type_
+            base name of the output linkage file to which a frame number
+            is added without separator.
+        prio_file_base : _type_
+            base name of the output priorities file to which a frame number
+            is added without separator.
+        frame_num : _type_
+            number of frame to add to file_base. A value of 0 or less means that no
+            frame number should be added. The '.' separator is added between the name
+            and the frame number.
 
     Returns:
     -------
-        _type_: _description_
+        _type_:
+            The number of points read for this frame. -1 on failure.
     """
-    filein, linkagein, prioin = None, None, None
+    filein = None
+    linkagein = None
+    prioin = None
     fname = ""
     read_res, targets, alt_link = 0, -1, 0
 
-    # File format: first line contains the number of points, then each line is
-    # a record of path and correspondence info. We don't need the nuber of points
-    # because we read to EOF anyway.
+    # File format: first line contains the number of points, then each line
+    # is a record of path and correspondence info. We don't need the number of
+    # points because we read to EOF anyway.
     fname = f"{corres_file_base}.{frame_num}"
     try:
         filein = open(fname, "r")
-    except:
-        print(f"Can't open ascii file: {fname}")
-        return targets
+    except Exception as e:
+        raise ValueError(f"Can't open ascii file: {fname}") from e
 
     read_res = int(filein.readline().strip())
     if not read_res:
@@ -382,9 +326,8 @@ def read_path_frame(
         fname = f"{linkage_file_base}.{frame_num}"
         try:
             linkagein = open(fname, "r")
-        except:
-            print(f"Can't open linkage file: {fname}")
-            return targets
+        except Exception as e:
+            raise ValueError(f"Can't open linkage file: {fname}") from e
 
         read_res = int(linkagein.readline().strip())
         if not read_res:
@@ -394,9 +337,8 @@ def read_path_frame(
         fname = f"{prio_file_base}.{frame_num}"
         try:
             prioin = open(fname, "r")
-        except:
-            print(f"Can't open prio file: {fname}")
-            return targets
+        except Exception as e:
+            raise ValueError(f"Can't open prioin file: {fname}") from e
 
         read_res = int(prioin.readline().strip())
         if not read_res:
