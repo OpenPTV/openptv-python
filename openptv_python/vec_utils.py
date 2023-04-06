@@ -5,56 +5,36 @@
 # system to decide whether to invest in loop peeling etc. Here we write
 # the logical structure, and allow optimizing for size as well.
 
-import math
 from typing import List
 
+import numpy as np
+
 # Define the vec3d type as a list of floats
-vec3d = [0.0, 0.0, 0.0]
-
-
-# Define the nan value
-try:
-    EMPTY_CELL = math.nan
-except ValueError:
-    EMPTY_CELL = 0.0 / 0.0
-
-
-# Define the helper functions
-def is_empty(x):
-    return math.isnan(x)
+vec3d = np.zeros(3, dtype=float)
 
 
 def norm(x, y, z):
-    return math.sqrt((x) * (x) + (y) * (y) + (z) * (z))
+    return np.linalg.norm(vec_set(x, y, z))
 
 
-def vec_init(init):
-    # vec_init() initializes all components of a 3D vector to NaN.
-
-    for ix in range(3):
-        init[ix] = math.nan
+def vec_init():
+    # vec_init() initializes all components of a 3D vector to zeros.
+    return vec3d
 
 
-def vec_set(dest, x, y, z):
-    # vec_set() sets the components of a  3D vector from separate doubles.
-
-    dest[0] = x
-    dest[1] = y
-    dest[2] = z
+def vec_set(x, y, z):
+    """Sets the components of a  3D vector from separate doubles."""
+    return np.array([x, y, z], dtype=float)
 
 
-def vec_copy(dest, src):
-    # vec_copy() copies one 3D vector into another.
-
-    for ix in range(3):
-        dest[ix] = src[ix]
+def vec_copy(src: vec3d):
+    """Copies one 3D vector into another."""
+    return src.copy()
 
 
-def vec_subt(from_, sub, output):
-    # vec_subt() subtracts two 3D vectors.
-
-    for ix in range(3):
-        output[ix] = from_[ix] - sub[ix]
+def vec_subt(from_: vec3d, sub: vec3d):
+    """subtracts two 3D vectors."""
+    return from_ - sub
 
 
 def vec_add(vec1, vec2, output):
@@ -77,7 +57,7 @@ def vec_diff_norm(vec1, vec2):
     # Implements the common operation of finding the norm of a difference between
     # two vectors. This happens a lot, so we have an optimized function.
 
-    return math.sqrt(
+    return np.sqrt(
         (vec1[0] - vec2[0]) ** 2 + (vec1[1] - vec2[1]) ** 2 + (vec1[2] - vec2[2]) ** 2
     )
 
@@ -86,7 +66,7 @@ def vec_norm(vec: List[float]) -> float:
     # vec_norm() calculates the norm of a vector.
 
     # Just plug into the macro
-    return math.sqrt(vec[0] ** 2 + vec[1] ** 2 + vec[2] ** 2)
+    return np.sqrt(vec[0] ** 2 + vec[1] ** 2 + vec[2] ** 2)
 
 
 def vec_dot(vec1: List[float], vec2: List[float]):

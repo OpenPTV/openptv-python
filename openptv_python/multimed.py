@@ -1,3 +1,8 @@
+import numpy as np
+
+from openptv_python.vec_utils import vec_norm, vec_scalar_mul, vec_set, vec_subt
+
+
 def multimed_nlay(cal, mm, pos, Xq, Yq):
     radial_shift = multimed_r_nlay(cal, mm, pos)
     if radial_shift == 1.0:
@@ -74,6 +79,7 @@ def multimed_r_nlay(cal, mm, pos):
 
 
 def trans_Cam_Point(ex, mm, gl, pos):
+    """Transforms the camera coordinates to the point coordinates."""
     dist_cam_glas = 0
     dist_point_glas = 0
     dist_o_glas = 0
@@ -83,28 +89,33 @@ def trans_Cam_Point(ex, mm, gl, pos):
     renorm_glass = []
     temp = []
 
-    vec_set(glass_dir, gl.vec_x, gl.vec_y, gl.vec_z)
-    vec_set(primary_pt, ex.x0, ex.y0, ex.z0)
+    glass_dir = vec_set(gl.vec_x, gl.vec_y, gl.vec_z)
+    primary_pt = vec_set(ex.x0, ex.y0, ex.z0)
 
     dist_o_glas = vec_norm(glass_dir)
     dist_cam_glas = vec_dot(primary_pt, glass_dir) / dist_o_glas - dist_o_glas - mm.d[0]
     dist_point_glas = vec_dot(pos, glass_dir) / dist_o_glas - dist_o_glas
 
     vec_scalar_mul(glass_dir, dist_cam_glas / dist_o_glas, renorm_glass)
-    vec_subt(primary_pt, renorm_glass, cross_c)
+
+    # vec_subt(primary_pt, renorm_glass, cross_c)
+    cross_c = primary_pt - renorm_glass
 
     vec_scalar_mul(glass_dir, dist_point_glas / dist_o_glas, renorm_glass)
-    vec_subt(pos, renorm_glass, cross_p)
+    # vec_subt(pos, renorm_glass, cross_p)
+    cross_p = pos - renorm_glass
 
     ex_t.x0 = 0
     ex_t.y0 = 0
     ex_t.z0 = dist_cam_glas + mm.d[0]
 
     vec_scalar_mul(glass_dir, mm.d[0] / dist_o_glas, renorm_glass)
-    vec_subt(cross_c, renorm_glass, temp)
-    vec_subt(cross_p, temp, temp)
+    # vec_subt(cross_c, renorm_glass, temp)
+    temp = cross_c - renorm_glass
+    # vec_subt(cross_p, temp, temp)
+    temp = cross_p - temp
 
-    vec_set(pos_t, vec_norm(temp), 0, dist_point_glas)
+    vec_set(vec_norm(temp), 0, dist_point_glas)
 
 
 """
@@ -125,6 +136,17 @@ Plan:
 
 
 def back_trans_Point(pos_t, mm, G, cross_p, cross_c, pos):
+    """Transforms the point coordinates to the camera coordinates.
+
+    Args:
+    ----
+        pos_t (_type_): _description_
+        mm (_type_): _description_
+        G (_type_): _description_
+        cross_p (_type_): _description_
+        cross_c (_type_): _description_
+        pos (_type_): _description_
+    """
     nGl = vec_norm([G.vec_x, G.vec_y, G.vec_z])
     glass_dir = [G.vec_x, G.vec_y, G.vec_z]
     renorm_glass = [0, 0, 0]
@@ -132,17 +154,17 @@ def back_trans_Point(pos_t, mm, G, cross_p, cross_c, pos):
     temp = [0, 0, 0]
 
     vec_scalar_mul(glass_dir, mm.d[0] / nGl, renorm_glass)
-    vec_subt(cross_c, renorm_glass, after_glass)
-    vec_subt(cross_p, after_glass, temp)
+    vec_subt(renorm_glass, after_glass)
+    vec_subt(after_glass, temp)
 
     nVe = vec_norm(temp)
 
     vec_scalar_mul(glass_dir, -pos_t[2] / nGl, renorm_glass)
-    vec_subt(after_glass, renorm_glass, pos)
+    after_glass = vec_subt(renorm_glass, pos)
 
     if nVe > 0:
         vec_scalar_mul(temp, -pos_t[0] / nVe, renorm_glass)
-        vec_subt(pos, renorm_glass, pos)
+        pos = vec_subt(renorm_glass, pos)
 
 
 def move_along_ray(glob_Z, vertex, direct, out):
@@ -152,8 +174,6 @@ def move_along_ray(glob_Z, vertex, direct, out):
 
 
 def init_mmlut(vpar, cpar, cal):
-    import numpy as np
-
     i, j = 0, 0
     Rmax = 0
     rw = 2.0
@@ -254,12 +274,12 @@ def get_mmf_from_mmlut(cal, pos):
 
     rw = cal.mmlut.rw
 
-    vec_subt(pos, cal.mmlut.origin, temp)
+    vec_subt(cal.mmlut.origin, temp)
     sz = temp[2] / rw
     iz = int(sz)
     sz -= iz
 
-    R = norm(temp[0], temp[1], 0)
+    R = vec_norm(temp[0], temp[1], 0)
 
     sr = R / rw
     ir = int(sr)
