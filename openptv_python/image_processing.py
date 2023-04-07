@@ -196,10 +196,6 @@ def prepare_image(img, img_hp, dim_lp, filter_hp, filter_file, cpar):
     # Subtract low-pass filtered image from original image
     img_hp = np.subtract(img, img_lp, dtype=np.int16)
 
-    # Consider field mode
-    if cpar.chfield == 1 or cpar.chfield == 2:
-        img_hp = np.array(np.split(img_hp, 2, axis=0)[cpar.chfield - 1]).flatten()
-
     # Filter highpass image, if wanted
     if filter_hp == 1:
         img_hp = cv2.boxFilter(

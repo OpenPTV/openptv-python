@@ -5,7 +5,6 @@ from openptv_python.correspondences import MAXCAND
 from openptv_python.imgcoord import flat_image_coord
 from openptv_python.multimed import move_along_ray
 from openptv_python.ray_tracing import ray_tracing
-from openptv_python.trafo import correct_brown_affin
 
 
 @dataclass

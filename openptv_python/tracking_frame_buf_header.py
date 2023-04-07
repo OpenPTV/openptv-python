@@ -1,8 +1,10 @@
+from collections import deque
 from dataclasses import dataclass
 from typing import List, Optional
-from openptv_python.vec_utils import vec3d
+
 from dvg_ringbuffer import RingBuffer
 
+from openptv_python.vec_utils import vec3d
 
 POSI = 80
 STR_MAX_LEN = 255
@@ -302,8 +304,6 @@ def fb_init(
 
 
 # another boilerplate code
-s
-from collections import deque
 
 
 class fb_vtable:
