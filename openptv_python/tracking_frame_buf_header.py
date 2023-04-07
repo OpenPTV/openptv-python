@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from typing import List, Optional
-from vec_utils import vec3d
+from openptv_python.vec_utils import vec3d
+from dvg_ringbuffer import RingBuffer
+
 
 POSI = 80
 STR_MAX_LEN = 255
@@ -29,7 +31,9 @@ def read_targets(file_base: str, frame_num: int) -> List[Target]:
     return buffer
 
 
-def write_targets(buffer: List[Target], num_targets: int, file_base: str, frame_num: int):
+def write_targets(
+    buffer: List[Target], num_targets: int, file_base: str, frame_num: int
+):
     # Implementation left to the user
     pass
 
@@ -80,14 +84,27 @@ def reset_links(self: P):
     pass
 
 
-def read_path_frame(cor_buf: List[Corres], path_buf: List[P], corres_file_base: str,
-                    linkage_file_base: str, prio_file_base: str, frame_num: int):
+def read_path_frame(
+    cor_buf: List[Corres],
+    path_buf: List[P],
+    corres_file_base: str,
+    linkage_file_base: str,
+    prio_file_base: str,
+    frame_num: int,
+):
     # Implementation left to the user
     pass
 
 
-def write_path_frame(cor_buf: List[Corres], path_buf: List[P], num_parts: int,
-                     corres_file_base: str, linkage_file_base: str, prio_file_base: str, frame_num: int):
+def write_path_frame(
+    cor_buf: List[Corres],
+    path_buf: List[P],
+    num_parts: int,
+    corres_file_base: str,
+    linkage_file_base: str,
+    prio_file_base: str,
+    frame_num: int,
+):
     # Implementation left to the user
     pass
 
@@ -118,14 +135,26 @@ def free_frame(self: Frame):
     pass
 
 
-def read_frame(self: Frame, corres_file_base: str, linkage_file_base: str,
-               prio_file_base: str, target_file_base: List[str], frame_num: int) -> int:
+def read_frame(
+    self: Frame,
+    corres_file_base: str,
+    linkage_file_base: str,
+    prio_file_base: str,
+    target_file_base: List[str],
+    frame_num: int,
+) -> int:
     # Implementation left to the user
     pass
 
 
-def write_frame(self: Frame, corres_file_base: str, linkage_file_base: str,
-                prio_file_base: str, target_file_base: List[str], frame_num: int) -> int:
+def write_frame(
+    self: Frame,
+    corres_file_base: str,
+    linkage_file_base: str,
+    prio_file_base: str,
+    target_file_base: List[str],
+    frame_num: int,
+) -> int:
     # Implementation left to the user
     pass
 
@@ -141,7 +170,7 @@ class FramebufBase:
         self.buf_len = buf_len
         self.num_cams = num_cams
         fb_base_init(self, buf_len, num_cams, max_targets)
-    
+
     def free(self):
         self._vptr.free(self)
 
@@ -164,13 +193,28 @@ class Framebuf(FramebufBase):
     prio_file_base = ""
     target_file_base = []
 
-    def __init__(self, buf_len: int, num_cams: int, max_targets: int, 
-                 corres_file_base: str, linkage_file_base: str, 
-                 prio_file_base: str, target_file_base: List[str]):
+    def __init__(
+        self,
+        buf_len: int,
+        num_cams: int,
+        max_targets: int,
+        corres_file_base: str,
+        linkage_file_base: str,
+        prio_file_base: str,
+        target_file_base: List[str],
+    ):
         FramebufBase.__init__(self, buf_len, num_cams, max_targets)
-        fb_init(self, buf_len, num_cams, max_targets, corres_file_base, linkage_file_base,
-                prio_file_base, target_file_base)
-    
+        fb_init(
+            self,
+            buf_len,
+            num_cams,
+            max_targets,
+            corres_file_base,
+            linkage_file_base,
+            prio_file_base,
+            target_file_base,
+        )
+
     def free(self):
         fb_disk_free(self)
 
@@ -195,10 +239,13 @@ def fb_base_init(new_buf: FramebufBase, buf_len: int, num_cams: int, max_targets
     new_buf.num_cams = num_cams
     for i in range(buf_len):
         new_buf._ring_vec[i] = Frame()
-        new_buf._ring_vec[i].path_info, new_buf._ring_vec[i].correspond, \
-            new_buf._ring_vec[i].num_targets = [], [], [0]*num_cams
+        (
+            new_buf._ring_vec[i].path_info,
+            new_buf._ring_vec[i].correspond,
+            new_buf._ring_vec[i].num_targets,
+        ) = ([], [], [0] * num_cams)
         for j in range(num_cams):
-            new_buf._ring_vec[i].targets.append([None]*max_targets)
+            new_buf._ring_vec[i].targets.append([None] * max_targets)
     new_buf.buf = new_buf._ring_vec[buf_len:]
 
 
@@ -207,7 +254,7 @@ def fb_next(self: FramebufBase):
 
 
 def fb_prev(self: FramebufBase):
-    self._ring_vec.insert(0, self.buf.pop())    
+    self._ring_vec.insert(0, self.buf.pop())
 
 
 # Child class virtual function implementations
@@ -217,7 +264,9 @@ def fb_disk_free(self: FramebufBase):
     del self.buf
 
 
-def fb_disk_read_frame_at_end(self: FramebufBase, frame_num: int, read_links: int) -> int:
+def fb_disk_read_frame_at_end(
+    self: FramebufBase, frame_num: int, read_links: int
+) -> int:
     # Implementation left to the user
     return 0
 
@@ -228,37 +277,50 @@ def fb_disk_write_frame_from_start(self: FramebufBase, frame_num: int) -> int:
 
 
 # Child class vtable definition
-virtual_funcs = fb_vtable(fb_disk_free, fb_disk_read_frame_at_end, fb_disk_write_frame_from_start)    
+virtual_funcs = fb_vtable(
+    fb_disk_free, fb_disk_read_frame_at_end, fb_disk_write_frame_from_start
+)
 
 
 # Derived class initialization
-def fb_init(new_buf: Framebuf, buf_len: int, num_cams: int, max_targets: int, 
-            corres_file_base: str, linkage_file_base: str, 
-            prio_file_base: str, target_file_base: List[str]):
+def fb_init(
+    new_buf: Framebuf,
+    buf_len: int,
+    num_cams: int,
+    max_targets: int,
+    corres_file_base: str,
+    linkage_file_base: str,
+    prio_file_base: str,
+    target_file_base: List[str],
+):
     FramebufBase.__init__(new_buf, buf_len, num_cams, max_targets)
     new_buf._vptr = virtual_funcs
     new_buf.corres_file_base = corres_file_base
     new_buf.linkage_file_base = linkage_file_base
     new_buf.prio_file_base = prio_file_base
     new_buf.target_file_base = target_file_base
-    
-    
+
+
 # another boilerplate code
-s    
+s
 from collections import deque
+
 
 class fb_vtable:
     def free(self, self_ref):
         pass
+
     def read_frame_at_end(self, self_ref, frame_num, read_links):
         pass
+
     def write_frame_from_start(self, self_ref, frame_num):
         pass
+
 
 class framebuf_base:
     def __init__(self, buf_len):
         self._vptr = fb_vtable()
-        self._ring_vec = deque(maxlen=buf_len*2)
+        self._ring_vec = deque(maxlen=buf_len * 2)
         self._fb_ptr = 0
         self._max_len = buf_len
 
@@ -276,6 +338,7 @@ class framebuf_base:
     def fb_write_frame_from_start(self, frame_num):
         self._vptr.write_frame_from_start(self, frame_num)
 
+
 class framebuf_target(framebuf_base):
     def __init__(self, buf_len, target_file):
         super().__init__(buf_len)
@@ -283,7 +346,7 @@ class framebuf_target(framebuf_base):
         self._vptr.read_frame_at_end = self.read_frame_at_end
         self._vptr.write_frame_from_start = self.write_frame_from_start
         self._vptr.free = self.free
-    
+
     def read_frame_at_end(self, self_ref, frame_num, read_links):
         # Implementation for reading frame information from target file
         pass
@@ -299,14 +362,12 @@ class framebuf_target(framebuf_base):
 
 # we can use https://pypi.org/project/dvg-ringbuffer/
 
-from dataclasses import dataclass
-from dvg_ringbuffer import RingBuffer
 
 @dataclass
 class Test:
     x: int
     y: float
-    
+
 
 x = RingBuffer(capacity=3, dtype=Test)
 

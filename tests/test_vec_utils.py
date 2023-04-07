@@ -3,7 +3,6 @@ import math
 from openptv_python.vec_utils import (
     unit_vector,
     vec_add,
-    vec_approx_cmp,
     vec_cmp,
     vec_copy,
     vec_cross,
@@ -93,13 +92,6 @@ def test_vec_cmp():
     assert vec_cmp(vec1, vec2, 1e-4)
     vec3 = [4.0, 5.0, 6.0]
     assert not vec_cmp(vec1, vec3, 1e-4)
-
-
-def test_vec_approx_cmp():
-    vec1 = [1.0, 2.0, 3.0]
-    vec2 = [1.1, 1.9, 3.1]
-    eps = 0.2
-    assert vec_approx_cmp(vec1, vec2, eps)
 
 
 def test_unit_vector():

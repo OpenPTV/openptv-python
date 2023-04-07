@@ -1,7 +1,6 @@
 import json
 from dataclasses import asdict, dataclass
-
-from openptv_python import vec3d
+from openptv_python
 
 
 @dataclass
