@@ -34,7 +34,7 @@ def flat_image_coord(orig_pos, cal, mm):
         cal.ext_par, mm, cal.glass_par, orig_pos, cal_t.ext_par, pos_t, cross_p, cross_c
     )
     multimed_nlay(cal_t, mm, pos_t, X_t, Y_t)
-    vec_set(pos_t, X_t, Y_t, pos_t[2])
+    pos_t = vec_set(X_t, Y_t, pos_t[2])
     back_trans_Point(pos_t, mm, cal.glass_par, cross_p, cross_c, pos)
 
     deno = (

@@ -1,9 +1,7 @@
+from dataclasses import dataclass
 from typing import List
 
 POSI = 80
-
-
-from dataclasses import dataclass
 
 
 @dataclass

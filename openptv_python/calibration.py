@@ -59,7 +59,7 @@ class mmlut:
     nr: int = 0
     nz: int = 0
     rw: int = 0
-    data: list[float] = []
+    data: list[float] = None
 
 
 @dataclass

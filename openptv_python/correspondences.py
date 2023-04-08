@@ -175,8 +175,8 @@ def four_camera_matching(list, base_target_count, accept_corr, scratch, scratch_
             p2 = list[0][1][i].p2[j]
             for k in range(list[0][2][i].n):
                 p3 = list[0][2][i].p2[k]
-                for l in range(list[0][3][i].n):
-                    p4 = list[0][3][i].p2[l]
+                for ll in range(list[0][3][i].n):
+                    p4 = list[0][3][i].p2[ll]
 
                     for m in range(list[1][2][p2].n):
                         p31 = list[1][2][p2].p2[m]
@@ -196,14 +196,14 @@ def four_camera_matching(list, base_target_count, accept_corr, scratch, scratch_
                                 corr = (
                                     list[0][1][i].corr[j]
                                     + list[0][2][i].corr[k]
-                                    + list[0][3][i].corr[l]
+                                    + list[0][3][i].corr[ll]
                                     + list[1][2][p2].corr[m]
                                     + list[1][3][p2].corr[n]
                                     + list[2][3][p3].corr[o]
                                 ) / (
                                     list[0][1][i].dist[j]
                                     + list[0][2][i].dist[k]
-                                    + list[0][3][i].dist[l]
+                                    + list[0][3][i].dist[ll]
                                     + list[1][2][p2].dist[m]
                                     + list[1][3][p2].dist[n]
                                     + list[2][3][p3].dist[o]

@@ -23,9 +23,8 @@ class Coord2d:
 
 
 def epi_mm(xl, yl, cal1, cal2, mmp, vpar):
-    """ Return the end points of the epipolar line in the "second" camera.
-    
-    
+    """Return the end points of the epipolar line in the "second" camera.
+
     /*  epi_mm() takes a point in images space of one camera, positions of this
     and another camera and returns the epipolar line (in millimeter units)
     that corresponds to the point of interest in the another camera space.
@@ -81,7 +80,8 @@ def epi_mm(xl, yl, cal1, cal2, mmp, vpar):
 
 
 def epi_mm_2D(xl, yl, cal1, mmp, vpar, out):
-    """
+    """Return the position of the point in the 3D space.
+
         /*  epi_mm_2D() is a very degenerate case of the epipolar geometry use.
         It is valuable only for the case of a single camera with multi-media.
         It takes a point in images space of one (single) camera, positions of this
@@ -136,8 +136,12 @@ def quality_ratio(a, b):
 def find_candidate(
     crd, pix, num, xa, ya, xb, yb, n, nx, ny, sumg, cand, vpar, cpar, cal
 ):
-    """
-        /*  find_candidate() is searching in the image space of the image all the
+    """Find the candidate in the image space of the image all the candidates around the epipolar line.
+
+    originating from another camera. It is a binary search in an x-sorted coord-set,
+    exploits shape information of the particles.
+
+    /*  find_candidate() is searching in the image space of the image all the
         candidates around the epipolar line originating from another camera. It is
         a binary search in an x-sorted coord-set, exploits shape information of the
         particles.

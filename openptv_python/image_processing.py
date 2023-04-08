@@ -1,182 +1,80 @@
+import copy
+
+import numpy as np
+from scipy import ndimage
+from scipy.ndimage import map_coordinates, uniform_filter
+
+from openptv_python.parameters import ControlPar
+
 filter_t = np.zeros((3, 3), dtype=float)
 
 
-# Python translation:
-def setup_filter_pointers(line):
-    pass
+def filter_3(img, kernel=None) -> np.ndarray:
+    """Apply a 3x3 filter to an image."""
+    if kernel is None:  # default is a low pass
+        kernel = np.ones((3, 3)) / 9
+    filtered_img = ndimage.convolve(img, kernel)
+    return filtered_img
 
 
-def filter_3(img, img_lp, filt, cpar):
-    image_size = cpar.imx * cpar.imy
-    sum = 0
+def lowpass_3(img):
+    # Define the 3x3 lowpass filter kernel
+    kernel = np.ones((3, 3)) / 9
 
-    for i in range(3):
-        for j in range(3):
-            sum += filt[i][j]
+    # Apply the filter to the image using scipy.ndimage.convolve()
+    img_lp = ndimage.convolve(img, kernel, mode="constant", cval=0.0)
 
-    if sum == 0:
-        return 0
-
-    end = image_size - cpar.imx - 1
-
-    setup_filter_pointers(cpar.imx)
-
-    for i in range(cpar.imx + 1, end):
-        buf = (
-            filt[0][0] * ptr1
-            + filt[0][1] * ptr2
-            + filt[0][2] * ptr3
-            + filt[1][0] * ptr4
-            + filt[1][1] * ptr5
-            + filt[1][2] * ptr6
-            + filt[2][0] * ptr7
-            + filt[2][1] * ptr8
-            + filt[2][2] * ptr9
-        ) / sum
-
-        if buf > 255:
-            buf = 255
-        elif buf < 8:
-            buf = 8
-
-        img_lp[ptr] = int(buf)
-
-    return 1
-
-
-def lowpass_3(img, img_lp, cpar):
-    ptr = 0
-    ptr1 = 0
-    ptr2 = 0
-    ptr3 = 0
-    ptr4 = 0
-    ptr5 = 0
-    ptr6 = 0
-    ptr7 = 0
-    ptr8 = 0
-    ptr9 = 0
-
-    end = (cpar.imx * cpar.imy) - cpar.imx - 1
-
-    setup_filter_pointers(cpar.imx)
-
-    for i in range(cpar.imx + 1, end):
-        buf = (
-            img[ptr5]
-            + img[ptr1]
-            + img[ptr2]
-            + img[ptr3]
-            + img[ptr4]
-            + img[ptr6]
-            + img[ptr7]
-            + img[ptr8]
-            + img[ptr9]
-        )
-
-        img_lp[ptr] = buf / 9
-
-        # increment pointers by one each iteration of the loop
-        ptr += 1
-        ptr1 += 1
-        ptr2 += 1
-        ptr3 += 1
-        ptr4 += 1
-        ptr5 += 1
-        ptr6 += 1
-        ptr7 += 1
-        ptr8 += 1
+    return img_lp
 
 
 def fast_box_blur(filt_span, src, dest, cpar):
-    row_accum = [0] * (cpar.imx * cpar.imy)
-    accum = 0
     n = 2 * filt_span + 1
-
-    for i in range(cpar.imy):
-        row_start = i * cpar.imx
-
-        # first element has no filter around him
-        accum = src[row_start]
-        row_accum[row_start] = accum * n
-
-        # Elements 1..filt_span have a growing filter, as much as fits.  Each iteration increases the filter symmetrically, so 2 new elements are taken.
-        for ptr in range(row_start + 1, row_start + 1 + filt_span):
-            ptrl = (
-                src[ptr - 2] if ptr - 2 >= 0 else 0
-            )  # prevent index out of range error
-            ptrr = (
-                src[ptr + 2] if ptr + 2 < len(src) else 0
-            )  # prevent index out of range error
-
-            accum += ptrl + ptrr
-            m = (
-                3 if ptr == row_start + 1 else (ptr - row_start) * 2
-            )  # m is the size of the filter at this point
-
-            row_accum[ptr] = (
-                accum * n / m
-            )  # So small filters have same weight as the largest size
-
-        # Middle elements, having a constant-size filter. The sum is obtained by adding the coming element and dropping the leaving element, in a sliding window fashion.
-        for ptr in range(row_start + filt_span + 1, row_start + cpar.imx):
-            ptrl = (
-                src[ptr - n] if ptr - n >= 0 else 0
-            )  # prevent index out of range error
-            ptrr = src[ptr] if ptr < len(src) else 0  # prevent index out of range error
-
-            accum += ptrr - ptrl
-            row_accum[ptr] = accum
-
-        # last elements in line treated like first ones, mutatis mutandis
+    weights = [1] * n
+    row_accum = uniform_filter(
+        src.reshape((cpar.imy, cpar.imx)),
+        size=n,
+        mode="constant",
+        cval=0,
+        weights=weights,
+    ).reshape(-1)
+    dest[:] = row_accum[:]
 
 
-def split(img: np.ndarray, half_selector: int, cpar: control_par) -> None:
+def split(img: np.ndarray, half_selector: int, cpar: ControlPar) -> None:
     cond_offs = cpar.imx if half_selector % 2 else 0
 
     if half_selector == 0:
         return
 
-    for row in range(cpar.imy // 2):
-        for col in range(cpar.imx):
-            img[row * cpar.imx + col] = img[2 * row * cpar.imx + cond_offs + col]
+    coords_x, coords_y = np.meshgrid(np.arange(cpar.imx), np.arange(cpar.imy // 2))
 
-    img[image_size // 2 :] = 2
+    coords_x = coords_x.flatten()
+    coords_y = coords_y.flatten() * 2 + cond_offs
+
+    new_img = map_coordinates(img, [coords_y, coords_x], mode="constant", cval=0)
+    img[:] = new_img
 
 
-def subtract_img(img1: np.ndarray, img2: np.ndarray, img_new: np.ndarray):
-    """Subtract img2 from img1 and store the result in img_new.
+def subtract_img(img1: np.ndarray, img2: np.ndarray, img_new: np.ndarray) -> None:
+    """
+    Subtract img2 from img1 and store the result in img_new.
 
     Args:
     ----
     img1, img2: numpy arrays containing the original images.
     img_new: numpy array to store the result.
-    cpar: control_par object containing image size parameters.
     """
-    img_size = img1.size
-    for i in range(img_size):
-        val = img1[i] - img2[i]
-        img_new[i] = 0 if val < 0 else val
+    img_new[:] = ndimage.maximum(img1 - img2, 0)
 
 
 def subtract_mask(img, img_mask, img_new, cpar):
-    image_size = cpar.imx * cpar.imy
-
-    for i in range(image_size):
-        if img_mask[i] == 0:
-            img_new[i] = 0
-        else:
-            img_new[i] = img[i]
+    img_new[:] = np.where(img_mask == 0, 0, img)
 
 
-def copy_images(src: List[int], dest: List[int], cpar: control_par):
-    image_size = cpar.imx * cpar.imy
-
-    for i in range(image_size):
-        dest[i] = src[i]
-
-
-import cv2
-import numpy as np
+def copy_images(src: np.ndarray) -> np.ndarray:
+    """Copy src image to dest."""
+    dest = copy.deepcopy(src)
+    return dest
 
 
 def prepare_image(img, img_hp, dim_lp, filter_hp, filter_file, cpar):
@@ -185,12 +83,11 @@ def prepare_image(img, img_hp, dim_lp, filter_hp, filter_file, cpar):
 
     # Apply low-pass filter
     img = img.reshape((cpar.imy, cpar.imx))  # Reshape to 2D image
-    img_lp = cv2.boxFilter(
+    img_lp = ndimage.uniform_filter(
         img,
-        -1,
-        (dim_lp * 2 + 1, dim_lp * 2 + 1),
-        normalize=True,
-        borderType=cv2.BORDER_CONSTANT,
+        size=(dim_lp * 2 + 1, dim_lp * 2 + 1),
+        mode="constant",
+        cval=0.0,
     )
 
     # Subtract low-pass filtered image from original image
@@ -198,12 +95,11 @@ def prepare_image(img, img_hp, dim_lp, filter_hp, filter_file, cpar):
 
     # Filter highpass image, if wanted
     if filter_hp == 1:
-        img_hp = cv2.boxFilter(
+        img_hp = ndimage.uniform_filter(
             img_hp.reshape((cpar.imy, cpar.imx)),
-            -1,
-            (3, 3),
-            normalize=True,
-            borderType=cv2.BORDER_CONSTANT,
+            size=(3, 3),
+            mode="constant",
+            cval=0.0,
         ).flatten()
     elif filter_hp == 2:
         try:
@@ -212,11 +108,11 @@ def prepare_image(img, img_hp, dim_lp, filter_hp, filter_file, cpar):
         except Exception:
             return 0
 
-        img_hp = cv2.filter2D(
+        img_hp = ndimage.convolve(
             img_hp.reshape((cpar.imy, cpar.imx)),
-            -1,
-            filt,
-            borderType=cv2.BORDER_CONSTANT,
+            weights=filt,
+            mode="constant",
+            cval=0.0,
         ).flatten()
 
     return 1
