@@ -3,10 +3,11 @@ import numpy as np
 
 from openptv_python.calibration import Calibration, mmlut
 from openptv_python.vec_utils import unit_vector
+from openptv_python.parameters import MultimediaPar
 
 
 def ray_tracing(
-    x: float, y: float, cal: Calibration, mm: mmlut
+    x: float, y: float, cal: Calibration, mm: MultimediaPar
 ) -> tuple(np.ndarray, np.ndarray):
     """Ray tracing.
 

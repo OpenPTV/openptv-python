@@ -6,10 +6,13 @@ from openptv_python.imgcoord import flat_image_coord
 from openptv_python.multimed import move_along_ray
 from openptv_python.ray_tracing import ray_tracing
 from openptv_python.trafo import correct_brown_affine
+from openptv_python.parameters import MultimediaPar, VolumePar
+from openptv_python.calibration import Calibration
 
 
 @dataclass
 class Candidate:
+    """Candidate point in the second image."""
     pnr: int = 0
     tol: int = 0
     corr: int = 0
@@ -17,6 +20,7 @@ class Candidate:
 
 @dataclass
 class Coord2d:
+    """2D coordinates in the image plane."""
     pnr: int = 0
     x: float = 0
     y: float = 0
@@ -70,16 +74,16 @@ def epi_mm(xl, yl, cal1, cal2, mmp, vpar):
         vpar.Zmax_lay[1] - vpar.Zmax_lay[0]
     ) / (vpar.X_lay[1] - vpar.X_lay[0])
 
-    move_along_ray(Zmin, pos, v, X)
+    X = move_along_ray(Zmin, pos, v)
     xmin, ymin = flat_image_coord(X, cal2, mmp)
 
-    move_along_ray(Zmax, pos, v, X)
+    X = move_along_ray(Zmax, pos, v)
     xmax, ymax = flat_image_coord(X, cal2, mmp)
 
     return xmin, ymin, xmax, ymax
 
 
-def epi_mm_2D(xl, yl, cal1, mmp, vpar, out):
+def epi_mm_2D(xl: float, yl: float, cal1: Calibration, mmp: MultimediaPar, vpar: VolumePar):
     """Return the position of the point in the 3D space.
 
         /*  epi_mm_2D() is a very degenerate case of the epipolar geometry use.
@@ -112,11 +116,6 @@ def epi_mm_2D(xl, yl, cal1, mmp, vpar, out):
             vpar (_type_): _description_
             out (_type_): _description_
     """
-    pos = [0, 0, 0]
-    v = [0, 0, 0]
-    Zmin = 0
-    Zmax = 0
-
     pos, v = ray_tracing(xl, yl, cal1, mmp)
 
     Zmin = vpar.Zmin_lay[0] + (pos[0] - vpar.X_lay[0]) * (
@@ -126,7 +125,8 @@ def epi_mm_2D(xl, yl, cal1, mmp, vpar, out):
         vpar.Zmax_lay[1] - vpar.Zmax_lay[0]
     ) / (vpar.X_lay[1] - vpar.X_lay[0])
 
-    move_along_ray(0.5 * (Zmin + Zmax), pos, v, out)
+    out = move_along_ray(0.5 * (Zmin + Zmax), pos, v)
+    return out
 
 
 def quality_ratio(a, b):

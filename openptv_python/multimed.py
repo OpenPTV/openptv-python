@@ -130,53 +130,25 @@ def trans_Cam_Point(ex: Exterior, mm: MultimediaPar, glass: Glass, pos: np.ndarr
     return ex_t, pos_t, cross_p, cross_c
 
 
-"""
-Plan:
+def back_trans_Point(pos_t, mm, G: Glass, cross_p: np.ndarray, cross_c: np.ndarray) -> np.ndarray:
+    """ Transform the point coordinates from the glass to the camera coordinates."""
+    glass_dir = np.array([G.vec_x, G.vec_y, G.vec_z])
+    nGl = np.linalg.norm(glass_dir)
 
-1. Calculate the norm of the glass vector
-2. Renormalize the glass vector with mm.d[0] and store it in renorm_glass
-3. Calculate the after_glass vector by subtracting renorm_glass from cross_c
-4. Calculate the temp vector by subtracting after_glass from cross_p
-5. Calculate the norm of the temp vector
-6. Renormalize the glass vector with -pos_t[2] and store it in renorm_glass
-7. Calculate the pos vector by subtracting renorm_glass from after_glass
-8. If nVe is greater than 0, then:
-   a. Renormalize the temp vector with -pos_t[0] and store it in renorm_glass
-   b. Calculate the pos vector by subtracting renorm_glass from pos
+    renorm_glass = glass_dir * (mm.d[0] / nGl)
+    after_glass = cross_c - renorm_glass
+    temp = cross_p - after_glass
+    nVe = np.linalg.norm(temp)
 
-"""
-
-
-def back_trans_Point(pos_t, mm, G, cross_p, cross_c, pos):
-    """Transforms the point coordinates to the camera coordinates.
-
-    Args:
-    ----
-        pos_t (_type_): _description_
-        mm (_type_): _description_
-        G (_type_): _description_
-        cross_p (_type_): _description_
-        cross_c (_type_): _description_
-        pos (_type_): _description_
-    """
-    nGl = vec_norm([G.vec_x, G.vec_y, G.vec_z])
-    glass_dir = [G.vec_x, G.vec_y, G.vec_z]
-    renorm_glass = [0, 0, 0]
-    after_glass = [0, 0, 0]
-    temp = [0, 0, 0]
-
-    vec_scalar_mul(glass_dir, mm.d[0] / nGl, renorm_glass)
-    vec_subt(renorm_glass, after_glass)
-    vec_subt(after_glass, temp)
-
-    nVe = vec_norm(temp)
-
-    vec_scalar_mul(glass_dir, -pos_t[2] / nGl, renorm_glass)
-    after_glass = vec_subt(renorm_glass, pos)
+    renorm_glass = glass_dir * (-pos_t[2] / nGl)
+    pos = after_glass - renorm_glass
 
     if nVe > 0:
-        vec_scalar_mul(temp, -pos_t[0] / nVe, renorm_glass)
-        pos = vec_subt(renorm_glass, pos)
+        renorm_glass = temp * (-pos_t[0] / nVe)
+        pos = pos - renorm_glass
+
+    return pos
+
 
 
 def move_along_ray(glob_Z: float, vertex: np.ndarray, direct: np.ndarray):

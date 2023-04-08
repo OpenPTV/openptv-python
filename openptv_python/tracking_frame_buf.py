@@ -1,5 +1,8 @@
 from dataclasses import dataclass
-from typing import List
+from typing import List, Any
+
+from openptv_python.correspondences import Correspond
+
 
 POSI = 80
 
@@ -89,28 +92,9 @@ def write_targets(targets, num_targets, file_base, frame_num):
     return success
 
 
-class Correspondence:
-    def __init__(self, nr: int, p: List[int]):
-        self.nr = nr
-        self.p = p
-
-    def __eq__(self, other) -> bool:
-        """Compare two Correspondence objects.
-
-        Args:
-        ----
-            __o (Correspondence): _description_
-
-        Returns:
-        -------
-            bool: True if the two objects are equal, False otherwise.
-        """
-        return (self.nr == other.nr) and all(self.p[:4] == other.p[:4])
-
-
 from typing import List, Tuple
 
-
+@dataclass
 class PathInfo:
     POSI: int = 80
     PREV_NONE: int = -1
@@ -168,13 +152,6 @@ class PathInfo:
         self.next_link = self.NEXT_NONE
         self.priority = self.PRIO_DEFAULT
 
-
-from typing import Any, List
-
-from correspondence import Correspondence
-from file_handler import read_path_frame, read_targets, write_path_frame, write_targets
-from path_info import PathInfo
-from target import Target
 
 
 class Frame:
