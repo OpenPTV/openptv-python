@@ -5,6 +5,7 @@ from openptv_python.correspondences import MAXCAND
 from openptv_python.imgcoord import flat_image_coord
 from openptv_python.multimed import move_along_ray
 from openptv_python.ray_tracing import ray_tracing
+from openptv_python.trafo import correct_brown_affine
 
 
 @dataclass
@@ -13,22 +14,18 @@ class Candidate:
     tol: int = 0
     corr: int = 0
 
-    def __init__(self, pnr=0, tol=0, corr=0):
-        self.pnr = pnr
-        self.tol = tol
-        self.corr = corr
 
-
-# Define coord_2d struct
-class Coord_2d:
-    def __init__(self, pnr, x, y):
-        self.pnr = pnr
-        self.x = x
-        self.y = y
+@dataclass
+class Coord2d:
+    pnr: int = 0
+    x: float = 0
+    y: float = 0
 
 
 def epi_mm(xl, yl, cal1, cal2, mmp, vpar):
-    """
+    """ Return the end points of the epipolar line in the "second" camera.
+    
+    
     /*  epi_mm() takes a point in images space of one camera, positions of this
     and another camera and returns the epipolar line (in millimeter units)
     that corresponds to the point of interest in the another camera space.
@@ -147,7 +144,7 @@ def find_candidate(
 
     Arguments:
     ---------
-        coord_2d *crd - points to an array of detected-points position information.
+        Coord2d *crd - points to an array of detected-points position information.
             the points must be in flat-image (brown/affine corrected) coordinates
             and sorted by their x coordinate, i.e. ``crd[i].x <= crd[i + 1].x``.
         target *pix - array of target information (size, grey value, etc.)
@@ -214,8 +211,8 @@ def find_candidate(
     ymin -= cal.int_par.yh
     xmax -= cal.int_par.xh
     ymax -= cal.int_par.yh
-    correct_brown_affin(xmin, ymin, cal.added_par, xmin, ymin)
-    correct_brown_affin(xmax, ymax, cal.added_par, xmax, ymax)
+    xmin, ymin = correct_brown_affine(xmin, ymin, cal.added_par)
+    xmax, ymax = correct_brown_affine(xmax, ymax, cal.added_par)
 
     # line equation: y = m*x + b
     if xa == xb:  # the line is a point or a vertical line in this camera

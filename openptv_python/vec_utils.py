@@ -71,7 +71,7 @@ def vec_cmp(vec1: vec3d, vec2: vec3d, tol: float = 1e-6) -> bool:
     return np.allclose(vec1, vec2, atol=tol)
 
 
-def unit_vector(vec: vec3d) -> vec3d:
+def unit_vector(vec: np.ndarray) -> np.ndarray:
     """Create unit vector as a list of floats."""
     normed = vec_norm(vec)
     if normed == 0:

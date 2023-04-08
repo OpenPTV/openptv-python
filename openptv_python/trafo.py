@@ -1,7 +1,7 @@
 """Module for coordinate transformations."""
 import math
 
-from openptv_python.calibration import ap_52
+from openptv_python.calibration import Calibration, ap_52
 from openptv_python.parameters import control_par
 
 
@@ -61,7 +61,9 @@ def distort_brown_affine(x: float, y: float, ap: ap_52) -> tuple(float, float):
     return x1, y1
 
 
-def correct_brown_affine(x: float, y: float, ap: ap_52) -> tuple(float, float):
+def correct_brown_affine(
+    x: float, y: float, ap: ap_52, tol: float = 1e5
+) -> tuple(float, float):
     """Solve the inverse problem iteratively.
 
         of what flat-image coordinate yielded the given distorted
@@ -88,15 +90,11 @@ def correct_brown_affine(x: float, y: float, ap: ap_52) -> tuple(float, float):
             _type_: _description_
 
     """
-    return correct_brown_affine_exact(x, y, ap, tol=1e5)
-
-
-def correct_brown_affine_exact(x: float, y: float, ap: ap_52, tol: float):
     r, rq, xq, yq = 0.0, 0.0, 0.0, 0.0
     itnum = 0
 
     if x == 0 and y == 0:
-        return
+        return x, y
 
     # Initial guess for the flat point is the distorted point, assuming
     # distortion is small.
@@ -148,53 +146,12 @@ def correct_brown_affine_exact(x: float, y: float, ap: ap_52, tol: float):
     return x1, y1
 
 
-def correct_brown_affin_exact(x, y, ap, tol):
-    if x == 0 and y == 0:
-        return x, y
-    rq = math.sqrt(x * x + y * y)
-    xq, yq = x, y
-    itnum = 0
-    while True:
-        r = rq
-        xq = (
-            (x + yq * math.sin(ap.she)) / ap.scx
-            - xq
-            * (ap.k1 * r * r + ap.k2 * r * r * r * r + ap.k3 * r * r * r * r * r * r)
-            - ap.p1 * (r * r + 2 * xq * xq)
-            - 2 * ap.p2 * xq * yq
-        )
-        yq = (
-            y / math.cos(ap.she)
-            - yq
-            * (ap.k1 * r * r + ap.k2 * r * r * r * r + ap.k3 * r * r * r * r * r * r)
-            - ap.p2 * (r * r + 2 * yq * yq)
-            - 2 * ap.p1 * xq * yq
-        )
-        rq = math.sqrt(xq * xq + yq * yq)
-        if rq > 1.2 * r:
-            rq = 0.5 * r
-        itnum += 1
-        if (abs(rq - r) / r <= tol) or itnum >= 201:
-            break
-    r = rq
-    x1 = (
-        (x + yq * math.sin(ap.she)) / ap.scx
-        - xq * (ap.k1 * r * r + ap.k2 * r * r * r * r + ap.k3 * r * r * r * r * r * r)
-        - ap.p1 * (r * r + 2 * xq * xq)
-        - 2 * ap.p2 * xq * yq
-    )
-    y1 = (
-        y / math.cos(ap.she)
-        - yq * (ap.k1 * r * r + ap.k2 * r * r * r * r + ap.k3 * r * r * r * r * r * r)
-        - ap.p2 * (r * r + 2 * yq * yq)
-        - 2 * ap.p1 * xq * yq
-    )
-    return x1, y1
+def flat_to_dist(flat_x: float, flat_y: float, cal: Calibration) -> tuple(float, float):
+    """Convert flat-image coordinates to real-image coordinates.
 
-
-def flat_to_dist(flat_x, flat_y, cal):
-    # Make coordinates relative to sensor center rather than primary point
-    # image coordinates, because distortion formula assumes it, [1] p.180
+    Make coordinates relative to sensor center rather than primary point
+    image coordinates, because distortion formula assumes it, [1] p.180.
+    """
     flat_x += cal.int_par.xh
     flat_y += cal.int_par.yh
 
@@ -202,10 +159,12 @@ def flat_to_dist(flat_x, flat_y, cal):
     return dist_x, dist_y
 
 
-def dist_to_flat(dist_x, dist_y, cal, tol):
-    # Attempt to restore metric flat-image positions from metric real-image coordinates
-    # This is an inverse problem so some error is to be expected, but for small enough
-    # distortions it's bearable.
+def dist_to_flat(dist_x: float, dist_y: float, cal: Calibration, tol: float):
+    """Attempt to restore metric flat-image positions from metric real-image coordinates.
+
+    This is an inverse problem so some error is to be expected, but for small enough
+    distortions it's bearable.
+    """
     flat_x = dist_x
     flat_y = dist_y
     r = math.sqrt(flat_x**2 + flat_y**2)
