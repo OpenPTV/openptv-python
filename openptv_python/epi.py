@@ -1,18 +1,19 @@
 import math
 from dataclasses import dataclass
 
+from openptv_python.calibration import Calibration
 from openptv_python.correspondences import MAXCAND
 from openptv_python.imgcoord import flat_image_coord
 from openptv_python.multimed import move_along_ray
+from openptv_python.parameters import MultimediaPar, VolumePar
 from openptv_python.ray_tracing import ray_tracing
 from openptv_python.trafo import correct_brown_affine
-from openptv_python.parameters import MultimediaPar, VolumePar
-from openptv_python.calibration import Calibration
 
 
 @dataclass
 class Candidate:
     """Candidate point in the second image."""
+
     pnr: int = 0
     tol: int = 0
     corr: int = 0
@@ -21,6 +22,7 @@ class Candidate:
 @dataclass
 class Coord2d:
     """2D coordinates in the image plane."""
+
     pnr: int = 0
     x: float = 0
     y: float = 0
@@ -83,7 +85,9 @@ def epi_mm(xl, yl, cal1, cal2, mmp, vpar):
     return xmin, ymin, xmax, ymax
 
 
-def epi_mm_2D(xl: float, yl: float, cal1: Calibration, mmp: MultimediaPar, vpar: VolumePar):
+def epi_mm_2D(
+    xl: float, yl: float, cal1: Calibration, mmp: MultimediaPar, vpar: VolumePar
+):
     """Return the position of the point in the 3D space.
 
         /*  epi_mm_2D() is a very degenerate case of the epipolar geometry use.

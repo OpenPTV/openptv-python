@@ -1,9 +1,9 @@
 """Ray tracing."""
 import numpy as np
 
-from openptv_python.calibration import Calibration, mmlut
-from openptv_python.vec_utils import unit_vector
+from openptv_python.calibration import Calibration
 from openptv_python.parameters import MultimediaPar
+from openptv_python.vec_utils import unit_vector
 
 
 def ray_tracing(

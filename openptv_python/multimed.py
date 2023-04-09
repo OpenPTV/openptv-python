@@ -10,8 +10,6 @@ from openptv_python.parameters import (
     VolumePar,
 )
 from openptv_python.vec_utils import (
-    vec_norm,
-    vec_scalar_mul,
     vec_set,
     vec_subt,
 )
@@ -130,8 +128,10 @@ def trans_Cam_Point(ex: Exterior, mm: MultimediaPar, glass: Glass, pos: np.ndarr
     return ex_t, pos_t, cross_p, cross_c
 
 
-def back_trans_Point(pos_t, mm, G: Glass, cross_p: np.ndarray, cross_c: np.ndarray) -> np.ndarray:
-    """ Transform the point coordinates from the glass to the camera coordinates."""
+def back_trans_Point(
+    pos_t, mm, G: Glass, cross_p: np.ndarray, cross_c: np.ndarray
+) -> np.ndarray:
+    """Transform the point coordinates from the glass to the camera coordinates."""
     glass_dir = np.array([G.vec_x, G.vec_y, G.vec_z])
     nGl = np.linalg.norm(glass_dir)
 
@@ -148,7 +148,6 @@ def back_trans_Point(pos_t, mm, G: Glass, cross_p: np.ndarray, cross_c: np.ndarr
         pos = pos - renorm_glass
 
     return pos
-
 
 
 def move_along_ray(glob_Z: float, vertex: np.ndarray, direct: np.ndarray):

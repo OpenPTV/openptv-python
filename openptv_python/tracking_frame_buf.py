@@ -1,8 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Any
-
-from openptv_python.correspondences import Correspond
-
+from typing import Any, List
 
 POSI = 80
 
@@ -94,6 +91,7 @@ def write_targets(targets, num_targets, file_base, frame_num):
 
 from typing import List, Tuple
 
+
 @dataclass
 class PathInfo:
     POSI: int = 80
@@ -151,7 +149,6 @@ class PathInfo:
         self.prev_link = self.PREV_NONE
         self.next_link = self.NEXT_NONE
         self.priority = self.PRIO_DEFAULT
-
 
 
 class Frame:
