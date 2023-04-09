@@ -1,35 +1,35 @@
+from dataclasses import dataclass
 from typing import List
 
-from openptv_python.epi import *
+import numpy as np
 
-nmax = 202400
+from openptv_python.calibration import Calibration
+from openptv_python.epi import Candidate, Coord2d, epi_mm, find_candidate
+from openptv_python.parameters import ControlPar, VolumePar
+from openptv_python.tracking_frame_buf import Frame
+
+NMAX = 202400
 MAXCAND = 10  # assuming a maximum capacity of MAXCAND candidates
-
-
-# Define the data structure n_tupel with attributes p (list of 4 integers) and corr (a double)
-class n_tupel:
-    def __init__(self):
-        self.p = [0] * 4
-        self.corr = 0.0
-
-
-# Define the data structure correspond with attributes p1 (an integer for the master point), n (an integer for the number of candidates), p2 (a list of integers for point numbers of candidates), corr (a list of doubles for feature based correlation coefficient) and dist (a list of doubles for the distance perpendicular to epipolar line)
-class correspond:
-    def __init__(self):
-        self.p1 = 0
-        self.n = 0
-        self.p2 = [0] * MAXCAND
-        self.corr = [0.0] * MAXCAND
-        self.dist = [0.0] * MAXCAND
-
-
 PT_UNUSED = -999
 
 
+@dataclass
+class n_tupel:
+    """n_tupel data structure."""
+
+    p: List[int] = [0, 0, 0, 0]
+    corr: float = 0.0
+
+
+@dataclass
 class Correspond:
-    def __init__(self, n: int, p1: int):
-        self.n = n
-        self.p1 = p1
+    """Correspondence candidate data structure."""
+
+    p1: int = 0  # point number of master point
+    n: int = 0  # number of candidates
+    p2: List[int] = [0] * MAXCAND  # point numbers of candidates
+    corr: List[float] = [0.0] * MAXCAND  # feature-based correlation coefficient
+    dist: List[float] = [0.0] * MAXCAND  # distance perpendicular to epipolar line
 
 
 def quicksort_con(con, num):
@@ -111,7 +111,7 @@ def deallocate_target_usage_marks(tusage, num_cams):
     del tusage
 
 
-def safely_allocate_target_usage_marks(num_cams, nmax):
+def safely_allocate_target_usage_marks(num_cams, nmax=NMAX):
     tusage = []
     error = False
 
@@ -130,7 +130,7 @@ def safely_allocate_target_usage_marks(num_cams, nmax):
 
 
 def deallocate_adjacency_lists(
-    lists: List[List[List[Correspond]]], num_cams: int
+    lists: List[List[List[Correspond()]]], num_cams: int
 ) -> None:
     for c1 in range(num_cams - 1):
         for c2 in range(c1 + 1, num_cams):
@@ -140,7 +140,7 @@ def deallocate_adjacency_lists(
 
 
 def safely_allocate_adjacency_lists(
-    lists: List[List[List[Correspond]]], num_cams: int, target_counts: List[int]
+    lists: List[List[List[Correspond()]]], num_cams: int, target_counts: List[int]
 ) -> int:
     error = False
 
@@ -148,7 +148,7 @@ def safely_allocate_adjacency_lists(
         for c2 in range(c1 + 1, num_cams):
             if not error:
                 try:
-                    lists[c1][c2] = [Correspond(0, 0) for i in range(target_counts[c1])]
+                    lists[c1][c2] = [Correspond() for i in range(target_counts[c1])]
                 except MemoryError:
                     error = True
                     continue
@@ -175,8 +175,8 @@ def four_camera_matching(list, base_target_count, accept_corr, scratch, scratch_
             p2 = list[0][1][i].p2[j]
             for k in range(list[0][2][i].n):
                 p3 = list[0][2][i].p2[k]
-                for l in range(list[0][3][i].n):
-                    p4 = list[0][3][i].p2[l]
+                for ll in range(list[0][3][i].n):
+                    p4 = list[0][3][i].p2[ll]
 
                     for m in range(list[1][2][p2].n):
                         p31 = list[1][2][p2].p2[m]
@@ -196,14 +196,14 @@ def four_camera_matching(list, base_target_count, accept_corr, scratch, scratch_
                                 corr = (
                                     list[0][1][i].corr[j]
                                     + list[0][2][i].corr[k]
-                                    + list[0][3][i].corr[l]
+                                    + list[0][3][i].corr[ll]
                                     + list[1][2][p2].corr[m]
                                     + list[1][3][p2].corr[n]
                                     + list[2][3][p3].corr[o]
                                 ) / (
                                     list[0][1][i].dist[j]
                                     + list[0][2][i].dist[k]
-                                    + list[0][3][i].dist[l]
+                                    + list[0][3][i].dist[ll]
                                     + list[1][2][p2].dist[m]
                                     + list[1][3][p2].dist[n]
                                     + list[2][3][p3].dist[o]
@@ -279,11 +279,6 @@ def three_camera_matching(
                                 print("Overflow in correspondences.\n")
                                 return matched
     return matched
-
-
-import numpy as np
-
-from openptv_python.epi import epi_mm
 
 
 def consistent_pair_matching(
@@ -411,10 +406,10 @@ def take_best_candidates(src, dst, num_cams, num_cands, tusage):
 
 
 def correspondences(
-    frm: frame,
-    corrected: List[List[coord_2d]],
-    vpar: volume_par,
-    cpar: control_par,
+    frm: Frame,
+    corrected: List[List[Coord2d]],
+    vpar: VolumePar,
+    cpar: ControlPar,
     calib: List[List[Calibration]],
     match_counts: List[int],
 ) -> List[n_tupel]:
@@ -496,6 +491,6 @@ def correspondences(
     # Free all other allocations
     deallocate_adjacency_lists(list, cpar.num_cams)
     deallocate_target_usage_marks(tim, cpar.num_cams)
-    free(con0)
+    del con0
 
     return con

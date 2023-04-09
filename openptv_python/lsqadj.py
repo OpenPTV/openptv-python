@@ -2,7 +2,8 @@ import numpy as np
 
 
 def ata(a, ata, m, n, n_large):
-    """Multiply transpose of a matrix A by matrix A itself, creating symmetric
+    """Multiply transpose of a matrix A by matrix A itself, creating symmetric.
+
     matrix with the option of working with the sub-matrix only.
 
     Arguments:
@@ -21,21 +22,22 @@ def ata(a, ata, m, n, n_large):
             ata[i * n_large + j] = sum_
 
 
-def atl(u, a, l, m, n, n_large):
-    """Multiply transpose of a matrix A by vector l, creating vector u with the
+def atl(u, a, ll, m, n, n_large):
+    """Multiply transpose of a matrix A by vector ll, creating vector u with the.
+
     option of working with the sub-vector only, when n < n_large.
 
     Arguments:
     ---------
     u - vector of doubles of the size (n x 1)
     a - matrix of doubles of the size (m x n_large)
-    l - vector of doubles (m x 1)
+    ll - vector of doubles (m x 1)
     m - number of rows in matrix a
     n - length of the output u - the size of the sub-matrix
     n_large - number of columns in matrix a
     """
     for i in range(n):
-        u[i] = np.dot(a[:, i], l)
+        u[i] = np.dot(a[:, i], ll)
     return u
 
 
@@ -79,11 +81,11 @@ def matmul(a, b, c, m, n, k, m_large, n_large):
         for j in range(m):
             pc = c
             x = 0.0
-            for l in range(n):
-                x += pb[l * m_large] * pc[0]
+            for ll in range(n):
+                x += pb[ll * m_large] * pc[0]
                 pc += k
 
-            for l in range(n_large - n):
+            for ll in range(n_large - n):
                 pb += 1
                 pc += k
 

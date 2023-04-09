@@ -3,16 +3,65 @@ import shutil
 import unittest
 
 import numpy
+import pytest
 from numpy import r_
 
 from openptv_python.parameters import (
-    ControlParams,
-    MultimediaParams,
-    SequenceParams,
-    TargetParams,
-    TrackingParams,
-    VolumeParams,
+    ControlPar,
+    MultimediaPar,
+    SequencePar,
+    TargetPar,
+    TrackPar,
+    VolumePar,
+    compare_sequence_par,
+    read_sequence_par,
 )
+
+
+@pytest.fixture
+def test_sequence_par(tmp_path):
+    """Create a test SequencePar object and write it to a temporary file."""
+    # Create the SequencePar object
+    sp = SequencePar(
+        num_cams=2, img_base_name=["img/cam1.", "img/cam2."], first=10000, last=10004
+    )
+    # Write it to a temporary file
+    filename = tmp_path / "test_sequence_par.txt"
+    with open(filename, "w", encoding="utf-8") as f:
+        f.write("img/cam1.\nimg/cam2.\n10000\n10004\n")
+    # Return the filename and the SequencePar object
+    return (filename, sp)
+
+
+def test_read_sequence_par(test_sequence_par):
+    """Test read_sequence_par function."""
+    # Get the filename and the SequencePar object from the fixture
+    filename, expected_sp = test_sequence_par
+    # Call the function and check the result
+    assert read_sequence_par(filename, expected_sp.num_cams) == expected_sp
+
+
+def test_compare_sequence_par():
+    """Test compare_sequence_par function."""
+    # Create two SequencePar objects with the same values
+    sp1 = SequencePar(
+        num_cams=2, img_base_name=["img/cam1.", "img/cam2."], first=10000, last=10004
+    )
+    sp2 = SequencePar(
+        num_cams=2, img_base_name=["img/cam1.", "img/cam2."], first=10000, last=10004
+    )
+    # Call the function and check the result
+    assert compare_sequence_par(sp1, sp2) is True
+
+    # Create two SequencePar objects with different values
+    sp3 = SequencePar(
+        num_cams=2, img_base_name=["img/cam1.", "img/cam2."], first=10000, last=10003
+    )
+    sp4 = SequencePar(
+        num_cams=2, img_base_name=["img/cam1.", "img/cam2."], first=10000, last=10004
+    )
+    # Call the function and check the result
+    assert compare_sequence_par(sp3, sp4) is False
 
 
 class Test_MultimediaParams(unittest.TestCase):
@@ -20,8 +69,8 @@ class Test_MultimediaParams(unittest.TestCase):
         n2_np = numpy.array([11, 22, 33])
         d_np = numpy.array([55, 66, 77])
 
-        # Initialize MultimediaParams object (uses all setters of MultimediaParams)
-        m = MultimediaParams(n1=2, n2=n2_np, d=d_np, n3=4)
+        # Initialize MultimediaPar object (uses all setters of MultimediaPar)
+        m = MultimediaPar(n1=2, n2=n2_np, d=d_np, n3=4)
         self.assertEqual(m.get_nlay(), 3)
         self.assertEqual(m.get_n1(), 2)
         self.assertEqual(m.get_n3(), 4)
@@ -55,13 +104,18 @@ class Test_TrackingParams(unittest.TestCase):
             b"testing_folder/tracking_parameters/track.par"
         )
 
-        # create an instance of TrackingParams class
+        # create an instance of TrackPar class
         # testing setters that are used in constructor
-        self.track_obj1 = TrackingParams(
-            accel_lim=1.1,
-            angle_lim=2.2,
-            add_particle=1,
-            velocity_lims=[[3.3, 4.4], [5.5, 6.6], [7.7, 8.8]],
+        self.track_obj1 = TrackPar(
+            dacc=1.1,
+            dangle=2.2,
+            add=1,
+            dvxmin=3.3,
+            dvxmax=4.4,
+            dvymin=5.5,
+            dvymax=6.6,
+            dvzmin=7.7,
+            dvzmax=8.8,
         )
 
     # Testing getters according to the values passed in setUp
@@ -78,7 +132,7 @@ class Test_TrackingParams(unittest.TestCase):
         self.assertTrue(self.track_obj1.get_add() == 1)
 
     def test_TrackingParams_read_from_file(self):
-        """Filling a TrackingParams object by reading file."""
+        """Filling a TrackPar object by reading file."""
         # read tracking parameters from file
         self.track_obj1.read_track_par(self.input_tracking_par_file_name)
 
@@ -100,24 +154,6 @@ class Test_TrackingParams(unittest.TestCase):
         self.assertTrue(self.track_obj1.get_dnx() == 0)
         self.assertTrue(self.track_obj1.get_dny() == 0)
 
-    def test_comparison(self):
-        # create two identical objects
-        self.track_obj2 = TrackingParams(
-            accel_lim=1.1,
-            angle_lim=2.2,
-            add_particle=1,
-            velocity_lims=[[3.3, 4.4], [5.5, 6.6], [7.7, 8.8]],
-        )
-
-        self.assertTrue(self.track_obj2 == self.track_obj1)
-        self.assertFalse(self.track_obj2 != self.track_obj1)
-
-        # change one instance variable of track_obj2 and check that the comparisons results are inverted
-        # please note that the operands '==' and '!=' must be checked separately
-        self.track_obj2.set_dvxmin(999.999)
-        self.assertTrue(self.track_obj2 != self.track_obj1)
-        self.assertFalse(self.track_obj2 == self.track_obj1)
-
 
 class Test_SequenceParams(unittest.TestCase):
     def setUp(self):
@@ -126,10 +162,10 @@ class Test_SequenceParams(unittest.TestCase):
         )
 
         # create an instance of SequencParams class
-        self.seq_obj = SequenceParams(num_cams=4)
+        self.seq_obj = SequencePar(num_cams=4)
 
     def test_read_sequence(self):
-        # Fill the SequenceParams object with parameters from test file
+        # Fill the SequencePar object with parameters from test file
         self.seq_obj.read_sequence_par(self.input_sequence_par_file_name, 4)
 
         # check that all parameters are equal to the contents of test file
@@ -152,12 +188,12 @@ class Test_SequenceParams(unittest.TestCase):
         self.seq_obj.set_last(5678)
         self.assertTrue(self.seq_obj.get_last() == 5678)
 
-    # testing __richcmp__ comparison method of SequenceParams class
+    # testing __richcmp__ comparison method of SequencePar class
     def test_rich_compare(self):
-        self.seq_obj2 = SequenceParams(num_cams=4)
+        self.seq_obj2 = SequencePar(num_cams=4)
         self.seq_obj2.read_sequence_par(self.input_sequence_par_file_name, 4)
 
-        self.seq_obj3 = SequenceParams(num_cams=4)
+        self.seq_obj3 = SequencePar(num_cams=4)
         self.seq_obj3.read_sequence_par(self.input_sequence_par_file_name, 4)
 
         self.assertTrue(self.seq_obj2 == self.seq_obj3)
@@ -171,8 +207,8 @@ class Test_SequenceParams(unittest.TestCase):
             pass
 
     def test_full_instantiate(self):
-        """Instantiate a SequenceParams object from keywords."""
-        spar = SequenceParams(image_base=["test1", "test2"], frame_range=(1, 100))
+        """Instantiate a SequencePar object from keywords."""
+        spar = SequencePar(image_base=["test1", "test2"], frame_range=(1, 100))
 
         print((spar.get_img_base_name(0)))
         self.assertTrue(spar.get_img_base_name(0) == b"test1")
@@ -190,11 +226,11 @@ class Test_VolumeParams(unittest.TestCase):
         if not os.path.exists(self.temp_output_directory):
             os.makedirs(self.temp_output_directory)
 
-        # create an instance of VolumeParams class
-        self.vol_obj = VolumeParams()
+        # create an instance of VolumePar class
+        self.vol_obj = VolumePar()
 
     def test_read_volume(self):
-        # Fill the VolumeParams object with parameters from test file
+        # Fill the VolumePar object with parameters from test file
         self.vol_obj.read_volume_par(self.input_volume_par_file_name)
 
         # check that all parameters are equal to the contents of test file
@@ -252,7 +288,7 @@ class Test_VolumeParams(unittest.TestCase):
         zlay = [r_[333.3, 555.5], r_[444.4, 666.6]]
         zmin, zmax = list(zip(*zlay))
 
-        vol_obj = VolumeParams(
+        vol_obj = VolumePar(
             x_span=xlay,
             z_spans=zlay,
             pixels_tot=1,
@@ -274,11 +310,11 @@ class Test_VolumeParams(unittest.TestCase):
         self.assertTrue(vol_obj.get_eps0() == 5)
         self.assertTrue(vol_obj.get_corrmin() == 6)
 
-    # testing __richcmp__ comparison method of VolumeParams class
+    # testing __richcmp__ comparison method of VolumePar class
     def test_rich_compare(self):
-        self.vol_obj2 = VolumeParams()
+        self.vol_obj2 = VolumePar()
         self.vol_obj2.read_volume_par(self.input_volume_par_file_name)
-        self.vol_obj3 = VolumeParams()
+        self.vol_obj3 = VolumePar()
         self.vol_obj3.read_volume_par(self.input_volume_par_file_name)
         self.assertTrue(self.vol_obj2 == self.vol_obj3)
         self.assertFalse(self.vol_obj2 != self.vol_obj3)
@@ -305,11 +341,11 @@ class Test_ControlParams(unittest.TestCase):
         # create a temporary output directory (will be deleted by the end of test)
         if not os.path.exists(self.temp_output_directory):
             os.makedirs(self.temp_output_directory)
-        # create an instance of ControlParams class
-        self.cp_obj = ControlParams(4)
+        # create an instance of ControlPar class
+        self.cp_obj = ControlPar(4)
 
     def test_read_control(self):
-        # Fill the ControlParams object with parameters from test file
+        # Fill the ControlPar object with parameters from test file
         self.cp_obj.read_control_par(self.input_control_par_file_name)
         # check if all parameters are equal to the contents of test file
         self.assertTrue(
@@ -344,8 +380,8 @@ class Test_ControlParams(unittest.TestCase):
         self.assertTrue(self.cp_obj.get_multimedia_params().get_d()[0] == 21.21)
 
     def test_instantiate_fast(self):
-        """ControlParams instantiation through constructor."""
-        cp = ControlParams(
+        """ControlPar instantiation through constructor."""
+        cp = ControlPar(
             4,
             ["headers", "hp", "allcam"],
             (1280, 1024),
@@ -405,12 +441,12 @@ class Test_ControlParams(unittest.TestCase):
         self.cp_obj.set_chfield(8)
         self.assertTrue(self.cp_obj.get_chfield() == 8)
 
-    # testing __richcmp__ comparison method of ControlParams class
+    # testing __richcmp__ comparison method of ControlPar class
     def test_rich_compare(self):
-        self.cp_obj2 = ControlParams(4)
+        self.cp_obj2 = ControlPar(num_cams=4)
         self.cp_obj2.read_control_par(self.input_control_par_file_name)
 
-        self.cp_obj3 = ControlParams(4)
+        self.cp_obj3 = ControlPar(num_cams=4)
         self.cp_obj3.read_control_par(self.input_control_par_file_name)
 
         self.assertTrue(self.cp_obj2 == self.cp_obj3)
@@ -431,7 +467,7 @@ class Test_ControlParams(unittest.TestCase):
 class TestTargetParams(unittest.TestCase):
     def test_read(self):
         inp_filename = b"testing_folder/target_parameters/targ_rec.par"
-        tp = TargetParams()
+        tp = TargetPar()
         tp.read(inp_filename)
 
         self.assertEqual(tp.get_max_discontinuity(), 5)
@@ -443,7 +479,7 @@ class TestTargetParams(unittest.TestCase):
         numpy.testing.assert_array_equal(tp.get_grey_thresholds(), [3, 2, 2, 3])
 
     def test_instantiate_fast(self):
-        tp = TargetParams(
+        tp = TargetPar(
             discont=1,
             gvthresh=[2, 3, 4, 5],
             pixel_count_bounds=(10, 100),

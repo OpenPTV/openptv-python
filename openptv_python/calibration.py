@@ -1,59 +1,81 @@
+"""Calibration data structures and functions."""
+import json
 import math
-import unittest
+import pathlib
+from dataclasses import asdict, dataclass
 
-from openptv_python.vec_utils import vec3d
+import numpy as np
 
 
+@dataclass
+class Exterior:
+    """Exterior parameters."""
+
+    dm: np.array = np.zeros((3, 3), dtype=float)
+    omega: float = 0.0
+    phi: float = 0.0
+    kappa: float = 0.0
+    x0: float = 0.0
+    y0: float = 0.0
+    z0: float = 0.0
+
+
+@dataclass
+class Interior:
+    """Interior parameters."""
+
+    xh: float = 0.0
+    yh: float = 0.0
+    cc: float = 0.0
+
+
+@dataclass
+class Glass:
+    """Glass vector."""
+
+    vec_x: float = 0.0
+    vec_y: float = 0.0
+    vec_z: float = 0.0
+
+
+@dataclass
+class ap_52:
+    """5+2 parameters for distortion correction."""
+
+    k1: float = 0.0
+    k2: float = 0.0
+    k3: float = 0.0
+    p1: float = 0.0
+    p2: float = 0.0
+    scx: float = 0.0
+    she: float = 0.0
+
+
+@dataclass
+class mmlut:
+    """3D lookup table for the mapping between the image plane and the object."""
+
+    origin: np.array = np.zeros(3, dtype=float)
+    nr: int = 0
+    nz: int = 0
+    rw: int = 0
+    data: list[float] = None
+
+
+@dataclass
 class Calibration:
-    class Exterior:
-        def __init__(self):
-            self.dm = [[0 for j in range(3)] for i in range(3)]
-            self.omega = 0.0
-            self.phi = 0.0
-            self.kappa = 0.0
-            self.x0 = 0.0
-            self.y0 = 0.0
-            self.z0 = 0.0
+    """Calibration data structure."""
 
-    class Interior:
-        def __init__(self):
-            self.xh = 0.0
-            self.yh = 0.0
-            self.cc = 0.0
-
-    class Glass:
-        def __init__(self):
-            self.vec_x = 0.0
-            self.vec_y = 0.0
-            self.vec_z = 0.0
-
-    class ap_52:
-        def __init__(self):
-            self.k1 = 0.0
-            self.k2 = 0.0
-            self.k3 = 0.0
-            self.p1 = 0.0
-            self.p2 = 0.0
-            self.scx = 0.0
-            self.she = 0.0
-
-    class mmlut:
-        def __init__(self):
-            self.origin = vec3d
-            self.nr = 0
-            self.nz = 0
-            self.rw = 0
-            self.data = []
-
-    def __init__(self):
-        self.ext_par = Calibration.Exterior()
-        self.int_par = Calibration.Interior()
-        self.glass_par = Calibration.Glass()
-        self.added_par = Calibration.ap_52()
-        self.mmlut = Calibration.mmlut()
+    ext_par: Exterior = Exterior()
+    int_par: Interior = Interior()
+    glass_par: Glass = Glass()
+    added_par: ap_52 = ap_52()
+    mmlut: mmlut = mmlut()
 
 
-def write_ori(Ex, In, G, ap, filename, add_file):
+def write_ori(
+    Ex: Exterior, In: Interior, G: Glass, ap: ap_52, filename: str, add_file: str = None
+):
     """Write exterior and interior orientation.
 
     if available, also parameters for
@@ -70,113 +92,113 @@ def write_ori(Ex, In, G, ap, filename, add_file):
        orientation data.
     char *add_file - path of file to contain added (distortions) parameters.
     """
-    success = 0
     try:
         with open(filename, "w", encoding="utf-8") as fp:
-            fp.write(
-                "{:11.8f} {:11.8f} {:11.8f}\n {:10.8f}  {:10.8f}  {:10.8f}\n\n".format(
-                    Ex.x0, Ex.y0, Ex.z0, Ex.omega, Ex.phi, Ex.kappa
-                )
-            )
-            for i in range(3):
-                fp.write(
-                    "    {:10.7f} {:10.7f} {:10.7f}\n".format(
-                        Ex.dm[i][0], Ex.dm[i][1], Ex.dm[i][2]
-                    )
-                )
-            fp.write("\n    {:8.4f} {:8.4f}\n    {:8.4f}\n".format(In.xh, In.yh, In.cc))
-            fp.write(
-                "\n    {:20.15f} {:20.15f}  {:20.15f}\n".format(
-                    G.vec_x, G.vec_y, G.vec_z
-                )
-            )
+            fp.write(json.dumps(asdict(Ex), indent=4) + "\n")
+            fp.write(json.dumps(asdict(In), indent=4) + "\n")
+            fp.write(json.dumps(asdict(G), indent=4) + "\n")
+            if ap:
+                fp.write(json.dumps(asdict(ap), indent=4) + "\n")
     except IOError:
-        print("Can't open ascii file: {}".format(filename))
-        return success
+        print("Can't open file: {}".format(filename))
+        return False
 
     if add_file is None:
-        return success
+        return True
 
     try:
         with open(add_file, "w", encoding="utf-8") as fp:
-            fp.write(
-                "{:.8f} {:.8f} {:.8f} {:.8f} {:.8f} {:.8f} {:.8f}".format(
-                    ap.k1, ap.k2, ap.k3, ap.p1, ap.p2, ap.scx, ap.she
-                )
-            )
-            success = 1
+            fp.write(json.dumps(asdict(ap), indent=4) + "\n")
     except IOError:
-        print("Can't open ascii file: {}".format(add_file))
-        return success
+        print("Can't open file: {}".format(add_file))
+        return False
 
-    return success
+    return True
 
 
-def read_ori(Ex, In, G, ori_file, addp, add_file, add_fallback):
+def read_ori(filename: str) -> Calibration:
     """Read the orientation file and the additional parameters file."""
-    try:
-        fp = open(ori_file, "r", encoding="utf-8")
-    except IOError:
-        print("Can't open ORI file: %s\n", ori_file)
-        return 0
+    with open(filename, "r", encoding="utf-8") as f:
+        data = json.load(f)
 
-    # Exterior
-    scan_res = fp.readline().split()
-    Ex.x0, Ex.y0, Ex.z0, Ex.omega, Ex.phi, Ex.kappa = map(float, scan_res)
-    if len(scan_res) != 6:
-        return 0
+    ext_par = Exterior(**data["ext_par"])
+    int_par = Interior(**data["int_par"])
+    glass_par = Glass(**data["glass_par"])
+    added_par = ap_52(**data["added_par"])
+    mm_lut = mmlut(**data["mmlut"])
 
-    # Exterior rotation matrix
-    for i in range(3):
-        scan_res = fp.readline().split()
-        Ex.dm[i] = list(map(float, scan_res))
-        if len(scan_res) != 3:
-            return 0
-
-    # Interior
-    scan_res = fp.readline().split()
-    In.xh, In.yh, In.cc = map(float, scan_res)
-    if len(scan_res) != 3:
-        return 0
-
-    # Glass
-    scan_res = fp.readline().split()
-    G.vec_x, G.vec_y, G.vec_z = map(float, scan_res)
-    if len(scan_res) != 3:
-        return 0
-    fp.close()
-
-    # Additional:
-    try:
-        fp = open(add_file, "r", encoding="utf-8")
-    except IOError:
-        if add_fallback:
-            try:
-                fp = open(add_fallback, "r", encoding="utf-8")
-            except IOError:
-                pass
-
-    if fp:
-        scan_res = fp.readline().split()
-        addp.k1, addp.k2, addp.k3, addp.p1, addp.p2, addp.scx, addp.she = map(
-            float, scan_res
-        )
-        fp.close()
-    else:
-        print("no addpar fallback used\n")  # Waits for proper logging.
-        addp.k1 = addp.k2 = addp.k3 = addp.p1 = addp.p2 = addp.she = 0.0
-        addp.scx = 1.0
-
-    return 1
+    return Calibration(
+        ext_par=ext_par,
+        int_par=int_par,
+        glass_par=glass_par,
+        added_par=added_par,
+        mmlut=mm_lut,
+    )
 
 
-def compare_exterior(e1, e2):
-    for row in range(3):
-        for col in range(3):
-            if e1.dm[row][col] != e2.dm[row][col]:
-                return 0
+# def read_ori(Ex, In, G, ori_file, addp, add_file, add_fallback):
+#     """Read the orientation file and the additional parameters file."""
+#     try:
+#         fp = open(ori_file, "r", encoding="utf-8")
+#     except IOError:
+#         print("Can't open ORI file: %s\n", ori_file)
+#         return 0
+
+#     # Exterior
+#     scan_res = fp.readline().split()
+#     Ex.x0, Ex.y0, Ex.z0, Ex.omega, Ex.phi, Ex.kappa = map(float, scan_res)
+#     if len(scan_res) != 6:
+#         return 0
+
+#     # Exterior rotation matrix
+#     for i in range(3):
+#         scan_res = fp.readline().split()
+#         Ex.dm[i] = list(map(float, scan_res))
+#         if len(scan_res) != 3:
+#             return 0
+
+#     # Interior
+#     scan_res = fp.readline().split()
+#     In.xh, In.yh, In.cc = map(float, scan_res)
+#     if len(scan_res) != 3:
+#         return 0
+
+#     # Glass
+#     scan_res = fp.readline().split()
+#     G.vec_x, G.vec_y, G.vec_z = map(float, scan_res)
+#     if len(scan_res) != 3:
+#         return 0
+#     fp.close()
+
+#     # Additional:
+#     try:
+#         fp = open(add_file, "r", encoding="utf-8")
+#     except IOError:
+#         if add_fallback:
+#             try:
+#                 fp = open(add_fallback, "r", encoding="utf-8")
+#             except IOError:
+#                 pass
+
+#     if fp:
+#         scan_res = fp.readline().split()
+#         addp.k1, addp.k2, addp.k3, addp.p1, addp.p2, addp.scx, addp.she = map(
+#             float, scan_res
+#         )
+#         fp.close()
+#     else:
+#         print("no addpar fallback used\n")  # Waits for proper logging.
+#         addp.k1 = addp.k2 = addp.k3 = addp.p1 = addp.p2 = addp.she = 0.0
+#         addp.scx = 1.0
+
+#     return 1
+
+
+def compare_exterior(e1: Exterior, e2: Exterior) -> bool:
+    """Compare exterior orientation parameters."""
     return (
-        (e1.x0 == e2.x0)
+        np.allclose(e1.dm, e2.dm, atol=1e-6)
+        and (e1.x0 == e2.x0)
         and (e1.y0 == e2.y0)
         and (e1.z0 == e2.z0)
         and (e1.omega == e2.omega)
@@ -185,7 +207,7 @@ def compare_exterior(e1, e2):
     )
 
 
-def compare_interior(i1, i2):
+def compare_interior(i1: Interior, i2: Interior) -> bool:
     return i1.xh == i2.xh and i1.yh == i2.yh and i1.cc == i2.cc
 
 
@@ -208,17 +230,6 @@ def compare_glass(g1: Glass, g2: Glass):
     return g1.vec_x == g2.vec_x and g1.vec_y == g2.vec_y and g1.vec_z == g2.vec_z
 
 
-class ap_52:
-    def __init__(self, k1=0, k2=0, k3=0, p1=0, p2=0, scx=1, she=0):
-        self.k1 = k1
-        self.k2 = k2
-        self.k3 = k3
-        self.p1 = p1
-        self.p2 = p2
-        self.scx = scx
-        self.she = she
-
-
 def compare_addpar(a1, a2):
     return (
         (a1.k1 == a2.k1)
@@ -231,37 +242,12 @@ def compare_addpar(a1, a2):
     )
 
 
-class TestCompareAddpar(unittest.TestCase):
-    def test_compare_addpar(self):
-        a1 = ap_52(1, 2, 3, 4, 5, 6, 7)
-        a2 = ap_52(1, 2, 3, 4, 5, 6, 7)
-        self.assertTrue(compare_addpar(a1, a2))
-
-        a3 = ap_52(1, 2, 3, 4, 6, 6, 7)
-        self.assertFalse(compare_addpar(a1, a3))
-
-
-def read_calibration(ori_file, add_file, fallback_file):
-    ret = Calibration()
-
-    # indicate that data is not set yet
-    ret.mmlut.data = None
-
-    if read_ori(
-        ret.ext_par,
-        ret.int_par,
-        ret.glass_par,
-        ori_file,
-        ret.added_par,
-        add_file,
-        fallback_file,
-    ):
-        rotation_matrix(ret.ext_par)
-        return ret
-    else:
-        # free(ret)
-        del ret
-        return None
+def read_calibration(ori_file: pathlib.Path):
+    """Read the orientation file including the added parameters."""
+    ret = read_ori(ori_file)
+    ret.ext_par = rotation_matrix(ret.ext_par)
+    ret.mmlut.data = None  # no multimedia data yet
+    return ret
 
 
 def write_calibration(cal, ori_file, add_file):
@@ -270,8 +256,8 @@ def write_calibration(cal, ori_file, add_file):
     )
 
 
-def rotation_matrix(Ex):
-    # Calculate the necessary trigonometric functions to rotate the Dmatrix of Exterior Ex
+def rotation_matrix(Ex: Exterior) -> Exterior:
+    """Calculate the necessary trigonometric functions to rotate the Dmatrix of Exterior Ex."""
     cp = math.cos(Ex.phi)
     sp = math.sin(Ex.phi)
     co = math.cos(Ex.omega)

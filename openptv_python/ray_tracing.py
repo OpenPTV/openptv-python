@@ -1,7 +1,14 @@
+"""Ray tracing."""
 import numpy as np
 
+from openptv_python.calibration import Calibration
+from openptv_python.parameters import MultimediaPar
+from openptv_python.vec_utils import unit_vector
 
-def ray_tracing(x, y, cal, mm):
+
+def ray_tracing(
+    x: float, y: float, cal: Calibration, mm: MultimediaPar
+) -> tuple(np.ndarray, np.ndarray):
     """Ray tracing.
 
         /*  ray_tracing () traces the optical ray through the multi-media interface of
@@ -44,13 +51,12 @@ def ray_tracing(x, y, cal, mm):
     out = np.zeros(3)
 
     # Initial ray direction in global coordinate system
-    tmp1 = np.array([x, y, -1 * cal.int_par.cc])
-    tmp1 = tmp1 / np.linalg.norm(tmp1)
-    start_dir = np.dot(cal.ext_par.dm, tmp1)
+    start_dir = np.dot(cal.ext_par.dm, unit_vector(np.array([x, y, -cal.int_par.cc])))
 
     # Project start ray on glass vector to find n1/n2 interface.
-    tmp1 = np.array([cal.glass_par.vec_x, cal.glass_par.vec_y, cal.glass_par.vec_z])
-    tmp1 = tmp1 / np.linalg.norm(tmp1)
+    tmp1 = unit_vector(
+        np.array([cal.glass_par.vec_x, cal.glass_par.vec_y, cal.glass_par.vec_z])
+    )
     glass_dir = tmp1.copy()
     c = np.linalg.norm(tmp1) + mm.d[0]
     dist_cam_glass = np.dot(glass_dir, primary_point) - c

@@ -1,35 +1,36 @@
 import math
 from dataclasses import dataclass
 
+from openptv_python.calibration import Calibration
 from openptv_python.correspondences import MAXCAND
 from openptv_python.imgcoord import flat_image_coord
 from openptv_python.multimed import move_along_ray
+from openptv_python.parameters import MultimediaPar, VolumePar
 from openptv_python.ray_tracing import ray_tracing
-from openptv_python.trafo import correct_brown_affin
+from openptv_python.trafo import correct_brown_affine
 
 
 @dataclass
 class Candidate:
+    """Candidate point in the second image."""
+
     pnr: int = 0
     tol: int = 0
     corr: int = 0
 
-    def __init__(self, pnr=0, tol=0, corr=0):
-        self.pnr = pnr
-        self.tol = tol
-        self.corr = corr
 
+@dataclass
+class Coord2d:
+    """2D coordinates in the image plane."""
 
-# Define coord_2d struct
-class Coord_2d:
-    def __init__(self, pnr, x, y):
-        self.pnr = pnr
-        self.x = x
-        self.y = y
+    pnr: int = 0
+    x: float = 0
+    y: float = 0
 
 
 def epi_mm(xl, yl, cal1, cal2, mmp, vpar):
-    """
+    """Return the end points of the epipolar line in the "second" camera.
+
     /*  epi_mm() takes a point in images space of one camera, positions of this
     and another camera and returns the epipolar line (in millimeter units)
     that corresponds to the point of interest in the another camera space.
@@ -75,17 +76,20 @@ def epi_mm(xl, yl, cal1, cal2, mmp, vpar):
         vpar.Zmax_lay[1] - vpar.Zmax_lay[0]
     ) / (vpar.X_lay[1] - vpar.X_lay[0])
 
-    move_along_ray(Zmin, pos, v, X)
+    X = move_along_ray(Zmin, pos, v)
     xmin, ymin = flat_image_coord(X, cal2, mmp)
 
-    move_along_ray(Zmax, pos, v, X)
+    X = move_along_ray(Zmax, pos, v)
     xmax, ymax = flat_image_coord(X, cal2, mmp)
 
     return xmin, ymin, xmax, ymax
 
 
-def epi_mm_2D(xl, yl, cal1, mmp, vpar, out):
-    """
+def epi_mm_2D(
+    xl: float, yl: float, cal1: Calibration, mmp: MultimediaPar, vpar: VolumePar
+):
+    """Return the position of the point in the 3D space.
+
         /*  epi_mm_2D() is a very degenerate case of the epipolar geometry use.
         It is valuable only for the case of a single camera with multi-media.
         It takes a point in images space of one (single) camera, positions of this
@@ -116,11 +120,6 @@ def epi_mm_2D(xl, yl, cal1, mmp, vpar, out):
             vpar (_type_): _description_
             out (_type_): _description_
     """
-    pos = [0, 0, 0]
-    v = [0, 0, 0]
-    Zmin = 0
-    Zmax = 0
-
     pos, v = ray_tracing(xl, yl, cal1, mmp)
 
     Zmin = vpar.Zmin_lay[0] + (pos[0] - vpar.X_lay[0]) * (
@@ -130,7 +129,8 @@ def epi_mm_2D(xl, yl, cal1, mmp, vpar, out):
         vpar.Zmax_lay[1] - vpar.Zmax_lay[0]
     ) / (vpar.X_lay[1] - vpar.X_lay[0])
 
-    move_along_ray(0.5 * (Zmin + Zmax), pos, v, out)
+    out = move_along_ray(0.5 * (Zmin + Zmax), pos, v)
+    return out
 
 
 def quality_ratio(a, b):
@@ -140,15 +140,19 @@ def quality_ratio(a, b):
 def find_candidate(
     crd, pix, num, xa, ya, xb, yb, n, nx, ny, sumg, cand, vpar, cpar, cal
 ):
-    """
-        /*  find_candidate() is searching in the image space of the image all the
+    """Find the candidate in the image space of the image all the candidates around the epipolar line.
+
+    originating from another camera. It is a binary search in an x-sorted coord-set,
+    exploits shape information of the particles.
+
+    /*  find_candidate() is searching in the image space of the image all the
         candidates around the epipolar line originating from another camera. It is
         a binary search in an x-sorted coord-set, exploits shape information of the
         particles.
 
     Arguments:
     ---------
-        coord_2d *crd - points to an array of detected-points position information.
+        Coord2d *crd - points to an array of detected-points position information.
             the points must be in flat-image (brown/affine corrected) coordinates
             and sorted by their x coordinate, i.e. ``crd[i].x <= crd[i + 1].x``.
         target *pix - array of target information (size, grey value, etc.)
@@ -215,8 +219,8 @@ def find_candidate(
     ymin -= cal.int_par.yh
     xmax -= cal.int_par.xh
     ymax -= cal.int_par.yh
-    correct_brown_affin(xmin, ymin, cal.added_par, xmin, ymin)
-    correct_brown_affin(xmax, ymax, cal.added_par, xmax, ymax)
+    xmin, ymin = correct_brown_affine(xmin, ymin, cal.added_par)
+    xmax, ymax = correct_brown_affine(xmax, ymax, cal.added_par)
 
     # line equation: y = m*x + b
     if xa == xb:  # the line is a point or a vertical line in this camera

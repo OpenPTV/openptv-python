@@ -5,7 +5,7 @@ import unittest
 
 import numpy
 
-from openptv_python.calibration import Calibration
+from openptv_python.calibration import Calibration, ap_52, compare_addpar
 
 
 class Test_Calibration(unittest.TestCase):
@@ -123,6 +123,16 @@ class Test_Calibration(unittest.TestCase):
         numpy.testing.assert_array_equal(new_gv, self.cal.get_glass_vec())
         self.assertRaises(ValueError, self.cal.set_glass_vec, numpy.ones(2))
         self.assertRaises(ValueError, self.cal.set_glass_vec, numpy.ones(1))
+
+
+class TestCompareAddpar(unittest.TestCase):
+    def test_compare_addpar(self):
+        a1 = ap_52(1, 2, 3, 4, 5, 6, 7)
+        a2 = ap_52(1, 2, 3, 4, 5, 6, 7)
+        self.assertTrue(compare_addpar(a1, a2))
+
+        a3 = ap_52(1, 2, 3, 4, 6, 6, 7)
+        self.assertFalse(compare_addpar(a1, a3))
 
 
 if __name__ == "__main__":

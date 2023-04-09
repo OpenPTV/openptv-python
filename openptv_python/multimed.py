@@ -1,17 +1,35 @@
-def multimed_nlay(cal, mm, pos, Xq, Yq):
-    radial_shift = multimed_r_nlay(cal, mm, pos)
-    if radial_shift == 1.0:
-        Xq[0] = pos[0]
-        Yq[0] = pos[1]
-    else:
-        Xq[0] = cal.ext_par.x0 + (pos[0] - cal.ext_par.x0) * radial_shift
-        Yq[0] = cal.ext_par.y0 + (pos[1] - cal.ext_par.y0) * radial_shift
-
-
 import math
+from typing import Tuple
+
+import numpy as np
+
+from openptv_python.calibration import Calibration, Exterior, Glass
+from openptv_python.parameters import (
+    ControlPar,
+    MultimediaPar,
+    VolumePar,
+)
+from openptv_python.vec_utils import (
+    vec_set,
+    vec_subt,
+)
 
 
-def multimed_r_nlay(cal, mm, pos):
+def multimed_nlay(
+    cal: Calibration, mm: MultimediaPar, pos: np.ndarray
+) -> Tuple(float, float):
+    """Create the Xq,Yq points for each X,Y point in the image space.
+
+    using radial shift from the multimedia model
+    """
+    radial_shift = multimed_r_nlay(cal, mm, pos)
+    Xq = cal.ext_par.x0 + (pos[0] - cal.ext_par.x0) * radial_shift
+    Yq = cal.ext_par.y0 + (pos[1] - cal.ext_par.y0) * radial_shift
+    return Xq, Yq
+
+
+def multimed_r_nlay(cal: Calibration, mm: MultimediaPar, pos: np.ndarray) -> float:
+    """Calculate the radial shift for the multimedia model."""
     i, it = 0, 0
     n_iter = 40
     beta1, beta2, beta3, r, rbeta, rdiff, rq, mmf = (
@@ -73,113 +91,116 @@ def multimed_r_nlay(cal, mm, pos):
         return 1.0
 
 
-def trans_Cam_Point(ex, mm, gl, pos):
-    dist_cam_glas = 0
-    dist_point_glas = 0
-    dist_o_glas = 0
-    # glas inside at water
-    glass_dir = []
-    primary_pt = []
-    renorm_glass = []
-    temp = []
+def trans_Cam_Point(ex: Exterior, mm: MultimediaPar, glass: Glass, pos: np.ndarray):
+    """Transform the camera and point coordinates to the glass coordinates.
 
-    vec_set(glass_dir, gl.vec_x, gl.vec_y, gl.vec_z)
-    vec_set(primary_pt, ex.x0, ex.y0, ex.z0)
+    ex = np.array([ex_x, ex_y, ex_z])
+    mm = np.array([mm_d])
+    glass_dir = np.array([gl_vec_x, gl_vec_y, gl_vec_z])
+    pos = np.array([pos_x, pos_y, pos_z])
+    ex_t, pos_t, cross_p, cross_c = trans_Cam_Point(ex, mm, glass_dir, pos)
 
-    dist_o_glas = vec_norm(glass_dir)
-    dist_cam_glas = vec_dot(primary_pt, glass_dir) / dist_o_glas - dist_o_glas - mm.d[0]
-    dist_point_glas = vec_dot(pos, glass_dir) / dist_o_glas - dist_o_glas
 
-    vec_scalar_mul(glass_dir, dist_cam_glas / dist_o_glas, renorm_glass)
-    vec_subt(primary_pt, renorm_glass, cross_c)
+    """
+    glass_dir = np.array([glass.vec_x, glass.vec_y, glass.vec_z])
+    primary_point = np.array([ex.x0, ex.y0, ex.z0])
 
-    vec_scalar_mul(glass_dir, dist_point_glas / dist_o_glas, renorm_glass)
-    vec_subt(pos, renorm_glass, cross_p)
+    dist_o_glas = np.linalg.norm(glass_dir)  # vector length
+    dist_cam_glas = (
+        np.dot(primary_point, glass_dir) / dist_o_glas - dist_o_glas - mm.d[0]
+    )
+    dist_point_glas = np.dot(pos, glass_dir) / dist_o_glas - dist_o_glas
 
-    ex_t.x0 = 0
-    ex_t.y0 = 0
+    renorm_glass = glass_dir * (dist_cam_glas / dist_o_glas)
+    cross_c = primary_point - renorm_glass
+
+    renorm_glass = glass_dir * (dist_point_glas / dist_o_glas)
+    cross_p = pos - renorm_glass
+
+    ex_t = Exterior()
     ex_t.z0 = dist_cam_glas + mm.d[0]
 
-    vec_scalar_mul(glass_dir, mm.d[0] / dist_o_glas, renorm_glass)
-    vec_subt(cross_c, renorm_glass, temp)
-    vec_subt(cross_p, temp, temp)
+    renorm_glass = glass_dir * (mm.d[0] / dist_o_glas)
+    temp = cross_c - renorm_glass
+    temp = cross_p - temp
+    pos_t = np.array([np.linalg.norm(temp), 0, dist_point_glas])
 
-    vec_set(pos_t, vec_norm(temp), 0, dist_point_glas)
-
-
-"""
-Plan:
-
-1. Calculate the norm of the glass vector
-2. Renormalize the glass vector with mm.d[0] and store it in renorm_glass
-3. Calculate the after_glass vector by subtracting renorm_glass from cross_c
-4. Calculate the temp vector by subtracting after_glass from cross_p
-5. Calculate the norm of the temp vector
-6. Renormalize the glass vector with -pos_t[2] and store it in renorm_glass
-7. Calculate the pos vector by subtracting renorm_glass from after_glass
-8. If nVe is greater than 0, then:
-   a. Renormalize the temp vector with -pos_t[0] and store it in renorm_glass
-   b. Calculate the pos vector by subtracting renorm_glass from pos
-
-"""
+    return ex_t, pos_t, cross_p, cross_c
 
 
-def back_trans_Point(pos_t, mm, G, cross_p, cross_c, pos):
-    nGl = vec_norm([G.vec_x, G.vec_y, G.vec_z])
-    glass_dir = [G.vec_x, G.vec_y, G.vec_z]
-    renorm_glass = [0, 0, 0]
-    after_glass = [0, 0, 0]
-    temp = [0, 0, 0]
+def back_trans_Point(
+    pos_t, mm, G: Glass, cross_p: np.ndarray, cross_c: np.ndarray
+) -> np.ndarray:
+    """Transform the point coordinates from the glass to the camera coordinates."""
+    glass_dir = np.array([G.vec_x, G.vec_y, G.vec_z])
+    nGl = np.linalg.norm(glass_dir)
 
-    vec_scalar_mul(glass_dir, mm.d[0] / nGl, renorm_glass)
-    vec_subt(cross_c, renorm_glass, after_glass)
-    vec_subt(cross_p, after_glass, temp)
+    renorm_glass = glass_dir * (mm.d[0] / nGl)
+    after_glass = cross_c - renorm_glass
+    temp = cross_p - after_glass
+    nVe = np.linalg.norm(temp)
 
-    nVe = vec_norm(temp)
-
-    vec_scalar_mul(glass_dir, -pos_t[2] / nGl, renorm_glass)
-    vec_subt(after_glass, renorm_glass, pos)
+    renorm_glass = glass_dir * (-pos_t[2] / nGl)
+    pos = after_glass - renorm_glass
 
     if nVe > 0:
-        vec_scalar_mul(temp, -pos_t[0] / nVe, renorm_glass)
-        vec_subt(pos, renorm_glass, pos)
+        renorm_glass = temp * (-pos_t[0] / nVe)
+        pos = pos - renorm_glass
+
+    return pos
 
 
-def move_along_ray(glob_Z, vertex, direct, out):
+def move_along_ray(glob_Z: float, vertex: np.ndarray, direct: np.ndarray):
+    """Move along the ray to the global Z plane.
+
+    move_along_ray() calculates the position of a point in a global Z value
+    along a ray whose vertex and direction are given.
+
+    Arguments:
+    ---------
+    double glob_Z - the Z value of the result point in the global
+        coordinate system.
+    vec3d vertex - the ray vertex.
+    vec3d direct - the ray direction, a unit vector.
+    vec3d out - result buffer.
+
+    """
+    out = np.zeros(3, dtype=np.float64)
     out[0] = vertex[0] + (glob_Z - vertex[2]) * direct[0] / direct[2]
     out[1] = vertex[1] + (glob_Z - vertex[2]) * direct[1] / direct[2]
     out[2] = glob_Z
+    return out
 
 
-def init_mmlut(vpar, cpar, cal):
-    import numpy as np
+import numpy as np
 
-    i, j = 0, 0
-    Rmax = 0
+
+def init_mmlut(vpar: VolumePar, cpar: ControlPar):
+    """Initialize the multilayer lookup table."""
+    nr, nz = 0, 0
+    Rmax, Zmax = 0, 0
     rw = 2.0
-    Zmin, Zmax = vpar["Zmin_lay"][0], vpar["Zmax_lay"][0]
-    Zmin_t, Zmax_t = Zmin, Zmax
 
-    xc, yc = np.zeros(2), np.zeros(2)
-    xc[1], yc[1] = cpar["imx"], cpar["imy"]
+    # image corners
+    xc = [0.0, cpar["imx"]]
+    yc = [0.0, cpar["imy"]]
+
+    # find extrema of imaged object volume
+    Zmin = vpar["Zmin_lay"][0]
+    Zmax = vpar["Zmax_lay"][0]
+    Zmin_t = Zmin
+    Zmax_t = Zmax
 
     for i in range(2):
         for j in range(2):
-            x, y = xc[i], yc[j]
+            x, y = pixel_to_metric(xc[i], yc[j], cpar)
             x -= cal["int_par"]["xh"]
             y -= cal["int_par"]["yh"]
-            correct_brown_affin(x, y, cal["added_par"], x, y)
-            ray_tracing(x, y, cal, cpar["mm"][0], pos, a)
-            move_along_ray(Zmin, pos, a, xyz)
-            trans_Cam_Point(
-                cal["ext_par"],
-                cpar["mm"][0],
-                cal["glass_par"],
-                xyz,
-                cal["ext_par"],
-                xyz_t,
-                cross_p,
-                cross_c,
+            x, y = correct_brown_affin(x, y, cal["added_par"])
+            pos, a = ray_tracing(x, y, cal, cpar["mm"])
+            xyz = move_along_ray(Zmin, pos, a)
+            _, _, _, _, xyz_t, _, _ = trans_Cam_Point(
+                cal["ext_par"], cpar["mm"], cal["glass_par"], xyz
             )
 
             if xyz_t[2] < Zmin_t:
@@ -188,21 +209,15 @@ def init_mmlut(vpar, cpar, cal):
                 Zmax_t = xyz_t[2]
 
             R = norm(
-                (xyz_t[0] - cal["ext_par"]["x0"]), (xyz_t[1] - cal["ext_par"]["y0"]), 0
+                [xyz_t[0] - cal["ext_par"]["x0"], xyz_t[1] - cal["ext_par"]["y0"], 0]
             )
+
             if R > Rmax:
                 Rmax = R
 
-            move_along_ray(Zmax, pos, a, xyz)
-            trans_Cam_Point(
-                cal["ext_par"],
-                cpar["mm"][0],
-                cal["glass_par"],
-                xyz,
-                cal_t["ext_par"],
-                xyz_t,
-                cross_p,
-                cross_c,
+            xyz = move_along_ray(Zmax, pos, a)
+            _, _, _, _, xyz_t, _, _ = trans_Cam_Point(
+                cal["ext_par"], cpar["mm"], cal["glass_par"], xyz
             )
 
             if xyz_t[2] < Zmin_t:
@@ -211,90 +226,82 @@ def init_mmlut(vpar, cpar, cal):
                 Zmax_t = xyz_t[2]
 
             R = norm(
-                (xyz_t[0] - cal_t["ext_par"]["x0"]),
-                (xyz_t[1] - cal_t["ext_par"]["y0"]),
-                0,
+                [xyz_t[0] - cal["ext_par"]["x0"], xyz_t[1] - cal["ext_par"]["y0"], 0]
             )
+
             if R > Rmax:
                 Rmax = R
 
-    Rmax += rw - Rmax % rw
+    # round values (-> enlarge)
+    Rmax += rw - (Rmax % rw)
+
+    # get # of rasterlines in r, z
     nr = int(Rmax / rw + 1)
     nz = int((Zmax_t - Zmin_t) / rw + 1)
 
     # create two dimensional mmlut structure
-    cal["mmlut"]["origin"] = np.array(
-        [cal_t["ext_par"]["x0"], cal_t["ext_par"]["y0"], Zmin_t]
-    )
+    cal["mmlut"]["origin"] = [cal["ext_par"]["x0"], cal["ext_par"]["y0"], Zmin_t]
     cal["mmlut"]["nr"] = nr
     cal["mmlut"]["nz"] = nz
     cal["mmlut"]["rw"] = rw
 
-    if cal["mmlut"]["data"] is None:
-        data = np.zeros(nr * nz)
-
-        # fill mmlut structure
+    if cal.mmlut.data is None:
+        data = np.empty((nr * nz,), dtype=np.float64)
         Ri = np.arange(nr) * rw
         Zi = np.arange(nz) * rw + Zmin_t
 
         for i in range(nr):
             for j in range(nz):
-                xyz = np.array(
-                    [Ri[i] + cal_t["ext_par"]["x0"], cal_t["ext_par"]["y0"], Zi[j]]
-                )
-                data[i * nz + j] = multimed_r_nlay(cal_t, cpar["mm"], xyz)
+                xyz = vec_set([Ri[i] + cal_t.ext_par.x0, cal_t.ext_par.y0, Zi[j]])
+                data[i * nz + j] = multimed_r_nlay(cal_t, cpar.mm, xyz)
 
-        cal["mmlut"]["data"] = data
+        cal.mmlut.data = data
+
+    return cal
 
 
-def get_mmf_from_mmlut(cal, pos):
+def get_mmf_from_mmlut(cal: Calibration, pos: np.ndarray) -> float:
     i, ir, iz, nr, nz, rw, v4 = 0, 0, 0, 0, 0, 0, [0, 0, 0, 0]
     mmf = 1.0
     temp = [0.0, 0.0, 0.0]
 
     rw = cal.mmlut.rw
 
-    vec_subt(pos, cal.mmlut.origin, temp)
+    temp = vec_subt(pos, cal.mmlut.origin)
+    rw = cal.mmlut.rw
+    origin = cal.mmlut.origin
+    data = cal.mmlut.data
+    nz = cal.mmlut.nz
+    nr = cal.mmlut.nr
+
+    temp = pos - origin
     sz = temp[2] / rw
     iz = int(sz)
     sz -= iz
 
-    R = norm(temp[0], temp[1], 0)
-
+    R = np.sqrt(temp[0] ** 2 + temp[1] ** 2)
     sr = R / rw
     ir = int(sr)
     sr -= ir
 
-    nz = cal.mmlut.nz
-    nr = cal.mmlut.nr
+    if ir > nr or iz < 0 or iz > nz:
+        return 0.0
 
-    # check whether point is inside camera's object volume
-    if ir > nr:
-        return 0
-    if iz < 0 or iz > nz:
-        return 0
-
-    # bilinear interpolation in r/z box
-    # =================================
-
-    # get vertices of box
-    v4[0] = ir * nz + iz
-    v4[1] = ir * nz + (iz + 1)
-    v4[2] = (ir + 1) * nz + iz
-    v4[3] = (ir + 1) * nz + (iz + 1)
-
-    # 2. check whether point is inside camera's object volume
-    # important for epipolar line computation
+    v4 = [
+        ir * nz + iz,
+        ir * nz + (iz + 1),
+        (ir + 1) * nz + iz,
+        (ir + 1) * nz + (iz + 1),
+    ]
     for i in range(4):
         if v4[i] < 0 or v4[i] > nr * nz:
-            return 0
+            return 0.0
 
-    # interpolate
     mmf = (
-        cal.mmlut.data[v4[0]] * (1 - sr) * (1 - sz)
-        + cal.mmlut.data[v4[1]] * (1 - sr) * sz
-        + cal.mmlut.data[v4[2]] * sr * (1 - sz)
-        + cal.mmlut.data[v4[3]] * sr * sz
+        data[v4[0]] * (1 - sr) * (1 - sz)
+        + data[v4[1]] * (1 - sr) * sz
+        + data[v4[2]] * sr * (1 - sz)
+        + data[v4[3]] * sr * sz
     )
 
     return mmf

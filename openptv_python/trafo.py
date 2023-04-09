@@ -1,63 +1,13 @@
+"""Module for coordinate transformations."""
 import math
-from enum import Enum
 
+from openptv_python.calibration import Calibration, ap_52
 from openptv_python.parameters import control_par
 
 
-class ap_52:
-    def __init__(self, k1, k2, k3, p1, p2, she, scx):
-        self.k1 = k1
-        self.k2 = k2
-        self.k3 = k3
-        self.p1 = p1
-        self.p2 = p2
-        self.she = she
-        self.scx = scx
-
-
-class YRemapMode(Enum):
-    NO_REMAP = 0
-    DOUBLED_PLUS_ONE = 1
-    DOUBLED = 2
-
-
-def old_pixel_to_metric(
-    x_pixel=0,
-    y_pixel=0,
-    im_size_x=1024,
-    im_size_y=1024,
-    pix_size_x=0.01,
-    pix_size_y=0.01,
-    y_remap_mode=0,
-):
-    """_summary_.
-
-    Args:
-    ----
-        x_pixel (_type_): _description_
-        y_pixel (_type_): _description_
-        im_size_x (_type_): _description_
-        im_size_y (_type_): _description_
-        pix_size_x (_type_): _description_
-        pix_size_y (_type_): _description_
-        y_remap_mode (_type_): _description_
-
-    Returns:
-    -------
-        _type_: _description_
-    """
-    if y_remap_mode == 1:
-        y_pixel = 2.0 * y_pixel + 1.0
-    elif y_remap_mode == 2:
-        y_pixel *= 2.0
-
-    x_metric = (x_pixel - float(im_size_x) / 2.0) * pix_size_x
-    y_metric = (float(im_size_y) / 2.0 - y_pixel) * pix_size_y
-
-    return x_metric, y_metric
-
-
-def pixel_to_metric(x_pixel, y_pixel, parameters: control_par, y_remap_mode=0):
+def pixel_to_metric(
+    x_pixel: float, y_pixel: float, parameters: control_par
+) -> tuple(float, float):
     """Convert pixel coordinates to metric coordinates.
 
     Arguments:
@@ -65,54 +15,16 @@ def pixel_to_metric(x_pixel, y_pixel, parameters: control_par, y_remap_mode=0):
     x_metric, y_metric (float): output metric coordinates.
     x_pixel, y_pixel (float): input pixel coordinates.
     parameters (control_par): control structure holding image and pixel sizes.
-    y_remap_mode (int): for use with interlaced cameras. Pass 0 for normal use,
-        1 for odd lines and 2 for even lines.
     """
-    x_metric, y_metric = old_pixel_to_metric(
-        x_pixel,
-        y_pixel,
-        parameters.imx,
-        parameters.imy,
-        parameters.pix_x,
-        parameters.pix_y,
-        parameters.chfield,
-        y_remap_mode=y_remap_mode,
-    )
+    x_metric = (x_pixel - float(parameters.imx) / 2.0) * parameters.pix_x
+    y_metric = (float(parameters.imy) / 2.0 - y_pixel) * parameters.pix_y
+
     return x_metric, y_metric
 
 
-def old_metric_to_pixel(
-    x_metric,
-    y_metric,
-    im_size_x,
-    im_size_y,
-    pix_size_x,
-    pix_size_y,
-    y_remap_mode,
-):
-    """old_metric_to_pixel() converts metric coordinates to pixel coordinates.
-
-    Arguments:
-    ---------
-    x_pixel, y_pixel (float): input pixel coordinates.
-    x_metric, y_metric (float): output metric coordinates.
-    im_size_x, im_size_y (int): size in pixels of the corresponding image dimensions.
-    pix_size_x, pix_size_y (float): metric size of each pixel on the sensor plane.
-    y_remap_mode (int): for use with interlaced cameras. Pass 0 for normal use,
-        1 for odd lines and 2 for even lines.
-    """
-    x_pixel = (x_metric / pix_size_x) + (im_size_x / 2.0)
-    y_pixel = (im_size_y / 2.0) - (y_metric / pix_size_y)
-
-    if y_remap_mode == 1:
-        y_pixel = (y_pixel - 1.0) / 2.0
-    elif y_remap_mode == 2:
-        y_pixel /= 2.0
-
-    return x_pixel, y_pixel
-
-
-def metric_to_pixel(x_metric, y_metric, parameters):
+def metric_to_pixel(
+    x_metric: float, y_metric: float, parameters: control_par
+) -> tuple(float, float):
     """Convert metric coordinates to pixel coordinates.
 
     Arguments:
@@ -124,19 +36,13 @@ def metric_to_pixel(x_metric, y_metric, parameters):
         1 for odd lines and 2 for even lines.
 
     """
-    x_pixel, y_pixel = old_metric_to_pixel(
-        x_metric,
-        y_metric,
-        parameters.imx,
-        parameters.imy,
-        parameters.pix_x,
-        parameters.pix_y,
-        parameters.chfield,
-    )
+    x_pixel = (x_metric / parameters.pix_x) + (float(parameters.imx) / 2.0)
+    y_pixel = (float(parameters.imy) / 2.0) - (y_metric / parameters.pix_y)
+
     return x_pixel, y_pixel
 
 
-def distort_brown_affine(x, y, ap):
+def distort_brown_affine(x: float, y: float, ap: ap_52) -> tuple(float, float):
     r = math.sqrt(x * x + y * y)
     if r != 0:
         x += (
@@ -155,7 +61,9 @@ def distort_brown_affine(x, y, ap):
     return x1, y1
 
 
-def correct_brown_affine(x, y, ap):
+def correct_brown_affine(
+    x: float, y: float, ap: ap_52, tol: float = 1e5
+) -> tuple(float, float):
     """Solve the inverse problem iteratively.
 
         of what flat-image coordinate yielded the given distorted
@@ -182,15 +90,11 @@ def correct_brown_affine(x, y, ap):
             _type_: _description_
 
     """
-    return correct_brown_affine_exact(x, y, ap, 1e5)
-
-
-def correct_brown_affine_exact(x, y, ap, tol):
     r, rq, xq, yq = 0.0, 0.0, 0.0, 0.0
     itnum = 0
 
     if x == 0 and y == 0:
-        return
+        return x, y
 
     # Initial guess for the flat point is the distorted point, assuming
     # distortion is small.
@@ -242,53 +146,12 @@ def correct_brown_affine_exact(x, y, ap, tol):
     return x1, y1
 
 
-def correct_brown_affin_exact(x, y, ap, tol):
-    if x == 0 and y == 0:
-        return x, y
-    rq = math.sqrt(x * x + y * y)
-    xq, yq = x, y
-    itnum = 0
-    while True:
-        r = rq
-        xq = (
-            (x + yq * math.sin(ap.she)) / ap.scx
-            - xq
-            * (ap.k1 * r * r + ap.k2 * r * r * r * r + ap.k3 * r * r * r * r * r * r)
-            - ap.p1 * (r * r + 2 * xq * xq)
-            - 2 * ap.p2 * xq * yq
-        )
-        yq = (
-            y / math.cos(ap.she)
-            - yq
-            * (ap.k1 * r * r + ap.k2 * r * r * r * r + ap.k3 * r * r * r * r * r * r)
-            - ap.p2 * (r * r + 2 * yq * yq)
-            - 2 * ap.p1 * xq * yq
-        )
-        rq = math.sqrt(xq * xq + yq * yq)
-        if rq > 1.2 * r:
-            rq = 0.5 * r
-        itnum += 1
-        if (abs(rq - r) / r <= tol) or itnum >= 201:
-            break
-    r = rq
-    x1 = (
-        (x + yq * math.sin(ap.she)) / ap.scx
-        - xq * (ap.k1 * r * r + ap.k2 * r * r * r * r + ap.k3 * r * r * r * r * r * r)
-        - ap.p1 * (r * r + 2 * xq * xq)
-        - 2 * ap.p2 * xq * yq
-    )
-    y1 = (
-        y / math.cos(ap.she)
-        - yq * (ap.k1 * r * r + ap.k2 * r * r * r * r + ap.k3 * r * r * r * r * r * r)
-        - ap.p2 * (r * r + 2 * yq * yq)
-        - 2 * ap.p1 * xq * yq
-    )
-    return x1, y1
+def flat_to_dist(flat_x: float, flat_y: float, cal: Calibration) -> tuple(float, float):
+    """Convert flat-image coordinates to real-image coordinates.
 
-
-def flat_to_dist(flat_x, flat_y, cal):
-    # Make coordinates relative to sensor center rather than primary point
-    # image coordinates, because distortion formula assumes it, [1] p.180
+    Make coordinates relative to sensor center rather than primary point
+    image coordinates, because distortion formula assumes it, [1] p.180.
+    """
     flat_x += cal.int_par.xh
     flat_y += cal.int_par.yh
 
@@ -296,10 +159,12 @@ def flat_to_dist(flat_x, flat_y, cal):
     return dist_x, dist_y
 
 
-def dist_to_flat(dist_x, dist_y, cal, tol):
-    # Attempt to restore metric flat-image positions from metric real-image coordinates
-    # This is an inverse problem so some error is to be expected, but for small enough
-    # distortions it's bearable.
+def dist_to_flat(dist_x: float, dist_y: float, cal: Calibration, tol: float):
+    """Attempt to restore metric flat-image positions from metric real-image coordinates.
+
+    This is an inverse problem so some error is to be expected, but for small enough
+    distortions it's bearable.
+    """
     flat_x = dist_x
     flat_y = dist_y
     r = math.sqrt(flat_x**2 + flat_y**2)
