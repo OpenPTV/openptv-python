@@ -51,7 +51,7 @@ def vec_diff_norm(vec1: vec3d, vec2: vec3d) -> vec3d:
     return np.linalg.norm(vec1 - vec2)
 
 
-def vec_norm(vec: vec3d) -> float:
+def vec_norm(vec: np.ndarray) -> float:
     """vec_norm() gives the norm of a vector."""
     return np.linalg.norm(vec)
 

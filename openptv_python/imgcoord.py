@@ -1,3 +1,5 @@
+""" Image coordinates. """
+import numpy as np
 from openptv_python.calibration import Calibration
 from openptv_python.multimed import back_trans_Point, multimed_nlay, trans_Cam_Point
 from openptv_python.parameters import MultimediaPar

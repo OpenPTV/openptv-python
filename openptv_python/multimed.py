@@ -1,5 +1,5 @@
 import math
-from typing import Tuple
+from typing import Tuple, List
 
 import numpy as np
 
@@ -9,10 +9,9 @@ from openptv_python.parameters import (
     MultimediaPar,
     VolumePar,
 )
-from openptv_python.vec_utils import (
-    vec_set,
-    vec_subt,
-)
+from openptv_python.vec_utils import vec_set, vec_subt, norm
+from openptv_python.trafo import pixel_to_metric, correct_brown_affine
+from openptv_python.ray_tracing import ray_tracing
 
 
 def multimed_nlay(
@@ -33,11 +32,12 @@ def multimed_r_nlay(cal: Calibration, mm: MultimediaPar, pos: np.ndarray) -> flo
     i, it = 0, 0
     n_iter = 40
     beta1, beta2, beta3, r, rbeta, rdiff, rq, mmf = (
+        0.0,
+        [0.0] * 32,
+        0.0,
+        0.0,
+        0.0,
         1.0,
-        [0] * 32,
-        0.0,
-        0.0,
-        0.0,
         0.0,
         1.0,
     )
@@ -60,14 +60,14 @@ def multimed_r_nlay(cal: Calibration, mm: MultimediaPar, pos: np.ndarray) -> flo
     Z = pos[2]
 
     # Extra layers protrude into water side:
-    zout = Z
-    for i in range(1, mm.nlay):
-        zout += mm.d[i]
+    zout = Z + np.sum(mm.d[: mm.nlay])
+    # for i in range(1, mm.nlay):
+    #     zout += mm.d[i]
 
-    r = math.sqrt(math.pow((X - cal.ext_par.x0), 2) + math.pow((Y - cal.ext_par.y0), 2))
-    rq = r
+    r = norm(X - cal.ext_par.x0, Y - cal.ext_par.y0, 0)
+    rq = r.copy()
 
-    while True:
+    while np.abs(rdiff) > 0.001 and it < n_iter:
         beta1 = math.atan(rq / (cal.ext_par.z0 - Z))
         for i in range(0, mm.nlay):
             beta2[i] = math.asin(math.sin(beta1) * mm.n1 / mm.n2[i])
@@ -78,8 +78,6 @@ def multimed_r_nlay(cal: Calibration, mm: MultimediaPar, pos: np.ndarray) -> flo
         rdiff = r - rbeta
         rq += rdiff
         it += 1
-        if (rdiff > 0.001 or rdiff < -0.001) and it < n_iter:
-            break
 
     if it >= n_iter:
         print(f"multimed_r_nlay stopped after {n_iter} iterations\n")
@@ -91,13 +89,16 @@ def multimed_r_nlay(cal: Calibration, mm: MultimediaPar, pos: np.ndarray) -> flo
         return 1.0
 
 
-def trans_Cam_Point(ex: Exterior, mm: MultimediaPar, glass: Glass, pos: np.ndarray):
+def trans_Cam_Point(
+    ex: Exterior, mm: MultimediaPar, glass: Glass, pos: np.ndarray
+) -> Tuple:
     """Transform the camera and point coordinates to the glass coordinates.
 
     ex = np.array([ex_x, ex_y, ex_z])
     mm = np.array([mm_d])
     glass_dir = np.array([gl_vec_x, gl_vec_y, gl_vec_z])
     pos = np.array([pos_x, pos_y, pos_z])
+
     ex_t, pos_t, cross_p, cross_c = trans_Cam_Point(ex, mm, glass_dir, pos)
 
 
@@ -172,14 +173,13 @@ def move_along_ray(glob_Z: float, vertex: np.ndarray, direct: np.ndarray):
     return out
 
 
-import numpy as np
-
-
-def init_mmlut(vpar: VolumePar, cpar: ControlPar):
+def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> np.ndarray:
     """Initialize the multilayer lookup table."""
     nr, nz = 0, 0
     Rmax, Zmax = 0, 0
     rw = 2.0
+
+    cal_t = Calibration()
 
     # image corners
     xc = [0.0, cpar["imx"]]
@@ -196,10 +196,10 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar):
             x, y = pixel_to_metric(xc[i], yc[j], cpar)
             x -= cal["int_par"]["xh"]
             y -= cal["int_par"]["yh"]
-            x, y = correct_brown_affin(x, y, cal["added_par"])
-            pos, a = ray_tracing(x, y, cal, cpar["mm"])
+            x, y = correct_brown_affine(x, y, cal.added_par)
+            pos, a = ray_tracing(x, y, cal, cpar.mm)
             xyz = move_along_ray(Zmin, pos, a)
-            _, _, _, _, xyz_t, _, _ = trans_Cam_Point(
+            _, xyz_t, _, _ = trans_Cam_Point(
                 cal["ext_par"], cpar["mm"], cal["glass_par"], xyz
             )
 
@@ -208,15 +208,13 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar):
             if xyz_t[2] > Zmax_t:
                 Zmax_t = xyz_t[2]
 
-            R = norm(
-                [xyz_t[0] - cal["ext_par"]["x0"], xyz_t[1] - cal["ext_par"]["y0"], 0]
-            )
+            R = norm(xyz_t[0] - cal.ext_par.x0, xyz_t[1] - cal.ext_par.y0, 0)
 
             if R > Rmax:
                 Rmax = R
 
             xyz = move_along_ray(Zmax, pos, a)
-            _, _, _, _, xyz_t, _, _ = trans_Cam_Point(
+            _, xyz_t, _, _ = trans_Cam_Point(
                 cal["ext_par"], cpar["mm"], cal["glass_par"], xyz
             )
 
@@ -226,7 +224,7 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar):
                 Zmax_t = xyz_t[2]
 
             R = norm(
-                [xyz_t[0] - cal["ext_par"]["x0"], xyz_t[1] - cal["ext_par"]["y0"], 0]
+                xyz_t[0] - cal["ext_par"]["x0"], xyz_t[1] - cal["ext_par"]["y0"], 0
             )
 
             if R > Rmax:
@@ -252,7 +250,7 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar):
 
         for i in range(nr):
             for j in range(nz):
-                xyz = vec_set([Ri[i] + cal_t.ext_par.x0, cal_t.ext_par.y0, Zi[j]])
+                xyz = vec_set(Ri[i] + cal_t.ext_par.x0, cal_t.ext_par.y0, Zi[j])
                 data[i * nz + j] = multimed_r_nlay(cal_t, cpar.mm, xyz)
 
         cal.mmlut.data = data
@@ -307,7 +305,11 @@ def get_mmf_from_mmlut(cal: Calibration, pos: np.ndarray) -> float:
     return mmf
 
 
-def volumedimension(xmax, xmin, ymax, ymin, zmax, zmin, vpar, cpar, cal):
+def volumedimension(
+    vpar: VolumePar,
+    cpar: ControlPar,
+    cal: List[Calibration],
+)   -> Tuple[float, float, float, float, float, float]:
     xc = [0.0, cpar["imx"]]
     yc = [0.0, cpar["imy"]]
 
@@ -330,7 +332,7 @@ def volumedimension(xmax, xmin, ymax, ymin, zmax, zmin, vpar, cpar, cal):
                 x -= cal[i_cam]["int_par"]["xh"]
                 y -= cal[i_cam]["int_par"]["yh"]
 
-                x, y = correct_brown_affin(x, y, cal[i_cam]["added_par"])
+                x, y = correct_brown_affine(x, y, cal[i_cam]["added_par"])
 
                 pos, a = ray_tracing(x, y, cal[i_cam], cpar["mm"])
 

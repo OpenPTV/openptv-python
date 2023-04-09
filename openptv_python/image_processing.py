@@ -17,7 +17,8 @@ def filter_3(img, kernel=None) -> np.ndarray:
     return filtered_img
 
 
-def lowpass_3(img):
+def lowpass_3(img: np.ndarray) -> np.ndarray:
+    """ Lowpass filter of 3x3."""
     # Define the 3x3 lowpass filter kernel
     kernel = np.ones((3, 3)) / 9
 
@@ -27,20 +28,21 @@ def lowpass_3(img):
     return img_lp
 
 
-def fast_box_blur(filt_span, src, dest, cpar):
+def fast_box_blur(filt_span: int, src: np.ndarray, cpar: ControlPar) -> np.ndarray:
+    """ Fast box blur."""
     n = 2 * filt_span + 1
-    weights = [1] * n
     row_accum = uniform_filter(
         src.reshape((cpar.imy, cpar.imx)),
         size=n,
         mode="constant",
         cval=0,
-        weights=weights,
     ).reshape(-1)
-    dest[:] = row_accum[:]
+    return row_accum
+    
 
 
-def split(img: np.ndarray, half_selector: int, cpar: ControlPar) -> None:
+def split(img: np.ndarray, half_selector: int, cpar: ControlPar) -> np.ndarray:
+    """ Split image into two halves. """
     cond_offs = cpar.imx if half_selector % 2 else 0
 
     if half_selector == 0:
@@ -52,7 +54,7 @@ def split(img: np.ndarray, half_selector: int, cpar: ControlPar) -> None:
     coords_y = coords_y.flatten() * 2 + cond_offs
 
     new_img = map_coordinates(img, [coords_y, coords_x], mode="constant", cval=0)
-    img[:] = new_img
+    return new_img
 
 
 def subtract_img(img1: np.ndarray, img2: np.ndarray, img_new: np.ndarray) -> None:
@@ -67,8 +69,10 @@ def subtract_img(img1: np.ndarray, img2: np.ndarray, img_new: np.ndarray) -> Non
     img_new[:] = ndimage.maximum(img1 - img2, 0)
 
 
-def subtract_mask(img, img_mask, img_new, cpar):
-    img_new[:] = np.where(img_mask == 0, 0, img)
+def subtract_mask(img: np.ndarray, img_mask: np.ndarray):
+    """ Subtract mask from image. """
+    img_new = np.where(img_mask == 0, 0, img)
+    return img_new
 
 
 def copy_images(src: np.ndarray) -> np.ndarray:
