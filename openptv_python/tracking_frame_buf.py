@@ -1,8 +1,17 @@
+""" Tracking frame buffer."""
 from dataclasses import dataclass
-from typing import Any, List
+from typing import Any, List, Tuple
 from openptv_python.correspondences import Correspond
 
+# from openptv_python.parameters import ControlPar
+
+
 POSI = 80
+STR_MAX_LEN = 255
+PT_UNUSED = -999
+PREV_NONE = -1
+NEXT_NONE = -2
+PRIO_DEFAULT = 2
 
 
 @dataclass
@@ -39,7 +48,7 @@ def read_targets(file_base: str, frame_num: int) -> List[Target]:
         filename = f"{file_base}_targets"
 
     try:
-        with open(filename, "r") as file:
+        with open(filename, "r", encoding="utf-8") as file:
             num_targets = int(file.readline().strip())
 
             for _ in range(num_targets):
@@ -90,37 +99,16 @@ def write_targets(targets, num_targets, file_base, frame_num):
     return success
 
 
-from typing import List, Tuple
-from openptv_python.parameters import ControlPar
-from openptv_python.tracking_frame_buf_header import Corres
-
-
 @dataclass
 class PathInfo:
-    POSI: int = 80
-    PREV_NONE: int = -1
-    NEXT_NONE: int = -2
-    PRIO_DEFAULT: int = 2
-
-    def __init__(
-        self,
-        position: Tuple[float, float, float] = (0.0, 0.0, 0.0),
-        prev_link: int = None,
-        next_link: int = None,
-        priority: int = PRIO_DEFAULT,
-        decision_criteria: List[float] = [],
-        final_decision_criteria: float = 0.0,
-        link_candidates: List[int] = [],
-        candidate_count: int = 0,
-    ) -> None:
-        self.position = position
-        self.prev_link = prev_link
-        self.next_link = next_link
-        self.priority = priority
-        self.decision_criteria = decision_criteria
-        self.final_decision_criteria = final_decision_criteria
-        self.link_candidates = link_candidates
-        self.candidate_count = candidate_count
+    position: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+    prev_link: int = PREV_NONE
+    next_link: int = NEXT_NONE
+    priority: int = PRIO_DEFAULT
+    decision_criteria: List[float] = []
+    final_decision_criteria: float = 0.0
+    link_candidates: List[int] = []
+    candidate_count: int = 0
 
     def __eq__(self, other: "PathInfo") -> bool:
         if not (
@@ -135,7 +123,7 @@ class PathInfo:
         ):
             return False
 
-        for itr in range(self.POSI):
+        for itr in range(POSI):
             if self.decision_criteria[itr] != other.decision_criteria[itr]:
                 return False
             if self.link_candidates[itr] != other.link_candidates[itr]:
@@ -149,29 +137,20 @@ class PathInfo:
         self.candidate_count += 1
 
     def reset_links(self) -> None:
-        self.prev_link = self.PREV_NONE
-        self.next_link = self.NEXT_NONE
-        self.priority = self.PRIO_DEFAULT
+        self.prev_link = PREV_NONE
+        self.next_link = NEXT_NONE
+        self.priority = PRIO_DEFAULT
 
 
+@dataclass
 class Frame:
-    def __init__(
-        self,
-        path_info: PathInfo,
-        correspond: Correspond,
-        targets: List[Target],
-        num_cams: int,
-        max_targets: int,
-        num_parts: int,
-        num_targets: List[int],
-    ) -> None:
-        self.path_info = path_info
-        self.correspond = correspond
-        self.targets = targets
-        self.num_cams = num_cams
-        self.max_targets = max_targets
-        self.num_parts = num_parts
-        self.num_targets = num_targets
+    path_info: PathInfo = PathInfo()
+    correspond: Correspond = Correspond()
+    targets: List[Target] = []
+    num_cams: int = 1
+    max_targets: int = 0
+    num_parts: int = 0
+    num_targets: List[int] = []
 
     def read_frame(
         self,
@@ -481,14 +460,14 @@ def write_path_frame(
 
     return 1
 
+
 @dataclass
 class FramebufBase:
     buf_len: int = 4
     num_cams: int = 1
     _ring_vec: List[Any] = [None] * (2 * buf_len)
-    buf: List[Any] = [None] * buf_len
+    buf: List[Frame] = [Frame()] * buf_len
     _vptr: Any = None
-
 
     def fb_read_frame_at_end(self, frame_num, read_links):
         return self._vptr.read_frame_at_end(self, frame_num, read_links)
@@ -503,11 +482,11 @@ class FramebufBase:
         self._ring_vec = [Frame() for _ in range(buf_len * 2)]
         self.buf = self._ring_vec[buf_len:]
 
-        for frame in self.buf:
+        for _ in self.buf:
             # self.frame_init(frame, num_cams, max_targets)
-            Frame(num_cams, max_targets)
+            _ = Frame(num_cams, max_targets)
 
-        self._vptr = fb_vtable()
+        # self._vptr = fb_vtable()
 
 
 @dataclass
@@ -519,12 +498,11 @@ class Framebuf:
     linkage_file_base: str
     prio_file_base: str
     target_file_base: str
-    
+
     def __post_init__(self):
         self.base = FramebufBase(self.buf_len, self.num_cams)
-        self.base._vptr = self
-        self.base.base_init(self.max_targets)
-
+        # self.base._vptr = self
+        # self.base.base_init(self.max_targets)
 
     def free(self):
         pass

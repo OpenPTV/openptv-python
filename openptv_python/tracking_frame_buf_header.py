@@ -6,9 +6,8 @@ from dvg_ringbuffer import RingBuffer
 
 from openptv_python.vec_utils import vec3d
 
-POSI = 80
-STR_MAX_LEN = 255
-PT_UNUSED = -999
+
+
 
 
 @dataclass
@@ -75,10 +74,6 @@ def compare_path_info(p1: P, p2: P) -> int:
 def register_link_candidate(self: P, fitness: fitness_t, cand: int):
     # Implementation left to the user
     pass
-
-
-PREV_NONE = -1
-NEXT_NONE = -2
 
 
 def reset_links(self: P):
