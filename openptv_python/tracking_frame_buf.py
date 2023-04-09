@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import Any, List
+from openptv_python.correspondences import Correspond
 
 POSI = 80
 
@@ -90,6 +91,8 @@ def write_targets(targets, num_targets, file_base, frame_num):
 
 
 from typing import List, Tuple
+from openptv_python.parameters import ControlPar
+from openptv_python.tracking_frame_buf_header import Corres
 
 
 @dataclass
@@ -155,7 +158,7 @@ class Frame:
     def __init__(
         self,
         path_info: PathInfo,
-        correspond: Correspondence,
+        correspond: Correspond,
         targets: List[Target],
         num_cams: int,
         max_targets: int,
@@ -240,13 +243,13 @@ class Frame:
 
 
 def read_path_frame(
-    cor_buf: "_type_",
-    path_buf: "_type_",
-    corres_file_base: "_type_",
-    linkage_file_base: "_type_",
-    prio_file_base: "_type_",
-    frame_num: "_type_",
-) -> "_type_":
+    cor_buf: Any,
+    path_buf: Any,
+    corres_file_base: Any,
+    linkage_file_base: Any,
+    prio_file_base: Any,
+    frame_num: Any,
+) -> Any:
     """
     Read a frame of path and correspondence info.
 
@@ -286,7 +289,7 @@ def read_path_frame(
     # points because we read to EOF anyway.
     fname = f"{corres_file_base}.{frame_num}"
     try:
-        filein = open(fname, "r")
+        filein = open(fname, "r", encoding="utf-8")
     except Exception as e:
         raise ValueError(f"Can't open ascii file: {fname}") from e
 
@@ -297,7 +300,7 @@ def read_path_frame(
     if linkage_file_base is not None:
         fname = f"{linkage_file_base}.{frame_num}"
         try:
-            linkagein = open(fname, "r")
+            linkagein = open(fname, "r", encoding="utf-8")
         except Exception as e:
             raise ValueError(f"Can't open linkage file: {fname}") from e
 
@@ -308,7 +311,7 @@ def read_path_frame(
     if prio_file_base is not None:
         fname = f"{prio_file_base}.{frame_num}"
         try:
-            prioin = open(fname, "r")
+            prioin = open(fname, "r", encoding="utf-8")
         except Exception as e:
             raise ValueError(f"Can't open prioin file: {fname}") from e
 
@@ -425,13 +428,13 @@ def write_path_frame(
         _type_: _description_
     """
     corres_fname = f"{corres_file_base}.{frame_num}"
-    corres_file = open(corres_fname, "w")
+    corres_file = open(corres_fname, "w", encoding="utf-8")
     if not corres_file:
         print(f"Can't open file {corres_fname} for writing")
         return 0
 
     linkage_fname = f"{linkage_file_base}.{frame_num}"
-    linkage_file = open(linkage_fname, "w")
+    linkage_file = open(linkage_fname, "w", encoding="utf-8")
     if not linkage_file:
         print(f"Can't open file {linkage_fname} for writing")
         corres_file.close()
@@ -442,7 +445,7 @@ def write_path_frame(
 
     if prio_file_base:
         prio_fname = f"{prio_file_base}.{frame_num}"
-        prio_file = open(prio_fname, "w")
+        prio_file = open(prio_fname, "w", encoding="utf-8")
         if not prio_file:
             print(f"Can't open file {prio_fname} for writing")
             corres_file.close()
@@ -478,17 +481,14 @@ def write_path_frame(
 
     return 1
 
-
+@dataclass
 class FramebufBase:
-    def __init__(self, buf_len, num_cams):
-        self._vptr = None
-        self.buf = [None] * buf_len
-        self._ring_vec = [None] * (2 * buf_len)
-        self.buf_len = buf_len
-        self.num_cams = num_cams
+    buf_len: int = 4
+    num_cams: int = 1
+    _ring_vec: List[Any] = [None] * (2 * buf_len)
+    buf: List[Any] = [None] * buf_len
+    _vptr: Any = None
 
-    # def fb_free(self):
-    #     self._vptr.free(self)
 
     def fb_read_frame_at_end(self, frame_num, read_links):
         return self._vptr.read_frame_at_end(self, frame_num, read_links)
@@ -510,24 +510,21 @@ class FramebufBase:
         self._vptr = fb_vtable()
 
 
+@dataclass
 class Framebuf:
-    def __init__(
-        self,
-        buf_len,
-        num_cams,
-        max_targets,
-        corres_file_base,
-        linkage_file_base,
-        prio_file_base,
-        target_file_base,
-    ):
-        self.base = FramebufBase(buf_len, num_cams)
+    buf_len: int
+    num_cams: int
+    max_targets: int
+    corres_file_base: str
+    linkage_file_base: str
+    prio_file_base: str
+    target_file_base: str
+    
+    def __post_init__(self):
+        self.base = FramebufBase(self.buf_len, self.num_cams)
         self.base._vptr = self
-        self.corres_file_base = corres_file_base
-        self.linkage_file_base = linkage_file_base
-        self.prio_file_base = prio_file_base
-        self.target_file_base = target_file_base
-        self.base.base_init(max_targets)
+        self.base.base_init(self.max_targets)
+
 
     def free(self):
         pass
