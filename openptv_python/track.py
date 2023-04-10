@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from typing import List
 import numpy as np
 
+from openptv_python.tracking_frame_buf import FrameBufBase
+from openptv_python.parameters import ControlPar, SequencePar, TrackPar, VolumePar
 from .constants import (
     CORRES_NONE,
     MAX_CANDS,
@@ -16,6 +18,7 @@ from .constants import (
 from .trafo import metric_to_pixel, pixel_to_metric
 from .vec_utils import vec_copy, vec_diff_norm, vec_subt, vec3d
 from .orientation import point_position
+from .calibration import Calibration
 
 
 @dataclass
@@ -58,20 +61,20 @@ def tr_new_legacy(
 
 
 def tr_new(
-    seq_par: sequence_par,
-    tpar: track_par,
-    vpar: volume_par,
-    cpar: control_par,
-    buf_len: int,
-    max_targets: int,
-    corres_file_base: str,
-    linkage_file_base: str,
-    prio_file_base: str,
-    cal: List[Calibration],
+    seq_par: SequencePar = None,
+    tpar: TrackPar,
+    vpar: VolumePar = None,
+    cpar: ControlPar = None,
+    buf_len: int = None,
+    max_targets: int = None,
+    corres_file_base: str = None,
+    linkage_file_base: str = None,
+    prio_file_base: str=None,
+    cal: List[Calibration] = None,
     flatten_tol: float,
 ) -> TrackingRun:
     tr = TrackingRun()
-    tr.fb = framebuf_base(
+    tr.fb = FrameBufBase(
         buf_len, max_targets, corres_file_base, linkage_file_base, prio_file_base
     )
     tr.seq_par = seq_par
