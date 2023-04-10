@@ -7,18 +7,15 @@
 
 import numpy as np
 
-# Define the vec3d type as a list of floats
-vec3d = np.zeros(3, dtype=float)
+# Define the vec3d type as an numpy array of 3 floats
+vec3d = np.empty(3, dtype=float)
+# and 2 floats
+vec2d = np.empty(2, dtype=float)
 
 
 def norm(x: float, y: float, z: float) -> float:
     """Return the norm of a 3D vector given by 3 float components."""
     return np.linalg.norm(vec_set(x, y, z))
-
-
-def vec_init() -> vec3d:
-    """vec_init() initializes all components of a 3D vector to zeros."""
-    return vec3d
 
 
 def vec_set(x: float, y: float, z: float) -> vec3d:
@@ -31,7 +28,7 @@ def vec_copy(src: vec3d) -> vec3d:
     return src.copy()
 
 
-def vec_subt(from_: vec3d, sub: vec3d):
+def vec_subt(from_: vec3d, sub: vec3d) -> vec3d:
     """Subtract two 3D vectors."""
     return from_ - sub
 
@@ -51,7 +48,7 @@ def vec_diff_norm(vec1: vec3d, vec2: vec3d) -> float:
     return np.linalg.norm(vec1 - vec2)
 
 
-def vec_norm(vec: np.ndarray) -> float:
+def vec_norm(vec: vec3d) -> float:
     """vec_norm() gives the norm of a vector."""
     return np.linalg.norm(vec)
 
@@ -71,7 +68,7 @@ def vec_cmp(vec1: vec3d, vec2: vec3d, tol: float = 1e-6) -> bool:
     return np.allclose(vec1, vec2, atol=tol)
 
 
-def unit_vector(vec: np.ndarray) -> np.ndarray:
+def unit_vector(vec: vec3d) -> np.ndarray:
     """Create unit vector as a list of floats."""
     normed = vec_norm(vec)
     if normed == 0:

@@ -4,6 +4,7 @@ from typing import List
 import numpy as np
 
 from .calibration import Calibration
+from .constants import MAXCAND, NMAX, PT_UNUSED
 from .epi import Candidate, Coord2d, epi_mm, find_candidate
 from .parameters import ControlPar, VolumePar
 from .tracking_frame_buf import Frame

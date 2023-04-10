@@ -278,22 +278,15 @@ class FrameBufBase:
 #     return frame
 
 
+@dataclass
 class FrameBuf(FrameBufBase):
-    def __init__(
-        self,
-        buf_len,
-        num_cams,
-        max_targets,
-        corres_file_base,
-        linkage_file_base,
-        prio_file_base,
-        target_file_base,
-    ):
-        super().__init__(buf_len, num_cams, max_targets)
-        self.corres_file_base = corres_file_base
-        self.linkage_file_base = linkage_file_base
-        self.prio_file_base = prio_file_base
-        self.target_file_base = target_file_base
+    buf_len: int
+    num_cams: int
+    max_targets: int
+    corres_file_base: str = None
+    linkage_file_base: str = None
+    prio_file_base: str = None
+    target_file_base: str = None
 
     def write_frame_from_start(self, frame_num):
         """Write a frame to disk and advance the buffer."""
@@ -433,94 +426,82 @@ def write_path_frame(
     linkage_file_base: str,
     prio_file_base: str,
     frame_num: int,
-):
-    """Write a frame of path and correspondence info.
+) -> bool:
+    """
+    Write a frame of path and correspondence info.
 
-    /* write_path_frame() writes the correspondence and linkage information for a
-    * frame with the next and previous frames. The information is weirdly
-    * distributed among two files. The rt_is file holds correspondence and
-    * position data, and the ptv_is holds linkage data.
-    *
-    * Arguments:
-    * corres *cor_buf - an array of corres structs to write to the files.
-    * Pathinfo *path_buf - same for path info structures.
-    * int num_parts - number of particles represented by the cor_buf and path_buf
-    *   arrays, i.e. the arrays' length.
-    * char* corres_file_base, *linkage_file_base - base names of the output
-    *   correspondence and likage files respectively, to which a frame number
-    *   is added. Without separator.
-    * char *prio_file_base - for the linkage file with added 'prio' column.
-    * int frame_num - number of frame to add to file_base. The '.' separator is
-    * added between the name and the frame number.
-    *
-    * Returns:
-    * True on success. 0 on failure.
-    */
+    The correspondence and linkage information for a frame with the next and previous
+    frames is written. The information is distributed among two files. The rt_is file holds
+    correspondence and position data, and the ptv_is holds linkage data.
 
     Args:
     ----
-        cor_buf (_type_): _description_
-        path_buf (_type_): _description_
-        num_parts (_type_): _description_
-        corres_file_base (_type_): _description_
-        linkage_file_base (_type_): _description_
-        prio_file_base (_type_): _description_
-        frame_num (_type_): _description_
+        cor_buf: List of corres structs to write to the files.
+        path_buf: List of path info structures.
+        num_parts: Number of particles represented by the cor_buf and path_buf arrays.
+        corres_file_base: Base name of the output correspondence file.
+        linkage_file_base: Base name of the output linkage file.
+        prio_file_base: Base name of the output priority file (optional).
+        frame_num: Number of the frame to add to file_base.
 
     Returns:
     -------
-        _type_: _description_
+        True on success, False on failure.
     """
     corres_fname = f"{corres_file_base}.{frame_num}"
-    corres_file = open(corres_fname, "w", encoding="utf-8")
-    if not corres_file:
-        print(f"Can't open file {corres_fname} for writing")
-        return 0
-
     linkage_fname = f"{linkage_file_base}.{frame_num}"
-    linkage_file = open(linkage_fname, "w", encoding="utf-8")
-    if not linkage_file:
-        print(f"Can't open file {linkage_fname} for writing")
-        corres_file.close()
-        return 0
+    prio_fname = f"{prio_file_base}.{frame_num}" if prio_file_base else None
 
-    print(f"{num_parts}\n", file=corres_file)
-    print(f"{num_parts}\n", file=linkage_file)
-
-    if prio_file_base:
-        prio_fname = f"{prio_file_base}.{frame_num}"
-        prio_file = open(prio_fname, "w", encoding="utf-8")
-        if not prio_file:
-            print(f"Can't open file {prio_fname} for writing")
-            corres_file.close()
-            linkage_file.close()
-            return 0
-        print(f"{num_parts}\n", file=prio_file)
-
-    for pix in range(num_parts):
-        print(
-            f"{path_buf[pix].prev:4d} {path_buf[pix].next:4d} {path_buf[pix].x[0]:10.3f} \
-            {path_buf[pix].x[1]:10.3f} {path_buf[pix].x[2]:10.3f}",
-            file=linkage_file,
+    try:
+        np.savetxt(
+            corres_fname,
+            [
+                [
+                    pix + 1,
+                    path_buf[pix].x[0],
+                    path_buf[pix].x[1],
+                    path_buf[pix].x[2],
+                    cor_buf[pix].p[0],
+                    cor_buf[pix].p[1],
+                    cor_buf[pix].p[2],
+                    cor_buf[pix].p[3],
+                ]
+                for pix in range(num_parts)
+            ],
+            fmt="%4d %9.3f %9.3f %9.3f %4d %4d %4d %4d",
         )
-
-        print(
-            f"{pix+1:4d} {path_buf[pix].x[0]:9.3f} {path_buf[pix].x[1]:9.3f} {path_buf[pix].x[2]:9.3f} \
-            {cor_buf[pix].Pathinfo[0]:4d} {cor_buf[pix].Pathinfo[1]:4d} {cor_buf[pix].Pathinfo[2]:4d} {cor_buf[pix].Pathinfo[3]:4d}",
-            file=corres_file,
+        np.savetxt(
+            linkage_fname,
+            [
+                [
+                    path_buf[pix].prev,
+                    path_buf[pix].next,
+                    path_buf[pix].x[0],
+                    path_buf[pix].x[1],
+                    path_buf[pix].x[2],
+                ]
+                for pix in range(num_parts)
+            ],
+            fmt="%4d %4d %10.3f %10.3f %10.3f",
         )
+        if prio_fname:
+            np.savetxt(
+                prio_fname,
+                [
+                    [
+                        path_buf[pix].prev,
+                        path_buf[pix].next,
+                        path_buf[pix].x[0],
+                        path_buf[pix].x[1],
+                        path_buf[pix].x[2],
+                        path_buf[pix].prio,
+                    ]
+                    for pix in range(num_parts)
+                ],
+                fmt="%4d %4d %10.3f %10.3f %10.3f %f",
+            )
+    except Exception as e:
+        print(f"Error writing file: {e}")
+        return False
 
-        if not prio_file_base:
-            continue
-        print(
-            f"{path_buf[pix].prev:4d} {path_buf[pix].next:4d} {path_buf[pix].x[0]:10.3f} \
-            {path_buf[pix].x[1]:10.3f} {path_buf[pix].x[2]:10.3f} {path_buf[pix].prio}",
-            file=prio_file,
-        )
-
-    corres_file.close()
-    linkage_file.close()
-    if prio_file_base:
-        prio_file.close()
-
-    return 1
+    return True

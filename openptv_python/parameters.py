@@ -294,3 +294,21 @@ def write_target_par(targ: TargetPar, filename: str) -> None:
         file.write(
             f"{targ.gvthres[0]}\n{targ.gvthres[1]}\n{targ.gvthres[2]}\n{targ.gvthres[3]}\n{targ.discont}\n{targ.nnmin}\n{targ.nnmax}\n{targ.nxmin}\n{targ.nxmax}\n{targ.nymin}\n{targ.nymax}\n{targ.sumg_min}\n{targ.cr_sz}"
         )
+
+
+@dataclass
+class OrientPar:
+    """Orientation parameters."""
+
+    useflag: int = 0
+    ccflag: int = 0
+    xhflag: int = 0
+    yhflag: int = 0
+    k1flag: int = 0
+    k2flag: int = 0
+    k3flag: int = 0
+    p1flag: int = 0
+    p2flag: int = 0
+    scxflag: int = 0
+    sheflag: int = 0
+    interfflag: int = 0

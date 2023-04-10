@@ -1,8 +1,9 @@
 from dataclasses import dataclass, field
+from typing import List
 
 import numpy as np
 
-from .defaults import CORRES_NONE
+from .constants import CORRES_NONE
 from .parameters import TargetPar
 
 
@@ -402,11 +403,11 @@ def peak_fit(img, targ_par, xmin, xmax, ymin, ymax, cpar, num_cam, pix):
                 unify = 1
             else:
                 unify = 1
-                for l in range(1, int(s12)):
-                    intx1 = int(x1 + l * (x2 - x1) / s12)
-                    inty1 = int(y1 + l * (y2 - y1) / s12)
+                for ll in range(1, int(s12)):
+                    intx1 = int(x1 + ll * (x2 - x1) / s12)
+                    inty1 = int(y1 + ll * (y2 - y1) / s12)
                     gv = img[inty1 * imx + intx1] + disco
-                    if gv < gv1 + l * (gv2 - gv1) / s12 or gv < gv1 or gv < gv2:
+                    if gv < gv1 + ll * (gv2 - gv1) / s12 or gv < gv1 or gv < gv2:
                         unify = 0
                     if unify == 0:
                         break
@@ -495,14 +496,12 @@ def check_touch(tpeak, p1, p2):
             tpeak.n_touch = 3
 
 
-import numpy as np
-
-
 def peak_fit_new(
     image: np.ndarray, threshold: float = 0.5, sigma: float = 1.0
 ) -> List[Peak]:
     """
-    Finds local maxima in an image using a Gaussian filter and a maximum filter,
+    Find local maxima in an image using a Gaussian filter and a maximum filter,.
+
     and returns their positions and intensities.
 
     Args:

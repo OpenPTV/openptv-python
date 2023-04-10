@@ -1,4 +1,4 @@
-""" Constants used in the Python version of OpenPTV"""
+"""Constants used in the Python version of OpenPTV."""
 NMAX = 202400
 MAXCAND = 200  # assuming a maximum capacity of MAXCAND candidates
 PT_UNUSED = -999
@@ -9,7 +9,8 @@ COORD_UNUSED = -1e10
 IDT = 10
 NPAR = 19
 
-# Tracking 
+
+# Tracking
 POSI = 80
 PREV_NONE = -1
 NEXT_NONE = -2
@@ -24,4 +25,7 @@ MAX_TARGETS = 20000
 MAX_CANDS = 4
 ADD_PART = 3
 
-POS_INF = float('inf')
+
+NUM_ITER = 80
+POS_INF = 1e20
+CONVERGENCE = 0.00001

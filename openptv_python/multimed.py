@@ -306,6 +306,12 @@ def get_mmf_from_mmlut(cal: Calibration, pos: np.ndarray) -> float:
 
 
 def volumedimension(
+    xmax: float,
+    xmin: float,
+    ymax: float,
+    ymin: float,
+    zmax: float,
+    zmin: float,
     vpar: VolumePar,
     cpar: ControlPar,
     cal: List[Calibration],

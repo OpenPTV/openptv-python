@@ -366,28 +366,28 @@ class FrameBufBase:
         for i in range(buf_len):
             self.buf.append(Frame(num_cams, max_targets))
         self.start = 0
-    
+
     def __del__(self):
         for frame in self.buf:
             free_frame(frame)
-    
+
     def read_frame_at_end(self, frame):
         self.buf.append(frame)
-    
+
     def write_frame_from_start(self, frame):
         pickled_frame = pickle.dumps(frame)
         self._advance_buffer_start()
         return pickled_frame
-    
+
     def _advance_buffer_start(self):
         self.start += 1
         if self.start >= self.buf_len:
             self.start = 0
-    
+
     def fb_next(self):
         self.buf.rotate(-1)
         self._advance_buffer_start()
-    
+
     def fb_prev(self):
         self.buf.rotate(1)
         self.start -= 1
@@ -440,10 +440,10 @@ class FrameBuf(FrameBufBase):
     def write_frame_from_start(self, frame_num):
         # Pickle the frame
         pickled_frame = pickle.dumps(self.buf[0])
-        
+
         # Advance the buffer
         self.buf.appendleft(Frame(self.num_cams, self.max_targets))
-        
+
         # Write the frame to disk
         return write_frame(self.buf[0], self.corres_file_base, self.linkage_file_base, self.prio_file_base, self.target_file_base, frame_num)
 
@@ -452,5 +452,4 @@ class FrameBuf(FrameBufBase):
         if read_links:
             return read_frame(self.buf[-1], self.corres_file_base, self.linkage_file_base, self.prio_file_base, self.target_file_base, frame_num)
         else:
-            return read_frame(self.buf[-1], self.corres_file_base, None, None, self.target_file_base, frame_num)    
-
+            return read_frame(self.buf[-1], self.corres_file_base, None, None, self.target_file_base, frame_num)

@@ -1,16 +1,24 @@
-"""This module contains the functions for the orientation of the camera."""
-from typing import List
+"""Functions for the orientation of the camera."""
+from typing import List, Tuple, Union
 
 import numpy as np
 
-from .calibration import Calibration
-from .parameters import mm_np
+from openptv_python.constants import COORD_UNUSED
+
+from .calibration import Calibration, rotation_matrix
+from .constants import IDT, NPAR, NUM_ITER, POS_INF
+from .imgcoord import img_coord
+from .lsqadj import ata, atl
+from .parameters import ControlPar, MultimediaPar, OrientPar
 from .ray_tracing import ray_tracing
-from .trafo import pixel_to_metric
-from .vec_utils import skew_midpoint, vec3d, vec_add, vec_scalar_mul
+from .tracking_frame_buf import Target
+from .trafo import correct_brown_affine, pixel_to_metric
+from .vec_utils import unit_vector, vec3d, vec_norm, vec_set
 
 
-def skew_midpoint(vert1, direct1, vert2, direct2, res):
+def skew_midpoint(
+    vert1: vec3d, direct1: vec3d, vert2: vec3d, direct2: vec3d
+) -> Tuple(float, vec3d):
     """Find the midpoint of the line segment that is the shortest distance."""
     perp_both = np.cross(direct1, direct2)
     scale = np.dot(perp_both, perp_both)
@@ -25,15 +33,19 @@ def skew_midpoint(vert1, direct1, vert2, direct2, res):
 
     scale = np.linalg.norm(on1 - on2)
 
-    res[:] = (on1 + on2) * 0.5
-    return scale
+    res = (on1 + on2) * 0.5
+    return scale, res
 
 
 def point_position(
-    targets: List[np.ndarray], multimed_pars: mm_np, cals: List[Calibration]
-) -> (float, vec3d):
+    targets: List[np.ndarray],
+    num_cams: int,
+    multimed_pars: MultimediaPar,
+    cals: List[Calibration],
+) -> Tuple[float, vec3d]:
     """
-    point_position() calculates an average 3D position implied by the rays
+    Calculate an average 3D position implied by the rays.
+
     sent toward it from cameras through the image projections of the point.
 
     Arguments:
@@ -49,76 +61,75 @@ def point_position(
     A tuple containing the ray convergence measure (an average of skew ray distance across all ray pairs)
     and the average 3D position vector.
     """
-    num_cams = len(targets)
-    num_used_pairs = 0  # averaging accumulators
+    # loop counters
+    num_used_pairs = 0
     dtot = 0
-    point_tot = vec3d(0.0, 0.0, 0.0)
-    vertices = np.empty(num_cams, dtype=vec3d)
-    directs = np.empty(num_cams, dtype=vec3d)
+    point_tot = np.array([0.0, 0.0, 0.0])
+
+    vertices = np.zeros((num_cams, 3))
+    directs = np.zeros((num_cams, 3))
+    point = np.zeros(3)
 
     # Shoot rays from all cameras.
     for cam in range(num_cams):
-        if targets[cam][0] != np.NaN:
-            ray_tracing(
-                targets[cam][0],
-                targets[cam][1],
-                cals[cam],
-                multimed_pars,
-                vertices[cam],
-                directs[cam],
+        if targets[cam][0] != COORD_UNUSED:
+            vertices[cam], directs[cam] = ray_tracing(
+                targets[cam][0], targets[cam][1], cals[cam], multimed_pars
             )
 
-    # Check intersection distance for each pair of rays and find position.
+    # Check intersection distance for each pair of rays and find position
     for cam in range(num_cams):
-        if np.isnan(targets[cam][0]):
+        if targets[cam][0] == COORD_UNUSED:
             continue
 
         for pair in range(cam + 1, num_cams):
-            if np.isnan(targets[pair][0]):
+            if targets[pair][0] == COORD_UNUSED:
                 continue
 
             num_used_pairs += 1
-            dtot += skew_midpoint(
-                vertices[cam], directs[cam], vertices[pair], directs[pair], point
+            tmp, point = skew_midpoint(
+                vertices[cam], directs[cam], vertices[pair], directs[pair]
             )
-            point_tot = vec_add(point_tot, point)
+            dtot += tmp
+            point_tot += point
 
-    res = vec_scalar_mul(point_tot, 1.0 / num_used_pairs)
+    res = point_tot / num_used_pairs
+
     return dtot / num_used_pairs, res
 
 
 def weighted_dumbbell_precision(
-    targets, num_targs, num_cams, multimed_pars, cals, db_length, db_weight
-):
-    # Define variables and allocate memory for res
-    pt = 0
+    targets: np.ndarray,
+    num_targs: int,
+    num_cams: int,
+    multimed_pars: MultimediaPar,
+    cals: List[Calibration],
+    db_length: float,
+    db_weight: float,
+) -> float:
+    """Calculate the weighted dumbbell precision of the current orientation."""
+    res = [vec3d, vec3d]
     dtot = 0
     len_err_tot = 0
-    dist = 0
-
-    res = np.zeros((2, 3))
-    res_current = np.zeros(3)
 
     for pt in range(num_targs):
-        res_current = res[pt % 2]
-        point_position(targets[pt], num_cams, multimed_pars, cals, res_current)
+        tmp, res[pt % 2] = point_position(targets[pt], num_cams, multimed_pars, cals)
+        dtot += tmp
 
         if pt % 2 == 1:
-            np.subtract(res[0], res[1], res[0])
-            dist = np.linalg.norm(res[0])
+            dist = np.linalg.norm(res[0] - res[1])
             len_err_tot += 1 - (
-                (dist > db_length) * (db_length / dist)
-                + (dist <= db_length) * (dist / db_length)
+                db_length / dist if dist > db_length else dist / db_length
             )
 
-        pt += 1
-
-    # Note: Half as many pairs as targets is assumed
     return dtot / num_targs + db_weight * len_err_tot / (0.5 * num_targs)
 
 
-def num_deriv_exterior(cal, cpar, dpos, dang, pos):
-    """Calculates the partial numerical derivative of image coordinates of a
+def num_deriv_exterior(
+    cal: Calibration, cpar: ControlPar, dpos: float, dang: float, pos: vec3d
+):
+    """Calculate the partial numerical derivative of image coordinates of a.
+
     given 3D position, over each of the 6 exterior orientation parameters (3
     position parameters, 3 rotation angles).
 
@@ -143,10 +154,10 @@ def num_deriv_exterior(cal, cpar, dpos, dang, pos):
         cal.ext_par.phi,
         cal.ext_par.kappa,
     ]
-    x_ders = [0.0] * 6
-    y_ders = [0.0] * 6
+    x_ders = np.zeros(6)
+    y_ders = np.zeros(6)
 
-    rotation_matrix(cal.ext_par)
+    cal.ext_par = rotation_matrix(cal.ext_par)
     xs, ys = img_coord(pos, cal, cpar.mm)
 
     for pd in range(6):
@@ -154,29 +165,29 @@ def num_deriv_exterior(cal, cpar, dpos, dang, pos):
         vars[pd] += step
 
         if pd > 2:
-            rotation_matrix(cal.ext_par)
+            cal.ext_par = rotation_matrix(cal.ext_par)
 
         xpd, ypd = img_coord(pos, cal, cpar.mm)
         x_ders[pd] = (xpd - xs) / step
         y_ders[pd] = (ypd - ys) / step
 
         vars[pd] -= step
-    rotation_matrix(cal.ext_par)
+    cal.ext_par = rotation_matrix(cal.ext_par)
 
     return (x_ders, y_ders)
 
 
-from typing import List
+def orient(
+    cal_in: Calibration,
+    cpar: ControlPar,
+    nfix: int,
+    fix: List[vec3d],
+    pix: List[Target],
+    flags: OrientPar,
+    sigmabeta: np.ndarray,
+):
+    """Calculate orientation of the camera, updating its calibration.
 
-import numpy as np
-
-# Constants
-IDT = 6
-NPAR = 17
-
-
-def orient(cal_in, cpar, nfix, fix, pix, flags, sigmabeta):
-    """orient() calculates orientation of the camera, updating its calibration
     structure using the definitions and algorithms well described in [1].
 
     Arguments:
@@ -229,9 +240,9 @@ def orient(cal_in, cpar, nfix, fix, pix, flags, sigmabeta):
         distortion parameters, which are also part of the G-M model and
         described in it. On failure returns None.
     """
-    import numpy as np
-
     i, j, n, itnum, stopflag, n_obs, maxsize = 0, 0, 0, 0, 0, 0, 0
+    dm: float = 0.00001
+    drad: float = 0.0000001
 
     ident = np.zeros(IDT)
     XPX = np.zeros((NPAR, NPAR))
@@ -282,8 +293,6 @@ def orient(cal_in, cpar, nfix, fix, pix, flags, sigmabeta):
     Xh = np.zeros((maxsize, NPAR), dtype=float)
 
     cal = Calibration()
-    cal.__dict__.update(cal_in.__dict__)
-
     maxsize = nfix * 2 + IDT
 
     for i in range(maxsize):
@@ -300,19 +309,19 @@ def orient(cal_in, cpar, nfix, fix, pix, flags, sigmabeta):
     else:
         numbers = 16
 
-    glass_dir = vec3d(cal.glass_par.vec_x, cal.glass_par.vec_y, cal.glass_par.vec_z)
+    glass_dir = vec_set(cal.glass_par.vec_x, cal.glass_par.vec_y, cal.glass_par.vec_z)
     nGl = vec_norm(glass_dir)
 
     e1_x = 2 * cal.glass_par.vec_z - 3 * cal.glass_par.vec_x
     e1_y = 3 * cal.glass_par.vec_x - 1 * cal.glass_par.vec_z
     e1_z = 1 * cal.glass_par.vec_y - 2 * cal.glass_par.vec_y
-    tmp_vec = vec3d(e1_x, e1_y, e1_z)
+    tmp_vec = vec_set(e1_x, e1_y, e1_z)
     e1 = unit_vector(tmp_vec)
 
     e2_x = e1_y * cal.glass_par.vec_z - e1_z * cal.glass_par.vec_x
     e2_y = e1_z * cal.glass_par.vec_x - e1_x * cal.glass_par.vec_z
     e2_z = e1_x * cal.glass_par.vec_y - e1_y * cal.glass_par.vec_y
-    tmp_vec = vec3d(e2_x, e2_y, e2_z)
+    tmp_vec = vec_set(e2_x, e2_y, e2_z)
     e2 = unit_vector(tmp_vec)
 
     al = 0
@@ -355,17 +364,17 @@ def orient(cal_in, cpar, nfix, fix, pix, flags, sigmabeta):
 
             # get metric flat-image coordinates of the detected point
             xc, yc = pixel_to_metric(pix[i].x, pix[i].y, cpar)
-            correct_brown_affin(xc, yc, cal.added_par)
+            xc, yc = correct_brown_affine(xc, yc, cal.added_par)
 
             # Projected 2D position on sensor of corresponding known point
-            rotation_matrix(cal.ext_par)
+            cal.ext_par = rotation_matrix(cal.ext_par)
             xp, yp = img_coord(fix[i], cal, cpar.mm)
 
             # derivatives of distortion parameters
-            r = math.sqrt(xp * xp + yp * yp)
+            r = np.sqrt(xp * xp + yp * yp)
 
             X[n][7] = cal.added_par.scx
-            X[n + 1][7] = math.sin(cal.added_par.she)
+            X[n + 1][7] = np.sin(cal.added_par.she)
 
             X[n][8] = 0
             X[n + 1][8] = 1
@@ -396,11 +405,12 @@ def orient(cal_in, cpar, nfix, fix, pix, flags, sigmabeta):
             )
             X[n + 1][14] = 0
 
-            X[n][15] = -math.cos(cal.added_par.she) * yp
-            X[n + 1][15] = -math.sin(cal.added_par.she) * yp
+            X[n][15] = -np.cos(cal.added_par.she) * yp
+            X[n + 1][15] = -np.sin(cal.added_par.she) * yp
 
-            # numeric derivatives of projection coordinates over external parameters, 3D position and the angles
-            num_deriv_exterior(cal, cpar, dm, drad, fix[i], X[n], X[n + 1])
+            # numeric derivatives of projection coordinates over external parameters,
+            # 3D position and the angles
+            X[n], X[n + 1] = num_deriv_exterior(cal, cpar, dm, drad, fix[i])
 
             # Num. deriv. of projection coords over sensor distance from PP
             cal.int_par.cc += dm
@@ -495,14 +505,12 @@ def orient(cal_in, cpar, nfix, fix, pix, flags, sigmabeta):
     n_obs += IDT
     sumP = 0
     for i in range(n_obs):  # homogenize
-        p = sqrt(P[i])
+        p = np.sqrt(P[i])
         for j in range(NPAR):
             Xh[i][j] = p * X[i][j]
 
         yh[i] = p * y[i]
         sumP += P[i]
-
-    import numpy as np
 
     # Gauss Markoff Model - least square adjustment of redundant information
     # contained both in the spatial intersection and the resection
@@ -513,7 +521,6 @@ def orient(cal_in, cpar, nfix, fix, pix, flags, sigmabeta):
     XPX = np.array(XPX)
     n_obs = int(n_obs)
     numbers = int(numbers)
-    NPAR = int(NPAR)
     ata = np.dot(Xh.T, Xh)
     for i in range(numbers):
         for j in range(numbers):
@@ -615,19 +622,10 @@ def orient(cal_in, cpar, nfix, fix, pix, flags, sigmabeta):
         return None
 
 
-from typing import List
-
-import numpy as np
-
-from .calibration import Calibration
-from .control import control_par
-from .target import target
-from .vec3d import vec3d
-
-
 def raw_orient(
-    cal: Calibration, cpar: control_par, nfix: int, fix: List[vec3d], pix: List[target]
+    cal: Calibration, cpar: ControlPar, nfix: int, fix: List[vec3d], pix: List[Target]
 ) -> bool:
+    """Raw orientation of the camera."""
     X = np.zeros((10, 6))
     y = np.zeros((10,))
     XPX = np.zeros((6, 6))
@@ -637,7 +635,6 @@ def raw_orient(
     stopflag = False
     dm = 0.0001
     drad = 0.0001
-    pos = vec3d()
     cal.added_par.k1 = 0
     cal.added_par.k2 = 0
     cal.added_par.k3 = 0
@@ -653,7 +650,7 @@ def raw_orient(
         for i in range(nfix):
             xc, yc = cpar.pixel_to_metric(pix[i].x, pix[i].y)
 
-            vec_set(pos, fix[i][0], fix[i][1], fix[i][2])
+            pos = vec_set(fix[i][0], fix[i][1], fix[i][2])
             cal.rotation_matrix()
             xp, yp = cal.img_coord(pos, cpar.mm)
 
@@ -682,16 +679,13 @@ def raw_orient(
     return stopflag
 
 
-import numpy as np
-
-
 def read_man_ori_fix(calblock_filename, man_ori_filename, cam):
     fix4 = np.zeros((4, 3))
     fix = None
     num_fix = 0
     num_match = 0
 
-    with open(man_ori_filename, "r") as fpp:
+    with open(man_ori_filename, "r", encoding="utf-8") as fpp:
         for i in range(cam):
             fpp.readline()
         nr = [int(x) for x in fpp.readline().split()]
@@ -715,7 +709,7 @@ def read_man_ori_fix(calblock_filename, man_ori_filename, cam):
 
 
 def read_calblock(filename):
-    with open(filename, "r") as f:
+    with open(filename, "r", encoding="utf-8") as f:
         lines = f.readlines()
         num_fix = int(lines[0])
         fix = np.zeros((num_fix, 3))
@@ -725,10 +719,10 @@ def read_calblock(filename):
     return fix, num_fix
 
 
-def read_orient_par(filename: str) -> Union[orient_par, None]:
+def read_orient_par(filename: str) -> Union[OrientPar, None]:
     try:
-        with open(filename, "r") as file:
-            ret = orient_par()
+        with open(filename, "r", encoding="utf-8") as file:
+            ret = OrientPar()
             ret.useflag = int(file.readline().strip())
             ret.ccflag = int(file.readline().strip())
             ret.xhflag = int(file.readline().strip())

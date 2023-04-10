@@ -1,11 +1,13 @@
+import numpy as np
+
 from .imgcoord import img_coord
+from .tracking_frame_buf import Target
 from .trafo import metric_to_pixel
+from .vec_utils import vec3d
 
 
 def sortgrid(cal, cpar, nfix, fix, num, eps, pix):
-    import numpy as np
-
-    sorted_pix = np.empty(nfix, dtype=target)
+    sorted_pix = [Target()] * nfix
     for i in range(nfix):
         sorted_pix[i].pnr = -999
 
@@ -29,9 +31,6 @@ def sortgrid(cal, cpar, nfix, fix, num, eps, pix):
     return sorted_pix
 
 
-import math
-
-
 def nearest_neighbour_pix(pix, num, x, y, eps):
     pnr = -999
     dmin = 1e20
@@ -39,7 +38,7 @@ def nearest_neighbour_pix(pix, num, x, y, eps):
 
     for j in range(num):
         if pix[j].y > ymin and pix[j].y < ymax and pix[j].x > xmin and pix[j].x < xmax:
-            d = math.sqrt(
+            d = np.sqrt(
                 (x - pix[j].x) * (x - pix[j].x) + (y - pix[j].y) * (y - pix[j].y)
             )
             if d < dmin:

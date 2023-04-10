@@ -27,12 +27,9 @@ def ata(a, n):
     return ata
 
 
-import numpy as np
+def atl(a, ll, n):
+    """Multiply transpose of a matrix A by vector l, creating vector u.
 
-
-def atl(a, l, n):
-    """
-    Multiply transpose of a matrix A by vector l, creating vector u
     with the option of working with the sub-vector only, when n < n_large.
 
     Args:
@@ -49,7 +46,7 @@ def atl(a, l, n):
     a_T = np.transpose(a)
 
     # Compute the product of a.T and l
-    u = np.dot(a_T, l)
+    u = np.dot(a_T, ll)
 
     # Take only the first n elements of the result vector
     u = u[:n]
@@ -70,19 +67,35 @@ def atl(a, l, n):
 def matinv(a: np.ndarray, n: int, n_large: int):
     """Invert a matrix using Gauss-Jordan elimination.
 
-    This is a Python function that calculates the inverse of a square matrix a of size n_large x n_large. The function uses the Gauss-Jordan method to invert the matrix. If the size of the sub-matrix is less than n_large, the function only works with the sub-matrix of size n.
+    This is a Python function that calculates the inverse of a
+    square matrix a of size n_large x n_large. The function uses
+    the Gauss-Jordan method to invert the matrix. If the size of
+    the sub-matrix is less than n_large, the function only works
+    with the sub-matrix of size n.
 
     The function takes three arguments:
 
         a: a NumPy array that represents the matrix to be inverted.
         n: an integer that represents the size of the sub-matrix.
-        n_large: an integer that represents the number of rows and columns in the matrix a.
+        n_large: an integer that represents the number of rows and
+        columns in the matrix a.
 
-    The function starts by iterating over the rows of the sub-matrix using the ipiv variable. It calculates the pivot element as pivot = 1.0 / a[ipiv * n_large + ipiv] and its negative as npivot = - pivot. Then it updates the elements of the sub-matrix to get the identity matrix on the left side of the original matrix. This is done using the nested for loops that iterate over the rows and columns of the sub-matrix. The inner loops update the elements of the sub-matrix using the pivot element.
+    The function starts by iterating over the rows of the sub-matrix
+    using the ipiv variable. It calculates the pivot element as
+    pivot = 1.0 / a[ipiv * n_large + ipiv] and its negative as
+    npivot = - pivot. Then it updates the elements of the sub-matrix to
+    get the identity matrix on the left side of the original matrix.
+    This is done using the nested for loops that iterate over the rows
+    and columns of the sub-matrix. The inner loops update the elements
+    of the sub-matrix using the pivot element.
 
-    The next loop updates the elements below the diagonal to make them zero, as well as updating the diagonal elements to make them equal to 1. Finally, the function sets the diagonal element to pivot as it was updated to 1 in the previous loop.
+    The next loop updates the elements below the diagonal to make them
+    zero, as well as updating the diagonal elements to make them equal to 1.
+    Finally, the function sets the diagonal element to pivot as it was
+    updated to 1 in the previous loop.
 
-    At the end of the function, the inverse of the matrix is stored in the original a array.
+    At the end of the function, the inverse of the matrix is stored
+    in the original a array.
 
 
     """
