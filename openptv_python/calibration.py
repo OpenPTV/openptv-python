@@ -72,6 +72,20 @@ class Calibration:
     added_par: ap_52 = ap_52()
     mmlut: mmlut = mmlut()
 
+    def from_file(self, ori_file: str, add_file: str = None, fallback_file: str = None):
+        """
+        Populate calibration fields from .ori and .addpar files.
+
+        Arguments:
+        ---------
+        ori_file - path to file containing exterior, interior and glass
+            parameters.
+        add_file - optional path to file containing distortion parameters.
+        fallback_file - optional path to file used in case ``add_file`` fails
+            to open.
+        """
+        read_calibration(ori_file)
+
 
 def write_ori(
     Ex: Exterior, In: Interior, G: Glass, ap: ap_52, filename: str, add_file: str = None
@@ -136,64 +150,6 @@ def read_ori(filename: str) -> Calibration:
     )
 
 
-# def read_ori(Ex, In, G, ori_file, addp, add_file, add_fallback):
-#     """Read the orientation file and the additional parameters file."""
-#     try:
-#         fp = open(ori_file, "r", encoding="utf-8")
-#     except IOError:
-#         print("Can't open ORI file: %s\n", ori_file)
-#         return 0
-
-#     # Exterior
-#     scan_res = fp.readline().split()
-#     Ex.x0, Ex.y0, Ex.z0, Ex.omega, Ex.phi, Ex.kappa = map(float, scan_res)
-#     if len(scan_res) != 6:
-#         return 0
-
-#     # Exterior rotation matrix
-#     for i in range(3):
-#         scan_res = fp.readline().split()
-#         Ex.dm[i] = list(map(float, scan_res))
-#         if len(scan_res) != 3:
-#             return 0
-
-#     # Interior
-#     scan_res = fp.readline().split()
-#     In.xh, In.yh, In.cc = map(float, scan_res)
-#     if len(scan_res) != 3:
-#         return 0
-
-#     # Glass
-#     scan_res = fp.readline().split()
-#     G.vec_x, G.vec_y, G.vec_z = map(float, scan_res)
-#     if len(scan_res) != 3:
-#         return 0
-#     fp.close()
-
-#     # Additional:
-#     try:
-#         fp = open(add_file, "r", encoding="utf-8")
-#     except IOError:
-#         if add_fallback:
-#             try:
-#                 fp = open(add_fallback, "r", encoding="utf-8")
-#             except IOError:
-#                 pass
-
-#     if fp:
-#         scan_res = fp.readline().split()
-#         addp.k1, addp.k2, addp.k3, addp.p1, addp.p2, addp.scx, addp.she = map(
-#             float, scan_res
-#         )
-#         fp.close()
-#     else:
-#         print("no addpar fallback used\n")  # Waits for proper logging.
-#         addp.k1 = addp.k2 = addp.k3 = addp.p1 = addp.p2 = addp.she = 0.0
-#         addp.scx = 1.0
-
-#     return 1
-
-
 def compare_exterior(e1: Exterior, e2: Exterior) -> bool:
     """Compare exterior orientation parameters."""
     return (
@@ -242,7 +198,7 @@ def compare_addpar(a1, a2):
     )
 
 
-def read_calibration(ori_file: pathlib.Path):
+def read_calibration(ori_file: pathlib.Path) -> Calibration:
     """Read the orientation file including the added parameters."""
     ret = read_ori(ori_file)
     ret.ext_par = rotation_matrix(ret.ext_par)

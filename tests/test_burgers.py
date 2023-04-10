@@ -5,14 +5,9 @@ import unittest
 
 import yaml
 
-from .calibration import Calibration
-from .parameters import (
-    ControlParams,
-    SequenceParams,
-    TrackingParams,
-    VolumeParams,
-)
-from .tracker import Tracker
+from openptv_python.calibration import Calibration
+from openptv_python.parameters import ControlPar, SequencePar, TrackPar, VolumePar
+from openptv_python.track import Tracker
 
 framebuf_naming = {
     "corres": b"testing_folder/burgers/res/rt_is",
@@ -23,7 +18,7 @@ framebuf_naming = {
 
 class TestTracker(unittest.TestCase):
     def setUp(self):
-        with open(b"testing_folder/burgers/conf.yaml") as f:
+        with open(b"testing_folder/burgers/conf.yaml", encoding="utf-8") as f:
             yaml_conf = yaml.load(f, Loader=yaml.FullLoader)
         seq_cfg = yaml_conf["sequence"]
 
@@ -39,11 +34,14 @@ class TestTracker(unittest.TestCase):
             cals.append(cal)
             img_base.append(seq_cfg["targets_template"].format(cam=cix + 1))
 
-        cpar = ControlParams(len(yaml_conf["cameras"]), **yaml_conf["scene"])
-        vpar = VolumeParams(**yaml_conf["correspondences"])
-        tpar = TrackingParams(**yaml_conf["tracking"])
-        spar = SequenceParams(
-            image_base=img_base, frame_range=(seq_cfg["first"], seq_cfg["last"])
+        cpar = ControlPar(len(yaml_conf["cameras"]), **yaml_conf["scene"])
+        vpar = VolumePar(**yaml_conf["correspondences"])
+        tpar = TrackPar(**yaml_conf["tracking"])
+        spar = SequencePar(
+            num_cams=len(yaml_conf["cameras"]),
+            img_base_name=img_base,
+            first=seq_cfg["first"],
+            last=seq_cfg["last"],
         )
 
         self.tracker = Tracker(cpar, vpar, tpar, spar, cals, framebuf_naming)

@@ -1,4 +1,4 @@
-import math
+import numpy as np
 
 from .multimed import volumedimension
 from .parameters import (
@@ -77,7 +77,7 @@ def tr_new(
         seq_par.img_base_name,
     )
 
-    tr.lmax = math.norm(
+    tr.lmax = np.norm(
         tpar.dvxmin - tpar.dvxmax, tpar.dvymin - tpar.dvymax, tpar.dvzmin - tpar.dvzmax
     )
     volumedimension(
