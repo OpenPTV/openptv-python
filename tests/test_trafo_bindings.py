@@ -2,9 +2,9 @@ import unittest
 
 import numpy as np
 
-from openptv_python.calibration import Calibration, read_calibration
-from openptv_python.parameters import control_par, read_control_par
-from openptv_python.trafo import (
+from .calibration import Calibration, read_calibration
+from .parameters import control_par, read_control_par
+from .trafo import (
     correct_brown_affine,
     dist_to_flat,
     distort_brown_affine,

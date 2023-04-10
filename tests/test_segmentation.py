@@ -11,8 +11,8 @@ import unittest
 
 import numpy as np
 
-from openptv_python.parameters import ControlParams, TargetParams
-from openptv_python.segmentation import target_recognition
+from .parameters import ControlParams, TargetParams
+from .segmentation import target_recognition
 
 
 class TestTargRec(unittest.TestCase):

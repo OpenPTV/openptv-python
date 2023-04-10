@@ -4,7 +4,7 @@ import numpy as np
 from scipy import ndimage
 from scipy.ndimage import map_coordinates, uniform_filter
 
-from openptv_python.parameters import ControlPar
+from .parameters import ControlPar
 
 filter_t = np.zeros((3, 3), dtype=float)
 
@@ -18,7 +18,7 @@ def filter_3(img, kernel=None) -> np.ndarray:
 
 
 def lowpass_3(img: np.ndarray) -> np.ndarray:
-    """ Lowpass filter of 3x3."""
+    """Lowpass filter of 3x3."""
     # Define the 3x3 lowpass filter kernel
     kernel = np.ones((3, 3)) / 9
 
@@ -29,7 +29,7 @@ def lowpass_3(img: np.ndarray) -> np.ndarray:
 
 
 def fast_box_blur(filt_span: int, src: np.ndarray, cpar: ControlPar) -> np.ndarray:
-    """ Fast box blur."""
+    """Fast box blur."""
     n = 2 * filt_span + 1
     row_accum = uniform_filter(
         src.reshape((cpar.imy, cpar.imx)),
@@ -38,11 +38,10 @@ def fast_box_blur(filt_span: int, src: np.ndarray, cpar: ControlPar) -> np.ndarr
         cval=0,
     ).reshape(-1)
     return row_accum
-    
 
 
 def split(img: np.ndarray, half_selector: int, cpar: ControlPar) -> np.ndarray:
-    """ Split image into two halves. """
+    """Split image into two halves."""
     cond_offs = cpar.imx if half_selector % 2 else 0
 
     if half_selector == 0:
@@ -70,7 +69,7 @@ def subtract_img(img1: np.ndarray, img2: np.ndarray, img_new: np.ndarray) -> Non
 
 
 def subtract_mask(img: np.ndarray, img_mask: np.ndarray):
-    """ Subtract mask from image. """
+    """Subtract mask from image."""
     img_new = np.where(img_mask == 0, 0, img)
     return img_new
 

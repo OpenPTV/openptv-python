@@ -46,7 +46,7 @@ def vec_scalar_mul(vec: vec3d, scalar: float) -> vec3d:
     return vec * scalar
 
 
-def vec_diff_norm(vec1: vec3d, vec2: vec3d) -> vec3d:
+def vec_diff_norm(vec1: vec3d, vec2: vec3d) -> float:
     """vec_diff_norm() gives the norm of the difference between two vectors."""
     return np.linalg.norm(vec1 - vec2)
 

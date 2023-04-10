@@ -1,39 +1,47 @@
+""" This module contains the tracking algorithm."""
 import math
-
+from dataclasses import dataclass
+from typing import List
 import numpy as np
 
-TR_UNUSED = -1
-TR_BUFSPACE = 4
-TR_MAX_CAMS = 4
-MAX_TARGETS = 20000
-MAX_CANDS = 4
-ADD_PART = 3
+from .constants import (
+    CORRES_NONE,
+    MAX_CANDS,
+    NEXT_NONE,
+    PREV_NONE,
+    PT_UNUSED,
+    TR_MAX_CAMS,
+    TR_UNUSED,
+)
+from .trafo import metric_to_pixel, pixel_to_metric
+from .vec_utils import vec_copy, vec_diff_norm, vec_subt, vec3d
+from .orientation import point_position
 
 
+@dataclass
 class Foundpix:
-    def __init__(self):
-        self.ftnr = 0
-        self.freq = 0
-        self.whichcam = [0] * TR_MAX_CAMS
+    """A Foundpix object holds the parameters for a found pixel."""
+
+    ftnr: int = 0
+    freq: int = 0
+    whichcam: List[int] = [0] * TR_MAX_CAMS
 
 
-from typing import List
-
-
-class tracking_run:
-    def __init__(self):
-        self.fb = None
-        self.seq_par = None
-        self.tpar = None
-        self.vpar = None
-        self.cpar = None
-        self.cal = None
-        self.flatten_tol = None
-        self.ymin = None
-        self.ymax = None
-        self.lmax = None
-        self.npart = None
-        self.nlinks = None
+@dataclass
+class TrackingRun:
+    """A TrackingRun object holds the parameters for a tracking run."""
+    fb: str = None
+    seq_par: str = None
+    tpar: str = None
+    vpar: str = None
+    cpar: str = None
+    cal: str = None
+    flatten_tol: float = None
+    ymin: float = None
+    ymax: float = None
+    lmax: float = None
+    npart: int = None
+    nlinks: int = None
 
 
 def tr_new_legacy(
@@ -42,9 +50,11 @@ def tr_new_legacy(
     vpar_fname: str,
     cpar_fnamei: str,
     cal: List[Calibration],
-) -> tracking_run:
-    # implementation not provided
-    pass
+) -> TrackingRun:
+    """Creates a TrackingRun object from legacy parameters."""
+    tr = TrackingRun()
+
+    return tr
 
 
 def tr_new(
@@ -59,8 +69,8 @@ def tr_new(
     prio_file_base: str,
     cal: List[Calibration],
     flatten_tol: float,
-) -> tracking_run:
-    tr = tracking_run()
+) -> TrackingRun:
+    tr = TrackingRun()
     tr.fb = framebuf_base(
         buf_len, max_targets, corres_file_base, linkage_file_base, prio_file_base
     )
@@ -73,7 +83,7 @@ def tr_new(
     return tr
 
 
-def tr_free(tr: tracking_run) -> None:
+def tr_free(tr: TrackingRun) -> None:
     tr.fb.free()
     del tr.seq_par
     del tr.tpar
@@ -92,12 +102,6 @@ def tr_free(tr: tracking_run) -> None:
 # MAX_CANDS is the max number of candidates sought in search volume for next
 # link.
 
-TR_BUFSPACE = 4
-TR_MAX_CAMS = 4
-MAX_TARGETS = 20000
-MAX_CANDS = 4  # max candidates, nearest neighbours
-ADD_PART = 3  # search region 3 pix around a particle
-
 
 class FoundPix:
     def __init__(self):
@@ -106,80 +110,12 @@ class FoundPix:
         self.whichcam = [0] * TR_MAX_CAMS
 
 
-def candsearch_in_pix(next, num_targets, x, y, dl, dr, du, dd, p, cpar):
-    raise NotImplementedError
-
-
-def candsearch_in_pix_rest(next, num_targets, x, y, dl, dr, du, dd, p, cpar):
-    raise NotImplementedError
-
-
-def sort_candidates_by_freq(item, num_cams):
-    raise NotImplementedError
-
-
-def searchquader(point, xr, xl, yd, yu, tpar, cpar, cal):
-    raise NotImplementedError
-
-
-def predict(a, b, c):
-    raise NotImplementedError
-
-
-def search_volume_center_moving(prev_pos, curr_pos, output):
-    raise NotImplementedError
-
-
-def pos3d_in_bounds(pos, bounds):
-    raise NotImplementedError
-
-
-def det_lsq_3d(cals, mm, v, Xp, Yp, Zp, num_cams):
-    raise NotImplementedError
-
-
-def sort(n, a, b):
-    raise NotImplementedError
-
-
-def angle_acc(start, pred, cand, angle, acc):
-    raise NotImplementedError
-
-
-def reset_foundpix_array(arr, arr_len, num_cams):
-    raise NotImplementedError
-
-
-def copy_foundpix_array(dest, src, arr_len, num_cams):
-    raise NotImplementedError
-
-
-def point_to_pixel(v1, point, cal, cpar):
-    raise NotImplementedError
-
-
-def track_forward_start(tr):
-    raise NotImplementedError
-
-
-def trackcorr_c_loop(run_info, step):
-    raise NotImplementedError
-
-
-def trackcorr_c_finish(run_info, step):
-    raise NotImplementedError
-
-
-def trackback_c(run_info):
-    raise NotImplementedError
-
-
-def track_forward_start(tr: tracking_run):
+def track_forward_start(tr: TrackingRun):
     """Initializes the tracking frame buffer with the first frames.
 
     Arguments:
     ---------
-    tr (tracking_run): An object holding the per-run tracking parameters and a frame buffer with 4 positions.
+    tr (TrackingRun): An object holding the per-run tracking parameters and a frame buffer with 4 positions.
     """
     # Prime the buffer with first frames
     for step in range(tr.seq_par.first, tr.seq_par.first + TR_BUFSPACE - 1):
@@ -636,7 +572,7 @@ def sort(a, b):
 import numpy as np
 
 
-def point_to_pixel(point, cal, cpar):
+def point_to_pixel(point, cal, cpar) -> np.ndarray:
     """Returns vec2d with pixel positions (x,y) in the camera.
 
     Arguments:
@@ -707,7 +643,7 @@ def assess_new_position(pos, targ_pos, cand_inds, frm, run):
     cand_inds - 2D array of integers, output buffer, the determined targets'
         index in the respective camera's target list.
     frm - frame object, holdin target data for the search position.
-    run - tracking_run object, scene information struct.
+    run - TrackingRun object, scene information struct.
 
     Returns:
     -------
@@ -815,7 +751,7 @@ def trackcorr_c_loop(run_info, step):
     _ix = 0  # For use in any of the complex index expressions below
     orig_parts = 0  # avoid infinite loop with particle addition set
 
-    # Shortcuts into the tracking_run struct
+    # Shortcuts into the TrackingRun struct
     cal = None
     fb = None
     tpar = None
@@ -900,9 +836,9 @@ def trackcorr_c_loop(run_info, step):
 
                     vec_subt(X[4], X[3], diff_pos)
                     if pos3d_in_bounds(diff_pos, tpar):
-                        angle_acc(X[3], X[4], X[5], angle1, acc1)
+                        angle1, acc1 = angle_acc(X[3], X[4], X[5])
                         if curr_path_inf.prev >= 0:
-                            angle_acc(X[1], X[2], X[3], angle0, acc0)
+                            angle0, acc0 = angle_acc(X[1], X[2], X[3])
                         else:
                             acc0 = acc1
                             angle0 = angle1
@@ -955,7 +891,7 @@ def trackcorr_c_loop(run_info, step):
 
             vec_subt(X[3], X[4], diff_pos)
             if in_volume == 1 and pos3d_in_bounds(diff_pos, tpar):
-                angle_acc(X[3], X[4], X[5], angle, acc)
+                angle, acc = angle_acc(X[3], X[4], X[5])
 
                 if acc < tpar.dacc and angle < tpar.dangle or acc < tpar.dacc / 10:
                     dl = (vec_diff_norm(X[1], X[3]) + vec_diff_norm(X[4], X[3])) / 2
@@ -1076,15 +1012,13 @@ def trackcorr_c_loop(run_info, step):
     run_info.npart = run_info.npart + fb.buf[1].num_parts
     run_info.nlinks = run_info.nlinks + count1
 
-    fb_next(fb)
-    fb_write_frame_from_start(fb, step)
+    fb.next()
+    fb.write_frame_from_start(step)
 
     if step < run_info.seq_par.last - 2:
-        fb_read_frame_at_end(fb, step + 3, 0)
+        fb.read_frame_at_end(step + 3, 0)
     # end of sequence loop
 
-
-import numpy as np
 
 
 def trackcorr_c_finish(run_info, step):
@@ -1094,18 +1028,18 @@ def trackcorr_c_finish(run_info, step):
         f"Average over sequence, particles: {npart:.1f}, links: {nlinks:.1f}, lost: {npart - nlinks:.1f}"
     )
 
-    fb_next(run_info.fb)
-    fb_write_frame_from_start(run_info.fb, step)
+    run_info.fb.next()
+    run_info.fb. write_frame_from_start(step)
 
 
-def trackback_c(run_info):
-    MAX_CANDS = ...
-    count1 = count2 = num_added = quali = 0
+def trackback_c(run_info: TrackingRun):
+    """ Trackback algorithm in C """
+    count1, count2, num_added, quali = 0,0,0,0
     Ymin = Ymax = npart = nlinks = 0
     philf = np.zeros((4, MAX_CANDS))
-    X = [Vec3d() for _ in range(6)]
-    n = [Vec2d() for _ in range(4)]
-    v2 = [Vec2d() for _ in range(4)]
+    X = [vec3d() for _ in range(6)]
+    n = [vec2d() for _ in range(4)]
+    v2 = [vec2d() for _ in range(4)]
 
     fb = run_info.fb
     seq_par = run_info.seq_par
@@ -1116,9 +1050,10 @@ def trackback_c(run_info):
 
     # Prime the buffer with first frames
     for step in range(seq_par.last, seq_par.last - 4, -1):
-        fb_read_frame_at_end(fb, step, 1)
-        fb_next(fb)
-    fb_prev(fb)
+        fb.read_frame_at_end(step, 1)
+        fb.next()
+        
+    fb.prev()
 
     # sequence loop
     for step in range(seq_par.last - 1, seq_par.first, -1):
@@ -1157,9 +1092,9 @@ def trackback_c(run_info):
                     ref_path_inf = fb.buf[2].path_info[w[i].ftnr]
                     X[3].copy(ref_path_inf.x)
 
-                    vec_subt(X[1], X[3], diff_pos)
+                    diff_pos = vec_subt(X[1], X[3])
                     if pos3d_in_bounds(diff_pos, tpar):
-                        angle_acc(X[1], X[2], X[3], angle, acc)
+                        angle, acc = angle_acc(X[1], X[2], X[3])
 
                         # *********************check link *****************************
                         if (
@@ -1173,14 +1108,14 @@ def trackback_c(run_info):
                             quali = w[i].freq
                             rr = (
                                 dl / run_info.lmax
-                                + acc / tpar.dacc
+                                + acc / tpar.daccve
                                 + angle / tpar.dangle
                             ) / quali
-                            register_link_candidate(curr_path_inf, rr, w[i].ftnr)
+                            current_path_inf.register_link_candidate(rr, w[i].ftnr)
 
                     i += 1
 
-            free(w)
+            del w
 
             # if old wasn't found try to create new particle position from rest
             if tpar.add:
@@ -1200,9 +1135,9 @@ def trackback_c(run_info):
                         ):
                             in_volume = 1
 
-                        vec_subt(X[1], X[3], diff_pos)
+                        diff_pos = vec_subt(X[1], X[3])
                         if in_volume == 1 and pos3d_in_bounds(diff_pos, tpar):
-                            angle_acc(X[1], X[2], X[3], angle, acc)
+                            angle, acc = angle_acc(X[1], X[2], X[3])
 
                             if (
                                 acc < tpar.dacc
@@ -1218,8 +1153,8 @@ def trackback_c(run_info):
                                     + acc / tpar.dacc
                                     + angle / tpar.dangle
                                 ) / (quali)
-                                register_link_candidate(
-                                    curr_path_inf, rr, fb.buf[2].num_parts
+                                curr_path_inf.register_link_candidate(
+                                    rr, fb.buf[2].num_parts
                                 )
 
                                 add_particle(fb.buf[2], X[3], philf)
@@ -1268,7 +1203,7 @@ def trackback_c(run_info):
                     for j in range(3):
                         X[5][j] = 0.5 * (5.0 * X[3][j] - 4.0 * X[1][j] + X[0][j])
 
-                    angle_acc(X[3], X[4], X[5], angle, acc)
+                    angle, acc = angle_acc(X[3], X[4], X[5])
 
                     if (acc < tpar["dacc"] and angle < tpar["dangle"]) or (
                         acc < tpar["dacc"] / 10
@@ -1284,11 +1219,11 @@ def trackback_c(run_info):
         npart += fb["buf"][1]["num_parts"]
         nlinks += count1
 
-        fb_next(fb)
-        fb_write_frame_from_start(fb, step)
+        fb.next()
+        fb.write_frame_from_start(step)
 
         if step > seq_par["first"] + 2:
-            fb_read_frame_at_end(fb, step - 3, 1)
+            fb.read_frame_at_end(step - 3, 1)
 
         print(
             "step: {}, curr: {}, next: {}, links: {}, lost: {}, add: {}".format(
@@ -1310,7 +1245,7 @@ def trackback_c(run_info):
         )
     )
 
-    fb_next(fb)
-    fb_write_frame_from_start(fb, step)
+    fb.next()
+    fb.write_frame_from_start(step)
 
     return nlinks

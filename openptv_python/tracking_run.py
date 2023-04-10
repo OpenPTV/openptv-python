@@ -1,16 +1,16 @@
 import math
 
-from openptv_python.multimed import volumedimension
-from openptv_python.parameters import (
+from .multimed import volumedimension
+from .parameters import (
     read_control_par,
     read_sequence_par,
     read_track_par,
     read_volume_par,
 )
-from openptv_python.tracking_frame_buf import fb_init, framebuf_base
+from .tracking_frame_buf import fb_init, framebuf_base
 
 
-class tracking_run:
+class TrackingRun:
     def __init__(self):
         self.fb = None  # type: framebuf_base
         self.seq_par = None  # type: sequence_par
@@ -57,7 +57,7 @@ def tr_new(
     cal,
     flatten_tol,
 ):
-    tr = tracking_run()
+    tr = TrackingRun()
     tr.tpar = tpar
     tr.vpar = vpar
     tr.cpar = cpar

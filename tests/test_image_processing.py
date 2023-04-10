@@ -2,8 +2,8 @@ import unittest
 
 import numpy as np
 
-from openptv_python.image_processing import preprocess_image
-from openptv_python.parameters import ControlParams
+from .image_processing import preprocess_image
+from .parameters import ControlParams
 
 
 class Test_image_processing(unittest.TestCase):

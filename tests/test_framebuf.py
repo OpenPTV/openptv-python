@@ -3,7 +3,7 @@ import unittest
 
 import numpy as np
 
-from openptv_python.tracking_frame_buf import Frame, Target, TargetArray, read_targets
+from .tracking_frame_buf import Frame, Target, TargetArray, read_targets
 
 
 class TestTargets(unittest.TestCase):

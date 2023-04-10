@@ -1,29 +1,25 @@
-""" Tracking frame buffer."""
+"""Tracking frame buffer."""
+import pickle
+from collections import deque
 from dataclasses import dataclass
-from typing import Any, List, Tuple
-from openptv_python.correspondences import Correspond
+from typing import Any, List
 
-# from openptv_python.parameters import ControlPar
+import numpy as np
 
-
-POSI = 80
-STR_MAX_LEN = 255
-PT_UNUSED = -999
-PREV_NONE = -1
-NEXT_NONE = -2
-PRIO_DEFAULT = 2
+from .constants import NEXT_NONE, POSI, PREV_NONE, PRIO_DEFAULT
+from .correspondences import Correspond
 
 
 @dataclass
 class Target:
-    pnr: int
-    x: float
-    y: float
-    n: int
-    nx: int
-    ny: int
-    sumg: int
-    tnr: int
+    pnr: int = 0
+    x: float = 0.0
+    y: float = 0.0
+    n: int = 0
+    nx: int = 0
+    ny: int = 0
+    sumg: int = 0
+    tnr: int = 0
 
     def __eq__(self, other: "Target") -> bool:
         return (
@@ -78,7 +74,8 @@ def read_targets(file_base: str, frame_num: int) -> List[Target]:
 
 
 def write_targets(targets, num_targets, file_base, frame_num):
-    success = 0
+    """Write targets to a file."""
+    success = False
     file_name = (
         file_base + "_targets"
         if frame_num == 0
@@ -86,13 +83,19 @@ def write_targets(targets, num_targets, file_base, frame_num):
     )
 
     try:
-        with open(file_name, "w", encoding="utf-8") as f:
-            f.write(f"{num_targets}\n")
-            for target in targets:
-                f.write(
-                    f"{target.pnr:4d} {target.x:9.4f} {target.y:9.4f} {target.n:5d} {target.nx:5d} {target.ny:5d} {target.sumg:5d} {target.tnr:5d}\n"
-                )
-        success = 1
+        # Convert targets to a 2D numpy array
+        target_arr = np.array(
+            [(t.pnr, t.x, t.y, t.n, t.nx, t.ny, t.sumg, t.tnr) for t in targets]
+        )
+        # Save the target array to file using savetxt
+        np.savetxt(
+            file_name,
+            target_arr,
+            fmt="%4d %9.4f %9.4f %5d %5d %5d %5d %5d",
+            header=f"{num_targets}",
+            comments="",
+        )
+        success = True
     except IOError:
         print(f"Can't open ascii file: {file_name}")
 
@@ -100,55 +103,54 @@ def write_targets(targets, num_targets, file_base, frame_num):
 
 
 @dataclass
-class PathInfo:
-    position: Tuple[float, float, float] = (0.0, 0.0, 0.0)
-    prev_link: int = PREV_NONE
-    next_link: int = NEXT_NONE
-    priority: int = PRIO_DEFAULT
-    decision_criteria: List[float] = []
-    final_decision_criteria: float = 0.0
-    link_candidates: List[int] = []
-    candidate_count: int = 0
+class Pathinfo:
+    """Pathinfo structure for tracking."""
 
-    def __eq__(self, other: "PathInfo") -> bool:
-        if not (
-            self.prev_link == other.prev_link
-            and self.next_link == other.next_link
-            and self.priority == other.priority
-            and self.final_decision_criteria == other.final_decision_criteria
-            and self.candidate_count == other.candidate_count
-            and self.position == other.position
-            and self.decision_criteria == other.decision_criteria
-            and self.link_candidates == other.link_candidates
-        ):
+    x: np.ndarray = np.zeros(3, dtype=np.float64)
+    prev: int = PREV_NONE
+    next: int = NEXT_NONE
+    prio: int = PRIO_DEFAULT
+    decis: List[float] = [] * POSI
+    finaldecis: float = 0.0
+    linkdecis: List[int] = [] * POSI
+    inlist: int = 0
+
+    def __eq__(self, other):
+        if not isinstance(other, Pathinfo):
             return False
+        return (
+            self.x == other.x
+            and self.prev == other.prev
+            and self.next == other.next
+            and self.prio == other.prio
+            and self.decis == other.decis
+            and self.finaldecis == other.finaldecis
+            and self.linkdecis == other.linkdecis
+            and self.inlist == other.inlist
+        )
 
-        for itr in range(POSI):
-            if self.decision_criteria[itr] != other.decision_criteria[itr]:
-                return False
-            if self.link_candidates[itr] != other.link_candidates[itr]:
-                return False
-
-        return True
-
-    def register_link_candidate(self, fitness: float, candidate_index: int) -> None:
-        self.decision_criteria[self.candidate_count] = fitness
-        self.link_candidates[self.candidate_count] = candidate_index
-        self.candidate_count += 1
+    def register_link_candidate(self, fitness: float, cand: int) -> None:
+        """Register link candidate."""
+        self.decis[self.inlist] = fitness
+        self.linkdecis[self.inlist] = cand
+        self.inlist += 1
 
     def reset_links(self) -> None:
-        self.prev_link = PREV_NONE
-        self.next_link = NEXT_NONE
-        self.priority = PRIO_DEFAULT
+        """Reset links."""
+        self.prev = PREV_NONE
+        self.next = NEXT_NONE
+        self.prio = PRIO_DEFAULT
 
 
 @dataclass
 class Frame:
-    path_info: PathInfo = PathInfo()
-    correspond: Correspond = Correspond()
-    targets: List[Target] = []
+    """Frame structure for tracking."""
+
     num_cams: int = 1
     max_targets: int = 0
+    path_info: Pathinfo = Pathinfo()
+    correspond: Correspond = Correspond()
+    targets: List[List[Target]] = [[]]
     num_parts: int = 0
     num_targets: List[int] = []
 
@@ -221,137 +223,200 @@ class Frame:
         return True
 
 
+class FrameBufBase:
+    def __init__(self, buf_len, num_cams, max_targets):
+        self.buf_len = buf_len
+        self.num_cams = num_cams
+        self.buf = deque(maxlen=buf_len)
+        for i in range(buf_len):
+            self.buf.append(Frame(num_cams, max_targets))
+        self.start = 0
+
+    def __del__(self):
+        for frame in self.buf:
+            del frame
+
+    def read_frame_at_end(self, frame):
+        self.buf.append(frame)
+
+    def write_frame_from_start(self, frame):
+        pickled_frame = pickle.dumps(frame)
+        self._advance_buffer_start()
+        return pickled_frame
+
+    def _advance_buffer_start(self):
+        self.start += 1
+        if self.start >= self.buf_len:
+            self.start = 0
+
+    def fb_next(self):
+        self.buf.rotate(-1)
+        self._advance_buffer_start()
+
+    def fb_prev(self):
+        self.buf.rotate(1)
+        self.start -= 1
+        if self.start < 0:
+            self.start = self.buf_len - 1
+
+
+# def free_frame(frame):
+#     # Free memory for the frame
+#     frame = None
+
+
+# class Frame:
+#     def __init__(self, num_cams, max_targets):
+#         self.num_cams = num_cams
+#         self.max_targets = max_targets
+
+
+# def frame_init(frame, num_cams, max_targets):
+#     # Initialize the frame
+#     frame.num_cams = num_cams
+#     frame.max_targets = max_targets
+#     return frame
+
+
+class FrameBuf(FrameBufBase):
+    def __init__(
+        self,
+        buf_len,
+        num_cams,
+        max_targets,
+        corres_file_base,
+        linkage_file_base,
+        prio_file_base,
+        target_file_base,
+    ):
+        super().__init__(buf_len, num_cams, max_targets)
+        self.corres_file_base = corres_file_base
+        self.linkage_file_base = linkage_file_base
+        self.prio_file_base = prio_file_base
+        self.target_file_base = target_file_base
+
+    def write_frame_from_start(self, frame_num):
+        """Write a frame to disk and advance the buffer."""
+        # Pickle the frame
+        pickle.dumps(self.buf[0])
+
+        # Advance the buffer
+        self.buf.appendleft(Frame(self.num_cams, self.max_targets))
+
+        # Write the frame to disk
+        return write_path_frame(
+            self.buf[0],
+            self.corres_file_base,
+            self.linkage_file_base,
+            self.prio_file_base,
+            self.target_file_base,
+            frame_num,
+        )
+
+    def fb_disk_read_frame_at_end(self, frame_num, read_links):
+        if read_links:
+            return read_path_frame(
+                self.buf[-1],
+                self.corres_file_base,
+                self.linkage_file_base,
+                self.prio_file_base,
+                self.target_file_base,
+                frame_num,
+            )
+        else:
+            return read_path_frame(
+                self.buf[-1],
+                self.corres_file_base,
+                None,
+                None,
+                self.target_file_base,
+                frame_num,
+            )
+
+
+def frame_init(num_cams: int, max_targets: int):
+    """Initialize a frame structure."""
+    new_frame = Frame(max_targets=max_targets, num_cams=num_cams)
+    for cam in range(num_cams):
+        new_frame.targets[cam] = [Target() for _ in range(max_targets)]
+        new_frame.num_targets[cam] = 0
+
+    return new_frame
+
+
 def read_path_frame(
-    cor_buf: Any,
-    path_buf: Any,
-    corres_file_base: Any,
-    linkage_file_base: Any,
-    prio_file_base: Any,
-    frame_num: Any,
-) -> Any:
+    cor_buf, path_buf, corres_file_base, linkage_file_base, prio_file_base, frame_num
+) -> List[Target]:
+    """Read a frame from the disk.
+
+    cor_buf = array of correspondences, pnr, 4 x cam_pnr
+
     """
-    Read a frame of path and correspondence info.
-
-    Args:
-    ----
-        cor_buf : _type_
-            a buffer of corres structs to fill in from the file.
-        path_buf : _type_
-            a buffer of path info structures.
-        corres_file_base : _type_
-            base name of the output correspondence file to which a frame number
-            is added without separator.
-        linkage_file_base : _type_
-            base name of the output linkage file to which a frame number
-            is added without separator.
-        prio_file_base : _type_
-            base name of the output priorities file to which a frame number
-            is added without separator.
-        frame_num : _type_
-            number of frame to add to file_base. A value of 0 or less means that no
-            frame number should be added. The '.' separator is added between the name
-            and the frame number.
-
-    Returns:
-    -------
-        _type_:
-            The number of points read for this frame. -1 on failure.
-    """
-    filein = None
-    linkagein = None
-    prioin = None
-    fname = ""
-    read_res, targets, alt_link = 0, -1, 0
-
-    # File format: first line contains the number of points, then each line
-    # is a record of path and correspondence info. We don't need the number of
-    # points because we read to EOF anyway.
+    filein, linkagein, prioin = None, None, None
     fname = f"{corres_file_base}.{frame_num}"
     try:
         filein = open(fname, "r", encoding="utf-8")
-    except Exception as e:
-        raise ValueError(f"Can't open ascii file: {fname}") from e
+    except IOError:
+        print(f"Can't open ascii file: {fname}")
+        return -1
 
-    read_res = int(filein.readline().strip())
-    if not read_res:
-        return targets
+    filein.readline()
 
     if linkage_file_base is not None:
         fname = f"{linkage_file_base}.{frame_num}"
         try:
             linkagein = open(fname, "r", encoding="utf-8")
-        except Exception as e:
-            raise ValueError(f"Can't open linkage file: {fname}") from e
+        except IOError:
+            print(f"Can't open linkage file: {fname}")
+            return -1
 
-        read_res = int(linkagein.readline().strip())
-        if not read_res:
-            return targets
+        linkagein.readline()
 
     if prio_file_base is not None:
         fname = f"{prio_file_base}.{frame_num}"
         try:
             prioin = open(fname, "r", encoding="utf-8")
-        except Exception as e:
-            raise ValueError(f"Can't open prioin file: {fname}") from e
+        except IOError:
+            print(f"Can't open prio file: {fname}")
+            return -1
 
-        read_res = int(prioin.readline().strip())
-        if not read_res:
-            return targets
+        prioin.readline()
 
     targets = 0
     while True:
-        if linkagein is not None:
-            line = linkagein.readline().strip()
-            if not line:
-                break
-
-            data = list(map(float, line.split()))
-            path_buf.prev = int(data[0])
-            path_buf.next = int(data[1])
-        else:
-            # Defaults:
-            path_buf.prev = -1
-            path_buf.next = -2
-
-        if prioin is not None:
-            line = prioin.readline().strip()
-            if not line:
-                break
-
-            data = list(map(float, line.split()))
-            path_buf.prio = int(data[5])
-        else:
-            path_buf.prio = 4
-
-        # Initialize tracking-related transient variables. These never get
-        # saved or restored.
-        path_buf.inlist = 0
-        path_buf.finaldecis = 1000000.0
-
-        for alt_link in range(POSI):
-            path_buf.decis[alt_link] = 0.0
-            path_buf.linkdecis[alt_link] = -999
-
-        # Rest of values:
-        line = filein.readline().strip()
+        line = filein.readline()
         if not line:
             break
 
-        data = list(map(float, line.split()))
-        path_buf.x[0] = data[1]
-        path_buf.x[1] = data[2]
-        path_buf.x[2] = data[3]
-        cor_buf.p[0] = int(data[4])
-        cor_buf.p[1] = int(data[5])
-        cor_buf.p[2] = int(data[6])
-        cor_buf.p[3] = int(data[7])
+        if linkagein is not None:
+            linkage_line = linkagein.readline()
+            linkage_vals = np.fromstring(linkage_line, dtype=float, sep=" ")
+            path_buf["prev"] = linkage_vals[0].astype(int)
+            path_buf["next"] = linkage_vals[1].astype(int)
 
-        targets += 1
+        if prioin is not None:
+            prio_line = prioin.readline()
+            prio_vals = np.fromstring(prio_line, dtype=float, sep=" ")
+            path_buf["prio"] = prio_vals[-1].astype(int)
+        else:
+            path_buf["prio"] = 4
+
+        path_buf["inlist"] = 0
+        path_buf["finaldecis"] = 1000000.0
+        path_buf["decis"] = np.zeros(POSI)
+        path_buf["linkdecis"] = np.zeros(POSI) - 999
+
+        vals = np.fromstring(line, dtype=float, sep=" ")
+        cor_buf["nr"] = targets + 1
+        cor_buf["Pathinfo"] = vals[-4:].astype(int)
+        path_buf["x"] = vals[:-4]
+
         cor_buf += 1
         path_buf += 1
 
-    if filein is not None:
-        filein.close()
+        targets += 1
+
+    filein.close()
     if linkagein is not None:
         linkagein.close()
     if prioin is not None:
@@ -361,13 +426,13 @@ def read_path_frame(
 
 
 def write_path_frame(
-    cor_buf,
-    path_buf,
-    num_parts,
-    corres_file_base,
-    linkage_file_base,
-    prio_file_base,
-    frame_num,
+    cor_buf: List[Correspond],
+    path_buf: List[Pathinfo],
+    num_parts: int,
+    corres_file_base: str,
+    linkage_file_base: str,
+    prio_file_base: str,
+    frame_num: int,
 ):
     """Write a frame of path and correspondence info.
 
@@ -378,7 +443,7 @@ def write_path_frame(
     *
     * Arguments:
     * corres *cor_buf - an array of corres structs to write to the files.
-    * P *path_buf - same for path info structures.
+    * Pathinfo *path_buf - same for path info structures.
     * int num_parts - number of particles represented by the cor_buf and path_buf
     *   arrays, i.e. the arrays' length.
     * char* corres_file_base, *linkage_file_base - base names of the output
@@ -441,7 +506,7 @@ def write_path_frame(
 
         print(
             f"{pix+1:4d} {path_buf[pix].x[0]:9.3f} {path_buf[pix].x[1]:9.3f} {path_buf[pix].x[2]:9.3f} \
-            {cor_buf[pix].p[0]:4d} {cor_buf[pix].p[1]:4d} {cor_buf[pix].p[2]:4d} {cor_buf[pix].p[3]:4d}",
+            {cor_buf[pix].Pathinfo[0]:4d} {cor_buf[pix].Pathinfo[1]:4d} {cor_buf[pix].Pathinfo[2]:4d} {cor_buf[pix].Pathinfo[3]:4d}",
             file=corres_file,
         )
 
@@ -459,141 +524,3 @@ def write_path_frame(
         prio_file.close()
 
     return 1
-
-
-@dataclass
-class FramebufBase:
-    buf_len: int = 4
-    num_cams: int = 1
-    _ring_vec: List[Any] = [None] * (2 * buf_len)
-    buf: List[Frame] = [Frame()] * buf_len
-    _vptr: Any = None
-
-    def fb_read_frame_at_end(self, frame_num, read_links):
-        return self._vptr.read_frame_at_end(self, frame_num, read_links)
-
-    def fb_write_frame_from_start(self, frame_num):
-        return self._vptr.write_frame_from_start(self, frame_num)
-
-    def fb_base_init(self, buf_len, num_cams, max_targets):
-        self.buf_len = buf_len
-        self.num_cams = num_cams
-
-        self._ring_vec = [Frame() for _ in range(buf_len * 2)]
-        self.buf = self._ring_vec[buf_len:]
-
-        for _ in self.buf:
-            # self.frame_init(frame, num_cams, max_targets)
-            _ = Frame(num_cams, max_targets)
-
-        # self._vptr = fb_vtable()
-
-
-@dataclass
-class Framebuf:
-    buf_len: int
-    num_cams: int
-    max_targets: int
-    corres_file_base: str
-    linkage_file_base: str
-    prio_file_base: str
-    target_file_base: str
-
-    def __post_init__(self):
-        self.base = FramebufBase(self.buf_len, self.num_cams)
-        # self.base._vptr = self
-        # self.base.base_init(self.max_targets)
-
-    def free(self):
-        pass
-
-    def read_frame_at_end(self, frame_num, read_links):
-        pass
-
-    def write_frame_from_start(self, frame_num):
-        pass
-
-
-class FramebufDisk(Framebuf):
-    def free(self):
-        pass
-
-    def read_frame_at_end(self, frame_num, read_links):
-        pass
-
-    def write_frame_from_start(self, frame_num):
-        pass
-
-
-# # Define the virtual function table as a dictionary of function pointers.
-# fb_vtable = {
-#     'free': None,
-#     'read_frame_at_end': None,
-#     'write_frame_from_start': None
-# }
-
-# # Define a decorator that adds a virtual method to the vtable.
-# def virtual_method(name):
-#     def decorator(func):
-#         fb_vtable[name] = func
-#         return func
-#     return decorator
-
-# # Define the base class for frame buffer objects.
-# class framebuf_base:
-#     def __init__(self, buf_len, num_cams):
-#         self._vptr = fb_vtable.copy()
-#         self.buf = [None] * buf_len
-#         self._ring_vec = [None] * (buf_len * 2)
-#         self.buf_len = buf_len
-#         self.num_cams = num_cams
-
-#     @virtual_method('free')
-#     def free(self):
-#         pass
-
-#     @virtual_method('read_frame_at_end')
-#     def read_frame_at_end(self, frame_num, read_links):
-#         pass
-
-#     @virtual_method('write_frame_from_start')
-#     def write_frame_from_start(self, frame_num):
-#         pass
-
-#     def next(self):
-#         pass
-
-#     def prev(self):
-#         pass
-
-# # Define the child class that reads from _target files.
-# class framebuf(framebuf_base):
-#     def __init__(self, buf_len, num_cams, max_targets, corres_file_base,
-#                  linkage_file_base, prio_file_base, target_file_base):
-#         super().__init__(buf_len, num_cams)
-#         self.corres_file_base = corres_file_base
-#         self.linkage_file_base = linkage_file_base
-#         self.prio_file_base = prio_file_base
-#         self.target_file_base = target_file_base
-
-#     @virtual_method('free')
-#     def disk_free(self):
-#         pass
-
-#     @virtual_method('read_frame_at_end')
-#     def disk_read_frame_at_end(self, frame_num, read_links):
-#         pass
-
-#     @virtual_method('write_frame_from_start')
-#     def disk_write_frame_from_start(self, frame_num):
-#         pass
-
-# # Define a function to initialize a frame buffer.
-# def fb_init(buf_len, num_cams, max_targets, corres_file_base,
-#             linkage_file_base, prio_file_base, target_file_base):
-#     buf = framebuf(buf_len, num_cams, max_targets, corres_file_base,
-#                    linkage_file_base, prio_file_base, target_file_base)
-#     buf.free = buf.disk_free
-#     buf.read_frame_at_end = buf.disk_read_frame_at_end
-#     buf.write_frame_from_start = buf.disk_write_frame_from_start
-#     return buf

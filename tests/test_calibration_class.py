@@ -1,5 +1,6 @@
 from openptv_python import Calibration
-from openptv_python.vec_utils import vec3d
+
+from .vec_utils import vec3d
 
 
 def test_exterior_initialization():

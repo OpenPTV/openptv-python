@@ -3,18 +3,18 @@ import unittest
 
 import numpy as np
 
-from openptv_python.calibration import Calibration
-from openptv_python.imgcoord import flat_image_coordinates, image_coordinates
-from openptv_python.orientation import (
+from .calibration import Calibration
+from .imgcoord import flat_image_coordinates, image_coordinates
+from .orientation import (
     dumbbell_target_func,
     external_calibration,
     full_calibration,
     match_detection_to_ref,
     point_positions,
 )
-from openptv_python.parameters import ControlParams, VolumeParams
-from openptv_python.tracking_framebuf import TargetArray
-from openptv_python.transforms import convert_arr_metric_to_pixel
+from .parameters import ControlParams, VolumeParams
+from .tracking_framebuf import TargetArray
+from .transforms import convert_arr_metric_to_pixel
 
 
 class Test_Orientation(unittest.TestCase):

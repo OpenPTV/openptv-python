@@ -2,12 +2,12 @@ import unittest
 
 import numpy as np
 
-from openptv_python.calibration import Calibration
-from openptv_python.correspondences import MatchedCoords, correspondences
-from openptv_python.imgcoord import image_coordinates
-from openptv_python.parameters import ControlParams, VolumeParams
-from openptv_python.tracking_framebuf import TargetArray, read_targets
-from openptv_python.transforms import convert_arr_metric_to_pixel
+from .calibration import Calibration
+from .correspondences import MatchedCoords, correspondences
+from .imgcoord import image_coordinates
+from .parameters import ControlParams, VolumeParams
+from .tracking_framebuf import TargetArray, read_targets
+from .transforms import convert_arr_metric_to_pixel
 
 
 class TestMatchedCoords(unittest.TestCase):

@@ -14,14 +14,14 @@ import unittest
 
 import yaml
 
-from openptv_python.calibration import Calibration
-from openptv_python.parameters import (
+from .calibration import Calibration
+from .parameters import (
     ControlParams,
     SequenceParams,
     TrackingParams,
     VolumeParams,
 )
-from openptv_python.tracker import Tracker
+from .tracker import Tracker
 
 framebuf_naming = {
     "corres": b"testing_folder/track/res/particles",

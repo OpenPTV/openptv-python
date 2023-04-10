@@ -1,6 +1,6 @@
 import math
 
-from openptv_python.vec_utils import (
+from .vec_utils import (
     unit_vector,
     vec_add,
     vec_cmp,

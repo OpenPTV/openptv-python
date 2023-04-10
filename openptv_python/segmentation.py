@@ -1,24 +1,34 @@
-from openptv_python.tracking_frame_buf import CORRES_NONE
+from dataclasses import dataclass, field
+
+import numpy as np
+
+from .defaults import CORRES_NONE
+from .parameters import TargetPar
 
 
+@dataclass
 class Peak:
-    def __init__(self):
-        self.pos = 0
-        self.status = 0
-        self.xmin = 0
-        self.xmax = 0
-        self.ymin = 0
-        self.ymax = 0
-        self.n = 0
-        self.sumg = 0
-        self.x = 0.0
-        self.y = 0.0
-        self.unr = 0
-        self.touch = [0, 0, 0, 0]
-        self.n_touch = 0
+    """Peak dataclass."""
+
+    pos: int
+    status: int
+    xmin: int
+    xmax: int
+    ymin: int
+    ymax: int
+    n: int
+    sumg: int
+    x: float
+    y: float
+    unr: int
+    touch: list[int] = field(default_factory=list, repr=False)
+    n_touch: int = 0
 
 
-def targ_rec(img, targ_par, xmin, xmax, ymin, ymax, cpar, num_cam, pix):
+def targ_rec(
+    img: np.ndarray, targ_par: TargetPar, xmin, xmax, ymin, ymax, cpar, num_cam, pix
+):
+    """Target recognition function."""
     n = 0
     n_wait = 0
     n_targets = 0
@@ -185,6 +195,7 @@ def targ_rec(img, targ_par, xmin, xmax, ymin, ymax, cpar, num_cam, pix):
 
 
 def peak_fit(img, targ_par, xmin, xmax, ymin, ymax, cpar, num_cam, pix):
+    """Fit the peaks in the image to a gaussian."""
     imx, imy = cpar.imx, cpar.imy
     n_peaks = 0
     n_wait = 0
@@ -482,3 +493,57 @@ def check_touch(tpeak, p1, p2):
         # don't allow for more than 4 touches
         if tpeak.n_touch > 3:
             tpeak.n_touch = 3
+
+
+import numpy as np
+
+
+def peak_fit_new(
+    image: np.ndarray, threshold: float = 0.5, sigma: float = 1.0
+) -> List[Peak]:
+    """
+    Finds local maxima in an image using a Gaussian filter and a maximum filter,
+    and returns their positions and intensities.
+
+    Args:
+    ----
+        image (np.ndarray): The image to analyze.
+        threshold (float): The minimum intensity value for a peak to be considered.
+        sigma (float): The standard deviation of the Gaussian filter.
+
+    Returns:
+    -------
+        List[Peak]: A list of Peak objects representing the detected peaks.
+    """
+    from scipy.ndimage import center_of_mass, gaussian_filter, label, maximum_filter
+
+    smoothed = gaussian_filter(image, sigma)
+    mask = smoothed > threshold * np.max(smoothed)
+    maxima = maximum_filter(smoothed, footprint=np.ones((3, 3))) == smoothed
+    labeled, num_objects = label(maxima)
+    peaks = []
+    for i in range(num_objects):
+        indices = np.argwhere(labeled == i + 1)
+        coordinates = [center_of_mass(mask[indices[:, 0], indices[:, 1]])[::-1]]
+        intensity = smoothed[indices[:, 0], indices[:, 1]].max()
+        x, y = np.mean(coordinates, axis=0)
+        peaks.append(Peak(int(round(x)), int(round(y)), intensity))
+    return peaks
+
+
+def test_peak_fit_new():
+    import matplotlib.pyplot as plt
+
+    # Generate test image
+    x, y = np.meshgrid(np.linspace(-5, 5, 100), np.linspace(-5, 5, 100))
+    z = np.sin(np.sqrt(x**2 + y**2))
+
+    # Find peaks
+    peaks = peak_fit(z)
+
+    # Plot image and detected peaks
+    fig, ax = plt.subplots()
+    ax.imshow(z, cmap="viridis")
+    for peak in peaks:
+        ax.scatter(peak.y, peak.x, marker="x", c="r", s=100)
+    plt.show()

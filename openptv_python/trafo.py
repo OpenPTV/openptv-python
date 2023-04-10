@@ -1,8 +1,8 @@
 """Module for coordinate transformations."""
 import math
 
-from openptv_python.calibration import Calibration, ap_52
-from openptv_python.parameters import control_par
+from .calibration import Calibration, ap_52
+from .parameters import control_par
 
 
 def pixel_to_metric(

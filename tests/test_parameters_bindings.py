@@ -6,7 +6,7 @@ import numpy
 import pytest
 from numpy import r_
 
-from openptv_python.parameters import (
+from .parameters import (
     ControlPar,
     MultimediaPar,
     SequencePar,

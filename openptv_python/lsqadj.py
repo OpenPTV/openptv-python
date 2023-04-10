@@ -1,17 +1,18 @@
+"""Least squares adjustment of the camera parameters."""
 import numpy as np
 
-
-import numpy as np
 
 def ata(a, n):
     """
     Multiply transpose of a matrix A by matrix A itself, creating symmetric matrix.
-    
+
     Args:
+    ----
     a - matrix of doubles of the size (m x n_large).
     n - number of rows and columns in the output ata - the size of the sub-matrix
-    
+
     Returns:
+    -------
     ata - matrix of the result multiply(a.T,a) of size (n x n)
     """
     # Transpose the input matrix a
@@ -21,13 +22,13 @@ def ata(a, n):
     ata = np.dot(a_T, a)
 
     # Take only the upper-left square submatrix of size n x n
-    ata = ata[:n,:n]
+    ata = ata[:n, :n]
 
     return ata
 
 
-
 import numpy as np
+
 
 def atl(a, l, n):
     """
@@ -35,14 +36,15 @@ def atl(a, l, n):
     with the option of working with the sub-vector only, when n < n_large.
 
     Args:
+    ----
     a - matrix of doubles of the size (m x n_large).
     l - vector of doubles (m x 1)
     n - length of the output u - the size of the sub-matrix
 
     Returns:
+    -------
     u - vector of doubles of the size (n x 1)
     """
-
     # Transpose the input matrix a
     a_T = np.transpose(a)
 
@@ -53,6 +55,7 @@ def atl(a, l, n):
     u = u[:n]
 
     return u
+
 
 # # Define a matrix
 # A = np.array([[1, 2], [3, 4]])
@@ -65,8 +68,8 @@ def atl(a, l, n):
 
 
 def matinv(a: np.ndarray, n: int, n_large: int):
-    """ Invert a matrix using Gauss-Jordan elimination. 
-    
+    """Invert a matrix using Gauss-Jordan elimination.
+
     This is a Python function that calculates the inverse of a square matrix a of size n_large x n_large. The function uses the Gauss-Jordan method to invert the matrix. If the size of the sub-matrix is less than n_large, the function only works with the sub-matrix of size n.
 
     The function takes three arguments:
@@ -80,16 +83,18 @@ def matinv(a: np.ndarray, n: int, n_large: int):
     The next loop updates the elements below the diagonal to make them zero, as well as updating the diagonal elements to make them equal to 1. Finally, the function sets the diagonal element to pivot as it was updated to 1 in the previous loop.
 
     At the end of the function, the inverse of the matrix is stored in the original a array.
-    
-    
+
+
     """
     for ipiv in range(n):
         pivot = 1.0 / a[ipiv * n_large + ipiv]
-        npivot = - pivot
+        npivot = -pivot
         for irow in range(n):
             for icol in range(n):
                 if irow != ipiv and icol != ipiv:
-                    a[irow * n_large + icol] -= a[ipiv * n_large + icol] * a[irow * n_large + ipiv] * pivot
+                    a[irow * n_large + icol] -= (
+                        a[ipiv * n_large + icol] * a[irow * n_large + ipiv] * pivot
+                    )
         for icol in range(n):
             if ipiv != icol:
                 a[ipiv * n_large + icol] *= npivot
@@ -97,15 +102,15 @@ def matinv(a: np.ndarray, n: int, n_large: int):
             if ipiv != irow:
                 a[irow * n_large + ipiv] *= pivot
         a[ipiv * n_large + ipiv] = pivot
-        
+
     return a
 
 
 def matmul(b: np.ndarray, c: np.ndarray, m: int, n: int, k: int):
-    """ Multiply two matrices and store the result in a third matrix. 
-    
-        /* Calculate dot product of a matrix 'b' of the size (m_large x n_large) with 
-    *  a vector 'c' of the size (n_large x 1) to get vector 'a' of the size 
+    """Multiply two matrices and store the result in a third matrix.
+
+        /* Calculate dot product of a matrix 'b' of the size (m_large x n_large) with
+    *  a vector 'c' of the size (n_large x 1) to get vector 'a' of the size
     *  (m x 1), when m < m_large and n < n_large
     *  i.e. one can get dot product of the submatrix of b with sub-vector of c
     *   when n_large > n and m_large > m
@@ -117,18 +122,19 @@ def matmul(b: np.ndarray, c: np.ndarray, m: int, n: int, k: int):
     *   n - integer, number of columns in a
     *   k - integer, size of the vector output 'a', typically k = 1
     */
-    
+
     """
     a = np.zeros((m, 1), dtype=np.float64)
     b_sub = b[:, :n]
     c_sub = c[:n, :k]
     a_sub = np.dot(b_sub, c_sub)
     a[:m, :k] = a_sub
-    
+
     return a
 
+
 def matmul2(b, c, m, n, k, m_large, n_large):
-    """ Multiply two matrices and store the result in a third matrix."""
+    """Multiply two matrices and store the result in a third matrix."""
     a = np.zeros((m, k), dtype=np.float64)
     for i in range(k):
         pb = b
@@ -139,5 +145,5 @@ def matmul2(b, c, m, n, k, m_large, n_large):
             pa[j] = x
             pb += n_large
         c += 1
-        a[:, i] = np.pad(pa, (0, m_large - m), mode='constant', constant_values=0)
-    return a[:,1]
+        a[:, i] = np.pad(pa, (0, m_large - m), mode="constant", constant_values=0)
+    return a[:, 1]

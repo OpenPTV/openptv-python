@@ -3,14 +3,10 @@ from typing import List
 
 import numpy as np
 
-from openptv_python.calibration import Calibration
-from openptv_python.epi import Candidate, Coord2d, epi_mm, find_candidate
-from openptv_python.parameters import ControlPar, VolumePar
-from openptv_python.tracking_frame_buf import Frame
-
-NMAX = 202400
-MAXCAND = 10  # assuming a maximum capacity of MAXCAND candidates
-PT_UNUSED = -999
+from .calibration import Calibration
+from .epi import Candidate, Coord2d, epi_mm, find_candidate
+from .parameters import ControlPar, VolumePar
+from .tracking_frame_buf import Frame
 
 
 @dataclass

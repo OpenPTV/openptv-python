@@ -12,9 +12,9 @@ import unittest
 
 import numpy as np
 
-from openptv_python.calibration import Calibration
-from openptv_python.epipolar import epipolar_curve
-from openptv_python.parameters import ControlParams, VolumeParams
+from .calibration import Calibration
+from .epipolar import epipolar_curve
+from .parameters import ControlParams, VolumeParams
 
 
 class TestEpipolarCurve(unittest.TestCase):

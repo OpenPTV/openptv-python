@@ -1,5 +1,5 @@
-from openptv_python.imgcoord import img_coord
-from openptv_python.trafo import metric_to_pixel
+from .imgcoord import img_coord
+from .trafo import metric_to_pixel
 
 
 def sortgrid(cal, cpar, nfix, fix, num, eps, pix):

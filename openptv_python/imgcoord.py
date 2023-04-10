@@ -1,10 +1,11 @@
-""" Image coordinates. """
+"""Image coordinates."""
 import numpy as np
-from openptv_python.calibration import Calibration
-from openptv_python.multimed import back_trans_Point, multimed_nlay, trans_Cam_Point
-from openptv_python.parameters import MultimediaPar
-from openptv_python.trafo import flat_to_dist
-from openptv_python.vec_utils import vec_set
+
+from .calibration import Calibration
+from .multimed import back_trans_Point, multimed_nlay, trans_Cam_Point
+from .parameters import MultimediaPar
+from .trafo import flat_to_dist
+from .vec_utils import vec_set
 
 
 def flat_image_coord(

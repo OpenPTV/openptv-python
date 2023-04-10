@@ -1,11 +1,17 @@
-COORD_UNUSED = -1e10
+"""This module contains the functions for the orientation of the camera."""
+from typing import List
 
-# These define the structure of the sigma array returned from orient()
-IDT = 10
-NPAR = 19
+import numpy as np
+
+from .calibration import Calibration
+from .parameters import mm_np
+from .ray_tracing import ray_tracing
+from .trafo import pixel_to_metric
+from .vec_utils import skew_midpoint, vec3d, vec_add, vec_scalar_mul
 
 
 def skew_midpoint(vert1, direct1, vert2, direct2, res):
+    """Find the midpoint of the line segment that is the shortest distance."""
     perp_both = np.cross(direct1, direct2)
     scale = np.dot(perp_both, perp_both)
 
@@ -23,22 +29,36 @@ def skew_midpoint(vert1, direct1, vert2, direct2, res):
     return scale
 
 
-import numpy as np
+def point_position(
+    targets: List[np.ndarray], multimed_pars: mm_np, cals: List[Calibration]
+) -> (float, vec3d):
+    """
+    point_position() calculates an average 3D position implied by the rays
+    sent toward it from cameras through the image projections of the point.
 
+    Arguments:
+    ---------
+    targets - for each camera, the 2D metric, flat, centred coordinates
+        of the identified point projection.
+    multimed_pars - multimedia parameters struct for ray tracing through
+        several layers.
+    cals - each camera's calibration object.
 
-def point_position(targets, num_cams, multimed_pars, cals, res):
-    # Define variables and allocate memory for vertices and directs
-    cam, pair = 0, 0
-    num_used_pairs = 0
+    Returns:
+    -------
+    A tuple containing the ray convergence measure (an average of skew ray distance across all ray pairs)
+    and the average 3D position vector.
+    """
+    num_cams = len(targets)
+    num_used_pairs = 0  # averaging accumulators
     dtot = 0
-    point_tot = np.zeros(3)
+    point_tot = vec3d(0.0, 0.0, 0.0)
+    vertices = np.empty(num_cams, dtype=vec3d)
+    directs = np.empty(num_cams, dtype=vec3d)
 
-    vertices = np.zeros((num_cams, 3))
-    directs = np.zeros((num_cams, 3))
-
-    # Shoot rays from all cameras
+    # Shoot rays from all cameras.
     for cam in range(num_cams):
-        if targets[cam][0] != COORD_UNUSED:
+        if targets[cam][0] != np.NaN:
             ray_tracing(
                 targets[cam][0],
                 targets[cam][1],
@@ -48,25 +68,23 @@ def point_position(targets, num_cams, multimed_pars, cals, res):
                 directs[cam],
             )
 
-    # Check intersection distance for each pair of rays and find position
+    # Check intersection distance for each pair of rays and find position.
     for cam in range(num_cams):
-        if targets[cam][0] == COORD_UNUSED:
+        if np.isnan(targets[cam][0]):
             continue
 
         for pair in range(cam + 1, num_cams):
-            if targets[pair][0] == COORD_UNUSED:
+            if np.isnan(targets[pair][0]):
                 continue
 
             num_used_pairs += 1
             dtot += skew_midpoint(
                 vertices[cam], directs[cam], vertices[pair], directs[pair], point
             )
-            point_tot += point
+            point_tot = vec_add(point_tot, point)
 
-    # Free memory and compute the average point
-    del vertices, directs
-    res[:] = point_tot / num_used_pairs
-    return dtot / num_used_pairs
+    res = vec_scalar_mul(point_tot, 1.0 / num_used_pairs)
+    return dtot / num_used_pairs, res
 
 
 def weighted_dumbbell_precision(

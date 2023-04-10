@@ -5,7 +5,7 @@ import unittest
 
 import numpy
 
-from openptv_python.calibration import Calibration, ap_52, compare_addpar
+from .calibration import Calibration, ap_52, compare_addpar
 
 
 class Test_Calibration(unittest.TestCase):

@@ -4,7 +4,7 @@ from typing import List, Optional
 
 from dvg_ringbuffer import RingBuffer
 
-from openptv_python.vec_utils import vec3d
+from .vec_utils import vec3d
 
 
 
@@ -47,9 +47,6 @@ class Corres:
 
 def compare_corres(c1: Corres, c2: Corres) -> int:
     return c1.nr - c2.nr
-
-
-CORRES_NONE = -1
 
 
 fitness_t = float
@@ -355,17 +352,105 @@ class framebuf_target(framebuf_base):
         pass
 
 
-# we can use https://pypi.org/project/dvg-ringbuffer/
 
 
-@dataclass
-class Test:
-    x: int
-    y: float
+
+from collections import deque
+import pickle
+
+class FrameBufBase:
+    def __init__(self, buf_len, num_cams, max_targets):
+        self.buf_len = buf_len
+        self.num_cams = num_cams
+        self.buf = deque(maxlen=buf_len)
+        for i in range(buf_len):
+            self.buf.append(Frame(num_cams, max_targets))
+        self.start = 0
+    
+    def __del__(self):
+        for frame in self.buf:
+            free_frame(frame)
+    
+    def read_frame_at_end(self, frame):
+        self.buf.append(frame)
+    
+    def write_frame_from_start(self, frame):
+        pickled_frame = pickle.dumps(frame)
+        self._advance_buffer_start()
+        return pickled_frame
+    
+    def _advance_buffer_start(self):
+        self.start += 1
+        if self.start >= self.buf_len:
+            self.start = 0
+    
+    def fb_next(self):
+        self.buf.rotate(-1)
+        self._advance_buffer_start()
+    
+    def fb_prev(self):
+        self.buf.rotate(1)
+        self.start -= 1
+        if self.start < 0:
+            self.start = self.buf_len - 1
+
+def fb_init(new_buf, buf_len, num_cams, max_targets, corres_file_base, linkage_file_base,
+            prio_file_base, target_file_base):
+    fb_base_init(new_buf.base, buf_len, num_cams, max_targets)
+
+    # Subclass-specific parameters:
+    new_buf.corres_file_base = corres_file_base
+    new_buf.linkage_file_base = linkage_file_base
+    new_buf.prio_file_base = prio_file_base
+    new_buf.target_file_base = target_file_base
+
+    # Set up the virtual functions table:
+    new_buf.base.free = fb_disk_free
+    new_buf.base.read_frame_at_end = fb_disk_read_frame_at_end
+    new_buf.base.write_frame_from_start = fb_disk_write_frame_from_start
 
 
-x = RingBuffer(capacity=3, dtype=Test)
 
-x.append(Test(1, 2.0))
-x[0].x
-x[0].y
+def free_frame(frame):
+    # Free memory for the frame
+    frame = None
+
+
+class Frame:
+    def __init__(self, num_cams, max_targets):
+        self.num_cams = num_cams
+        self.max_targets = max_targets
+
+
+def frame_init(frame, num_cams, max_targets):
+    # Initialize the frame
+    frame.num_cams = num_cams
+    frame.max_targets = max_targets
+    return frame
+
+
+class FrameBuf(FrameBufBase):
+    def __init__(self, buf_len, num_cams, max_targets, corres_file_base, linkage_file_base, prio_file_base, target_file_base):
+        super().__init__(buf_len, num_cams, max_targets)
+        self.corres_file_base = corres_file_base
+        self.linkage_file_base = linkage_file_base
+        self.prio_file_base = prio_file_base
+        self.target_file_base = target_file_base
+
+    def write_frame_from_start(self, frame_num):
+        # Pickle the frame
+        pickled_frame = pickle.dumps(self.buf[0])
+        
+        # Advance the buffer
+        self.buf.appendleft(Frame(self.num_cams, self.max_targets))
+        
+        # Write the frame to disk
+        return write_frame(self.buf[0], self.corres_file_base, self.linkage_file_base, self.prio_file_base, self.target_file_base, frame_num)
+
+
+    def fb_disk_read_frame_at_end(self, frame_num, read_links):
+        if read_links:
+            return read_frame(self.buf[-1], self.corres_file_base, self.linkage_file_base, self.prio_file_base, self.target_file_base, frame_num)
+        else:
+            return read_frame(self.buf[-1], self.corres_file_base, None, None, self.target_file_base, frame_num)    
+

@@ -1,17 +1,17 @@
 import math
-from typing import Tuple, List
+from typing import List, Tuple
 
 import numpy as np
 
-from openptv_python.calibration import Calibration, Exterior, Glass
-from openptv_python.parameters import (
+from .calibration import Calibration, Exterior, Glass
+from .parameters import (
     ControlPar,
     MultimediaPar,
     VolumePar,
 )
-from openptv_python.vec_utils import vec_set, vec_subt, norm
-from openptv_python.trafo import pixel_to_metric, correct_brown_affine
-from openptv_python.ray_tracing import ray_tracing
+from .ray_tracing import ray_tracing
+from .trafo import correct_brown_affine, pixel_to_metric
+from .vec_utils import norm, vec_set, vec_subt
 
 
 def multimed_nlay(
@@ -309,7 +309,7 @@ def volumedimension(
     vpar: VolumePar,
     cpar: ControlPar,
     cal: List[Calibration],
-)   -> Tuple[float, float, float, float, float, float]:
+) -> Tuple[float, float, float, float, float, float]:
     xc = [0.0, cpar["imx"]]
     yc = [0.0, cpar["imy"]]
 

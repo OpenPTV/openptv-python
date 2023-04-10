@@ -2,9 +2,9 @@ import unittest
 
 import numpy as np
 
-from openptv_python.calibration import Calibration
-from openptv_python.imgcoord import flat_image_coordinates, image_coordinates
-from openptv_python.parameters import ControlParams, MultimediaParams
+from .calibration import Calibration
+from .imgcoord import flat_image_coordinates, image_coordinates
+from .parameters import ControlParams, MultimediaParams
 
 
 class Test_image_coordinates(unittest.TestCase):
