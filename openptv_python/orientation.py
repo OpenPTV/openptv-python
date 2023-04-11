@@ -659,7 +659,8 @@ def raw_orient(
 
             n += 2
 
-        ata(X, XPX, n, 6, 6)
+        # void ata (double *a, double *ata, int m, int n, int n_large )
+        XPX = ata(X, n, 6, 6)
         XPXi = np.linalg.inv(XPX)
         atl(XPy, X, y, n, 6, 6)
         beta = XPXi @ XPy

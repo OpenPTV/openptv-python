@@ -4,8 +4,8 @@ import numpy as np
 
 from openptv_python.calibration import Calibration
 from openptv_python.correspondences import MatchedCoords, correspondences
-from openptv_python.imgcoord import image_coordinates
-from openptv_python.parameters import ControlParams, VolumeParams
+from openptv_python.imgcoord import img_coord
+from openptv_python.parameters import ControlPar, VolumePar
 from openptv_python.tracking_framebuf import TargetArray, read_targets
 from openptv_python.transforms import convert_arr_metric_to_pixel
 
@@ -14,7 +14,7 @@ class TestMatchedCoords(unittest.TestCase):
     def test_instantiate(self):
         """Creating a MatchedCoords object."""
         cal = Calibration()
-        cpar = ControlParams(4)
+        cpar = ControlPar
 
         cal.from_file(
             "tests/testing_folder/calibration/cam1.tif.ori",
@@ -38,9 +38,9 @@ class TestMatchedCoords(unittest.TestCase):
 class TestCorresp(unittest.TestCase):
     def test_full_corresp(self):
         """Full scene correspondences."""
-        cpar = ControlParams(4)
+        cpar = ControlPar
         cpar.read_control_par("tests/testing_folder/corresp/control.par")
-        vpar = VolumeParams()
+        vpar = VolumePar()
         vpar.read_volume_par("tests/testing_folder/corresp/criteria.par")
 
         # Cameras are at so high angles that opposing cameras don't see each
@@ -69,7 +69,7 @@ class TestCorresp(unittest.TestCase):
                 targ = targs[targ_ix]
 
                 pos3d = 10 * np.array([[col, row, 0]], dtype=np.float64)
-                pos2d = image_coordinates(pos3d, cal, cpar.get_multimedia_params())
+                pos2d = img_coord(pos3d, cal, cpar.mmlut)
                 targ.set_pos(convert_arr_metric_to_pixel(pos2d, cpar)[0])
 
                 targ.set_pnr(targ_ix)
@@ -85,9 +85,9 @@ class TestCorresp(unittest.TestCase):
 
     def test_single_cam_corresp(self):
         """Single camera correspondence."""
-        cpar = ControlParams(1)
+        cpar = ControlPar
         cpar.read_control_par("tests/testing_folder/single_cam/parameters/ptv.par")
-        vpar = VolumeParams()
+        vpar = VolumePar()
         vpar.read_volume_par("tests/testing_folder/single_cam/parameters/criteria.par")
 
         # Cameras are at so high angles that opposing cameras don't see each
@@ -112,7 +112,7 @@ class TestCorresp(unittest.TestCase):
             targ = targs[targ_ix]
 
             pos3d = 10 * np.array([[col, row, 0]], dtype=np.float64)
-            pos2d = image_coordinates(pos3d, cal, cpar.get_multimedia_params())
+            pos2d = img_coord(pos3d, cal, cpar.get_multimedia_params())
             targ.set_pos(convert_arr_metric_to_pixel(pos2d, cpar)[0])
 
             targ.set_pnr(targ_ix)

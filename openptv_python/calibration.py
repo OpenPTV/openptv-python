@@ -86,6 +86,194 @@ class Calibration:
         """
         read_ori(ori_file)
 
+    def set_pos(self, x_y_z_np):
+        """
+        Set exterior position.
+
+        Parameter: x_y_z_np - numpy array of 3 elements for x, y, z.
+        """
+        if len(x_y_z_np) != 3:
+            raise ValueError(
+                "Illegal array argument "
+                + x_y_z_np.__str__()
+                + " for x, y, z. Expected array/list of 3 numbers"
+            )
+        self.ext_par.x0 = x_y_z_np[0]
+        self.ext_par.y0 = x_y_z_np[1]
+        self.ext_par.z0 = x_y_z_np[2]
+
+    def get_pos(self):
+        """Return array of 3 elements representing exterior's x, y, z."""
+        ret_x_y_z_np = np.empty(3)
+        ret_x_y_z_np[0] = self.ext_par.x0
+        ret_x_y_z_np[1] = self.ext_par.y0
+        ret_x_y_z_np[2] = self.ext_par.z0
+
+        return ret_x_y_z_np
+
+    def set_angles(self, o_p_k_np):
+        """
+        Set angles (omega, phi, kappa) and recalculates Dmatrix accordingly.
+
+        Parameter: o_p_k_np - array of 3 elements.
+        """
+        if len(o_p_k_np) != 3:
+            raise ValueError(
+                f"Illegal array argument {o_p_k_np} for "
+                "omega, phi, kappa. Expected array/list of 3 numbers"
+            )
+        self.ext_par.omega = o_p_k_np[0]
+        self.ext_par.phi = o_p_k_np[1]
+        self.ext_par.kappa = o_p_k_np[2]
+
+        # recalculate the Dmatrix dm according to new angles
+        self.ext_par = rotation_matrix(self.ext_par)
+
+    def get_angles(self):
+        """Return an array of 3 elements representing omega, phi, kappa."""
+        ret_o_p_k_np = np.empty(3)
+        ret_o_p_k_np[0] = self.ext_par.omega
+        ret_o_p_k_np[1] = self.ext_par.phi
+        ret_o_p_k_np[2] = self.ext_par.kappa
+
+        return ret_o_p_k_np
+
+    def get_rotation_matrix(self):
+        """Return a 3x3 numpy array that represents Exterior's rotation matrix."""
+        ret_dmatrix_np = np.empty(shape=(3, 3))
+        for i in range(3):
+            for j in range(3):
+                ret_dmatrix_np[i][j] = self.ext_par.dm[i][j]
+
+        return ret_dmatrix_np
+
+    def set_primary_point(self, prim_point_pos: np.ndarray):
+        """
+        Set the camera's primary point position (a.k.a. interior orientation).
+
+        Arguments:
+        ---------
+        prim_point_pos - a 3 element array holding the values of x and y shift
+            of point from sensor middle and sensor-point distance, in this
+            order.
+        """
+        if prim_point_pos.shape != (3,):
+            raise ValueError("Expected a 3-element array")
+
+        self.int_par.xh = prim_point_pos[0]
+        self.int_par.yh = prim_point_pos[1]
+        self.int_par.cc = prim_point_pos[2]
+
+    def get_primary_point(self):
+        """
+        Return the primary point position (a.k.a. interior orientation) as a 3.
+
+        element array holding the values of x and y shift of point from sensor
+        middle and sensor-point distance, in this order.
+        """
+        ret = np.empty(3)
+        ret[0] = self.int_par.xh
+        ret[1] = self.int_par.yh
+        ret[2] = self.int_par.cc
+        return ret
+
+    def set_radial_distortion(self, dist_coeffs: np.ndarray):
+        """
+        Set the parameters for the image radial distortion, where the x/y.
+
+        coordinates are corrected by a polynomial in r = sqrt(x**2 + y**2):
+        p = k1*r**2 + k2*r**4 + k3*r**6.
+
+        Arguments:
+        ---------
+        dist_coeffs - length-3 array, holding k_i.
+        """
+        if dist_coeffs.shape != (3,):
+            raise ValueError("Expected a 3-element array")
+
+        self.added_par.k1 = dist_coeffs[0]
+        self.added_par.k2 = dist_coeffs[1]
+        self.added_par.k3 = dist_coeffs[2]
+
+    def get_radial_distortion(self):
+        """
+        Return the radial distortion polynomial coefficients as a 3 element.
+
+        array, from lowest power to highest.
+        """
+        ret = np.empty(3)
+        ret[0] = self.added_par.k1
+        ret[1] = self.added_par.k2
+        ret[2] = self.added_par.k3
+        return ret
+
+    def set_decentering(self, decent: np.ndarray):
+        """
+        Set the parameters of decentering distortion (a.k.a. p1, p2, see [1]).
+
+        Arguments:
+        ---------
+        decent - array, holding p_i
+        """
+        if decent.shape != (2,):
+            raise ValueError("Expected a 2-element array")
+
+        self.added_par.p1 = decent[0]
+        self.added_par.p2 = decent[1]
+
+    def get_decentering(self):
+        """Return the decentering parameters [1] as a 2 element array, (p_1, p_2)."""
+        ret = np.empty(2)
+        ret[0] = self.added_par.p1
+        ret[1] = self.added_par.p2
+        return ret
+
+    def set_affine_trans(self, affine):
+        """
+        Set the affine transform parameters (x-scale, shear) of the image.
+
+        Arguments:
+        ---------
+        affine - array, holding (x-scale, shear) in order.
+        """
+        if affine.shape != (2,):
+            raise ValueError("Expected a 2-element array")
+
+        self.added_par.scx = affine[0]
+        self.added_par.she = affine[1]
+
+    def get_affine(self):
+        """Return the affine transform parameters [1] as a 2 element array, (scx, she)."""
+        ret = np.empty(2)
+        ret[0] = self.added_par.scx
+        ret[1] = self.added_par.she
+        return ret
+
+    def set_glass_vec(self, gvec: np.ndarray):
+        """
+        Set the glass vector: a vector from the origin to the glass, directed.
+
+        normal to the glass.
+
+        Arguments:
+        ---------
+        gvec - a 3-element array, the glass vector.
+        """
+        if len(gvec) != 3:
+            raise ValueError("Expected a 3-element array")
+
+        self.glass_par.vec_x = gvec[0]
+        self.glass_par.vec_y = gvec[1]
+        self.glass_par.vec_z = gvec[2]
+
+    def get_glass_vec(self):
+        """Return the glass vector, a 3-element array."""
+        ret = np.empty(3)
+        ret[0] = self.glass_par.vec_x
+        ret[1] = self.glass_par.vec_y
+        ret[2] = self.glass_par.vec_z
+        return ret
+
 
 def write_ori(
     Ex: Exterior, In: Interior, G: Glass, ap: ap_52, filename: str, add_file: str = None
@@ -250,7 +438,7 @@ def read_calibration(
     ori_file: pathlib.Path, addpar_file: str = None, fallback_file: str = None
 ) -> Calibration:
     """Read the orientation file including the added parameters."""
-    ret = read_ori(ori_file)
+    ret = read_ori(ori_file, addpar_file, fallback_file)
     ret.ext_par = rotation_matrix(ret.ext_par)
     ret.mmlut.data = None  # no multimedia data yet
     return ret

@@ -12,24 +12,25 @@ from openptv_python.trafo import (
     pixel_to_metric,
 )
 
+
 class TestPixelToMetric(unittest.TestCase):
     def test_pixel_to_metric(self):
         # define input pixel coordinates and parameters
         x_pixel = 100
         y_pixel = 200
         parameters = ControlPar(imx=640, imy=480, pix_x=0.01, pix_y=0.01)
-        
+
         # expected output metric coordinates
         x_metric_expected = (x_pixel - float(parameters.imx) / 2.0) * parameters.pix_x
         y_metric_expected = (float(parameters.imy) / 2.0 - y_pixel) * parameters.pix_y
-        
+
         # call the function to get actual output metric coordinates
         x_metric_actual, y_metric_actual = pixel_to_metric(x_pixel, y_pixel, parameters)
-        
+
         # check if the actual output matches the expected output
         self.assertAlmostEqual(x_metric_actual, x_metric_expected)
         self.assertAlmostEqual(y_metric_actual, y_metric_expected)
-        
+
 
 class Test_transforms(unittest.TestCase):
     def setUp(self):

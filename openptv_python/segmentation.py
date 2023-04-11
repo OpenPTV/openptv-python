@@ -3,25 +3,26 @@ from typing import List
 
 import numpy as np
 
-from .constants import CORRES_NONE
-from .parameters import TargetPar
+from .constants import CORRES_NONE, NMAX
+from .parameters import ControlPar, TargetPar
+from .tracking_frame_buf import target
 
 
 @dataclass
 class Peak:
     """Peak dataclass."""
 
-    pos: int
-    status: int
-    xmin: int
-    xmax: int
-    ymin: int
-    ymax: int
-    n: int
-    sumg: int
-    x: float
-    y: float
-    unr: int
+    pos: int | None = None
+    status: int | None = None
+    xmin: int | None = None
+    xmax: int | None = None
+    ymin: int | None = None
+    ymax: int | None = None
+    n: int | None = None
+    sumg: int | None = None
+    x: float | None = None
+    y: float | None = None
+    unr: int | None = None
     touch: list[int] = field(default_factory=list, repr=False)
     n_touch: int = 0
 
@@ -195,7 +196,17 @@ def targ_rec(
     return n_targets
 
 
-def peak_fit(img, targ_par, xmin, xmax, ymin, ymax, cpar, num_cam, pix):
+def peak_fit(
+    img: np.ndarray,
+    targ_par: TargetPar,
+    xmin: int,
+    xmax: int,
+    ymin: int,
+    ymax: int,
+    cpar: ControlPar,
+    num_cam: int,
+    pix: List[target],
+):
     """Fit the peaks in the image to a gaussian."""
     imx, imy = cpar.imx, cpar.imy
     n_peaks = 0
@@ -214,10 +225,11 @@ def peak_fit(img, targ_par, xmin, xmax, ymin, ymax, cpar, num_cam, pix):
     gv1, gv2 = 0, 0
     x1, x2, y1, y2, s12 = 0.0, 0.0, 0.0, 0.0, 0.0
     label_img = [0] * (imx * imy)
-    nmax = 1024
+    # nmax = 1024
+    nmax = NMAX
     peaks = [0] * (4 * nmax)
-    ptr_peak = peaks
-    waitlist = [0] * 2048
+    ptr_peak = Peak()
+    waitlist = [[]]
 
     for i in range(ymin, ymax - 1):
         for j in range(xmin, xmax):

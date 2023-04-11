@@ -1,30 +1,50 @@
 """Least squares adjustment of the camera parameters."""
 import numpy as np
 
+# def ata(a, n):
+#     """
+#     Multiply transpose of a matrix A by matrix A itself, creating symmetric matrix.
 
-def ata(a, n):
+#     Args:
+#     ----
+#     a - matrix of doubles of the size (m x n_large).
+#     n - number of rows and columns in the output ata - the size of the sub-matrix
+
+#     Returns:
+#     -------
+#     ata - matrix of the result multiply(a.T,a) of size (n x n)
+#     """
+#     # Transpose the input matrix a
+#     a_T = np.transpose(a)
+
+#     # Compute the product of a.T and a
+#     ata = np.dot(a_T, a)
+
+#     # Take only the upper-left square submatrix of size n x n
+#     ata = ata[:n, :n]
+
+#     return ata
+
+
+def ata(a, start_row, start_col, num_rows, num_cols):
     """
-    Multiply transpose of a matrix A by matrix A itself, creating symmetric matrix.
+    Calculate the product of the transpose of a submatrix of matrix a and the submatrix itself.
 
-    Args:
-    ----
-    a - matrix of doubles of the size (m x n_large).
-    n - number of rows and columns in the output ata - the size of the sub-matrix
+    Parameters
+    ----------
+    a (np.ndarray): the matrix to calculate the product for.
+    start_row (int): the starting row index of the submatrix.
+    start_col (int): the starting column index of the submatrix.
+    num_rows (int): the number of rows in the submatrix.
+    num_cols (int): the number of columns in the submatrix.
 
-    Returns:
+    Returns
     -------
-    ata - matrix of the result multiply(a.T,a) of size (n x n)
+    np.ndarray: the resulting product matrix.
     """
-    # Transpose the input matrix a
-    a_T = np.transpose(a)
-
-    # Compute the product of a.T and a
-    ata = np.dot(a_T, a)
-
-    # Take only the upper-left square submatrix of size n x n
-    ata = ata[:n, :n]
-
-    return ata
+    sub_a = a[start_row : start_row + num_rows, start_col : start_col + num_cols]
+    at = sub_a.T
+    return np.dot(at, sub_a)
 
 
 def atl(a, ll, n):

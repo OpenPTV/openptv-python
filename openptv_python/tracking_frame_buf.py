@@ -6,7 +6,7 @@ from typing import Any, List
 
 import numpy as np
 
-from .constants import NEXT_NONE, POSI, PREV_NONE, PRIO_DEFAULT
+from .constants import MAX_TARGETS, NEXT_NONE, POSI, PREV_NONE, PRIO_DEFAULT
 from .correspondences import Correspond
 
 
@@ -53,7 +53,7 @@ def read_targets(file_base: str, frame_num: int) -> List[target]:
                 if len(line) != 8:
                     raise ValueError(f"Bad format for file: {filename}")
 
-                target = target(
+                targ = target(
                     pnr=int(line[0]),
                     x=float(line[1]),
                     y=float(line[2]),
@@ -64,7 +64,7 @@ def read_targets(file_base: str, frame_num: int) -> List[target]:
                     tnr=int(line[7]),
                 )
 
-                buffer.append(target)
+                buffer.append(targ)
 
     except IOError as err:
         print(f"Can't open ascii file: {filename}")
@@ -73,7 +73,9 @@ def read_targets(file_base: str, frame_num: int) -> List[target]:
     return buffer
 
 
-def write_targets(targets: List[target], num_targets: int, file_base: str, frame_num: int) -> bool:
+def write_targets(
+    targets: List[target], num_targets: int, file_base: str, frame_num: int
+) -> bool:
     """Write targets to a file."""
     success = False
     file_name = (
@@ -145,14 +147,14 @@ class Pathinfo:
 @dataclass
 class Frame:
     """Frame structure for tracking."""
-    
+
     num_cams: int
-    max_targets: int
-    path_info: Pathinfo
-    correspond: Correspond 
-    targets: List[List[target]]
-    num_parts: int
-    num_targets: List[int]
+    max_targets: int = MAX_TARGETS
+    path_info: Pathinfo | None = None
+    correspond: Correspond | None = None
+    targets: List[List[target]] | None = None
+    num_parts: int = 0
+    num_targets: List[int] | None = None
 
     def read_frame(
         self,
@@ -513,45 +515,48 @@ def write_path_frame(
 #         double x, y
 #         int n, nx, ny, sumg
 #         int tnr
-    
-    # ctypedef struct corres:
-    #     int nr
-    #     int p[4]
-    
-    # cpdef enum:
-    #     CORRES_NONE = -1
-    #     PT_UNUSED = -999
-    
-    # ctypedef struct path_inf "P":
-    #     vec3d x
-    #     int prev, next, prio
-    
-    # ctypedef struct frame:
-    #     path_inf *path_info
-    #     corres *correspond
-    #     target **targets
-    #     int num_cams, max_targets, num_parts
-    #     int *num_targets
-    
-    # ctypedef struct framebuf:
-    #     pass
-    
-    # void fb_free(framebuf *self)
-    
+
+# ctypedef struct corres:
+#     int nr
+#     int p[4]
+
+# cpdef enum:
+#     CORRES_NONE = -1
+#     PT_UNUSED = -999
+
+# ctypedef struct path_inf "P":
+#     vec3d x
+#     int prev, next, prio
+
+# ctypedef struct frame:
+#     path_inf *path_info
+#     corres *correspond
+#     target **targets
+#     int num_cams, max_targets, num_parts
+#     int *num_targets
+
+# ctypedef struct framebuf:
+#     pass
+
+# void fb_free(framebuf *self)
+
+
 class Target:
     _targ: List[target]
     _owns_data: int
-    
+
     # def set(self, targ: List[target]):
     #     pass
+
 
 class TargetArray:
     _tarr: List[target]
     _num_targets: int
     _owns_data: int
-    
+
     # cdef void set(TargetArray self, target* tarr, int num_targets,
     #     int owns_data)
+
 
 # cdef class Frame:
 #     cdef frame *_frm

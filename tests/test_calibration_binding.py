@@ -5,7 +5,14 @@ import unittest
 
 import numpy
 
-from openptv_python.calibration import Calibration, ap_52, compare_addpar
+from openptv_python.calibration import (
+    Calibration,
+    Exterior,
+    Glass,
+    Interior,
+    ap_52,
+    compare_addpar,
+)
 
 
 class Test_Calibration(unittest.TestCase):
@@ -30,7 +37,20 @@ class Test_Calibration(unittest.TestCase):
         affine = decent * 1.5
         glass = pos * 7
 
-        cal = Calibration(pos, angs, prim_point, rad_dist, decent, affine, glass)
+        Ext = Exterior(pos, angs)
+        In = Interior(prim_point)
+        G = Glass(glass)
+        ap_52(
+            k1=rad_dist[0],
+            k2=rad_dist[1],
+            k3=rad_dist[2],
+            p1=decent[0],
+            p2=decent[1],
+            she=affine[0],
+            scx=affine[1],
+        )
+
+        cal = Calibration(Ext, In, G)
 
         numpy.testing.assert_array_equal(pos, cal.get_pos())
         numpy.testing.assert_array_equal(angs, cal.get_angles())
