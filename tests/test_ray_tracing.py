@@ -1,7 +1,7 @@
 import numpy as np
 
-from .calibration import Calibration, ap_52
-from .ray_tracing import ray_tracing
+from openptv_python.calibration import Calibration, ap_52
+from openptv_python.ray_tracing import ray_tracing
 
 
 def test_ray_tracing():

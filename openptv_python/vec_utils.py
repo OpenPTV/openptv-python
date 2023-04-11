@@ -60,7 +60,7 @@ def vec_dot(vec1: vec3d, vec2: vec3d) -> vec3d:
 
 def vec_cross(vec1: vec3d, vec2: vec3d) -> vec3d:
     """Cross product of two vectors."""
-    return vec1.cross(vec2)
+    return np.cross(vec1, vec2)
 
 
 def vec_cmp(vec1: vec3d, vec2: vec3d, tol: float = 1e-6) -> bool:

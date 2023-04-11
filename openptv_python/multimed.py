@@ -16,7 +16,7 @@ from .vec_utils import norm, vec_set, vec_subt
 
 def multimed_nlay(
     cal: Calibration, mm: MultimediaPar, pos: np.ndarray
-) -> Tuple(float, float):
+) -> Tuple[float, float]:
     """Create the Xq,Yq points for each X,Y point in the image space.
 
     using radial shift from the multimedia model

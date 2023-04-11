@@ -5,14 +5,14 @@ import unittest
 
 import numpy
 
-from .calibration import Calibration, ap_52, compare_addpar
+from openptv_python.calibration import Calibration, ap_52, compare_addpar
 
 
 class Test_Calibration(unittest.TestCase):
     def setUp(self):
-        self.input_ori_file_name = b"testing_folder/calibration/cam1.tif.ori"
-        self.input_add_file_name = b"testing_folder/calibration/cam2.tif.addpar"
-        self.output_directory = b"testing_folder/calibration/testing_output/"
+        self.input_ori_file_name = "tests/testing_folder/calibration/cam1.tif.ori"
+        self.input_add_file_name = "tests/testing_folder/calibration/cam2.tif.addpar"
+        self.output_directory = "tests/testing_folder/calibration/testing_output/"
 
         # create a temporary output directory (will be deleted by the end of test)
         if not os.path.exists(self.output_directory):

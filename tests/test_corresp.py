@@ -2,12 +2,12 @@ import unittest
 
 import numpy as np
 
-from .calibration import Calibration
-from .correspondences import MatchedCoords, correspondences
-from .imgcoord import image_coordinates
-from .parameters import ControlParams, VolumeParams
-from .tracking_framebuf import TargetArray, read_targets
-from .transforms import convert_arr_metric_to_pixel
+from openptv_python.calibration import Calibration
+from openptv_python.correspondences import MatchedCoords, correspondences
+from openptv_python.imgcoord import image_coordinates
+from openptv_python.parameters import ControlParams, VolumeParams
+from openptv_python.tracking_framebuf import TargetArray, read_targets
+from openptv_python.transforms import convert_arr_metric_to_pixel
 
 
 class TestMatchedCoords(unittest.TestCase):
@@ -17,11 +17,11 @@ class TestMatchedCoords(unittest.TestCase):
         cpar = ControlParams(4)
 
         cal.from_file(
-            b"testing_folder/calibration/cam1.tif.ori",
-            b"testing_folder/calibration/cam2.tif.addpar",
+            "tests/testing_folder/calibration/cam1.tif.ori",
+            "tests/testing_folder/calibration/cam2.tif.addpar",
         )
-        cpar.read_control_par(b"testing_folder/corresp/control.par")
-        targs = read_targets("testing_folder/frame/cam1.", 333)
+        cpar.read_control_par("tests/testing_folder/corresp/control.par")
+        targs = read_targets("tests/testing_folder/frame/cam1.", 333)
 
         mc = MatchedCoords(targs, cpar, cal)
         pos, pnr = mc.as_arrays()
@@ -39,9 +39,9 @@ class TestCorresp(unittest.TestCase):
     def test_full_corresp(self):
         """Full scene correspondences."""
         cpar = ControlParams(4)
-        cpar.read_control_par(b"testing_folder/corresp/control.par")
+        cpar.read_control_par("tests/testing_folder/corresp/control.par")
         vpar = VolumeParams()
-        vpar.read_volume_par(b"testing_folder/corresp/criteria.par")
+        vpar.read_volume_par("tests/testing_folder/corresp/criteria.par")
 
         # Cameras are at so high angles that opposing cameras don't see each
         # other in the normal air-glass-water setting.
@@ -54,8 +54,8 @@ class TestCorresp(unittest.TestCase):
         for c in range(4):
             cal = Calibration()
             cal.from_file(
-                b"testing_folder/calibration/sym_cam%d.tif.ori" % (c + 1),
-                b"testing_folder/calibration/cam1.tif.addpar",
+                "tests/testing_folder/calibration/sym_cam%d.tif.ori" % (c + 1),
+                "tests/testing_folder/calibration/cam1.tif.addpar",
             )
             cals.append(cal)
 
@@ -86,9 +86,9 @@ class TestCorresp(unittest.TestCase):
     def test_single_cam_corresp(self):
         """Single camera correspondence."""
         cpar = ControlParams(1)
-        cpar.read_control_par(b"testing_folder/single_cam/parameters/ptv.par")
+        cpar.read_control_par("tests/testing_folder/single_cam/parameters/ptv.par")
         vpar = VolumeParams()
-        vpar.read_volume_par(b"testing_folder/single_cam/parameters/criteria.par")
+        vpar.read_volume_par("tests/testing_folder/single_cam/parameters/criteria.par")
 
         # Cameras are at so high angles that opposing cameras don't see each
         # other in the normal air-glass-water setting.
@@ -100,8 +100,8 @@ class TestCorresp(unittest.TestCase):
         corrected = []
         cal = Calibration()
         cal.from_file(
-            b"testing_folder/single_cam/calibration/cam_1.tif.ori",
-            b"testing_folder/single_cam/calibration/cam_1.tif.addpar",
+            "tests/testing_folder/single_cam/calibration/cam_1.tif.ori",
+            "tests/testing_folder/single_cam/calibration/cam_1.tif.addpar",
         )
         cals.append(cal)
 

@@ -1,5 +1,7 @@
 """Image coordinates."""
 
+from typing import Tuple
+
 from .calibration import Calibration
 from .multimed import back_trans_Point, multimed_nlay, trans_Cam_Point
 from .parameters import MultimediaPar
@@ -9,7 +11,7 @@ from .vec_utils import vec3d, vec_set
 
 def flat_image_coord(
     orig_pos: vec3d, cal: Calibration, mm: MultimediaPar
-) -> tuple(float, float):
+) -> Tuple[float, float]:
     """Flat image coordinate.
 
     Args:
@@ -65,7 +67,7 @@ def flat_image_coord(
     return x, y
 
 
-def img_coord(pos: vec3d, cal: Calibration, mm: MultimediaPar) -> tuple(float, float):
+def img_coord(pos: vec3d, cal: Calibration, mm: MultimediaPar) -> Tuple[float, float]:
     """Image coordinate."""
     # Estimate metric coordinates in image space using flat_image_coord()
     x, y = flat_image_coord(pos, cal, mm)

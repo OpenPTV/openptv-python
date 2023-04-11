@@ -1,4 +1,6 @@
 """Ray tracing."""
+from typing import Tuple
+
 import numpy as np
 
 from .calibration import Calibration
@@ -8,7 +10,7 @@ from .vec_utils import unit_vector
 
 def ray_tracing(
     x: float, y: float, cal: Calibration, mm: MultimediaPar
-) -> tuple(np.ndarray, np.ndarray):
+) -> Tuple[np.ndarray, np.ndarray]:
     """Ray tracing.
 
         /*  ray_tracing () traces the optical ray through the multi-media interface of

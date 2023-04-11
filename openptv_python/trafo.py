@@ -1,37 +1,38 @@
 """Module for coordinate transformations."""
 import math
+from typing import Tuple
 
 from .calibration import Calibration, ap_52
-from .parameters import control_par
+from .parameters import ControlPar
 
 
 def pixel_to_metric(
-    x_pixel: float, y_pixel: float, parameters: control_par
-) -> tuple(float, float):
+    x_pixel: float, y_pixel: float, parameters: ControlPar
+) -> Tuple[float, float]:
     """Convert pixel coordinates to metric coordinates.
 
     Arguments:
     ---------
     x_metric, y_metric (float): output metric coordinates.
     x_pixel, y_pixel (float): input pixel coordinates.
-    parameters (control_par): control structure holding image and pixel sizes.
+    parameters (ControlPar): control structure holding image and pixel sizes.
     """
     x_metric = (x_pixel - float(parameters.imx) / 2.0) * parameters.pix_x
     y_metric = (float(parameters.imy) / 2.0 - y_pixel) * parameters.pix_y
 
-    return x_metric, y_metric
+    return (x_metric, y_metric)
 
 
 def metric_to_pixel(
-    x_metric: float, y_metric: float, parameters: control_par
-) -> tuple(float, float):
+    x_metric: float, y_metric: float, parameters: ControlPar
+) -> Tuple[float, float]:
     """Convert metric coordinates to pixel coordinates.
 
     Arguments:
     ---------
     x_pixel, y_pixel (float): input pixel coordinates.
     x_metric, y_metric (float): output metric coordinates.
-    parameters (control_par): control structure holding image and pixel sizes.
+    parameters (ControlPar): control structure holding image and pixel sizes.
     y_remap_mode (int): for use with interlaced cameras. Pass 0 for normal use,
         1 for odd lines and 2 for even lines.
 
@@ -42,7 +43,7 @@ def metric_to_pixel(
     return x_pixel, y_pixel
 
 
-def distort_brown_affine(x: float, y: float, ap: ap_52) -> tuple(float, float):
+def distort_brown_affine(x: float, y: float, ap: ap_52) -> Tuple[float, float]:
     r = math.sqrt(x * x + y * y)
     if r != 0:
         x += (
@@ -63,7 +64,7 @@ def distort_brown_affine(x: float, y: float, ap: ap_52) -> tuple(float, float):
 
 def correct_brown_affine(
     x: float, y: float, ap: ap_52, tol: float = 1e5
-) -> tuple(float, float):
+) -> Tuple[float, float]:
     """Solve the inverse problem iteratively.
 
         of what flat-image coordinate yielded the given distorted
@@ -146,7 +147,7 @@ def correct_brown_affine(
     return x1, y1
 
 
-def flat_to_dist(flat_x: float, flat_y: float, cal: Calibration) -> tuple(float, float):
+def flat_to_dist(flat_x: float, flat_y: float, cal: Calibration) -> Tuple[float, float]:
     """Convert flat-image coordinates to real-image coordinates.
 
     Make coordinates relative to sensor center rather than primary point

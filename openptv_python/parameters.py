@@ -1,18 +1,45 @@
 """Parameters for OpenPTV-Python."""
 import os
-from dataclasses import dataclass
-from typing import List
+from dataclasses import dataclass, field
+
+import numpy as np
 
 
 @dataclass
 class MultimediaPar:
     """Multimedia parameters."""
 
-    nlay: int = 0
-    n1: float = 0.0
-    n2: List[float] = [0.0, 0.0, 0.0]
-    d: List[float] = [0.0, 0.0, 0.0]
-    n3: float = 0.0
+    n1: float
+    n2: np.ndarray
+    d: np.ndarray
+    n3: float
+    nlay: int
+
+    def __init__(self, n1, n2, n3, d):
+        """Initialize MultimediaPar object."""
+        self.n1 = n1
+        self.n2 = np.array(n2)
+        self.d = np.array(d)
+        self.n3 = n3
+        if self.n2.shape[0] != self.d.shape[0]:
+            raise ValueError("n2 and d must have the same length")
+
+        self.nlay = self.d.shape[0]
+
+    def get_nlay(self):
+        return self.nlay
+
+    def get_n1(self):
+        return self.n1
+
+    def get_n3(self):
+        return self.n3
+
+    def get_n2(self):
+        return self.n2
+
+    def get_d(self):
+        return self.d
 
 
 def compare_mm_np(mm_np1: MultimediaPar, mm_np2: MultimediaPar) -> bool:
@@ -31,7 +58,7 @@ class SequencePar:
     """Sequence parameters."""
 
     num_cams: int = 1
-    img_base_name: List[str] = ["img/cam1."]
+    img_base_name: list[str] = field(default_factory=list)
     first: int = 10000
     last: int = 10004
 
@@ -109,7 +136,7 @@ def compare_track_par(t1: TrackPar, t2: TrackPar) -> bool:
 class VolumePar:
     """Volume parameters."""
 
-    X_lay: List[float] = [-100.0, 100.0]
+    X_lay: list[float] = field(default_factory=list)
     Zmin_lay: float = -10
     Zmax_lay: float = 10
     cn: float = 1
@@ -161,8 +188,8 @@ class ControlPar:
     """Control parameters."""
 
     num_cams: int = 1
-    img_base_name: List[str] = ["img/cam1."]
-    cal_img_base_name: List[str] = ["cal/cam1."]
+    img_base_name: list[str] = field(default_factory=list)
+    cal_img_base_name: list[str] = field(default_factory=list)
     hp_flag: bool = True
     allCam_flag: bool = False
     tiff_flag: bool = True
@@ -171,7 +198,7 @@ class ControlPar:
     pix_x: float = 0.01
     pix_y: float = 0.01
     chfield: int = 1
-    mm: MultimediaPar = MultimediaPar()
+    mm: MultimediaPar = MultimediaPar(n1=1, n2=[1], n3=1, d=[1])
 
     def set_image_size(self, imx, imy):
         """Set image size in pixels."""
@@ -188,7 +215,7 @@ class ControlPar:
         return self.mm[cam]
 
 
-def read_control_par(filename):
+def read_control_par(filename: str) -> ControlPar:
     """Read control parameters from file and return ControlPar object."""
     if not os.path.isfile(filename):
         print(f"Could not open file {filename}")
@@ -239,29 +266,27 @@ def compare_control_par(c1: ControlPar, c2: ControlPar) -> bool:
 class TargetPar:
     """Target parameters."""
 
-    discont: int = 100
-    gvthres: list[int] = None
+    discont: int = 100  # discontinuity
+    gvthresh: list[int] = field(default_factory=list)
     nnmin: int = 1
     nnmax: int = 100
     nxmin: int = 1
     nxmax: int = 100
     nymin: int = 1
     nymax: int = 100
-    sumg_min: int = 10
+    sumg_min: int = 10  # minimum sum of grey values
     cr_sz: int = 1
 
 
 def read_target_par(filename: str) -> TargetPar:
     """Read target parameters from file and returns target_par object."""
-    ret = TargetPar(
-        gvthres=[0, 0, 0, 0], nnmin=0, nnmax=0, nxmin=0, nxmax=0, nymin=0, nymax=0
-    )
+    ret = TargetPar()
     try:
         with open(filename, "r", encoding="utf-8") as file:
-            ret.gvthres[0] = int(file.readline())
-            ret.gvthres[1] = int(file.readline())
-            ret.gvthres[2] = int(file.readline())
-            ret.gvthres[3] = int(file.readline())
+            ret.gvthresh[0] = int(file.readline())
+            ret.gvthresh[1] = int(file.readline())
+            ret.gvthresh[2] = int(file.readline())
+            ret.gvthresh[3] = int(file.readline())
             ret.discont = int(file.readline())
             line = file.readline().split()
             if len(line) == 2:
@@ -292,7 +317,7 @@ def write_target_par(targ: TargetPar, filename: str) -> None:
     """Write target_par object to file."""
     with open(filename, "w", encoding="utf-8") as file:
         file.write(
-            f"{targ.gvthres[0]}\n{targ.gvthres[1]}\n{targ.gvthres[2]}\n{targ.gvthres[3]}\n{targ.discont}\n{targ.nnmin}\n{targ.nnmax}\n{targ.nxmin}\n{targ.nxmax}\n{targ.nymin}\n{targ.nymax}\n{targ.sumg_min}\n{targ.cr_sz}"
+            f"{targ.gvthresh[0]}\n{targ.gvthresh[1]}\n{targ.gvthresh[2]}\n{targ.gvthresh[3]}\n{targ.discont}\n{targ.nnmin}\n{targ.nnmax}\n{targ.nxmin}\n{targ.nxmax}\n{targ.nymin}\n{targ.nymax}\n{targ.sumg_min}\n{targ.cr_sz}"
         )
 
 

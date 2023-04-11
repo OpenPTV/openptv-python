@@ -3,26 +3,26 @@ import unittest
 
 import numpy as np
 
-from .calibration import Calibration
-from .imgcoord import flat_image_coordinates, image_coordinates
-from .orientation import (
+from openptv_python.calibration import Calibration
+from openptv_python.imgcoord import flat_image_coordinates, image_coordinates
+from openptv_python.orientation import (
     dumbbell_target_func,
     external_calibration,
     full_calibration,
     match_detection_to_ref,
     point_positions,
 )
-from .parameters import ControlParams, VolumeParams
-from .tracking_framebuf import TargetArray
-from .transforms import convert_arr_metric_to_pixel
+from openptv_python.parameters import ControlParams, VolumeParams
+from openptv_python.tracking_framebuf import TargetArray
+from openptv_python.transforms import convert_arr_metric_to_pixel
 
 
 class Test_Orientation(unittest.TestCase):
     def setUp(self):
-        self.input_ori_file_name = b"testing_folder/calibration/cam1.tif.ori"
-        self.input_add_file_name = b"testing_folder/calibration/cam2.tif.addpar"
-        self.control_file_name = b"testing_folder/control_parameters/control.par"
-        self.volume_file_name = b"testing_folder/corresp/criteria.par"
+        self.input_ori_file_name = "tests/testing_folder/calibration/cam1.tif.ori"
+        self.input_add_file_name = "tests/testing_folder/calibration/cam2.tif.addpar"
+        self.control_file_name = "tests/testing_folder/control_parameters/control.par"
+        self.volume_file_name = "tests/testing_folder/corresp/criteria.par"
 
         self.calibration = Calibration()
         self.calibration.from_file(self.input_ori_file_name, self.input_add_file_name)
@@ -108,7 +108,7 @@ class Test_Orientation(unittest.TestCase):
 
         num_cams = 4
         ori_tmpl = "testing_folder/calibration/sym_cam{cam_num}.tif.ori"
-        add_file = b"testing_folder/calibration/cam1.tif.addpar"
+        add_file = "tests/testing_folder/calibration/cam1.tif.addpar"
         calibs = []
         targs_plain = []
         targs_jigged = []
@@ -168,8 +168,8 @@ class Test_Orientation(unittest.TestCase):
         """Point positions for a single camera case."""
         num_cams = 1
         # prepare MultimediaParams
-        cpar_file = b"testing_folder/single_cam/parameters/ptv.par"
-        vpar_file = b"testing_folder/single_cam/parameters/criteria.par"
+        cpar_file = "tests/testing_folder/single_cam/parameters/ptv.par"
+        vpar_file = "tests/testing_folder/single_cam/parameters/criteria.par"
         cpar = ControlParams(num_cams)
         cpar.read_control_par(cpar_file)
         mult_params = cpar.get_multimedia_params()
@@ -177,8 +177,8 @@ class Test_Orientation(unittest.TestCase):
         vpar = VolumeParams()
         vpar.read_volume_par(vpar_file)
 
-        ori_name = b"testing_folder/single_cam/calibration/cam_1.tif.ori"
-        add_name = b"testing_folder/single_cam/calibration/cam_1.tif.addpar"
+        ori_name = "tests/testing_folder/single_cam/calibration/cam_1.tif.ori"
+        add_name = "tests/testing_folder/single_cam/calibration/cam_1.tif.addpar"
         calibs = []
 
         # read calibration for each camera from files
@@ -263,19 +263,19 @@ class TestGradientDescent(unittest.TestCase):
     # Based on the C tests in liboptv/tests/check_orientation.c
 
     def setUp(self):
-        control_file_name = b"testing_folder/corresp/control.par"
+        control_file_name = "tests/testing_folder/corresp/control.par"
         self.control = ControlParams(4)
         self.control.read_control_par(control_file_name)
 
         self.cal = Calibration()
         self.cal.from_file(
-            b"testing_folder/calibration/cam1.tif.ori",
-            b"testing_folder/calibration/cam1.tif.addpar",
+            "tests/testing_folder/calibration/cam1.tif.ori",
+            "tests/testing_folder/calibration/cam1.tif.addpar",
         )
         self.orig_cal = Calibration()
         self.orig_cal.from_file(
-            b"testing_folder/calibration/cam1.tif.ori",
-            b"testing_folder/calibration/cam1.tif.addpar",
+            "tests/testing_folder/calibration/cam1.tif.ori",
+            "tests/testing_folder/calibration/cam1.tif.addpar",
         )
 
     def test_external_calibration(self):

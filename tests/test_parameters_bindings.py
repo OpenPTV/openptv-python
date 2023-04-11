@@ -6,7 +6,7 @@ import numpy
 import pytest
 from numpy import r_
 
-from .parameters import (
+from openptv_python.parameters import (
     ControlPar,
     MultimediaPar,
     SequencePar,
@@ -15,6 +15,7 @@ from .parameters import (
     VolumePar,
     compare_sequence_par,
     read_sequence_par,
+    read_target_par,
 )
 
 
@@ -101,7 +102,7 @@ class Test_MultimediaParams(unittest.TestCase):
 class Test_TrackingParams(unittest.TestCase):
     def setUp(self):
         self.input_tracking_par_file_name = (
-            b"testing_folder/tracking_parameters/track.par"
+            "tests/testing_folder/tracking_parameters/track.par"
         )
 
         # create an instance of TrackPar class
@@ -158,7 +159,7 @@ class Test_TrackingParams(unittest.TestCase):
 class Test_SequenceParams(unittest.TestCase):
     def setUp(self):
         self.input_sequence_par_file_name = (
-            b"testing_folder/sequence_parameters/sequence.par"
+            "tests/testing_folder/sequence_parameters/sequence.par"
         )
 
         # create an instance of SequencParams class
@@ -219,8 +220,12 @@ class Test_SequenceParams(unittest.TestCase):
 
 class Test_VolumeParams(unittest.TestCase):
     def setUp(self):
-        self.input_volume_par_file_name = b"testing_folder/volume_parameters/volume.par"
-        self.temp_output_directory = b"testing_folder/volume_parameters/testing_output"
+        self.input_volume_par_file_name = (
+            "tests/testing_folder/volume_parameters/volume.par"
+        )
+        self.temp_output_directory = (
+            "tests/testing_folder/volume_parameters/testing_output"
+        )
 
         # create a temporary output directory (will be deleted by the end of test)
         if not os.path.exists(self.temp_output_directory):
@@ -334,9 +339,11 @@ class Test_VolumeParams(unittest.TestCase):
 class Test_ControlParams(unittest.TestCase):
     def setUp(self):
         self.input_control_par_file_name = (
-            b"testing_folder/control_parameters/control.par"
+            "tests/testing_folder/control_parameters/control.par"
         )
-        self.temp_output_directory = b"testing_folder/control_parameters/testing_output"
+        self.temp_output_directory = (
+            "tests/testing_folder/control_parameters/testing_output"
+        )
 
         # create a temporary output directory (will be deleted by the end of test)
         if not os.path.exists(self.temp_output_directory):
@@ -466,37 +473,41 @@ class Test_ControlParams(unittest.TestCase):
 
 class TestTargetParams(unittest.TestCase):
     def test_read(self):
-        inp_filename = b"testing_folder/target_parameters/targ_rec.par"
+        inp_filename = "tests/testing_folder/target_parameters/targ_rec.par"
         tp = TargetPar()
-        tp.read(inp_filename)
+        tp = read_target_par(inp_filename)
+        if tp is None:
+            print(inp_filename)
+            print(os.getcwd())
+            print(os.path.exists(inp_filename))
 
-        self.assertEqual(tp.get_max_discontinuity(), 5)
-        self.assertEqual(tp.get_pixel_count_bounds(), (3, 100))
-        self.assertEqual(tp.get_xsize_bounds(), (1, 20))
-        self.assertEqual(tp.get_ysize_bounds(), (1, 20))
-        self.assertEqual(tp.get_min_sum_grey(), 3)
+        self.assertEqual(tp.discont, 5)
+        self.assertEqual(tp.nnmin, 3)
+        self.assertEqual(tp.nnmax, 100)
+        self.assertEqual((tp.nxmin, tp.nxmax), (1, 20))
+        self.assertEqual((tp.nymin, tp.nymax), (1, 20))
+        self.assertEqual(tp.sumg_min, 3)
 
-        numpy.testing.assert_array_equal(tp.get_grey_thresholds(), [3, 2, 2, 3])
+        numpy.testing.assert_array_equal(tp.gvthresh, [3, 2, 2, 3])
 
     def test_instantiate_fast(self):
         tp = TargetPar(
             discont=1,
             gvthresh=[2, 3, 4, 5],
-            pixel_count_bounds=(10, 100),
-            xsize_bounds=(20, 200),
-            ysize_bounds=(30, 300),
-            min_sum_grey=60,
-            cross_size=3,
+            nnmin=10,
+            nnmax=100,
+            nxmin=20,
+            nxmax=200,
+            nymin=30,
+            nymax=300,
+            sumg_min=60,
+            cr_sz=3,
         )
 
-        self.assertEqual(tp.get_max_discontinuity(), 1)
-        self.assertEqual(tp.get_pixel_count_bounds(), (10, 100))
-        self.assertEqual(tp.get_xsize_bounds(), (20, 200))
-        self.assertEqual(tp.get_ysize_bounds(), (30, 300))
-        self.assertEqual(tp.get_min_sum_grey(), 60)
+        self.assertEqual(tp.discont, 1)
+        self.assertEqual((tp.nnmin, tp.nnmax), (10, 100))
+        self.assertEqual((tp.nxmin, tp.nxmax), (20, 200))
+        self.assertEqual((tp.nymin, tp.nymax), (30, 300))
+        self.assertEqual(tp.sumg_min, 60)
 
-        numpy.testing.assert_array_equal(tp.get_grey_thresholds(), [2, 3, 4, 5])
-
-
-if __name__ == "__main__":
-    unittest.main()
+        numpy.testing.assert_array_equal(tp.gvthresh, [2, 3, 4, 5])

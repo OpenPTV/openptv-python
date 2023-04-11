@@ -1,9 +1,9 @@
-from openptv_python import Calibration
-
-from .vec_utils import vec3d
+from openptv_python.calibration import Calibration
+from openptv_python.vec_utils import vec3d
 
 
 def test_exterior_initialization():
+    """Test exterior parameters initialization."""
     ext = Calibration.Exterior()
     assert ext.dm == [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
     assert ext.omega == 0.0
@@ -15,6 +15,7 @@ def test_exterior_initialization():
 
 
 def test_interior_initialization():
+    """Test interior parameters initialization."""
     intr = Calibration.Interior()
     assert intr.xh == 0.0
     assert intr.yh == 0.0
@@ -22,6 +23,7 @@ def test_interior_initialization():
 
 
 def test_glass_initialization():
+    """Test glass parameters initialization."""
     glass = Calibration.Glass()
     assert glass.vec_x == 0.0
     assert glass.vec_y == 0.0
@@ -29,6 +31,7 @@ def test_glass_initialization():
 
 
 def test_ap_52_initialization():
+    """Test ap_52 parameters initialization."""
     ap = Calibration.ap_52()
     assert ap.k1 == 0.0
     assert ap.k2 == 0.0
@@ -40,6 +43,7 @@ def test_ap_52_initialization():
 
 
 def test_mmlut_initialization():
+    """Test mmlut parameters initialization."""
     mml = Calibration.mmlut()
     assert mml.origin == vec3d
     assert mml.nr == 0
@@ -49,6 +53,7 @@ def test_mmlut_initialization():
 
 
 def test_calibration_initialization():
+    """Test calibration parameters initialization."""
     calib = Calibration()
     assert isinstance(calib.ext_par, Calibration.Exterior)
     assert isinstance(calib.int_par, Calibration.Interior)

@@ -10,15 +10,15 @@ from openptv_python.parameters import ControlPar, SequencePar, TrackPar, VolumeP
 from openptv_python.track import Tracker
 
 framebuf_naming = {
-    "corres": b"testing_folder/burgers/res/rt_is",
-    "linkage": b"testing_folder/burgers/res/ptv_is",
-    "prio": b"testing_folder/burgers/res/whatever",
+    "corres": "tests/testing_folder/burgers/res/rt_is",
+    "linkage": "tests/testing_folder/burgers/res/ptv_is",
+    "prio": "tests/testing_folder/burgers/res/whatever",
 }
 
 
 class TestTracker(unittest.TestCase):
     def setUp(self):
-        with open(b"testing_folder/burgers/conf.yaml", encoding="utf-8") as f:
+        with open("tests/testing_folder/burgers/conf.yaml", encoding="utf-8") as f:
             yaml_conf = yaml.load(f, Loader=yaml.FullLoader)
         seq_cfg = yaml_conf["sequence"]
 

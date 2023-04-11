@@ -2,9 +2,9 @@ import unittest
 
 import numpy as np
 
-from .calibration import Calibration, read_calibration
-from .parameters import control_par, read_control_par
-from .trafo import (
+from openptv_python.calibration import Calibration, read_calibration
+from openptv_python.parameters import ControlPar, read_control_par
+from openptv_python.trafo import (
     correct_brown_affine,
     dist_to_flat,
     distort_brown_affine,
@@ -12,17 +12,35 @@ from .trafo import (
     pixel_to_metric,
 )
 
+class TestPixelToMetric(unittest.TestCase):
+    def test_pixel_to_metric(self):
+        # define input pixel coordinates and parameters
+        x_pixel = 100
+        y_pixel = 200
+        parameters = ControlPar(imx=640, imy=480, pix_x=0.01, pix_y=0.01)
+        
+        # expected output metric coordinates
+        x_metric_expected = (x_pixel - float(parameters.imx) / 2.0) * parameters.pix_x
+        y_metric_expected = (float(parameters.imy) / 2.0 - y_pixel) * parameters.pix_y
+        
+        # call the function to get actual output metric coordinates
+        x_metric_actual, y_metric_actual = pixel_to_metric(x_pixel, y_pixel, parameters)
+        
+        # check if the actual output matches the expected output
+        self.assertAlmostEqual(x_metric_actual, x_metric_expected)
+        self.assertAlmostEqual(y_metric_actual, y_metric_expected)
+        
 
 class Test_transforms(unittest.TestCase):
     def setUp(self):
         self.input_control_par_file_name = (
-            b"testing_folder/control_parameters/control.par"
+            "tests/testing_folder/control_parameters/control.par"
         )
-        self.control = control_par(4)
+        self.control = ControlPar(4)
         self.control = read_control_par(self.input_control_par_file_name)
 
-        self.input_ori_file_name = b"testing_folder/calibration/cam1.tif.ori"
-        self.input_add_file_name = b"testing_folder/calibration/cam2.tif.addpar"
+        self.input_ori_file_name = "tests/testing_folder/calibration/cam1.tif.ori"
+        self.input_add_file_name = "tests/testing_folder/calibration/cam2.tif.addpar"
 
         self.calibration = Calibration()
         self.calibration = read_calibration(
@@ -86,7 +104,7 @@ class Test_transforms(unittest.TestCase):
 
     def test_transforms(self):
         """Transform in well-known setup gives precalculates results."""
-        cpar = control_par(1)
+        cpar = ControlPar(1)
         cpar.set_image_size((1280, 1000))
         cpar.set_pixel_size((0.1, 0.1))
 

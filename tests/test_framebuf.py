@@ -3,7 +3,7 @@ import unittest
 
 import numpy as np
 
-from .tracking_frame_buf import Frame, Target, TargetArray, read_targets
+from openptv_python.tracking_frame_buf import Frame, Target, TargetArray, read_targets
 
 
 class TestTargets(unittest.TestCase):
@@ -44,7 +44,7 @@ class TestTargets(unittest.TestCase):
     def test_write_targets(self):
         """Round-trip test of writing targets."""
         targs = read_targets("../../liboptv/tests/testing_folder/sample_", 42)
-        targs.write(b"testing_folder/round_trip.", 1)
+        targs.write("tests/testing_folder/round_trip.", 1)
         tback = read_targets("testing_folder/round_trip.", 1)
 
         self.assertEqual(len(targs), len(tback))
@@ -68,8 +68,8 @@ class TestFrame(unittest.TestCase):
         targ_files = ["testing_folder/frame/cam%d.".encode() % c for c in range(1, 5)]
         frm = Frame(
             4,
-            corres_file_base=b"testing_folder/frame/rt_is",
-            linkage_file_base=b"testing_folder/frame/ptv_is",
+            corres_file_base="tests/testing_folder/frame/rt_is",
+            linkage_file_base="tests/testing_folder/frame/ptv_is",
             target_file_base=targ_files,
             frame_num=333,
         )

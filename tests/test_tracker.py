@@ -14,25 +14,25 @@ import unittest
 
 import yaml
 
-from .calibration import Calibration
-from .parameters import (
+from openptv_python.calibration import Calibration
+from openptv_python.parameters import (
     ControlParams,
     SequenceParams,
     TrackingParams,
     VolumeParams,
 )
-from .tracker import Tracker
+from openptv_python.tracker import Tracker
 
 framebuf_naming = {
-    "corres": b"testing_folder/track/res/particles",
-    "linkage": b"testing_folder/track/res/linkage",
-    "prio": b"testing_folder/track/res/whatever",
+    "corres": "tests/testing_folder/track/res/particles",
+    "linkage": "tests/testing_folder/track/res/linkage",
+    "prio": "tests/testing_folder/track/res/whatever",
 }
 
 
 class TestTracker(unittest.TestCase):
     def setUp(self):
-        with open(b"testing_folder/track/conf.yaml") as f:
+        with open("tests/testing_folder/track/conf.yaml") as f:
             yaml_conf = yaml.load(f, Loader=yaml.FullLoader)
         seq_cfg = yaml_conf["sequence"]
 

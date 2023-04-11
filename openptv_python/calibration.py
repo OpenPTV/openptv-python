@@ -47,7 +47,7 @@ class ap_52:
     k3: float = 0.0
     p1: float = 0.0
     p2: float = 0.0
-    scx: float = 0.0
+    scx: float = 1.0  # scale is 1.0 by default
     she: float = 0.0
 
 
@@ -72,7 +72,7 @@ class Calibration:
     added_par: ap_52 = ap_52()
     mmlut: mmlut = mmlut()
 
-    def from_file(self, ori_file: str, add_file: str = None, fallback_file: str = None):
+    def from_file(self, ori_file: str):
         """
         Populate calibration fields from .ori and .addpar files.
 
@@ -84,7 +84,7 @@ class Calibration:
         fallback_file - optional path to file used in case ``add_file`` fails
             to open.
         """
-        read_calibration(ori_file)
+        read_ori(ori_file)
 
 
 def write_ori(
@@ -130,24 +130,72 @@ def write_ori(
     return True
 
 
-def read_ori(filename: str) -> Calibration:
-    """Read the orientation file and the additional parameters file."""
-    with open(filename, "r", encoding="utf-8") as f:
-        data = json.load(f)
+def read_ori(
+    ori_file: str, add_file: str = None, add_fallback: str = None
+) -> Calibration:
+    """
+    Read exterior and interior orientation.
 
-    ext_par = Exterior(**data["ext_par"])
-    int_par = Interior(**data["int_par"])
-    glass_par = Glass(**data["glass_par"])
-    added_par = ap_52(**data["added_par"])
-    mm_lut = mmlut(**data["mmlut"])
+    and - if available, parameters for distortion corrections.
 
-    return Calibration(
-        ext_par=ext_par,
-        int_par=int_par,
-        glass_par=glass_par,
-        added_par=added_par,
-        mmlut=mm_lut,
-    )
+    Arguments:
+    ---------
+    - Ex: output buffer for exterior orientation.
+    - I: output buffer for interior orientation.
+    - G: output buffer for glass parameters.
+    - ori_file: path of file containing interior and exterior orientation data.
+    - addp: output buffer for additional (distortion) parameters.
+    - add_file: path of file containing added (distortions) parameters.
+    - add_fallback: path to file for use if add_file can't be opened.
+
+    Returns:
+    -------
+    - cal: Calibration object without multimedia lookup table.
+    """
+    Ex = Exterior()
+    In = Interior()
+    G = Glass()
+    addp = ap_52()
+
+    with open(ori_file, "r", encoding="utf-8") as fp:
+        # Exterior
+        scan_res = fp.read().split()
+        Ex.x0, Ex.y0, Ex.z0 = map(float, scan_res[:3])
+        Ex.omega, Ex.phi, Ex.kappa = map(float, scan_res[3:6])
+        # Exterior rotation matrix
+        for i in range(3):
+            scan_res = fp.read().split()
+            Ex.dm[i] = list(map(float, scan_res))
+        # Interior
+        scan_res = fp.read().split()
+        In.xh, In.yh, In.cc = map(float, scan_res)
+        # Glass
+        scan_res = fp.read().split()
+        G.vec_x, G.vec_y, G.vec_z = map(float, scan_res)
+
+    # Additional parameters
+
+    try:
+        with open(add_file, "r", encoding="utf-8") as fp:
+            scan_res = fp.read().split()
+            addp.k1, addp.k2, addp.k3 = map(float, scan_res[:3])
+            addp.p1, addp.p2 = map(float, scan_res[3:5])
+            addp.scx, addp.she = map(float, scan_res[5:])
+    except FileNotFoundError:
+        if add_fallback:
+            with open(add_fallback, "r", encoding="utf-8") as fp:
+                scan_res = fp.read().split()
+                addp.k1, addp.k2, addp.k3 = map(float, scan_res[:3])
+                addp.p1, addp.p2 = map(float, scan_res[3:5])
+                addp.scx, addp.she = map(float, scan_res[5:])
+        else:
+            print("no addpar fallback used")  # Waits for proper logging.
+            addp.k1 = addp.k2 = addp.k3 = addp.p1 = addp.p2 = addp.she = 0.0
+            addp.scx = 1.0
+
+    cal = Calibration(Ex, In, G, addp)
+
+    return cal
 
 
 def compare_exterior(e1: Exterior, e2: Exterior) -> bool:
@@ -198,7 +246,9 @@ def compare_addpar(a1, a2):
     )
 
 
-def read_calibration(ori_file: pathlib.Path) -> Calibration:
+def read_calibration(
+    ori_file: pathlib.Path, addpar_file: str = None, fallback_file: str = None
+) -> Calibration:
     """Read the orientation file including the added parameters."""
     ret = read_ori(ori_file)
     ret.ext_par = rotation_matrix(ret.ext_par)
