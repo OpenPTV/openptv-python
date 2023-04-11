@@ -4,11 +4,12 @@ from typing import List
 
 import numpy as np
 
+from openptv_python.correspondences import MatchedCoords
 from .calibration import Calibration
 from .constants import MAXCAND, NMAX, PT_UNUSED
 from .epi import Candidate, Coord2d, epi_mm, find_candidate
 from .parameters import ControlPar, VolumePar
-from .tracking_frame_buf import Frame
+from .tracking_frame_buf import Frame, TargetArray
 
 
 @dataclass
@@ -532,13 +533,14 @@ class MatchedCoords:
             creators number the targets, but this gets around cases where they
             don't.
         """
-        cdef:
-            target *targ
+        # cdef:
+        #     target *targ
 
         self._num_pts = len(targs)
-        self.buf = <coord_2d *> malloc(self._num_pts * sizeof(coord_2d))
-        if self.buf == NULL:
-            raise MemoryError("could not allocate matched-coordinates array.")
+        # self.buf = <coord_2d *> malloc(self._num_pts * sizeof(coord_2d))
+        # if self.buf == NULL:
+        #     raise MemoryError("could not allocate matched-coordinates array.")
+        self.buf = [Coord2d]*self._num_pts
 
         for tnum in range(self._num_pts):
             targ = &(targs._tarr[tnum])

@@ -11,7 +11,7 @@ from .correspondences import Correspond
 
 
 @dataclass
-class Target:
+class target:
     pnr: int = 0
     x: float = 0.0
     y: float = 0.0
@@ -34,7 +34,7 @@ class Target:
         )
 
 
-def read_targets(file_base: str, frame_num: int) -> List[Target]:
+def read_targets(file_base: str, frame_num: int) -> List[target]:
     """Read targets from a file."""
     buffer = []
 
@@ -53,7 +53,7 @@ def read_targets(file_base: str, frame_num: int) -> List[Target]:
                 if len(line) != 8:
                     raise ValueError(f"Bad format for file: {filename}")
 
-                target = Target(
+                target = target(
                     pnr=int(line[0]),
                     x=float(line[1]),
                     y=float(line[2]),
@@ -73,7 +73,7 @@ def read_targets(file_base: str, frame_num: int) -> List[Target]:
     return buffer
 
 
-def write_targets(targets, num_targets, file_base, frame_num):
+def write_targets(targets: List[target], num_targets: int, file_base: str, frame_num: int) -> bool:
     """Write targets to a file."""
     success = False
     file_name = (
@@ -145,14 +145,14 @@ class Pathinfo:
 @dataclass
 class Frame:
     """Frame structure for tracking."""
-
-    num_cams: int = 1
-    max_targets: int = 0
-    path_info: Pathinfo = Pathinfo()
-    correspond: Correspond = Correspond()
-    targets: List[List[Target]] = [[]]
-    num_parts: int = 0
-    num_targets: List[int] = []
+    
+    num_cams: int
+    max_targets: int
+    path_info: Pathinfo
+    correspond: Correspond 
+    targets: List[List[target]]
+    num_parts: int
+    num_targets: List[int]
 
     def read_frame(
         self,
@@ -331,7 +331,7 @@ def frame_init(num_cams: int, max_targets: int):
     """Initialize a frame structure."""
     new_frame = Frame(max_targets=max_targets, num_cams=num_cams)
     for cam in range(num_cams):
-        new_frame.targets[cam] = [Target() for _ in range(max_targets)]
+        new_frame.targets[cam] = [target() for _ in range(max_targets)]
         new_frame.num_targets[cam] = 0
 
     return new_frame
@@ -339,7 +339,7 @@ def frame_init(num_cams: int, max_targets: int):
 
 def read_path_frame(
     cor_buf, path_buf, corres_file_base, linkage_file_base, prio_file_base, frame_num
-) -> List[Target]:
+) -> List[target]:
     """Read a frame from the disk.
 
     cor_buf = array of correspondences, pnr, 4 x cam_pnr
@@ -505,3 +505,54 @@ def write_path_frame(
         return False
 
     return True
+
+
+# cdef extern from "optv/tracking_frame_buf.h":
+#     ctypedef struct target:
+#         int pnr
+#         double x, y
+#         int n, nx, ny, sumg
+#         int tnr
+    
+    # ctypedef struct corres:
+    #     int nr
+    #     int p[4]
+    
+    # cpdef enum:
+    #     CORRES_NONE = -1
+    #     PT_UNUSED = -999
+    
+    # ctypedef struct path_inf "P":
+    #     vec3d x
+    #     int prev, next, prio
+    
+    # ctypedef struct frame:
+    #     path_inf *path_info
+    #     corres *correspond
+    #     target **targets
+    #     int num_cams, max_targets, num_parts
+    #     int *num_targets
+    
+    # ctypedef struct framebuf:
+    #     pass
+    
+    # void fb_free(framebuf *self)
+    
+class Target:
+    _targ: List[target]
+    _owns_data: int
+    
+    # def set(self, targ: List[target]):
+    #     pass
+
+class TargetArray:
+    _tarr: List[target]
+    _num_targets: int
+    _owns_data: int
+    
+    # cdef void set(TargetArray self, target* tarr, int num_targets,
+    #     int owns_data)
+
+# cdef class Frame:
+#     cdef frame *_frm
+#     cdef int _num_cams # only used for dummy frames.
