@@ -11,7 +11,7 @@ import unittest
 
 import numpy as np
 
-from openptv_python.parameters import ControlParams, TargetParams
+from openptv_python.parameters import ControlPar, TargetPar
 from openptv_python.segmentation import target_recognition
 
 
@@ -28,8 +28,8 @@ class TestTargRec(unittest.TestCase):
             dtype=np.uint8,
         )
 
-        cpar = ControlParams(4, image_size=(5, 5))
-        tpar = TargetParams(
+        cpar = ControlPar(4, image_size=(5, 5))
+        tpar = TargetPar(
             gvthresh=[250, 100, 20, 20],
             discont=5,
             pixel_count_bounds=(1, 10),
@@ -55,8 +55,8 @@ class TestTargRec(unittest.TestCase):
             dtype=np.uint8,
         )
 
-        cpar = ControlParams(4, image_size=(5, 5))
-        tpar = TargetParams(
+        cpar = ControlPar(4, image_size=(5, 5))
+        tpar = TargetPar(
             gvthresh=[250, 100, 20, 20],
             discont=5,
             pixel_count_bounds=(1, 10),
@@ -90,8 +90,8 @@ class TestTargRec(unittest.TestCase):
             dtype=np.uint8,
         )
 
-        cpar = ControlParams(4, image_size=(5, 5))
-        tpar = TargetParams(
+        cpar = ControlPar(4, image_size=(5, 5))
+        tpar = TargetPar(
             gvthresh=[250, 100, 20, 20],
             discont=5,
             pixel_count_bounds=(1, 10),

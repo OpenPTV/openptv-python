@@ -336,7 +336,7 @@ class Test_VolumeParams(unittest.TestCase):
         shutil.rmtree(self.temp_output_directory)
 
 
-class Test_ControlParams(unittest.TestCase):
+class Test_ControlPar(unittest.TestCase):
     def setUp(self):
         self.input_control_par_file_name = (
             "tests/testing_folder/control_parameters/control.par"
@@ -471,7 +471,7 @@ class Test_ControlParams(unittest.TestCase):
         shutil.rmtree(self.temp_output_directory)
 
 
-class TestTargetParams(unittest.TestCase):
+class TestTargetPar(unittest.TestCase):
     def test_read(self):
         inp_filename = "tests/testing_folder/target_parameters/targ_rec.par"
         tp = TargetPar()

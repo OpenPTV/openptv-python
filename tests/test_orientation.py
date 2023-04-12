@@ -12,7 +12,7 @@ from openptv_python.orientation import (
     match_detection_to_ref,
     point_positions,
 )
-from openptv_python.parameters import ControlParams, VolumeParams
+from openptv_python.parameters import ControlPar, VolumeParams
 from openptv_python.tracking_framebuf import TargetArray
 from openptv_python.transforms import convert_arr_metric_to_pixel
 
@@ -26,7 +26,7 @@ class Test_Orientation(unittest.TestCase):
 
         self.calibration = Calibration()
         self.calibration.from_file(self.input_ori_file_name, self.input_add_file_name)
-        self.control = ControlParams(4)
+        self.control = ControlPar(4)
         self.control.read_control_par(self.control_file_name)
         self.vpar = VolumeParams()
         self.vpar.read_volume_par(self.volume_file_name)
@@ -170,7 +170,7 @@ class Test_Orientation(unittest.TestCase):
         # prepare MultimediaParams
         cpar_file = "tests/testing_folder/single_cam/parameters/ptv.par"
         vpar_file = "tests/testing_folder/single_cam/parameters/criteria.par"
-        cpar = ControlParams(num_cams)
+        cpar = ControlPar(num_cams)
         cpar.read_control_par(cpar_file)
         mult_params = cpar.get_multimedia_params()
 
@@ -264,7 +264,7 @@ class TestGradientDescent(unittest.TestCase):
 
     def setUp(self):
         control_file_name = "tests/testing_folder/corresp/control.par"
-        self.control = ControlParams(4)
+        self.control = ControlPar(4)
         self.control.read_control_par(control_file_name)
 
         self.cal = Calibration()

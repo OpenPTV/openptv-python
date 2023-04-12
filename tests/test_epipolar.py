@@ -14,7 +14,7 @@ import numpy as np
 
 from openptv_python.calibration import Calibration
 from openptv_python.epipolar import epipolar_curve
-from openptv_python.parameters import ControlParams, VolumeParams
+from openptv_python.parameters import ControlPar, VolumeParams
 
 
 class TestEpipolarCurve(unittest.TestCase):
@@ -31,7 +31,7 @@ class TestEpipolarCurve(unittest.TestCase):
         orig_cal.set_angles(np.r_[0.0, -np.pi / 4.0, 0.0])
         proj_cal.set_angles(np.r_[0.0, 3 * np.pi / 4.0, 0.0])
 
-        cpar = ControlParams(4)
+        cpar = ControlPar(4)
         cpar.read_control_par("tests/testing_folder/corresp/control.par")
         sens_size = cpar.get_image_size()
 

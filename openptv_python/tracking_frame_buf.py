@@ -1,27 +1,40 @@
 """Tracking frame buffer."""
 import pickle
 from collections import deque
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, List
 
 import numpy as np
 
-from .constants import MAX_TARGETS, NEXT_NONE, POSI, PREV_NONE, PRIO_DEFAULT
-from .correspondences import Correspond
+from .calibration import Calibration
+from .constants import (
+    COORD_UNUSED,
+    MAX_TARGETS,
+    NEXT_NONE,
+    POSI,
+    PREV_NONE,
+    PRIO_DEFAULT,
+)
+from .correspondences import Correspond, quicksort_coord2d_x
+from .epi import Coord2d
+from .parameters import ControlPar
+from .trafo import dist_to_flat, pixel_to_metric
 
 
 @dataclass
-class target:
-    pnr: int = 0
-    x: float = 0.0
-    y: float = 0.0
-    n: int = 0
-    nx: int = 0
-    ny: int = 0
-    sumg: int = 0
-    tnr: int = 0
+class Target:
+    """Target structure for tracking."""
 
-    def __eq__(self, other: "Target") -> bool:
+    pnr: int = field(default_factory=int)  # target number
+    x: float = field(default_factory=float)  # pixel position
+    y: float = field(default_factory=float)  # pixel position
+    n: int = field(default_factory=int)  # number of pixels
+    nx: int = field(default_factory=int)  # in x
+    ny: int = field(default_factory=int)  # in y
+    sumg: int = field(default_factory=int)  # sum of grey values
+    tnr: int = field(default_factory=int)  # used in tracking
+
+    def __eq__(self, other) -> bool:
         return (
             self.pnr == other.pnr
             and self.x == other.x
@@ -34,7 +47,15 @@ class target:
         )
 
 
-def read_targets(file_base: str, frame_num: int) -> List[target]:
+@dataclass
+class TargetArray:
+    """A list of targets and the number of targets in the list."""
+
+    targs: List[Target] = field(default_factory=list)
+    num_targs: int = 0
+
+
+def read_targets(file_base: str, frame_num: int) -> List[Target]:
     """Read targets from a file."""
     buffer = []
 
@@ -53,7 +74,7 @@ def read_targets(file_base: str, frame_num: int) -> List[target]:
                 if len(line) != 8:
                     raise ValueError(f"Bad format for file: {filename}")
 
-                targ = target(
+                targ = Target(
                     pnr=int(line[0]),
                     x=float(line[1]),
                     y=float(line[2]),
@@ -74,7 +95,7 @@ def read_targets(file_base: str, frame_num: int) -> List[target]:
 
 
 def write_targets(
-    targets: List[target], num_targets: int, file_base: str, frame_num: int
+    targets: List[Target], num_targets: int, file_base: str, frame_num: int
 ) -> bool:
     """Write targets to a file."""
     success = False
@@ -112,9 +133,9 @@ class Pathinfo:
     prev: int = PREV_NONE
     next: int = NEXT_NONE
     prio: int = PRIO_DEFAULT
-    decis: List[float] = [] * POSI
+    decis: List[float] = field(default_factory=lambda: [0.0] * POSI)
     finaldecis: float = 0.0
-    linkdecis: List[int] = [] * POSI
+    linkdecis: List[int] = field(default_factory=lambda: [0.0] * POSI)
     inlist: int = 0
 
     def __eq__(self, other):
@@ -152,7 +173,7 @@ class Frame:
     max_targets: int = MAX_TARGETS
     path_info: Pathinfo | None = None
     correspond: Correspond | None = None
-    targets: List[List[target]] | None = None
+    targets: List[List[Target]] | None = None
     num_parts: int = 0
     num_targets: List[int] | None = None
 
@@ -333,7 +354,7 @@ def frame_init(num_cams: int, max_targets: int):
     """Initialize a frame structure."""
     new_frame = Frame(max_targets=max_targets, num_cams=num_cams)
     for cam in range(num_cams):
-        new_frame.targets[cam] = [target() for _ in range(max_targets)]
+        new_frame.targets[cam] = [Target() for _ in range(max_targets)]
         new_frame.num_targets[cam] = 0
 
     return new_frame
@@ -341,7 +362,7 @@ def frame_init(num_cams: int, max_targets: int):
 
 def read_path_frame(
     cor_buf, path_buf, corres_file_base, linkage_file_base, prio_file_base, frame_num
-) -> List[target]:
+) -> List[Target]:
     """Read a frame from the disk.
 
     cor_buf = array of correspondences, pnr, 4 x cam_pnr
@@ -421,7 +442,7 @@ def read_path_frame(
 
 
 def write_path_frame(
-    cor_buf: List[Correspond],
+    cor_buf: List[Target],
     path_buf: List[Pathinfo],
     num_parts: int,
     corres_file_base: str,
@@ -541,23 +562,100 @@ def write_path_frame(
 # void fb_free(framebuf *self)
 
 
-class Target:
-    _targ: List[target]
-    _owns_data: int
+class MatchedCoords:
+    """Keep a block of 2D flat coordinates, each with a point number.
 
-    # def set(self, targ: List[target]):
-    #     pass
+    the same as the number on one ``target`` from the block to which this block is kept
+    matched. This block is x-sorted.
 
+    NB: the data is not meant to be directly manipulated at this point. The
+    coord_2d arrays are most useful as intermediate objects created and
+    manipulated only by other liboptv functions. Although one can imagine a
+    use case for direct manipulation in Python, it is rare and supporting it
+    is a low priority.
+    """
 
-class TargetArray:
-    _tarr: List[target]
-    _num_targets: int
-    _owns_data: int
+    buf = List[Coord2d]
+    _num_pts: int
 
-    # cdef void set(TargetArray self, target* tarr, int num_targets,
-    #     int owns_data)
+    def __init__(
+        self,
+        targs: List[Target],
+        cpar: ControlPar,
+        cal: Calibration,
+        tol: float = 0.00001,
+        reset_numbers=True,
+    ):
+        """
+        Allocate and initialize the memory, including coordinate conversion.
 
+        and sorting.
 
-# cdef class Frame:
-#     cdef frame *_frm
-#     cdef int _num_cams # only used for dummy frames.
+        Arguments:
+        ---------
+        TargetArray targs - the TargetArray to be converted and matched.
+        ControlPar cpar - parameters of image size etc. for conversion.
+        Calibration cal - representation of the camera parameters to use in
+            the flat/distorted transforms.
+        double tol - optional tolerance for the lens distortion correction
+            phase, see ``optv.transforms``.
+        reset_numbers - if True (default) numbers the targets too, in their
+            current order. This shouldn't be necessary since all TargetArray
+            creators number the targets, but this gets around cases where they
+            don't.
+        """
+        # cdef:
+        #     target *targ
+
+        self._num_pts = len(targs)
+        self.buf = [Coord2d] * self._num_pts
+
+        for tnum in range(self._num_pts):
+            targ = targs._tarr[tnum]
+            if reset_numbers:
+                targ.pnr = tnum
+
+            self.buf[tnum].x, self.buf[tnum].y = pixel_to_metric(targ.x, targ.y, cpar)
+            self.buf[tnum].x, self.buf[tnum].y = dist_to_flat(
+                cal, self.buf[tnum].x, self.buf[tnum].y, tol
+            )
+            self.buf[tnum].pnr = targ.pnr
+
+        quicksort_coord2d_x(self.buf, self._num_pts)
+
+    def as_arrays(self):
+        """
+        Return the data associated with the object (the matched coordinates.
+
+        block) as NumPy arrays.
+
+        Returns
+        -------
+        pos - (n,2) array, the (x,y) flat-coordinates position of n targets.
+        pnr - n-length array, the corresponding target number for each point.
+        """
+        pos = np.empty((self._num_pts, 2))
+        pnr = np.empty(self._num_pts, dtype=np.int_)
+
+        for pt in range(self._num_pts):
+            pos[pt, 0] = self.buf[pt].x
+            pos[pt, 1] = self.buf[pt].y
+            pnr[pt] = self.buf[pt].pnr
+
+        return pos, pnr
+
+    def get_by_pnrs(self, pnrs: np.ndarray):
+        """
+        Return the flat positions of points whose pnr property is given, as an.
+
+        (n,2) flat position array. Assumes all pnrs are to be found, otherwise
+        there will be garbage at the end of the position array.
+        """
+        pos = np.full((len(pnrs), 2), COORD_UNUSED, dtype=np.float64)
+        for pt in range(self._num_pts):
+            which = np.flatnonzero(self.buf[pt].pnr == pnrs)
+            if len(which) > 0:
+                which = which[0]
+                pos[which, 0] = self.buf[pt].x
+                pos[which, 1] = self.buf[pt].y
+        return pos

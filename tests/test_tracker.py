@@ -16,7 +16,7 @@ import yaml
 
 from openptv_python.calibration import Calibration
 from openptv_python.parameters import (
-    ControlParams,
+    ControlPar,
     SequenceParams,
     TrackingParams,
     VolumeParams,
@@ -48,7 +48,7 @@ class TestTracker(unittest.TestCase):
             cals.append(cal)
             img_base.append(seq_cfg["targets_template"].format(cam=cix + 1))
 
-        cpar = ControlParams(len(yaml_conf["cameras"]), **yaml_conf["scene"])
+        cpar = ControlPar(len(yaml_conf["cameras"]), **yaml_conf["scene"])
         vpar = VolumeParams(**yaml_conf["correspondences"])
         tpar = TrackingParams(**yaml_conf["tracking"])
         spar = SequenceParams(

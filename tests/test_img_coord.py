@@ -4,12 +4,12 @@ import numpy as np
 
 from openptv_python.calibration import Calibration
 from openptv_python.imgcoord import flat_image_coordinates, image_coordinates
-from openptv_python.parameters import ControlParams, MultimediaParams
+from openptv_python.parameters import ControlPar, MultimediaParams
 
 
 class Test_image_coordinates(unittest.TestCase):
     def setUp(self):
-        self.control = ControlParams(4)
+        self.control = ControlPar(4)
 
         self.calibration = Calibration()
 

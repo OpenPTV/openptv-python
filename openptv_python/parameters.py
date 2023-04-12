@@ -5,17 +5,10 @@ from dataclasses import dataclass, field
 import numpy as np
 
 
-@dataclass
 class MultimediaPar:
     """Multimedia parameters."""
 
-    n1: float
-    n2: np.ndarray
-    d: np.ndarray
-    n3: float
-    nlay: int
-
-    def __init__(self, n1, n2, n3, d):
+    def __init__(self, n1: float, n2: np.ndarray, n3: float, d: np.ndarray):
         """Initialize MultimediaPar object."""
         self.n1 = n1
         self.n2 = np.array(n2)
@@ -27,19 +20,34 @@ class MultimediaPar:
         self.nlay = self.d.shape[0]
 
     def get_nlay(self):
+        """Return the number of layers."""
         return self.nlay
 
     def get_n1(self):
+        """Return the refractive index of the first medium."""
         return self.n1
 
     def get_n3(self):
+        """Return the refractive index of the last medium."""
         return self.n3
 
     def get_n2(self):
+        """Return the refractive index of the second medium."""
         return self.n2
 
     def get_d(self):
+        """Return the thickness of the second medium."""
         return self.d
+
+    # def set_layers(self, n2, d):
+    def set_layers(self, refr_index, thickness):
+        """Set the layers of the medium."""
+        if len(refr_index) != len(thickness):
+            raise ValueError("Lengths of refractive index and thickness must be equal.")
+        else:
+            self.n2 = refr_index[:]
+            self.d = thickness[:]
+            self.nlay = len(refr_index)
 
 
 def compare_mm_np(mm_np1: MultimediaPar, mm_np2: MultimediaPar) -> bool:

@@ -5,7 +5,7 @@ import numpy as np
 
 from .constants import CORRES_NONE, NMAX
 from .parameters import ControlPar, TargetPar
-from .tracking_frame_buf import target
+from .tracking_frame_buf import Target, TargetArray
 
 
 @dataclass
@@ -28,8 +28,15 @@ class Peak:
 
 
 def targ_rec(
-    img: np.ndarray, targ_par: TargetPar, xmin, xmax, ymin, ymax, cpar, num_cam, pix
-):
+    img: np.ndarray,
+    targ_par: TargetPar,
+    xmin: float,
+    xmax: float,
+    ymin: float,
+    ymax: float,
+    cpar: ControlPar,
+    num_cam,
+) -> TargetArray:
     """Target recognition function."""
     n = 0
     n_wait = 0
@@ -42,8 +49,8 @@ def targ_rec(
     imx = cpar.imx
     imy = cpar.imy
 
-    img0 = [0] * (imx * imy)  # create temporary mask
-    img0[:] = img  # copy the original image
+    # img0 = [0] * (imx * imy)  # create temporary mask
+    img0 = img.copy()  # copy the original image
 
     if xmin <= 0:
         xmin = 1
@@ -62,6 +69,8 @@ def targ_rec(
     yb = 0
     x4 = [0] * 4
     y4 = [0] * 4
+
+    pix = []
 
     for i in range(ymin, ymax):
         for j in range(xmin, xmax):
@@ -175,6 +184,7 @@ def targ_rec(
                         and ny <= targ_par.nymax
                         and sumg > targ_par.sumg_min
                     ):
+                        pix.append(Target())
                         pix[n_targets].n = numpix
                         pix[n_targets].nx = nx
                         pix[n_targets].ny = ny
@@ -193,7 +203,10 @@ def targ_rec(
                         xn = x
                         yn = y
 
-    return n_targets
+    t = TargetArray()
+    t.num_targs = n_targets
+    t.targs = pix
+    return t
 
 
 def peak_fit(
@@ -205,8 +218,7 @@ def peak_fit(
     ymax: int,
     cpar: ControlPar,
     num_cam: int,
-    pix: List[target],
-):
+) -> TargetArray:
     """Fit the peaks in the image to a gaussian."""
     imx, imy = cpar.imx, cpar.imy
     n_peaks = 0
@@ -230,6 +242,7 @@ def peak_fit(
     peaks = [0] * (4 * nmax)
     ptr_peak = Peak()
     waitlist = [[]]
+    pix = []
 
     for i in range(ymin, ymax - 1):
         for j in range(xmin, xmax):
@@ -468,6 +481,7 @@ def peak_fit(
             sumg = peaks[i].sumg
 
             # target coordinates
+            pix.append(Target())
             pix[n_target].x = 0.5 + peaks[i].x / sumg
             pix[n_target].y = 0.5 + peaks[i].y / sumg
 
@@ -480,10 +494,10 @@ def peak_fit(
             pix[n_target].pnr = n_target
             n_target += 1
 
-    # free memory
-    label_img = None
-    peaks = None
-    return n_target
+    t = TargetArray()
+    t.num_targs = n_target
+    t.targs = pix
+    return t
 
 
 def check_touch(tpeak, p1, p2):
@@ -558,3 +572,54 @@ def test_peak_fit_new():
     for peak in peaks:
         ax.scatter(peak.y, peak.x, marker="x", c="r", s=100)
     plt.show()
+
+
+def target_recognition(
+    img: np.ndarray,
+    tpar: TargetPar,
+    cam: int,
+    cparam: ControlPar,
+    subrange_x=None,
+    subrange_y=None,
+) -> TargetArray:
+    """
+    Detect targets (contiguous bright blobs) in an image.
+
+    Limited to ~20,000 targets per image for now. This limitation comes from
+    the structure of underlying C code.
+
+    Arguments:
+    ---------
+    img - a numpy array holding the 8-bit gray image.
+    tpar - target recognition parameters s.a. size bounds etc.
+    cam - number of camera that took the picture, needed for getting
+        correct parameters for this image.
+    cparam - an object holding general control parameters.
+    subrange_x - optional, tuple of min and max pixel coordinates to search
+        between. Default is to search entire image width.
+    subrange_y - optional, tuple of min and max pixel coordinates to search
+        between. Default is to search entire image height.
+
+    Returns:
+    -------
+    Number of  object holding the targets found.
+    """
+    # Set the subrange (to default if not given):
+    if subrange_x is None:
+        xmin, xmax = 0, cparam.imx
+    else:
+        xmin, xmax = subrange_x
+
+    if subrange_y is None:
+        ymin, ymax = 0, cparam.imy
+    else:
+        ymin, ymax = subrange_y
+
+    if img.shape[0] != ymax or img.shape[1] != xmax:
+        raise ValueError("dimensions are not correct")
+
+    # The core Python implementation of targ_rec:
+    t = TargetArray()
+    t.num_targs, t.targs = targ_rec(img, tpar, xmin, xmax, ymin, ymax, cparam, cam)
+
+    return t

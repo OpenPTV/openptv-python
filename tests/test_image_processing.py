@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 
 from openptv_python.image_processing import preprocess_image
-from openptv_python.parameters import ControlParams
+from openptv_python.parameters import ControlPar
 
 
 class Test_image_processing(unittest.TestCase):
@@ -19,7 +19,7 @@ class Test_image_processing(unittest.TestCase):
             dtype=np.uint8,
         )
         self.filter_hp = 0
-        self.control = ControlParams(4)
+        self.control = ControlPar(4)
         self.control.set_image_size((5, 5))
 
     def test_arguments(self):

@@ -1,6 +1,7 @@
 """Module for coordinate transformations."""
-import math
 from typing import Tuple
+
+import numpy as np
 
 from .calibration import Calibration, ap_52
 from .parameters import ControlPar
@@ -23,28 +24,60 @@ def pixel_to_metric(
     return (x_metric, y_metric)
 
 
+# def metric_to_pixel(
+#     x_metric: float, y_metric: float, parameters: ControlPar
+# ) -> Tuple[float, float]:
+#     """Convert metric coordinates to pixel coordinates.
+
+#     Arguments:
+#     ---------
+#     x_pixel, y_pixel (float): input pixel coordinates.
+#     x_metric, y_metric (float): output metric coordinates.
+#     parameters (ControlPar): control structure holding image and pixel sizes.
+#     y_remap_mode (int): for use with interlaced cameras. Pass 0 for normal use,
+#         1 for odd lines and 2 for even lines.
+
+#     """
+#     x_pixel = (x_metric / parameters.pix_x) + (float(parameters.imx) / 2.0)
+#     y_pixel = (float(parameters.imy) / 2.0) - (y_metric / parameters.pix_y)
+
+#     return x_pixel, y_pixel
+
+
 def metric_to_pixel(
-    x_metric: float, y_metric: float, parameters: ControlPar
-) -> Tuple[float, float]:
+    x_metric: np.ndarray or float, y_metric: np.ndarray or float, parameters: ControlPar
+) -> Tuple[np.ndarray or float, np.ndarray or float]:
     """Convert metric coordinates to pixel coordinates.
 
     Arguments:
     ---------
-    x_pixel, y_pixel (float): input pixel coordinates.
-    x_metric, y_metric (float): output metric coordinates.
+    x_metric, y_metric (float or numpy.ndarray): input metric coordinates.
     parameters (ControlPar): control structure holding image and pixel sizes.
-    y_remap_mode (int): for use with interlaced cameras. Pass 0 for normal use,
-        1 for odd lines and 2 for even lines.
 
+    Returns:
+    -------
+    x_pixel, y_pixel (float or numpy.ndarray): output pixel coordinates.
     """
+    # convert inputs to numpy arrays if not already
+    if isinstance(x_metric, float):
+        x_metric = np.array([x_metric])
+    if isinstance(y_metric, float):
+        y_metric = np.array([y_metric])
+
     x_pixel = (x_metric / parameters.pix_x) + (float(parameters.imx) / 2.0)
     y_pixel = (float(parameters.imy) / 2.0) - (y_metric / parameters.pix_y)
+
+    # convert outputs to floats if only one output value is returned
+    if isinstance(x_pixel, np.ndarray) and x_pixel.shape[0] == 1:
+        x_pixel = float(x_pixel[0])
+    if isinstance(y_pixel, np.ndarray) and y_pixel.shape[0] == 1:
+        y_pixel = float(y_pixel[0])
 
     return x_pixel, y_pixel
 
 
 def distort_brown_affine(x: float, y: float, ap: ap_52) -> Tuple[float, float]:
-    r = math.sqrt(x * x + y * y)
+    r = np.sqrt(x * x + y * y)
     if r != 0:
         x += (
             x * (ap.k1 * r * r + ap.k2 * r * r * r * r + ap.k3 * r * r * r * r * r * r)
@@ -56,8 +89,8 @@ def distort_brown_affine(x: float, y: float, ap: ap_52) -> Tuple[float, float]:
             + ap.p2 * (r * r + 2 * y * y)
             + 2 * ap.p1 * x * y
         )
-        x1 = ap.scx * x - math.sin(ap.she) * y
-        y1 = math.cos(ap.she) * y
+        x1 = ap.scx * x - np.sin(ap.she) * y
+        y1 = np.cos(ap.she) * y
 
     return x1, y1
 
@@ -99,26 +132,26 @@ def correct_brown_affine(
 
     # Initial guess for the flat point is the distorted point, assuming
     # distortion is small.
-    rq = math.sqrt(x * x + y * y)
+    rq = np.sqrt(x * x + y * y)
     xq, yq = x, y
 
     while True:
         r = rq
         xq = (
-            (x + yq * math.sin(ap.she)) / ap.scx
+            (x + yq * np.sin(ap.she)) / ap.scx
             - xq
             * (ap.k1 * r * r + ap.k2 * r * r * r * r + ap.k3 * r * r * r * r * r * r)
             - ap.p1 * (r * r + 2 * xq * xq)
             - 2 * ap.p2 * xq * yq
         )
         yq = (
-            y / math.cos(ap.she)
+            y / np.cos(ap.she)
             - yq
             * (ap.k1 * r * r + ap.k2 * r * r * r * r + ap.k3 * r * r * r * r * r * r)
             - ap.p2 * (r * r + 2 * yq * yq)
             - 2 * ap.p1 * xq * yq
         )
-        rq = math.sqrt(xq * xq + yq * yq)
+        rq = np.sqrt(xq * xq + yq * yq)
 
         # Limit divergent iteration.
         if rq > 1.2 * r:
@@ -132,13 +165,13 @@ def correct_brown_affine(
     # correction, equivalent to one more iteration.
     r = rq
     x1 = (
-        (x + yq * math.sin(ap.she)) / ap.scx
+        (x + yq * np.sin(ap.she)) / ap.scx
         - xq * (ap.k1 * r * r + ap.k2 * r * r * r * r + ap.k3 * r * r * r * r * r * r)
         - ap.p1 * (r * r + 2 * xq * xq)
         - 2 * ap.p2 * xq * yq
     )
     y1 = (
-        y / math.cos(ap.she)
+        y / np.cos(ap.she)
         - yq * (ap.k1 * r * r + ap.k2 * r * r * r * r + ap.k3 * r * r * r * r * r * r)
         - ap.p2 * (r * r + 2 * yq * yq)
         - 2 * ap.p1 * xq * yq
@@ -168,12 +201,12 @@ def dist_to_flat(dist_x: float, dist_y: float, cal: Calibration, tol: float):
     """
     flat_x = dist_x
     flat_y = dist_y
-    r = math.sqrt(flat_x**2 + flat_y**2)
+    r = np.sqrt(flat_x**2 + flat_y**2)
 
     itnum = 0
     while True:
         xq = (
-            (flat_x + flat_y * math.sin(cal.added_par.she)) / cal.added_par.scx
+            (flat_x + flat_y * np.sin(cal.added_par.she)) / cal.added_par.scx
             - flat_x
             * (
                 cal.added_par.k1 * r**2
@@ -184,7 +217,7 @@ def dist_to_flat(dist_x: float, dist_y: float, cal: Calibration, tol: float):
             - 2 * cal.added_par.p2 * flat_x * flat_y
         )
         yq = (
-            dist_y / math.cos(cal.added_par.she)
+            dist_y / np.cos(cal.added_par.she)
             - flat_y
             * (
                 cal.added_par.k1 * r**2
@@ -194,7 +227,7 @@ def dist_to_flat(dist_x: float, dist_y: float, cal: Calibration, tol: float):
             - cal.added_par.p2 * (r**2 + 2 * flat_y**2)
             - 2 * cal.added_par.p1 * flat_x * flat_y
         )
-        rq = math.sqrt(xq**2 + yq**2)
+        rq = np.sqrt(xq**2 + yq**2)
 
         # Limit divergent iteration
         if rq > 1.2 * r:

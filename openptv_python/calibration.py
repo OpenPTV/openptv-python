@@ -1,5 +1,4 @@
 """Calibration data structures and functions."""
-import math
 import pathlib
 from dataclasses import dataclass
 from typing import Optional
@@ -74,7 +73,7 @@ class Calibration:
     added_par: ap_52 = ap_52()
     mmlut: mmlut = mmlut()
 
-    def from_file(self, ori_file: str):
+    def from_file(self, ori_file: str, addpar_file: str):
         """
         Populate calibration fields from .ori and .addpar files.
 
@@ -86,7 +85,7 @@ class Calibration:
         fallback_file - optional path to file used in case ``add_file`` fails
             to open.
         """
-        read_ori(ori_file)
+        read_ori(ori_file, addpar_file)
 
     def set_pos(self, x_y_z_np):
         """
@@ -442,12 +441,12 @@ def write_calibration(cal, ori_file, add_file):
 
 def rotation_matrix(Ex: Exterior) -> Exterior:
     """Calculate the necessary trigonometric functions to rotate the Dmatrix of Exterior Ex."""
-    cp = math.cos(Ex.phi)
-    sp = math.sin(Ex.phi)
-    co = math.cos(Ex.omega)
-    so = math.sin(Ex.omega)
-    ck = math.cos(Ex.kappa)
-    sk = math.sin(Ex.kappa)
+    cp = np.cos(Ex.phi)
+    sp = np.sin(Ex.phi)
+    co = np.cos(Ex.omega)
+    so = np.sin(Ex.omega)
+    ck = np.cos(Ex.kappa)
+    sk = np.sin(Ex.kappa)
 
     # Modify the Exterior Ex with the new Dmatrix
     Ex.dm[0][0] = cp * ck
@@ -460,4 +459,5 @@ def rotation_matrix(Ex: Exterior) -> Exterior:
     Ex.dm[2][1] = so * ck + co * sp * sk
     Ex.dm[2][2] = co * cp
 
+    Ex.dm = np.round(Ex.dm, 6)
     return Ex
