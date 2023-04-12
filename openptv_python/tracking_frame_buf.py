@@ -45,33 +45,36 @@ class Correspond:
         default=np.empty(MAXCAND, dtype=float)
     )  # distance perpendicular to epipolar line
 
+def sort_crd_y(crd):
+    """Sort coordinates by y."""
+    return sorted(crd, key=lambda p: p.y)
 
-def quicksort_target_y(pix, num):
-    """Quicksort for targets."""
-    pix = qs_target_y(pix, 0, num - 1)
-    return pix
+# def quicksort_target_y(pix, num):
+#     """Quicksort for targets."""
+#     pix = qs_target_y(pix, 0, num - 1)
+#     return pix
 
 
-def qs_target_y(pix, left, right):
-    """Quicksort for targets subroutine."""
-    if left >= right:
-        return
+# def qs_target_y(pix, left, right):
+#     """Quicksort for targets subroutine."""
+#     if left >= right:
+#         return
 
-    pivot = pix[(left + right) // 2].y
-    i, j = left, right
-    while i <= j:
-        while pix[i].y < pivot:
-            i += 1
-        while pix[j].y > pivot:
-            j -= 1
-        if i <= j:
-            pix[i], pix[j] = pix[j], pix[i]
-            i += 1
-            j -= 1
+#     pivot = pix[(left + right) // 2].y
+#     i, j = left, right
+#     while i <= j:
+#         while pix[i].y < pivot:
+#             i += 1
+#         while pix[j].y > pivot:
+#             j -= 1
+#         if i <= j:
+#             pix[i], pix[j] = pix[j], pix[i]
+#             i += 1
+#             j -= 1
 
-    pix = qs_target_y(pix, left, j)
-    pix = qs_target_y(pix, i, right)
-    return pix
+#     pix = qs_target_y(pix, left, j)
+#     pix = qs_target_y(pix, i, right)
+#     return pix
 
 
 # def quicksort_coord2d_x(crd, num):

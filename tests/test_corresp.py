@@ -119,17 +119,15 @@ class TestReadControlPar(unittest.TestCase):
 
         def test_single_cam_corresp(self):
             """Single camera correspondence."""
-            cpar = ControlPar
-            cpar.read_control_par("tests/testing_folder/single_cam/parameters/ptv.par")
-            vpar = VolumePar()
-            vpar.read_volume_par(
+            cpar = read_control_par("tests/testing_folder/single_cam/parameters/ptv.par")
+            vpar = read_volume_par(
                 "tests/testing_folder/single_cam/parameters/criteria.par"
             )
 
             # Cameras are at so high angles that opposing cameras don't see each
             # other in the normal air-glass-water setting.
-            cpar.get_multimedia_params().set_layers([1.0], [1.0])
-            cpar.get_multimedia_params().set_n3(1.0)
+            cpar.mm.set_layers([1.0], [1.0])
+            cpar.n3 = 1.0
 
             cals = []
             img_pts = []
@@ -148,8 +146,9 @@ class TestReadControlPar(unittest.TestCase):
                 targ = targs[targ_ix]
 
                 pos3d = 10 * np.array([[col, row, 0]], dtype=np.float64)
-                pos2d = img_coord(pos3d, cal, cpar.mm)
-                targ.set_pos(metric_to_pixel(pos2d, cpar))
+                x, y = img_coord(pos3d, cal, cpar.mm)
+                x, y = metric_to_pixel(x, y, cpar)
+                targ.set_pos(x, y)
 
                 targ.set_pnr(targ_ix)
                 targ.set_pixel_counts(25, 5, 5)
