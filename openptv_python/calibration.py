@@ -1,10 +1,12 @@
 """Calibration data structures and functions."""
-import json
 import math
 import pathlib
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
+from typing import Optional
 
 import numpy as np
+
+from .vec_utils import vec3d
 
 
 @dataclass
@@ -55,11 +57,11 @@ class ap_52:
 class mmlut:
     """3D lookup table for the mapping between the image plane and the object."""
 
-    origin: np.array = np.zeros(3, dtype=float)
+    origin: vec3d = np.zeros(3, dtype=float)
     nr: int = 0
     nz: int = 0
     rw: int = 0
-    data: list[float] = None
+    data: np.ndarray | None = None
 
 
 @dataclass
@@ -276,46 +278,34 @@ class Calibration:
 
 
 def write_ori(
-    Ex: Exterior, In: Interior, G: Glass, ap: ap_52, filename: str, add_file: str = None
-):
-    """Write exterior and interior orientation.
+    Ex: Exterior,
+    In: Interior,
+    G: Glass,
+    ap: Optional[ap_52],
+    filename: str,
+    add_file: Optional[str],
+) -> bool:
+    """Write an orientation file."""
+    success = False
 
-    if available, also parameters for
-    distortion corrections.
-
-    Arguments:
-    ---------
-    Exterior Ex - exterior orientation.
-    Interior I - interior orientation.
-    Glass G - glass parameters.
-    ap_52 addp - optional additional (distortion) parameters. NULL is fine if
-       add_file is NULL.
-    char *filename - path of file to contain interior, exterior and glass
-       orientation data.
-    char *add_file - path of file to contain added (distortions) parameters.
-    """
-    try:
-        with open(filename, "w", encoding="utf-8") as fp:
-            fp.write(json.dumps(asdict(Ex), indent=4) + "\n")
-            fp.write(json.dumps(asdict(In), indent=4) + "\n")
-            fp.write(json.dumps(asdict(G), indent=4) + "\n")
-            if ap:
-                fp.write(json.dumps(asdict(ap), indent=4) + "\n")
-    except IOError:
-        print("Can't open file: {}".format(filename))
-        return False
+    with open(filename, "w", encoding="utf-8") as fp:
+        fp.write(f"{Ex.x0:.8f} {Ex.y0:.8f} {Ex.z0:.8f}\n")
+        fp.write(f"    {Ex.omega:.8f} {Ex.phi:.8f} {Ex.kappa:.8f}\n\n")
+        for row in Ex.dm:
+            fp.write(f"    {row[0]:.7f} {row[1]:.7f} {row[2]:.7f}\n")
+        fp.write(f"\n    {In.xh:.4f} {In.yh:.4f}\n    {In.cc:.4f}\n")
+        fp.write(f"\n    {G.vec_x:.15f} {G.vec_y:.15f} {G.vec_z:.15f}\n")
 
     if add_file is None:
-        return True
+        return success
 
-    try:
-        with open(add_file, "w", encoding="utf-8") as fp:
-            fp.write(json.dumps(asdict(ap), indent=4) + "\n")
-    except IOError:
-        print("Can't open file: {}".format(add_file))
-        return False
+    with open(add_file, "w", encoding="utf-8") as fp:
+        fp.write(
+            f"{ap.k1:.8f} {ap.k2:.8f} {ap.k3:.8f} {ap.p1:.8f} {ap.p2:.8f} {ap.scx:.8f} {ap.she:.8f}"
+        )
+        success = True
 
-    return True
+    return success
 
 
 def read_ori(
