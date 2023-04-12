@@ -103,7 +103,8 @@ class TestReadControlPar(unittest.TestCase):
 
                 pos3d = 10 * np.array([col, row, 0], dtype=np.float64)
                 x, y = img_coord(pos3d, cal, cpar.mm)
-                targ.set_pos(metric_to_pixel(x, y, cpar))
+                x, y = metric_to_pixel(x, y, cpar)
+                targ.set_pos(x, y)
 
                 targ.set_pnr(targ_ix)
                 targ.set_pixel_counts(25, 5, 5)

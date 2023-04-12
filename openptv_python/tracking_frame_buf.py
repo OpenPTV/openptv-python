@@ -121,6 +121,7 @@ class Target:
     tnr: int = field(default_factory=int)  # used in tracking
 
     def __eq__(self, other) -> bool:
+        """ Compare two targets. """
         return (
             self.pnr == other.pnr
             and self.x == other.x
@@ -133,8 +134,23 @@ class Target:
         )
 
     def set_pos(self, x, y):
+        """ Set target position."""
         self.x = x
         self.y = y
+        
+    def set_pnr(self, pnr):
+        """ Set target number. """
+        self.pnr = pnr
+        
+    def set_pixel_counts(self, n, nx, ny):
+        """ Set number of pixels and number of pixels in x and y. """
+        self.n = n
+        self.nx = nx
+        self.ny = ny
+        
+    def set_sum_grey_value(self, sumg):
+        """ Set sum of grey values."""
+        self.sumg = sumg
 
 
 @dataclass
