@@ -13,7 +13,7 @@ from openptv_python.calibration import (
 def test_exterior_initialization():
     """Test exterior parameters initialization."""
     ext = Calibration().ext_par
-    assert np.all(ext.dm == np.zeros(3, 3))
+    assert np.all(ext.dm == np.zeros((3, 3)))
     assert ext.omega == 0.0
     assert ext.phi == 0.0
     assert ext.kappa == 0.0
