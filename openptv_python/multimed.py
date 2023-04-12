@@ -238,10 +238,10 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> np.ndarra
     nz = int((Zmax_t - Zmin_t) / rw + 1)
 
     # create two dimensional mmlut structure
-    cal["mmlut"]["origin"] = [cal["ext_par"]["x0"], cal["ext_par"]["y0"], Zmin_t]
-    cal["mmlut"]["nr"] = nr
-    cal["mmlut"]["nz"] = nz
-    cal["mmlut"]["rw"] = rw
+    cal.mmlut.origin = [cal.ext_par.x0, cal.ext_par.y0, Zmin_t]
+    cal.mmlut.nr = nr
+    cal.mmlut.nz = nz
+    cal.mmlut.rw = rw
 
     if cal.mmlut.data is None:
         data = np.empty((nr * nz,), dtype=np.float64)
