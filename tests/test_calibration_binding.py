@@ -37,20 +37,20 @@ class Test_Calibration(unittest.TestCase):
         affine = decent * 1.5
         glass = pos * 7
 
-        Ext = Exterior(pos, angs)
-        In = Interior(prim_point)
-        G = Glass(glass)
-        ap_52(
+        Ext = Exterior(x0=1.0, y0=3.0, z0=5.0, omega=2.0, phi=4.0, kappa=6.0)
+        In = Interior(xh=3.0, yh=9.0, cc=15.0)
+        G = Glass(vec_x=glass[0], vec_y=glass[1], vec_z=glass[2])
+        addpar = ap_52(
             k1=rad_dist[0],
             k2=rad_dist[1],
             k3=rad_dist[2],
             p1=decent[0],
             p2=decent[1],
-            she=affine[0],
-            scx=affine[1],
+            scx=affine[0],
+            she=affine[1],
         )
 
-        cal = Calibration(Ext, In, G)
+        cal = Calibration(Ext, In, G, addpar)
 
         numpy.testing.assert_array_equal(pos, cal.get_pos())
         numpy.testing.assert_array_equal(angs, cal.get_angles())
@@ -62,19 +62,32 @@ class Test_Calibration(unittest.TestCase):
 
     def test_Calibration_instantiation(self):
         """Filling a calibration object by reading ori files."""
-        self.output_ori_file_name = self.output_directory + b"output_ori"
-        self.output_add_file_name = self.output_directory + b"output_add"
+        output_ori_file_name = self.output_directory + "output_ori"
+        output_add_file_name = self.output_directory + "output_add"
 
         # Using a round-trip test.
         self.cal.from_file(self.input_ori_file_name, self.input_add_file_name)
-        self.cal.write(self.output_ori_file_name, self.output_add_file_name)
+        print("read from input files ")
+        print(self.cal)
 
-        self.assertTrue(
-            filecmp.cmp(self.input_ori_file_name, self.output_ori_file_name, 0)
-        )
-        self.assertTrue(
-            filecmp.cmp(self.input_add_file_name, self.output_add_file_name, 0)
-        )
+        self.cal.write(output_ori_file_name, output_add_file_name)
+
+        self.assertTrue(filecmp.cmp(self.input_ori_file_name, output_ori_file_name, 0))
+        self.assertTrue(filecmp.cmp(self.input_add_file_name, output_add_file_name, 0))
+
+        # with open(self.input_add_file_name,'r') as file1:
+        #     file1_info = file1.readlines()
+        # with open(output_add_file_name,'r') as file2:
+        #     file2_info = file2.readlines()
+
+        # print(file1_info)
+
+        # diff = difflib.unified_diff(
+        # file1_info, file2_info, fromfile=self.input_add_file_name,tofile=output_add_file_name, lineterm=''
+        # )
+
+        # for lines in diff:
+        #     print(lines)
 
     def test_set_pos(self):
         """Set exterior position, only for admissible values."""

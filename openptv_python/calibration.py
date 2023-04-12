@@ -1,65 +1,63 @@
 """Calibration data structures and functions."""
 import pathlib
-from dataclasses import dataclass
-from typing import Optional
+from dataclasses import dataclass, field
+from typing import Optional, Tuple
 
 import numpy as np
-
-from .vec_utils import vec3d
 
 
 @dataclass
 class Exterior:
     """Exterior parameters."""
 
-    dm: np.array = np.zeros((3, 3), dtype=float)
-    omega: float = 0.0
-    phi: float = 0.0
-    kappa: float = 0.0
-    x0: float = 0.0
-    y0: float = 0.0
-    z0: float = 0.0
+    x0: float = field(default=0.0, metadata={"units": "mm"})
+    y0: float = field(default=0.0, metadata={"units": "mm"})
+    z0: float = field(default=0.0, metadata={"units": "mm"})
+    omega: float = field(default=0.0, metadata={"units": "rad"})
+    phi: float = field(default=0.0, metadata={"units": "rad"})
+    kappa: float = field(default=0.0, metadata={"units": "rad"})
+    dm: np.array = field(default=np.zeros((3, 3), dtype=float))
 
 
 @dataclass
 class Interior:
     """Interior parameters."""
 
-    xh: float = 0.0
-    yh: float = 0.0
-    cc: float = 0.0
+    xh: float = field(default=0.0, metadata={"units": "mm"})
+    yh: float = field(default=0.0, metadata={"units": "mm"})
+    cc: float = field(default=0.0, metadata={"units": "mm"})
 
 
 @dataclass
 class Glass:
     """Glass vector."""
 
-    vec_x: float = 0.0
-    vec_y: float = 0.0
-    vec_z: float = 0.0
+    vec_x: float = field(default=0.0, metadata={"units": "mm"})
+    vec_y: float = field(default=0.0, metadata={"units": "mm"})
+    vec_z: float = field(default=0.0, metadata={"units": "mm"})
 
 
 @dataclass
 class ap_52:
     """5+2 parameters for distortion correction."""
 
-    k1: float = 0.0
-    k2: float = 0.0
-    k3: float = 0.0
-    p1: float = 0.0
-    p2: float = 0.0
-    scx: float = 1.0  # scale is 1.0 by default
-    she: float = 0.0
+    k1: float = field(default=0.0)
+    k2: float = field(default=0.0)
+    k3: float = field(default=0.0)
+    p1: float = field(default=0.0)
+    p2: float = field(default=0.0)
+    scx: float = field(default=1.0)
+    she: float = field(default=0.0)
 
 
 @dataclass
 class mmlut:
     """3D lookup table for the mapping between the image plane and the object."""
 
-    origin: vec3d = np.zeros(3, dtype=float)
-    nr: int = 0
-    nz: int = 0
-    rw: int = 0
+    origin: np.ndarray = field(default=np.zeros(3, dtype=float))
+    nr: int = field(default=0)
+    nz: int = field(default=0)
+    rw: int = field(default=0)
     data: np.ndarray | None = None
 
 
@@ -85,7 +83,22 @@ class Calibration:
         fallback_file - optional path to file used in case ``add_file`` fails
             to open.
         """
-        read_ori(ori_file, addpar_file)
+        self.ext_par, self.int_par, self.glass_par, self.added_par = read_ori(
+            ori_file, addpar_file
+        )
+
+    def write(self, ori_file: str, addpar_file: str):
+        """Write calibration to file."""
+        success = write_ori(
+            self.ext_par,
+            self.int_par,
+            self.glass_par,
+            self.added_par,
+            ori_file,
+            addpar_file,
+        )
+        if not success:
+            raise IOError("Failed to write ori file")
 
     def set_pos(self, x_y_z_np):
         """
@@ -289,18 +302,18 @@ def write_ori(
 
     with open(filename, "w", encoding="utf-8") as fp:
         fp.write(f"{Ex.x0:.8f} {Ex.y0:.8f} {Ex.z0:.8f}\n")
-        fp.write(f"    {Ex.omega:.8f} {Ex.phi:.8f} {Ex.kappa:.8f}\n\n")
+        fp.write(f"{Ex.omega:.8f} {Ex.phi:.8f} {Ex.kappa:.8f}\n\n")
         for row in Ex.dm:
-            fp.write(f"    {row[0]:.7f} {row[1]:.7f} {row[2]:.7f}\n")
-        fp.write(f"\n    {In.xh:.4f} {In.yh:.4f}\n    {In.cc:.4f}\n")
-        fp.write(f"\n    {G.vec_x:.15f} {G.vec_y:.15f} {G.vec_z:.15f}\n")
+            fp.write(f"{row[0]:.7f} {row[1]:.7f} {row[2]:.7f}\n")
+        fp.write(f"\n{In.xh:.4f} {In.yh:.4f}\n{In.cc:.4f}\n")
+        fp.write(f"\n{G.vec_x:.15f} {G.vec_y:.15f} {G.vec_z:.15f}\n")
 
     if add_file is None:
         return success
 
     with open(add_file, "w", encoding="utf-8") as fp:
         fp.write(
-            f"{ap.k1:.8f} {ap.k2:.8f} {ap.k3:.8f} {ap.p1:.8f} {ap.p2:.8f} {ap.scx:.8f} {ap.she:.8f}"
+            f"{ap.k1:.8f} {ap.k2:.8f} {ap.k3:.8f} {ap.p1:.8f} {ap.p2:.8f} {ap.scx:.8f} {ap.she:.8f}\n"
         )
         success = True
 
@@ -309,70 +322,60 @@ def write_ori(
 
 def read_ori(
     ori_file: str, add_file: str = None, add_fallback: str = None
-) -> Calibration:
+) -> Tuple[Exterior, Interior, Glass, ap_52]:
     """
-    Read exterior and interior orientation.
-
-    and - if available, parameters for distortion corrections.
+    Read exterior and interior orientation, and if available, parameters for distortion corrections.
 
     Arguments:
     ---------
-    - Ex: output buffer for exterior orientation.
-    - I: output buffer for interior orientation.
-    - G: output buffer for glass parameters.
     - ori_file: path of file containing interior and exterior orientation data.
-    - addp: output buffer for additional (distortion) parameters.
     - add_file: path of file containing added (distortions) parameters.
     - add_fallback: path to file for use if add_file can't be opened.
 
     Returns:
     -------
-    - cal: Calibration object without multimedia lookup table.
+    - Ex, In, G, addp: Calibration object parts without multimedia lookup table.
     """
     Ex = Exterior()
     In = Interior()
     G = Glass()
     addp = ap_52()
 
+    if not pathlib.Path(ori_file).exists:
+        raise IOError(f"File {ori_file} does not exist")
+
     with open(ori_file, "r", encoding="utf-8") as fp:
         # Exterior
-        scan_res = fp.read().split()
-        Ex.x0, Ex.y0, Ex.z0 = map(float, scan_res[:3])
-        Ex.omega, Ex.phi, Ex.kappa = map(float, scan_res[3:6])
+        Ex.x0, Ex.y0, Ex.z0 = map(float, fp.readline().split())
+        Ex.omega, Ex.phi, Ex.kappa = map(float, fp.readline().split())
         # Exterior rotation matrix
-        for i in range(3):
-            scan_res = fp.read().split()
-            Ex.dm[i] = list(map(float, scan_res))
+        # skip line
+        fp.readline()
+
+        Ex.dm = [np.array(list(map(float, fp.readline().split()))) for _ in range(3)]
         # Interior
-        scan_res = fp.read().split()
-        In.xh, In.yh, In.cc = map(float, scan_res)
+        # skip
+        fp.readline()
+        In.xh, In.yh = map(float, fp.readline().split())
+        In.cc = float(fp.readline())
+
         # Glass
-        scan_res = fp.read().split()
-        G.vec_x, G.vec_y, G.vec_z = map(float, scan_res)
+        # skip
+        fp.readline()
+        G.vec_x, G.vec_y, G.vec_z = map(float, fp.readline().split())
 
     # Additional parameters
-
     try:
-        with open(add_file, "r", encoding="utf-8") as fp:
-            scan_res = fp.read().split()
-            addp.k1, addp.k2, addp.k3 = map(float, scan_res[:3])
-            addp.p1, addp.p2 = map(float, scan_res[3:5])
-            addp.scx, addp.she = map(float, scan_res[5:])
+        with open(add_file or add_fallback, "r", encoding="utf-8") as fp:
+            addp.k1, addp.k2, addp.k3, addp.p1, addp.p2, addp.scx, addp.she = map(
+                float, fp.readline().split()
+            )
     except FileNotFoundError:
-        if add_fallback:
-            with open(add_fallback, "r", encoding="utf-8") as fp:
-                scan_res = fp.read().split()
-                addp.k1, addp.k2, addp.k3 = map(float, scan_res[:3])
-                addp.p1, addp.p2 = map(float, scan_res[3:5])
-                addp.scx, addp.she = map(float, scan_res[5:])
-        else:
-            print("no addpar fallback used")  # Waits for proper logging.
-            addp.k1 = addp.k2 = addp.k3 = addp.p1 = addp.p2 = addp.she = 0.0
-            addp.scx = 1.0
+        print("no addpar fallback used")  # Waits for proper logging.
+        addp.k1 = addp.k2 = addp.k3 = addp.p1 = addp.p2 = addp.she = 0.0
+        addp.scx = 1.0
 
-    cal = Calibration(Ex, In, G, addp)
-
-    return cal
+    return (Ex, In, G, addp)
 
 
 def compare_exterior(e1: Exterior, e2: Exterior) -> bool:
