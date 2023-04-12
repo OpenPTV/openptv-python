@@ -1,39 +1,13 @@
 """Correspondences."""
-from dataclasses import dataclass, field
 from typing import List
 
 import numpy as np
 
 from .calibration import Calibration
-from .constants import CORRES_NONE, MAXCAND, NMAX, PT_UNUSED
+from .constants import CORRES_NONE, NMAX, PT_UNUSED
 from .epi import Candidate, Coord2d, epi_mm, find_candidate
 from .parameters import ControlPar, VolumePar
-from .tracking_frame_buf import Frame
-
-
-@dataclass
-class n_tupel:
-    """n_tupel data structure."""
-
-    p: List[int]
-    corr: float
-
-
-@dataclass
-class Correspond:
-    """Correspondence candidate data structure."""
-
-    p1: int  # point number of master point
-    n: int  # number of candidates
-    p2: np.ndarray = field(
-        default=np.empty(MAXCAND, dtype=int)
-    )  # point numbers of candidates
-    corr: np.ndarray = field(
-        default=np.empty(MAXCAND, dtype=float)
-    )  # feature-based correlation coefficient
-    dist: np.ndarray = field(
-        default=np.empty(MAXCAND, dtype=float)
-    )  # distance perpendicular to epipolar line
+from .tracking_frame_buf import Correspond, Frame, n_tupel
 
 
 def quicksort_con(con, num):
@@ -74,58 +48,6 @@ def qs_con(con, left, right):
 #     right = np.array([x for x in con if x.corr > pivot], dtype=con.dtype)
 
 #     return np.concatenate((quicksort_con(left), middle, quicksort_con(right)))
-
-
-def quicksort_target_y(pix, num):
-    """Quicksort for targets."""
-    qs_target_y(pix, 0, num - 1)
-
-
-def qs_target_y(pix, left, right):
-    """Quicksort for targets subroutine."""
-    if left >= right:
-        return
-
-    pivot = pix[(left + right) // 2].y
-    i, j = left, right
-    while i <= j:
-        while pix[i].y < pivot:
-            i += 1
-        while pix[j].y > pivot:
-            j -= 1
-        if i <= j:
-            pix[i], pix[j] = pix[j], pix[i]
-            i += 1
-            j -= 1
-
-    qs_target_y(pix, left, j)
-    qs_target_y(pix, i, right)
-
-
-def quicksort_coord2d_x(crd, num):
-    """Quicksort for coordinates."""
-    qs_coord2d_x(crd, 0, num - 1)
-
-
-def qs_coord2d_x(crd, left, right):
-    """Quicksort for coordinates subroutine."""
-    if left >= right:
-        return
-
-    pivot = crd[(left + right) // 2].x
-    i, j = left, right
-    while i <= j:
-        while crd[i].x < pivot and i < right:
-            i += 1
-        while pivot < crd[j].x and j > left:
-            j -= 1
-        if i <= j:
-            crd[i], crd[j] = crd[j], crd[i]
-            i += 1
-            j -= 1
-
-    qs_coord2d_x(crd, left, j)
-    qs_coord2d_x(crd, i, right)
 
 
 def deallocate_target_usage_marks(tusage, num_cams):

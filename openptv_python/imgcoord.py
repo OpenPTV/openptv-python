@@ -1,5 +1,6 @@
 """Image coordinates."""
 
+
 from typing import Tuple
 
 from .calibration import Calibration

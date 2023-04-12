@@ -10,15 +10,101 @@ from .calibration import Calibration
 from .constants import (
     COORD_UNUSED,
     MAX_TARGETS,
+    MAXCAND,
     NEXT_NONE,
     POSI,
     PREV_NONE,
     PRIO_DEFAULT,
 )
-from .correspondences import Correspond, quicksort_coord2d_x
 from .epi import Coord2d
 from .parameters import ControlPar
 from .trafo import dist_to_flat, pixel_to_metric
+
+
+@dataclass
+class n_tupel:
+    """n_tupel data structure."""
+
+    p: List[int]
+    corr: float
+
+
+@dataclass
+class Correspond:
+    """Correspondence candidate data structure."""
+
+    p1: int  # point number of master point
+    n: int  # number of candidates
+    p2: np.ndarray = field(
+        default=np.empty(MAXCAND, dtype=int)
+    )  # point numbers of candidates
+    corr: np.ndarray = field(
+        default=np.empty(MAXCAND, dtype=float)
+    )  # feature-based correlation coefficient
+    dist: np.ndarray = field(
+        default=np.empty(MAXCAND, dtype=float)
+    )  # distance perpendicular to epipolar line
+
+
+def quicksort_target_y(pix, num):
+    """Quicksort for targets."""
+    pix = qs_target_y(pix, 0, num - 1)
+    return pix
+
+
+def qs_target_y(pix, left, right):
+    """Quicksort for targets subroutine."""
+    if left >= right:
+        return
+
+    pivot = pix[(left + right) // 2].y
+    i, j = left, right
+    while i <= j:
+        while pix[i].y < pivot:
+            i += 1
+        while pix[j].y > pivot:
+            j -= 1
+        if i <= j:
+            pix[i], pix[j] = pix[j], pix[i]
+            i += 1
+            j -= 1
+
+    pix = qs_target_y(pix, left, j)
+    pix = qs_target_y(pix, i, right)
+    return pix
+
+
+# def quicksort_coord2d_x(crd, num):
+#     """Quicksort for coordinates."""
+#     crd = qs_coord2d_x(crd, 0, num - 1)
+#     return crd
+
+
+# def qs_coord2d_x(crd, left, right):
+#     """Quicksort for coordinates subroutine."""
+#     if left >= right:
+#         return
+
+#     pivot = crd[(left + right) // 2].x
+#     i, j = left, right
+#     while i <= j:
+#         while crd[i].x < pivot and i < right:
+#             i += 1
+#         while pivot < crd[j].x and j > left:
+#             j -= 1
+#         if i <= j:
+#             crd[i], crd[j] = crd[j], crd[i]
+#             i += 1
+#             j -= 1
+
+#     crd = qs_coord2d_x(crd, left, j)
+#     crd = qs_coord2d_x(crd, i, right)
+#     return crd
+
+
+def sort_crd_x(crd):
+    """Sort coordinates by x."""
+    return sorted(crd, key=lambda p: p.x)
 
 
 @dataclass
@@ -46,13 +132,23 @@ class Target:
             and self.tnr == other.tnr
         )
 
+    def set_pos(self, x, y):
+        self.x = x
+        self.y = y
+
 
 @dataclass
 class TargetArray:
     """A list of targets and the number of targets in the list."""
 
-    targs: List[Target] = field(default_factory=list)
-    num_targs: int = 0
+    num_targs: int = field(default_factory=int)
+    targs: List[Target] = field(
+        default_factory=lambda: [Target() for _ in range(MAX_TARGETS)]
+    )
+
+    def __init__(self, num_targs: int):
+        self.num_targs = num_targs
+        self.targs = [Target() for _ in range(num_targs)]
 
 
 def read_targets(file_base: str, frame_num: int) -> List[Target]:
@@ -575,7 +671,7 @@ class MatchedCoords:
     is a low priority.
     """
 
-    buf = List[Coord2d]
+    buf: List[Coord2d]
     _num_pts: int
 
     def __init__(
@@ -608,20 +704,19 @@ class MatchedCoords:
         #     target *targ
 
         self._num_pts = len(targs)
-        self.buf = [Coord2d] * self._num_pts
+        self.buf = [Coord2d() for _ in range(self._num_pts)]
 
         for tnum in range(self._num_pts):
-            targ = targs._tarr[tnum]
+            targ = targs[tnum]
             if reset_numbers:
                 targ.pnr = tnum
 
-            self.buf[tnum].x, self.buf[tnum].y = pixel_to_metric(targ.x, targ.y, cpar)
-            self.buf[tnum].x, self.buf[tnum].y = dist_to_flat(
-                cal, self.buf[tnum].x, self.buf[tnum].y, tol
-            )
+            x, y = pixel_to_metric(targ.x, targ.y, cpar)
+            self.buf[tnum].x, self.buf[tnum].y = dist_to_flat(x, y, cal, tol)
             self.buf[tnum].pnr = targ.pnr
 
-        quicksort_coord2d_x(self.buf, self._num_pts)
+        # self.buf = quicksort_coord2d_x(self.buf, self._num_pts)
+        self.buf = sort_crd_x(self.buf)
 
     def as_arrays(self):
         """

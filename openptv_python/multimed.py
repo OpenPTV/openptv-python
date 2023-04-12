@@ -91,7 +91,7 @@ def multimed_r_nlay(cal: Calibration, mm: MultimediaPar, pos: np.ndarray) -> flo
 
 def trans_Cam_Point(
     ex: Exterior, mm: MultimediaPar, glass: Glass, pos: np.ndarray
-) -> Tuple:
+) -> Tuple[Exterior, np.ndarray, np.ndarray, np.ndarray]:
     """Transform the camera and point coordinates to the glass coordinates.
 
     ex = np.array([ex_x, ex_y, ex_z])
@@ -106,31 +106,31 @@ def trans_Cam_Point(
     glass_dir = np.array([glass.vec_x, glass.vec_y, glass.vec_z])
     primary_point = np.array([ex.x0, ex.y0, ex.z0])
 
-    dist_o_glas = np.linalg.norm(glass_dir)  # vector length
+    dist_o_glass = np.linalg.norm(glass_dir)  # vector length
     dist_cam_glas = (
-        np.dot(primary_point, glass_dir) / dist_o_glas - dist_o_glas - mm.d[0]
+        np.dot(primary_point, glass_dir) / dist_o_glass - dist_o_glass - mm.d[0]
     )
-    dist_point_glas = np.dot(pos, glass_dir) / dist_o_glas - dist_o_glas
+    dist_point_glass = np.dot(pos, glass_dir) / dist_o_glass - dist_o_glass
 
-    renorm_glass = glass_dir * (dist_cam_glas / dist_o_glas)
+    renorm_glass = glass_dir * (dist_cam_glas / dist_o_glass)
     cross_c = primary_point - renorm_glass
 
-    renorm_glass = glass_dir * (dist_point_glas / dist_o_glas)
+    renorm_glass = glass_dir * (dist_point_glass / dist_o_glass)
     cross_p = pos - renorm_glass
 
     ex_t = Exterior()
     ex_t.z0 = dist_cam_glas + mm.d[0]
 
-    renorm_glass = glass_dir * (mm.d[0] / dist_o_glas)
+    renorm_glass = glass_dir * (mm.d[0] / dist_o_glass)
     temp = cross_c - renorm_glass
     temp = cross_p - temp
-    pos_t = np.array([np.linalg.norm(temp), 0, dist_point_glas])
+    pos_t = np.array([np.linalg.norm(temp), 0, dist_point_glass])
 
     return ex_t, pos_t, cross_p, cross_c
 
 
 def back_trans_Point(
-    pos_t, mm, G: Glass, cross_p: np.ndarray, cross_c: np.ndarray
+    pos_t: np.ndarray, mm, G: Glass, cross_p: np.ndarray, cross_c: np.ndarray
 ) -> np.ndarray:
     """Transform the point coordinates from the glass to the camera coordinates."""
     glass_dir = np.array([G.vec_x, G.vec_y, G.vec_z])

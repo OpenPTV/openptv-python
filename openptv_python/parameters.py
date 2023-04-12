@@ -1,6 +1,7 @@
 """Parameters for OpenPTV-Python."""
 import os
 from dataclasses import dataclass, field
+from typing import List
 
 import numpy as np
 
@@ -195,18 +196,18 @@ def compare_volume_par(v1: VolumePar, v2: VolumePar) -> bool:
 class ControlPar:
     """Control parameters."""
 
-    num_cams: int = 1
-    img_base_name: list[str] = field(default_factory=list)
-    cal_img_base_name: list[str] = field(default_factory=list)
-    hp_flag: bool = True
-    allCam_flag: bool = False
-    tiff_flag: bool = True
-    imx: int = 1024
-    imy: int = 1024
-    pix_x: float = 0.01
-    pix_y: float = 0.01
-    chfield: int = 1
-    mm: MultimediaPar = MultimediaPar(n1=1, n2=[1], n3=1, d=[1])
+    num_cams: int = field(default_factory=int)
+    img_base_name: List[str] = field(default_factory=list)
+    cal_img_base_name: List[str] = field(default_factory=list)
+    hp_flag: int = field(default=1)
+    allCam_flag: int = field(default=0)
+    tiff_flag: int = field(default=1)
+    imx: int = field(default_factory=int)
+    imy: int = field(default_factory=int)
+    pix_x: float = field(default_factory=float)
+    pix_y: float = field(default_factory=float)
+    chfield: int = field(default_factory=int)
+    mm: MultimediaPar = field(default=MultimediaPar(n1=1, n2=[1], n3=1, d=[1]))
 
     def set_image_size(self, imx, imy):
         """Set image size in pixels."""
@@ -226,26 +227,28 @@ class ControlPar:
 def read_control_par(filename: str) -> ControlPar:
     """Read control parameters from file and return ControlPar object."""
     if not os.path.isfile(filename):
-        print(f"Could not open file {filename}")
-        return None
+        raise FileNotFoundError(f"Could not open file {filename}")
 
-    with open(filename, "r") as par_file:
+    with open(filename, "r", encoding="utf-8") as par_file:
         num_cams = int(par_file.readline().strip())
-        ret = ControlPar(num_cams=num_cams, mm={})
+        ret = ControlPar(num_cams=num_cams)
 
-        for cam in range(ret.num_cams):
-            ret.img_base_name = par_file.readline().strip()
-            ret.cal_img_base_name = par_file.readline().strip()
+        for _ in range(ret.num_cams):
+            ret.img_base_name.append(par_file.readline().strip())
+            ret.cal_img_base_name.append(par_file.readline().strip())
 
-        ret.hp_flag, ret.allCam_flag, ret.tiff_flag = map(
-            bool, map(int, par_file.readline().split())
-        )
-        ret.imx, ret.imy, ret.pix_x, ret.pix_y, ret.chfield = map(
-            int, par_file.readline().split()
-        )
-        ret.mm["n1"], ret.mm["n2"], ret.mm["n3"], ret.mm["d"] = map(
-            float, par_file.readline().split()
-        )
+        ret.hp_flag = int(par_file.readline().strip())
+        ret.allCam_flag = int(par_file.readline().strip())
+        ret.tiff_flag = int(par_file.readline().strip())
+        ret.imx = int(par_file.readline().strip())
+        ret.imy = int(par_file.readline().strip())
+        ret.pix_x = float(par_file.readline().strip())
+        ret.pix_y = float(par_file.readline().strip())
+        ret.chfield = int(par_file.readline().strip())
+        ret.mm.n1 = float(par_file.readline().strip())
+        ret.mm.n2 = float(par_file.readline().strip())
+        ret.mm.n3 = float(par_file.readline().strip())
+        ret.mm.d = float(par_file.readline().strip())
 
     return ret
 

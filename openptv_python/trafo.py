@@ -45,38 +45,27 @@ def pixel_to_metric(
 
 
 def metric_to_pixel(
-    x_metric: np.ndarray or float, y_metric: np.ndarray or float, parameters: ControlPar
-) -> Tuple[np.ndarray or float, np.ndarray or float]:
+    x_metric: float, y_metric: float, parameters: ControlPar
+) -> Tuple[float, float]:
     """Convert metric coordinates to pixel coordinates.
 
     Arguments:
     ---------
-    x_metric, y_metric (float or numpy.ndarray): input metric coordinates.
+    x_metric, y_metric (float): input metric coordinates.
     parameters (ControlPar): control structure holding image and pixel sizes.
 
     Returns:
     -------
-    x_pixel, y_pixel (float or numpy.ndarray): output pixel coordinates.
+    x_pixel, y_pixel (float): output pixel coordinates.
     """
-    # convert inputs to numpy arrays if not already
-    if isinstance(x_metric, float):
-        x_metric = np.array([x_metric])
-    if isinstance(y_metric, float):
-        y_metric = np.array([y_metric])
-
     x_pixel = (x_metric / parameters.pix_x) + (float(parameters.imx) / 2.0)
     y_pixel = (float(parameters.imy) / 2.0) - (y_metric / parameters.pix_y)
-
-    # convert outputs to floats if only one output value is returned
-    if isinstance(x_pixel, np.ndarray) and x_pixel.shape[0] == 1:
-        x_pixel = float(x_pixel[0])
-    if isinstance(y_pixel, np.ndarray) and y_pixel.shape[0] == 1:
-        y_pixel = float(y_pixel[0])
 
     return x_pixel, y_pixel
 
 
 def distort_brown_affine(x: float, y: float, ap: ap_52) -> Tuple[float, float]:
+    """Distort a point using the Brown affine model."""
     r = np.sqrt(x * x + y * y)
     if r != 0:
         x += (

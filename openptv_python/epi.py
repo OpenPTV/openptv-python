@@ -1,8 +1,8 @@
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from .calibration import Calibration
-from .correspondences import MAXCAND
+from .constants import MAXCAND
 from .imgcoord import flat_image_coord
 from .multimed import move_along_ray
 from .parameters import MultimediaPar, VolumePar
@@ -23,9 +23,9 @@ class Candidate:
 class Coord2d:
     """2D coordinates in the image plane."""
 
-    pnr: int = 0
-    x: float = 0
-    y: float = 0
+    pnr: int = field(default=0)
+    x: float = field(default=0.0)
+    y: float = field(default=0.0)
 
 
 def epi_mm(xl, yl, cal1, cal2, mmp, vpar):

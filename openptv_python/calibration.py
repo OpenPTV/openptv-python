@@ -16,7 +16,7 @@ class Exterior:
     omega: float = field(default=0.0, metadata={"units": "rad"})
     phi: float = field(default=0.0, metadata={"units": "rad"})
     kappa: float = field(default=0.0, metadata={"units": "rad"})
-    dm: np.array = field(default=np.zeros((3, 3), dtype=float))
+    dm: np.ndarray = field(default=np.zeros((3, 3), dtype=float))
 
 
 @dataclass
@@ -352,7 +352,8 @@ def read_ori(
         # skip line
         fp.readline()
 
-        Ex.dm = [np.array(list(map(float, fp.readline().split()))) for _ in range(3)]
+        Ex.dm = np.array([list(map(float, fp.readline().split())) for _ in range(3)])
+        Ex.dm = Ex.dm.reshape(3, 3)
         # Interior
         # skip
         fp.readline()
