@@ -3,42 +3,43 @@ import unittest
 import numpy as np
 
 from openptv_python.calibration import Calibration
-from openptv_python.imgcoord import flat_image_coordinates, image_coordinates
-from openptv_python.parameters import ControlPar, MultimediaParams
+from openptv_python.imgcoord import flat_image_coord, img_coord
+from openptv_python.parameters import ControlPar, MultimediaPar
 
 
 class Test_image_coordinates(unittest.TestCase):
     def setUp(self):
         self.control = ControlPar(4)
-
         self.calibration = Calibration()
+        self.control.mm = MultimediaPar(n1=1, n2=np.array([1]), n3=1, d=np.array([1]))
 
     def test_img_coord_typecheck(self):
         with self.assertRaises(TypeError):
-            list = [
-                [0 for x in range(3)] for x in range(10)
-            ]  # initialize a 10x3 list (but not numpy matrix)
-            flat_image_coordinates(list, self.control, out=None)
-        with self.assertRaises(TypeError):
-            flat_image_coordinates(
-                np.empty((10, 2)),
-                self.calibration,
-                self.control.get_multimedia_params(),
-                output=None,
+            x, y = flat_image_coord(
+                np.zeros(3, dtype=float), cal=self.calibration, mm=self.control.mm
             )
+            assert x == 0 and y == 0
+
         with self.assertRaises(TypeError):
-            image_coordinates(
+            _, _ = flat_image_coord(
+                np.empty(
+                    2,
+                ),
+                cal=self.calibration,
+                mm=self.control.mm,
+            )
+
+        with self.assertRaises(TypeError):
+            _, _ = img_coord(
                 np.empty((10, 3)),
-                self.calibration,
-                self.control.get_multimedia_params(),
-                output=np.zeros((10, 3)),
+                cal=self.calibration,
+                mm=self.control.mm,
             )
         with self.assertRaises(TypeError):
-            image_coordinates(
+            _, _ = img_coord(
                 np.zeros((10, 2)),
-                self.calibration,
-                self.control.get_multimedia_params(),
-                output=np.zeros((10, 2)),
+                cal=self.calibration,
+                mm=self.control.mm,
             )
 
     def test_image_coord_regress(self):
@@ -50,7 +51,7 @@ class Test_image_coordinates(unittest.TestCase):
         self.calibration.set_decentering(np.array([0, 0]))
         self.calibration.set_affine_trans(np.array([1, 0]))
 
-        self.mult = MultimediaParams(n1=1, n2=np.array([1]), n3=1, d=np.array([1]))
+        # self.mult = MultimediaPar(n1=1, n2=np.array([1]), n3=1, d=np.array([1]))
 
         input = np.array([[10.0, 5.0, -20.0], [10.0, 5.0, -20.0]])  # vec3d
         output = np.zeros((2, 2))
@@ -59,15 +60,11 @@ class Test_image_coordinates(unittest.TestCase):
         y = x / 2.0
         correct_output = np.array([[x, y], [x, y]])
 
-        flat_image_coordinates(
-            input=input, cal=self.calibration, mult_params=self.mult, output=output
-        )
-        np.testing.assert_array_equal(output, correct_output)
-
-        output = np.full((2, 2), 999.0)
-        image_coordinates(
-            input=input, cal=self.calibration, mult_params=self.mult, output=output
-        )
+        output = np.empty_like(correct_output)
+        for row in input:
+            output[0], output[1] = flat_image_coord(
+                orig_pos=row, cal=self.calibration, mm=self.control.mm
+            )
 
         np.testing.assert_array_equal(output, correct_output)
 

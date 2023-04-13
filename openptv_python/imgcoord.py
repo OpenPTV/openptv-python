@@ -3,6 +3,8 @@
 
 from typing import Tuple
 
+import numpy as np
+
 from .calibration import Calibration
 from .multimed import back_trans_Point, multimed_nlay, trans_Cam_Point
 from .parameters import MultimediaPar
@@ -68,6 +70,18 @@ def flat_image_coord(
     return x, y
 
 
+def flat_image_coordinates(
+    orig_pos: np.ndarray, cal: Calibration, mm: MultimediaPar
+) -> np.ndarray:
+    """Flat image coordinates in array mode."""
+    out = np.empty(orig_pos.shape[0], 2)
+
+    for i, row in enumerate(orig_pos):
+        out[i, 0], out[i, 1] = flat_image_coord(row, cal, mm)
+
+    return out
+
+
 def img_coord(pos: vec3d, cal: Calibration, mm: MultimediaPar) -> Tuple[float, float]:
     """Image coordinate."""
     # Estimate metric coordinates in image space using flat_image_coord()
@@ -77,3 +91,15 @@ def img_coord(pos: vec3d, cal: Calibration, mm: MultimediaPar) -> Tuple[float, f
     x, y = flat_to_dist(x, y, cal)
 
     return x, y
+
+
+def image_coordinates(
+    orig_pos: np.ndarray, cal: Calibration, mm: MultimediaPar
+) -> np.ndarray:
+    """Image coordinates in array mode."""
+    out = np.empty(orig_pos.shape[0], 2)
+
+    for i, row in enumerate(orig_pos):
+        out[i, 0], out[i, 1] = img_coord(row, cal, mm)
+
+    return out

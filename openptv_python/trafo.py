@@ -64,6 +64,27 @@ def metric_to_pixel(
     return x_pixel, y_pixel
 
 
+def convert_arr_metric_to_pixel(
+    metric: np.ndarray, parameters: ControlPar
+) -> np.ndarray:
+    """Convert an array of metric coordinates to pixel coordinates.
+
+    Arguments:
+    ---------
+    metric (np.ndarray): input array of metric coordinates.
+    parameters (ControlPar): control structure holding image and pixel sizes.
+
+    Returns:
+    -------
+    pixel (np.ndarray): output array of pixel coordinates.
+    """
+    pixel = np.zeros_like(metric)
+    pixel[:, 0] = (metric[:, 0] / parameters.pix_x) + (float(parameters.imx) / 2.0)
+    pixel[:, 1] = (float(parameters.imy) / 2.0) - (metric[:, 1] / parameters.pix_y)
+
+    return pixel
+
+
 def distort_brown_affine(x: float, y: float, ap: ap_52) -> Tuple[float, float]:
     """Distort a point using the Brown affine model."""
     r = np.sqrt(x * x + y * y)

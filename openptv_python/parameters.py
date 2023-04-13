@@ -155,6 +155,25 @@ class VolumePar:
     eps0: float = 0.01
     corrmin: float = 0.2
 
+    def set_Zmin_lay(self, Zmin_lay):
+        self.Zmin_lay = Zmin_lay
+
+    def from_file(self, filename: str):
+        """Read volume parameters from file.
+
+        Args:
+        ----
+            filename (str): filename
+
+        """
+        with open(filename, "r", encoding="utf-8") as f:
+            self.X_lay = [float(f.readline()) for _ in range(2)]
+            self.Zmin_lay = float(f.readline())
+            self.Zmax_lay = float(f.readline())
+            self.cnx, self.cny, self.cn, self.csumg, self.corrmin, self.eps0 = [
+                float(f.readline()) for _ in range(6)
+            ]
+
 
 def read_volume_par(filename: str) -> VolumePar:
     """Read volume parameters from file and returns volume_par object.
@@ -167,22 +186,7 @@ def read_volume_par(filename: str) -> VolumePar:
     -------
         VolumePar: volume of interest parameters
     """
-    with open(filename, "r", encoding="utf-8") as f:
-        X_lay = [float(f.readline()) for _ in range(2)]
-        Zmin_lay = float(f.readline())
-        Zmax_lay = float(f.readline())
-        cnx, cny, cn, csumg, corrmin, eps0 = [float(f.readline()) for _ in range(6)]
-        return VolumePar(
-            X_lay=X_lay,
-            Zmin_lay=Zmin_lay,
-            Zmax_lay=Zmax_lay,
-            cn=cn,
-            cnx=cnx,
-            cny=cny,
-            csumg=csumg,
-            eps0=eps0,
-            corrmin=corrmin,
-        )
+    return VolumePar().from_file(filename)
 
 
 def compare_volume_par(v1: VolumePar, v2: VolumePar) -> bool:
@@ -214,43 +218,75 @@ class ControlPar:
         self.imx = imx
         self.imy = imy
 
+    def get_image_size(self):
+        """Set image size in pixels."""
+        return self.imx, self.imy
+
     def set_pixel_size(self, pix_x, pix_y):
         """Set pixel size in mm."""
         self.pix_x = pix_x
         self.pix_y = pix_y
 
-    def get_multimedia_par(self, cam):
-        """Return multimedia parameters for camera cam."""
-        return self.mm[cam]
+    def get_multimedia_par(self):
+        """Return multimedia parameters."""
+        return self.mm
+
+    def from_file(self, filename: str):
+        """Read control parameters from file and return ControlPar object."""
+        if not os.path.isfile(filename):
+            raise FileNotFoundError(f"Could not open file {filename}")
+
+        with open(filename, "r", encoding="utf-8") as par_file:
+            self.num_cams = int(par_file.readline().strip())
+
+            for _ in range(self.num_cams):
+                self.img_base_name.append(par_file.readline().strip())
+                self.cal_img_base_name.append(par_file.readline().strip())
+
+            self.hp_flag = int(par_file.readline().strip())
+            self.allCam_flag = int(par_file.readline().strip())
+            self.tiff_flag = int(par_file.readline().strip())
+            self.imx = int(par_file.readline().strip())
+            self.imy = int(par_file.readline().strip())
+            self.pix_x = float(par_file.readline().strip())
+            self.pix_y = float(par_file.readline().strip())
+            self.chfield = int(par_file.readline().strip())
+            self.mm.n1 = float(par_file.readline().strip())
+            self.mm.n2 = float(par_file.readline().strip())
+            self.mm.n3 = float(par_file.readline().strip())
+            self.mm.d = float(par_file.readline().strip())
 
 
 def read_control_par(filename: str) -> ControlPar:
     """Read control parameters from file and return ControlPar object."""
-    if not os.path.isfile(filename):
-        raise FileNotFoundError(f"Could not open file {filename}")
+    return ControlPar().from_file(filename)
 
-    with open(filename, "r", encoding="utf-8") as par_file:
-        num_cams = int(par_file.readline().strip())
-        ret = ControlPar(num_cams=num_cams)
+    # """Read control parameters from file and return ControlPar object."""
+    # if not os.path.isfile(filename):
+    #     raise FileNotFoundError(f"Could not open file {filename}")
 
-        for _ in range(ret.num_cams):
-            ret.img_base_name.append(par_file.readline().strip())
-            ret.cal_img_base_name.append(par_file.readline().strip())
+    # with open(filename, "r", encoding="utf-8") as par_file:
+    #     num_cams = int(par_file.readline().strip())
+    #     ret = ControlPar(num_cams=num_cams)
 
-        ret.hp_flag = int(par_file.readline().strip())
-        ret.allCam_flag = int(par_file.readline().strip())
-        ret.tiff_flag = int(par_file.readline().strip())
-        ret.imx = int(par_file.readline().strip())
-        ret.imy = int(par_file.readline().strip())
-        ret.pix_x = float(par_file.readline().strip())
-        ret.pix_y = float(par_file.readline().strip())
-        ret.chfield = int(par_file.readline().strip())
-        ret.mm.n1 = float(par_file.readline().strip())
-        ret.mm.n2 = float(par_file.readline().strip())
-        ret.mm.n3 = float(par_file.readline().strip())
-        ret.mm.d = float(par_file.readline().strip())
+    #     for _ in range(ret.num_cams):
+    #         ret.img_base_name.append(par_file.readline().strip())
+    #         ret.cal_img_base_name.append(par_file.readline().strip())
 
-    return ret
+    #     ret.hp_flag = int(par_file.readline().strip())
+    #     ret.allCam_flag = int(par_file.readline().strip())
+    #     ret.tiff_flag = int(par_file.readline().strip())
+    #     ret.imx = int(par_file.readline().strip())
+    #     ret.imy = int(par_file.readline().strip())
+    #     ret.pix_x = float(par_file.readline().strip())
+    #     ret.pix_y = float(par_file.readline().strip())
+    #     ret.chfield = int(par_file.readline().strip())
+    #     ret.mm.n1 = float(par_file.readline().strip())
+    #     ret.mm.n2 = float(par_file.readline().strip())
+    #     ret.mm.n3 = float(par_file.readline().strip())
+    #     ret.mm.d = float(par_file.readline().strip())
+
+    # return ret
 
 
 def compare_control_par(c1: ControlPar, c2: ControlPar) -> bool:

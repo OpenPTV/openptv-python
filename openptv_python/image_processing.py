@@ -1,3 +1,4 @@
+"""Image processing functions."""
 import copy
 
 import numpy as np
@@ -80,7 +81,17 @@ def copy_images(src: np.ndarray) -> np.ndarray:
     return dest
 
 
-def prepare_image(img, img_hp, dim_lp, filter_hp, filter_file, cpar):
+def prepare_image(
+    img: np.ndarray,
+    cpar: ControlPar,
+    dim_lp: int = 1,
+    filter_hp: int = 1,
+    filter_file: str = None,
+):
+    """Prepare an image for particle detection: an averaging (smoothing).
+
+    filter on an image, optionally followed by additional user-defined filter.
+    """
     image_size = cpar.imx * cpar.imy
     img_lp = np.zeros(image_size, dtype=np.uint8)
 
@@ -94,7 +105,7 @@ def prepare_image(img, img_hp, dim_lp, filter_hp, filter_file, cpar):
     )
 
     # Subtract low-pass filtered image from original image
-    img_hp = np.subtract(img, img_lp, dtype=np.int16)
+    img_hp = np.subtract(img, img_lp)
 
     # Filter highpass image, if wanted
     if filter_hp == 1:
@@ -106,10 +117,10 @@ def prepare_image(img, img_hp, dim_lp, filter_hp, filter_file, cpar):
         ).flatten()
     elif filter_hp == 2:
         try:
-            with open(filter_file, "r") as fp:
+            with open(filter_file, "r", encoding="utf-8") as fp:
                 filt = np.array(fp.read().split(), dtype=np.float64).reshape((3, 3))
-        except Exception:
-            return 0
+        except Exception as exc:
+            raise IOError(f"Could not open filter file: {filter_file}") from exc
 
         img_hp = ndimage.convolve(
             img_hp.reshape((cpar.imy, cpar.imx)),
@@ -118,4 +129,91 @@ def prepare_image(img, img_hp, dim_lp, filter_hp, filter_file, cpar):
             cval=0.0,
         ).flatten()
 
-    return 1
+    return img_hp
+
+
+# def preprocess_image(
+#     input_img: np.ndarray,
+#     filter_hp: int,
+#     control: ControlPar,
+#     lowpass_dim=1,
+#     filter_file=None,
+#     output_img=None,
+# ):
+#     """
+#     Perform the steps necessary for preparing an image
+
+#     for particle detection: an averaging (smoothing) filter on an image, optionally
+#     followed by additional user-defined filter.
+
+#     Arguments:
+#     numpy.ndarray input_img - numpy 2d array representing the source image to filter.
+#     int filter_hp - flag for additional filtering of _hp. 1 for lowpass, 2 for
+#         general 3x3 filter given in parameter ``filter_file``.
+#     ControlParams control - image details such as size and image half for
+#     interlaced cases.
+#     int lowpass_dim - half-width of lowpass filter, see fast_box_blur()'s filt_span
+#       parameter.
+#     filter_file - path to a text file containing the filter matrix to be
+#         used in case ```filter_hp == 2```. One line per row, white-space
+#         separated columns.
+#     numpy.ndarray output_img - result numpy 2d array representing the source
+#         image to filter. Same size as img.
+
+#     Returns:
+#     numpy.ndarray representing the result image.
+#     """
+
+#     # check arrays dimensions
+#     if input_img.ndim != 2:
+#         raise TypeError("Input array must be two-dimensional")
+#     if (output_img is not None) and (
+#         input_img.shape[0] != output_img.shape[0]
+#         or input_img.shape[1] != output_img.shape[1]
+#     ):
+#         raise ValueError("Different shapes of input and output images.")
+#     else:
+#         output_img = np.empty_like(input_img)
+
+#     if filter_hp == 2:
+#         if filter_file is None or not isinstance(filter_file, str):
+#             raise ValueError(
+#                 "Expecting a filter file name, received None or non-string."
+#             )
+#     else:
+#         filter_file = b""
+
+#     for arr in (input_img, output_img):
+#         if not arr.flags["C_CONTIGUOUS"]:
+#             np.ascontiguousarray(arr)
+
+#     output_img = prepare_image(input_img, lowpass_dim, filter_hp, filter_file, control):
+#     if output_img is None:
+#         raise Exception(
+#             "prepare_image C function failed: failure of memory allocation or filter file reading"
+#         )
+
+#     return output_img
+
+
+# def prepare_image(input_img, output_img, lowpass_dim, filter_hp, filter_file, control_par):
+#     '''
+#     prepare_image() - C implementation of image preprocessing
+
+#     Arguments:
+#     input_img - numpy 2d array representing the source image to filter.
+#     output_img - result numpy 2d array representing the source image to filter.
+#       Same size as input_img.
+#     lowpass_dim - half-width of lowpass filter, see fast_box_blur()'s filt_span parameter.
+#     filter_hp - flag for additional filtering of _hp. 1 for lowpass, 2 for general
+#       3x3 filter given in parameter filter_file.
+#     filter_file - path to a text file containing the filter matrix to be used in case
+#       filter_hp == 2. One line per row, white-space separated columns.
+#     control_par - control parameters
+
+#     Returns:
+#     int representing the success status of the function
+#     '''
+
+#     # implementation of the function here
+#     pass # replace this with the actual implementation of the function

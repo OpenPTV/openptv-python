@@ -1,5 +1,5 @@
 """Functions for the orientation of the camera."""
-from typing import List, Tuple, Union
+from typing import List, Union
 
 import numpy as np
 
@@ -16,9 +16,7 @@ from .trafo import correct_brown_affine, pixel_to_metric
 from .vec_utils import unit_vector, vec3d, vec_norm, vec_set
 
 
-def skew_midpoint(
-    vert1: vec3d, direct1: vec3d, vert2: vec3d, direct2: vec3d
-) -> Tuple(float, vec3d):
+def skew_midpoint(vert1: vec3d, direct1: vec3d, vert2: vec3d, direct2: vec3d):
     """Find the midpoint of the line segment that is the shortest distance."""
     perp_both = np.cross(direct1, direct2)
     scale = np.dot(perp_both, perp_both)
@@ -42,7 +40,7 @@ def point_position(
     num_cams: int,
     multimed_pars: MultimediaPar,
     cals: List[Calibration],
-) -> Tuple[float, vec3d]:
+):
     """
     Calculate an average 3D position implied by the rays.
 
@@ -146,7 +144,7 @@ def num_deriv_exterior(
     Tuple of two lists: (x_ders, y_ders) respectively the derivatives of the x and y
     image coordinates as function of each of the orientation parameters.
     """
-    vars = [
+    var= [
         cal.ext_par.x0,
         cal.ext_par.y0,
         cal.ext_par.z0,
@@ -162,7 +160,7 @@ def num_deriv_exterior(
 
     for pd in range(6):
         step = dang if pd > 2 else dpos
-        vars[pd] += step
+        var[pd] += step
 
         if pd > 2:
             cal.ext_par = rotation_matrix(cal.ext_par)
@@ -171,7 +169,8 @@ def num_deriv_exterior(
         x_ders[pd] = (xpd - xs) / step
         y_ders[pd] = (ypd - ys) / step
 
-        vars[pd] -= step
+        var[pd] -= step
+        
     cal.ext_par = rotation_matrix(cal.ext_par)
 
     return (x_ders, y_ders)
@@ -181,7 +180,7 @@ def orient(
     cal_in: Calibration,
     cpar: ControlPar,
     nfix: int,
-    fix: List[vec3d],
+    fix: List[np.ndarray],
     pix: List[Target],
     flags: OrientPar,
     sigmabeta: np.ndarray,
@@ -623,7 +622,11 @@ def orient(
 
 
 def raw_orient(
-    cal: Calibration, cpar: ControlPar, nfix: int, fix: List[vec3d], pix: List[Target]
+    cal: Calibration,
+    cpar: ControlPar,
+    nfix: int,
+    fix: List[np.ndarray],
+    pix: List[Target],
 ) -> bool:
     """Raw orientation of the camera."""
     X = np.zeros((10, 6))

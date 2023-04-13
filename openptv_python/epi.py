@@ -1,13 +1,16 @@
+"""Epipolar geometry."""
 import math
 from dataclasses import dataclass, field
 
+import numpy as np
+
 from .calibration import Calibration
 from .constants import MAXCAND
-from .imgcoord import flat_image_coord
+from .imgcoord import flat_image_coord, img_coord
 from .multimed import move_along_ray
-from .parameters import MultimediaPar, VolumePar
+from .parameters import ControlPar, MultimediaPar, VolumePar
 from .ray_tracing import ray_tracing
-from .trafo import correct_brown_affine
+from .trafo import correct_brown_affine, dist_to_flat, metric_to_pixel, pixel_to_metric
 
 
 @dataclass
@@ -304,3 +307,68 @@ def find_candidate(
         count += 1
 
     return count
+
+
+def epipolar_curve(
+    image_point,
+    origin_cam: Calibration,
+    project_cam: Calibration,
+    num_points: int,
+    cparam: ControlPar,
+    vparam: VolumePar,
+) -> np.ndarray:
+    """
+    Get the points lying on the epipolar line from one camera to the other, on.
+
+    the edges of the observed volume. Gives pixel coordinates.
+
+    Assumes the same volume applies to all cameras.
+
+    Arguments:
+    ---------
+    image_point - the 2D point on the image
+        plane of the camera seeing the point. Distorted pixel coordinates.
+    Calibration origin_cam - current position and other parameters of the
+        camera seeing the point.
+    Calibration project_cam - current position and other parameters of the
+        cameraon which the line is projected.
+    int num_points - the number of points to generate along the line. Minimum
+        is 2 for both endpoints.
+    ControlParams cparam - an object holding general control parameters.
+    VolumeParams vparam - an object holding observed volume size parameters.
+
+    Returns:
+    -------
+    line_points - (num_points,2) array with projection camera image coordinates
+        of points lying on the ray stretching from the minimal Z coordinate of
+        the observed volume to the maximal Z thereof, and connecting the camera
+        with the image point on the origin camera.
+    """
+    # cdef:
+    #     np.ndarray[ndim=2, dtype=np.float64_t] line_points
+    #     vec3d vertex, direct, pos
+    #     int pt_ix
+    #     double Z
+    #     double *x
+    #     double *y
+    #     double img_pt[2]
+
+    line_points = np.empty((num_points, 2))
+
+    # Move from distorted pixel coordinates to straight metric coordinates.
+    x, y = pixel_to_metric(image_point[0], image_point[1], cparam)
+    x, y = dist_to_flat(x, y, origin_cam, 0.00001)
+
+    vertex, direct = ray_tracing(x, y, origin_cam._calibration, cparam.mm)
+
+    for pt_ix, Z in enumerate(
+        np.linspace(vparam.Zmin_lay[0], vparam.Zmax_lay[0], num_points)
+    ):
+        # x = line_points[pt_ix], 0)
+        # y = <double *>np.PyArray_GETPTR2(line_points, pt_ix, 1)
+
+        pos = move_along_ray(Z, vertex, direct)
+        x, y = img_coord(pos, project_cam, cparam.mm)
+        line_points[pt_ix, 0], line_points[pt_ix, 1] = metric_to_pixel(x, y, cparam)
+
+    return line_points

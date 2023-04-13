@@ -7,7 +7,6 @@ from openptv_python.correspondences import correspondences
 from openptv_python.imgcoord import img_coord
 from openptv_python.parameters import (
     ControlPar,
-    VolumePar,
     read_control_par,
     read_volume_par,
 )
@@ -119,7 +118,9 @@ class TestReadControlPar(unittest.TestCase):
 
         def test_single_cam_corresp(self):
             """Single camera correspondence."""
-            cpar = read_control_par("tests/testing_folder/single_cam/parameters/ptv.par")
+            cpar = read_control_par(
+                "tests/testing_folder/single_cam/parameters/ptv.par"
+            )
             vpar = read_volume_par(
                 "tests/testing_folder/single_cam/parameters/criteria.par"
             )

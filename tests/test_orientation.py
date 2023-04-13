@@ -12,9 +12,14 @@ from openptv_python.orientation import (
     match_detection_to_ref,
     point_positions,
 )
-from openptv_python.parameters import ControlPar, VolumeParams
-from openptv_python.tracking_framebuf import TargetArray
-from openptv_python.transforms import convert_arr_metric_to_pixel
+from openptv_python.parameters import (
+    ControlPar,
+    VolumePar,
+    read_control_par,
+    read_volume_par,
+)
+from openptv_python.tracking_frame_buf import TargetArray
+from openptv_python.trafo import convert_arr_metric_to_pixel
 
 
 class Test_Orientation(unittest.TestCase):
@@ -27,9 +32,9 @@ class Test_Orientation(unittest.TestCase):
         self.calibration = Calibration()
         self.calibration.from_file(self.input_ori_file_name, self.input_add_file_name)
         self.control = ControlPar(4)
-        self.control.read_control_par(self.control_file_name)
-        self.vpar = VolumeParams()
-        self.vpar.read_volume_par(self.volume_file_name)
+        self.control = read_control_par(self.control_file_name)
+        self.vpar = VolumePar()
+        self.vpar = read_volume_par(self.volume_file_name)
 
     def test_match_detection_to_ref(self):
         """Match detection to reference (sortgrid)."""
@@ -174,7 +179,7 @@ class Test_Orientation(unittest.TestCase):
         cpar.read_control_par(cpar_file)
         mult_params = cpar.get_multimedia_params()
 
-        vpar = VolumeParams()
+        vpar = VolumePar()
         vpar.read_volume_par(vpar_file)
 
         ori_name = "tests/testing_folder/single_cam/calibration/cam_1.tif.ori"
@@ -264,8 +269,8 @@ class TestGradientDescent(unittest.TestCase):
 
     def setUp(self):
         control_file_name = "tests/testing_folder/corresp/control.par"
-        self.control = ControlPar(4)
-        self.control.read_control_par(control_file_name)
+        # self.control = ControlPar(4)
+        self.control = read_control_par(control_file_name)
 
         self.cal = Calibration()
         self.cal.from_file(

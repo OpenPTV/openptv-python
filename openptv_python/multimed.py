@@ -11,7 +11,7 @@ from .parameters import (
 )
 from .ray_tracing import ray_tracing
 from .trafo import correct_brown_affine, pixel_to_metric
-from .vec_utils import norm, vec_set, vec_subt
+from .vec_utils import norm, vec3d, vec_set, vec_subt
 
 
 def multimed_nlay(
@@ -151,7 +151,7 @@ def back_trans_Point(
     return pos
 
 
-def move_along_ray(glob_Z: float, vertex: np.ndarray, direct: np.ndarray):
+def move_along_ray(glob_Z: float, vertex: np.ndarray, direct: np.ndarray) -> vec3d:
     """Move along the ray to the global Z plane.
 
     move_along_ray() calculates the position of a point in a global Z value
