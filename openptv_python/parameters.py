@@ -28,9 +28,17 @@ class MultimediaPar:
         """Return the refractive index of the first medium."""
         return self.n1
 
+    def set_n1(self, n1):
+        """Return the refractive index of the first medium."""
+        self.n1 = n1
+
     def get_n3(self):
         """Return the refractive index of the last medium."""
         return self.n3
+
+    def set_n3(self, n3):
+        """Return the refractive index of the last medium."""
+        self.n3 = n3
 
     def get_n2(self):
         """Return the refractive index of the second medium."""
@@ -40,7 +48,6 @@ class MultimediaPar:
         """Return the thickness of the second medium."""
         return self.d
 
-    # def set_layers(self, n2, d):
     def set_layers(self, refr_index, thickness):
         """Set the layers of the medium."""
         if len(refr_index) != len(thickness):
@@ -255,6 +262,10 @@ class ControlPar:
             self.mm.n2 = float(par_file.readline().strip())
             self.mm.n3 = float(par_file.readline().strip())
             self.mm.d = float(par_file.readline().strip())
+
+    def get_multimedia_params(self):
+        """Return multimedia parameters."""
+        return self.mm
 
 
 def read_control_par(filename: str) -> ControlPar:

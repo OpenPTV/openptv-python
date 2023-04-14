@@ -26,50 +26,57 @@ import numpy as np
 #     return ata
 
 
-def ata(a, start_row, start_col, num_rows, num_cols):
+# def ata(a, m, n, n_large):
+def ata(a, n):
     """
-    Calculate the product of the transpose of a submatrix of matrix a and the submatrix itself.
+    Calculate the matrix product of A^T and A, where A is an m x n matrix,.
+
+    and stores the result in the n x n submatrix ata of a.
 
     Parameters
     ----------
-    a (np.ndarray): the matrix to calculate the product for.
-    start_row (int): the starting row index of the submatrix.
-    start_col (int): the starting column index of the submatrix.
-    num_rows (int): the number of rows in the submatrix.
-    num_cols (int): the number of columns in the submatrix.
+    a (ndarray): An m x n matrix.
+    ata (ndarray): An n x n submatrix of a.
+    m (int): Number of rows in matrix a.
+    n (int): Number of columns in matrix a and ata.
+    n_large (int): Number of columns in the full matrix a.
 
     Returns
     -------
-    np.ndarray: the resulting product matrix.
+    None.
     """
-    sub_a = a[start_row : start_row + num_rows, start_col : start_col + num_cols]
-    at = sub_a.T
-    return np.dot(at, sub_a)
+    at = np.zeros((n, n), dtype=np.float64)
+
+    for i in range(n):
+        for j in range(n):
+            at[i, j] = np.sum(a[:, i] * a[:, j])
+
+    return at
 
 
-def atl(a, ll, n):
-    """Multiply transpose of a matrix A by vector l, creating vector u.
+# def atl(a: np.ndarray, l: np.ndarray, m: int, n: int, n_large: int) -> np.ndarray:
+def atl(a: np.ndarray, b: np.ndarray, n: int) -> np.ndarray:
+    """
+    Multiply transpose of a matrix A by vector b.
 
-    with the option of working with the sub-vector only, when n < n_large.
+    creating vector u with the option of working with the sub-vector only,
+    when n < n_large.
 
     Args:
     ----
-    a - matrix of doubles of the size (m x n_large).
-    l - vector of doubles (m x 1)
-    n - length of the output u - the size of the sub-matrix
+        a: matrix of doubles of size (m x n_large).
+        b: vector of doubles of size (m x 1).
+        m: number of rows in matrix a.
+        n: length of the output u - the size of the sub-matrix.
+        n_large: number of columns in matrix a.
 
     Returns:
     -------
-    u - vector of doubles of the size (n x 1)
+        u: vector of the result multiply(a.T,l) of size (n x 1).
     """
-    # Transpose the input matrix a
-    a_T = np.transpose(a)
-
-    # Compute the product of a.T and l
-    u = np.dot(a_T, ll)
-
-    # Take only the first n elements of the result vector
-    u = u[:n]
+    u = np.zeros(n, dtype=np.float64)
+    for i in range(n):
+        u[i] = np.dot(a[:, i], b)
 
     return u
 

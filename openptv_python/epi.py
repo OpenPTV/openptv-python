@@ -90,7 +90,7 @@ def epi_mm(xl, yl, cal1, cal2, mmp, vpar):
 
 def epi_mm_2D(
     xl: float, yl: float, cal1: Calibration, mmp: MultimediaPar, vpar: VolumePar
-):
+) -> np.ndarray:
     """Return the position of the point in the 3D space.
 
         /*  epi_mm_2D() is a very degenerate case of the epipolar geometry use.

@@ -1,5 +1,5 @@
 """Functions for the orientation of the camera."""
-from typing import List, Union
+from typing import List, Tuple, Union
 
 import numpy as np
 
@@ -7,13 +7,15 @@ from openptv_python.constants import COORD_UNUSED
 
 from .calibration import Calibration, rotation_matrix
 from .constants import IDT, NPAR, NUM_ITER, POS_INF
+from .epi import epi_mm_2D
 from .imgcoord import img_coord
 from .lsqadj import ata, atl
-from .parameters import ControlPar, MultimediaPar, OrientPar
+from .parameters import ControlPar, MultimediaPar, OrientPar, VolumePar
 from .ray_tracing import ray_tracing
-from .tracking_frame_buf import Target
+from .sortgrid import sortgrid
+from .tracking_frame_buf import Target, TargetArray
 from .trafo import correct_brown_affine, pixel_to_metric
-from .vec_utils import unit_vector, vec3d, vec_norm, vec_set
+from .vec_utils import unit_vector, vec2d, vec3d, vec_norm, vec_set
 
 
 def skew_midpoint(vert1: vec3d, direct1: vec3d, vert2: vec3d, direct2: vec3d):
@@ -40,7 +42,7 @@ def point_position(
     num_cams: int,
     multimed_pars: MultimediaPar,
     cals: List[Calibration],
-):
+) -> Tuple[float, np.ndarray]:
     """
     Calculate an average 3D position implied by the rays.
 
@@ -144,7 +146,7 @@ def num_deriv_exterior(
     Tuple of two lists: (x_ders, y_ders) respectively the derivatives of the x and y
     image coordinates as function of each of the orientation parameters.
     """
-    var= [
+    var = [
         cal.ext_par.x0,
         cal.ext_par.y0,
         cal.ext_par.z0,
@@ -170,7 +172,7 @@ def num_deriv_exterior(
         y_ders[pd] = (ypd - ys) / step
 
         var[pd] -= step
-        
+
     cal.ext_par = rotation_matrix(cal.ext_par)
 
     return (x_ders, y_ders)
@@ -205,7 +207,7 @@ def orient(
         can be obtained from the set of detected 2D points using
         sortgrid(). The points which are associated with fix[] have real
         pointer (.pnr attribute), others have -999.
-    flags : orient_par object
+    flags : OrientPar object
         structure of all the flags of the parameters to be (un)changed, read
         from orient.par parameter file using read_orient_par(), defaults
         are zeros except for x_scale which is by default 1.
@@ -663,9 +665,11 @@ def raw_orient(
             n += 2
 
         # void ata (double *a, double *ata, int m, int n, int n_large )
-        XPX = ata(X, n, 6, 6)
+        # ata(X, XPX, n, 6, 6)
+        XPX = ata(X, 6)
         XPXi = np.linalg.inv(XPX)
-        atl(XPy, X, y, n, 6, 6)
+        # atl (double *u, double *a, double *l, int m, int n, int n_large)
+        XPy = atl(X, y, 6)
         beta = XPXi @ XPy
 
         stopflag = all(abs(beta) <= 0.1)
@@ -743,3 +747,355 @@ def read_orient_par(filename: str) -> Union[OrientPar, None]:
     except IOError:
         print(f"Could not open orientation parameters file {filename}.")
         return None
+
+
+def dumbbell_target_func(
+    targets: np.ndarray,
+    cparam: ControlPar,
+    cals: List[Calibration],
+    db_length: float,
+    db_weight: float,
+):
+    """
+    Wrap the epipolar convergence test.
+
+    Arguments:
+    ---------
+    np.ndarray[ndim=3, dtype=pos_t] targets - (num_targets, num_cams, 2) array,
+        containing the metric coordinates of each target on the image plane of
+        each camera. Cameras must be in the same order for all targets.
+    ControlParams cparam - needed for the parameters of the tank through which
+        we see the targets.
+    cals - a sequence of Calibration objects for each of the cameras, in the
+        camera order of ``targets``.
+    db_length - distance between two dumbbell targets.
+    db_weight - weight of relative dumbbell size error in target function.
+    """
+    # cdef:
+    #     np.ndarray[ndim=2, dtype=pos_t] targ
+    #     vec2d **ctargets
+    #     calibration **calib = cal_list2arr(cals)
+    #     int cam, num_cams
+
+    num_cams = targets.shape[1]
+    num_pts = targets.shape[0]
+    # ctargets = <vec2d **>calloc(num_pts, sizeof(vec2d*))
+    ctargets = [vec2d for _ in range(num_pts)]
+
+    for pt in range(num_pts):
+        targ = targets[pt]
+        ctargets[pt] = targ.data
+
+    return weighted_dumbbell_precision(
+        ctargets, num_pts, num_cams, cparam.mm, cals, db_length, db_weight
+    )
+
+
+def external_calibration(
+    cal: Calibration, ref_pts: np.ndarray, img_pts: np.ndarray, cparam: ControlPar
+) -> bool:
+    """
+    Update the external calibration with results of raw orientation.
+
+    the iterative process that adjust the initial guess' external parameters
+    (position and angle of cameras) without internal or distortions.
+
+    Arguments:
+    ---------
+    Calibration cal - position and other parameters of the camera.
+    np.ndarray[ndim=2, dtype=pos_t] ref_pts - an (n,3) array, the 3D known
+        positions of the select 2D points found on the image.
+    np.ndarray[ndim=2, dtype=pos_t] img_pts - a selection of pixel coordinates
+        of image points whose 3D position is known.
+    ControlParams cparam - an object holding general control parameters.
+
+    Returns:
+    -------
+    True if iteration succeeded, false otherwise.
+    """
+    # cdef:
+    #     target *targs
+    #     vec3d *ref_coord
+
+    ref_pts = np.ascontiguousarray(ref_pts)
+    ref_coord = ref_pts.data
+
+    # Convert pixel coords to metric coords:
+    # targs = <target *>calloc(len(img_pts), sizeof(target))
+    targs = [Target() for _ in range(len(img_pts))]
+
+    for ptx, pt in enumerate(img_pts):
+        targs[ptx].x = pt[0]
+        targs[ptx].y = pt[1]
+
+    success = raw_orient(cal, cparam, len(ref_pts), ref_coord, targs)
+
+    # free(targs);
+    del targs
+
+    return True if success else False
+
+
+def full_calibration(
+    cal: Calibration,
+    ref_pts: np.ndarray,
+    img_pts: TargetArray,
+    cparam: ControlPar,
+    flags: list = [],
+):
+    """
+    Perform a full calibration, affecting all calibration structs.
+
+    Arguments:
+    ---------
+    Calibration cal - current position and other parameters of the camera. Will
+        be overwritten with new calibration if iteration succeeded, otherwise
+        remains untouched.
+    np.ndarray[ndim=2, dtype=pos_t] ref_pts - an (n,3) array, the 3D known
+        positions of the select 2D points found on the image.
+    TargetArray img_pts - detected points to match to known 3D positions.
+        Must be sorted by matching ref point (as done by function
+        ``match_detection_to_ref()``.
+    ControlParams cparam - an object holding general control parameters.
+    flags - a list whose members are the names of possible distortion
+        parameters. Only parameter names present in the list will be used.
+        Passing an empty list should be functionally equivalent to a raw
+        calibration, though the code paths taken in C are different.
+
+        The recognized flags are:
+            'cc', 'xh', 'yh' - sensor position.
+            'k1', 'k2', 'k3' - radial distortion.
+            'p1', 'p2' - decentering
+            'scale', 'shear' - affine transforms.
+
+        This is what the underlying library uses a struct for, but come on.
+
+    Returns:
+    -------
+    ret - (r,2) array, the residuals in the x and y direction for r points used
+        in orientation.
+    used - r-length array, indices into target array of targets used.
+    err_est - error estimation per calibration DOF. We
+
+    Raises:
+    ------
+    ValueError if iteration did not converge.
+    """
+    # cdef:
+    #     vec3d *ref_coord
+    #     np.ndarray[ndim=2, dtype=pos_t] ret
+    #     np.ndarray[ndim=1, dtype=np.int_t] used
+    #     np.ndarray[ndim=1, dtype=pos_t] err_est
+    #     orient_par *orip
+    #     double *residuals
+
+    ref_pts = np.ascontiguousarray(ref_pts)
+    ref_coord = ref_pts.data
+
+    # Load up the orientation parameters. Silly, but saves on defining
+    # a whole new class for what is no more than a list.
+
+    orip = OrientPar()
+    orip[0].useflag = 0
+    orip[0].ccflag = 1 if "cc" in flags else 0
+    orip[0].xhflag = 1 if "xh" in flags else 0
+    orip[0].yhflag = 1 if "yh" in flags else 0
+    orip[0].k1flag = 1 if "k1" in flags else 0
+    orip[0].k2flag = 1 if "k2" in flags else 0
+    orip[0].k3flag = 1 if "k3" in flags else 0
+    orip[0].p1flag = 1 if "p1" in flags else 0
+    orip[0].p2flag = 1 if "p2" in flags else 0
+    orip[0].scxflag = 1 if "scale" in flags else 0
+    orip[0].sheflag = 1 if "shear" in flags else 0
+    orip[0].interfflag = 0  # This also solves for the glass, I'm skipping it.
+
+    err_est = np.empty((NPAR + 1), dtype=np.float64)
+    residuals = orient(
+        cal, cparam, len(ref_pts), ref_coord, img_pts, orip, err_est.data
+    )
+
+    # free(orip)
+
+    if residuals is None:
+        # free(residuals)
+        raise ValueError("Orientation iteration failed, need better setup.")
+
+    ret = np.empty((len(img_pts), 2))
+    used = np.empty(len(img_pts), dtype=np.int_)
+
+    for ix, img_pt in enumerate(img_pts):
+        ret[ix] = (residuals[2 * ix], residuals[2 * ix + 1])
+        used[ix] = img_pt.pnr
+
+    # free(residuals)
+    return ret, used, err_est
+
+
+def match_detection_to_ref(
+    cal: Calibration,
+    ref_pts: np.ndarray,
+    img_pts: TargetArray,
+    cparam: ControlPar,
+    eps: int = 25,
+):
+    """
+    Create a TargetArray where the targets are those for which a point in the.
+
+    projected reference is close enough to be considered a match, ordered by
+    the order of corresponding references, with "empty targets" for detection
+    points that have no match.
+
+    Each target's pnr attribute is set to the index of the target in the array,
+    which is also the index of the associated reference point in ref_pts.
+
+    Arguments:
+    ---------
+    Calibration cal - position and other parameters of the camera.
+    np.ndarray[ndim=2, dtype=pos_t] ref_pts - an (n,3) array, the 3D known
+        positions of the selected 2D points found on the image.
+    TargetArray img_pts - detected points to match to known 3D positions.
+    ControlParams cparam - an object holding general control parameters.
+    int eps - pixel radius of neighbourhood around detection to search for
+        closest projection.
+
+    Returns:
+    -------
+    TargetArray holding the sorted targets.
+    """
+    if len(img_pts) < len(ref_pts):
+        # raise ValueError('Must have at least as many targets as ref. points.')
+        print("Must have at least as many targets as ref. points.")
+        pass
+
+    # cdef:
+    #     vec3d *ref_coord
+    #     target *sorted_targs
+    #     TargetArray t = TargetArray()
+
+    t = TargetArray()
+    ref_pts = np.ascontiguousarray(ref_pts)
+    ref_coord = ref_pts.data
+
+    sorted_targs = sortgrid(
+        cal, cparam, len(ref_pts), ref_coord, len(img_pts), eps, img_pts._tarr
+    )
+
+    t.set(sorted_targs, len(ref_pts), 1)
+    return t
+
+
+def point_positions(
+    targets: np.ndarray, cparam: ControlPar, cals: List[Calibration], vparam: VolumePar
+):
+    """
+    Calculate the 3D positions of the points given by their 2D projections.
+
+    using one of the options:
+    - for a single camera, uses single_cam_point_positions()
+    - for multiple cameras, uses multi_cam_point_positions().
+
+    Arguments:
+    ---------
+    np.ndarray[ndim=3, dtype=pos_t] targets - (num_targets, num_cams, 2) array,
+        containing the metric coordinates of each target on the image plane of
+        each camera. Cameras must be in the same order for all targets.
+    ControlParams cparam - needed for the parameters of the tank through which
+        we see the targets.
+    cals - a sequence of Calibration objects for each of the cameras, in the
+        camera order of ``targets``.
+    VolumeParams vparam - an object holding observed volume size parameters, needed
+        for the single camera case only.
+
+    Returns:
+    -------
+    res - (n,3) array for n points represented by their targets.
+    rcm - n-length array, the Ray Convergence Measure for eachpoint for multi camera
+        option, or zeros for a single camera option
+    """
+    # cdef:
+    #     np.ndarray[ndim=2, dtype=pos_t] res
+    #     np.ndarray[ndim=1, dtype=pos_t] rcm
+
+    if len(cals) == 1:
+        res, rcm = single_cam_point_positions(targets, cparam, cals, vparam)
+    elif len(cals) > 1:
+        res, rcm = multi_cam_point_positions(targets, cparam, cals)
+    else:
+        raise ValueError("wrong number of cameras in point_positions")
+
+    return res, rcm
+
+
+def single_cam_point_positions(
+    targets: np.ndarray, cparam: ControlPar, cals: List[Calibration], vparam: VolumePar
+):
+    """
+    Calculate the 3D positions of the points from a single camera using.
+
+    the 2D target positions given in metric coordinates.
+
+    """
+    # cdef:
+    #     np.ndarray[ndim=2, dtype=pos_t] res
+    #     np.ndarray[ndim=1, dtype=pos_t] rcm
+    #     np.ndarray[ndim=2, dtype=pos_t] targ
+    #     calibration ** calib = cal_list2arr(cals)
+    #     int cam, num_cams
+
+    # So we can address targets.data directly instead of get_ptr stuff:
+    targets = np.ascontiguousarray(targets)
+
+    num_targets = targets.shape[0]
+    targets.shape[1]
+    res = np.empty((num_targets, 3))
+    rcm = np.zeros(num_targets)
+
+    for pt in range(num_targets):
+        targ = targets[pt]
+        res = epi_mm_2D(targ[0][0], targ[0][1], cals[0], cparam.mm, vparam)
+        # <vec3d> np.PyArray_GETPTR2(res, pt, 0));
+
+    return res, rcm
+
+
+def multi_cam_point_positions(
+    targets: np.ndarray, cparam: ControlPar, cals: List[Calibration]
+):
+    """
+    Calculate the 3D positions of the points given by their 2D projections.
+
+    Arguments:
+    ---------
+    np.ndarray[ndim=3, dtype=pos_t] targets - (num_targets, num_cams, 2) array,
+        containing the metric coordinates of each target on the image plane of
+        each camera. Cameras must be in the same order for all targets.
+    ControlParams cparam - needed for the parameters of the tank through which
+        we see the targets.
+    cals - a sequence of Calibration objects for each of the cameras, in the
+        camera order of ``targets``.
+
+    Returns:
+    -------
+    res - (n,3) array for n points represented by their targets.
+    rcm - n-length array, the Ray Convergence Measure for eachpoint.
+    """
+    # cdef:
+    #     np.ndarray[ndim=2, dtype=pos_t] res
+    #     np.ndarray[ndim=1, dtype=pos_t] rcm
+    #     np.ndarray[ndim=2, dtype=pos_t] targ
+    #     calibration ** calib = cal_list2arr(cals)
+    #     int cam, num_cams
+
+    # So we can address targets.data directly instead of get_ptr stuff:
+    targets = np.ascontiguousarray(targets)
+
+    num_targets = targets.shape[0]
+    num_cams = targets.shape[1]
+    res = np.empty((num_targets, 3))
+    rcm = np.empty(num_targets)
+
+    for pt in range(num_targets):
+        targ = targets[pt]
+        rcm[pt], res = point_position(targ.data, num_cams, cparam.mm, cals)
+
+    return res, rcm

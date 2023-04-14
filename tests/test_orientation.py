@@ -51,11 +51,9 @@ class Test_Orientation(unittest.TestCase):
         coords_count = len(xyz_input)
 
         xy_img_pts_metric = image_coordinates(
-            xyz_input, self.calibration, self.control.get_multimedia_params()
+            xyz_input, self.calibration, self.control.mm
         )
-        xy_img_pts_pixel = convert_arr_metric_to_pixel(
-            xy_img_pts_metric, control=self.control
-        )
+        xy_img_pts_pixel = convert_arr_metric_to_pixel(xy_img_pts_metric, self.control)
 
         # convert to TargetArray object
         target_array = TargetArray(coords_count)
@@ -102,7 +100,7 @@ class Test_Orientation(unittest.TestCase):
     def test_point_positions(self):
         """Point positions."""
         # prepare MultimediaParams
-        mult_params = self.control.get_multimedia_params()
+        mult_params = self.control.mm
 
         mult_params.set_n1(1.0)
         mult_params.set_layers(np.array([1.0]), np.array([1.0]))
@@ -124,7 +122,7 @@ class Test_Orientation(unittest.TestCase):
         for cam in range(num_cams):
             ori_name = ori_tmpl.format(cam_num=cam + 1).encode()
             new_cal = Calibration()
-            new_cal.from_file(ori_file=ori_name, add_file=add_file)
+            new_cal.from_file(ori_file=ori_name, addpar_file=add_file)
             calibs.append(new_cal)
 
         for cam_num, cam_cal in enumerate(calibs):
@@ -238,7 +236,7 @@ class Test_Orientation(unittest.TestCase):
         for cam in range(num_cams):
             ori_name = ori_tmpl.format(cam_num=cam + 1)
             new_cal = Calibration()
-            new_cal.from_file(ori_file=ori_name.encode(), add_file=add_file.encode())
+            new_cal.from_file(ori_file=ori_name, addpar_file=add_file)
             calibs.append(new_cal)
 
         for cam_cal in calibs:
