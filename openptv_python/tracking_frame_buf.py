@@ -1,5 +1,4 @@
 """Tracking frame buffer."""
-import pickle
 from collections import deque
 from dataclasses import dataclass, field
 from typing import Any, List
@@ -170,6 +169,11 @@ class TargetArray:
     def __init__(self, num_targs: int):
         self.num_targs = num_targs
         self.targs = [Target() for _ in range(num_targs)]
+
+    def set(self, targs: List[Target]):
+        """Set targets."""
+        self.targs = targs
+        self.num_targs = len(targs)
 
 
 def read_targets(file_base: str, frame_num: int) -> List[Target]:
@@ -368,9 +372,10 @@ class FrameBufBase:
         self.buf_len = buf_len
         self.num_cams = num_cams
         self.buf = deque(maxlen=buf_len)
-        for i in range(buf_len):
+        for _ in range(buf_len):
             self.buf.append(Frame(num_cams, max_targets))
         self.start = 0
+        self.frame_num = 0
 
     def __del__(self):
         for frame in self.buf:
@@ -379,10 +384,11 @@ class FrameBufBase:
     def read_frame_at_end(self, frame):
         self.buf.append(frame)
 
-    def write_frame_from_start(self, frame):
-        pickled_frame = pickle.dumps(frame)
-        self._advance_buffer_start()
-        return pickled_frame
+    def write_frame_from_start(self):
+        pass
+        # pickled_frame = pickle.dumps(frame)
+        # self._advance_buffer_start()
+        # return pickled_frame
 
     def _advance_buffer_start(self):
         self.start += 1
@@ -428,25 +434,23 @@ class FrameBuf(FrameBufBase):
     prio_file_base: str = None
     target_file_base: str = None
 
-    def write_frame_from_start(self, frame_num):
+    def write_frame_from_start(self):
         """Write a frame to disk and advance the buffer."""
-        # Pickle the frame
-        pickle.dumps(self.buf[0])
+        # Write the frame to disk
+        write_path_frame(
+            self.buf[0],
+            self.corres_file_base,
+            len(self.buf),
+            self.linkage_file_base,
+            self.prio_file_base,
+            self.target_file_base,
+            self.frame_num,
+        )
 
         # Advance the buffer
         self.buf.appendleft(Frame(self.num_cams, self.max_targets))
 
-        # Write the frame to disk
-        return write_path_frame(
-            self.buf[0],
-            self.corres_file_base,
-            self.linkage_file_base,
-            self.prio_file_base,
-            self.target_file_base,
-            frame_num,
-        )
-
-    def fb_disk_read_frame_at_end(self, frame_num, read_links):
+    def fb_disk_read_frame_at_end(self, read_links):
         if read_links:
             return read_path_frame(
                 self.buf[-1],
@@ -454,7 +458,7 @@ class FrameBuf(FrameBufBase):
                 self.linkage_file_base,
                 self.prio_file_base,
                 self.target_file_base,
-                frame_num,
+                self.frame_num,
             )
         else:
             return read_path_frame(
@@ -463,7 +467,7 @@ class FrameBuf(FrameBufBase):
                 None,
                 None,
                 self.target_file_base,
-                frame_num,
+                self.frame_num,
             )
 
 

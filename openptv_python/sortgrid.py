@@ -105,7 +105,7 @@ def read_calblock(filename: str) -> Tuple[np.ndarray, int]:
     - int: number of valid calibration points. If reading failed for any reason, returns None.
     """
     try:
-        with open(filename, "r") as f:
+        with open(filename, "r", encoding="utf-8") as f:
             data = np.loadtxt(f, usecols=(1, 2, 3))
     except FileNotFoundError:
         print(f"Can't open calibration block file: {filename}")

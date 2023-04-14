@@ -962,25 +962,23 @@ def match_detection_to_ref(
     -------
     TargetArray holding the sorted targets.
     """
-    if len(img_pts) < len(ref_pts):
-        # raise ValueError('Must have at least as many targets as ref. points.')
-        print("Must have at least as many targets as ref. points.")
-        pass
+    # if len(img_pts) < len(ref_pts):
+    #     # raise ValueError('Must have at least as many targets as ref. points.')
+    #     print("Must have at least as many targets as ref. points.")
+    #     pass
 
     # cdef:
     #     vec3d *ref_coord
     #     target *sorted_targs
     #     TargetArray t = TargetArray()
 
-    t = TargetArray()
+    t = TargetArray(len(ref_pts))
     ref_pts = np.ascontiguousarray(ref_pts)
     ref_coord = ref_pts.data
 
-    sorted_targs = sortgrid(
-        cal, cparam, len(ref_pts), ref_coord, len(img_pts), eps, img_pts._tarr
-    )
+    sorted_targs = sortgrid(cal, cparam, len(ref_pts), ref_coord, eps, img_pts)
 
-    t.set(sorted_targs, len(ref_pts), 1)
+    t.set(sorted_targs)
     return t
 
 

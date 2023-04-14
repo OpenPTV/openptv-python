@@ -1,6 +1,6 @@
 """Tracking algorithm."""
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List
 
 import numpy as np
@@ -26,6 +26,12 @@ from .tracking_frame_buf import FrameBuf
 from .trafo import dist_to_flat, metric_to_pixel, pixel_to_metric
 from .vec_utils import vec2d, vec3d, vec_copy, vec_diff_norm, vec_subt
 
+default_naming = {
+    "corres": b"res/rt_is",
+    "linkage": b"res/ptv_is",
+    "prio": b"res/added",
+}
+
 
 @dataclass
 class Foundpix:
@@ -33,7 +39,7 @@ class Foundpix:
 
     ftnr: int = 0
     freq: int = 0
-    whichcam: List[int] = [0] * TR_MAX_CAMS
+    whichcam: List[int] = field(default_factory=list)
 
 
 @dataclass

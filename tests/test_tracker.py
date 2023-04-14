@@ -17,11 +17,11 @@ import yaml
 from openptv_python.calibration import Calibration
 from openptv_python.parameters import (
     ControlPar,
-    SequenceParams,
-    TrackingParams,
-    VolumeParams,
+    SequencePar,
+    TrackPar,
+    VolumePar,
 )
-from openptv_python.tracker import Tracker
+from openptv_python.track import Tracker
 
 framebuf_naming = {
     "corres": "tests/testing_folder/track/res/particles",
@@ -32,7 +32,7 @@ framebuf_naming = {
 
 class TestTracker(unittest.TestCase):
     def setUp(self):
-        with open("tests/testing_folder/track/conf.yaml") as f:
+        with open("tests/testing_folder/track/conf.yaml", "r", encoding="utf-8") as f:
             yaml_conf = yaml.load(f, Loader=yaml.FullLoader)
         seq_cfg = yaml_conf["sequence"]
 
@@ -49,10 +49,10 @@ class TestTracker(unittest.TestCase):
             img_base.append(seq_cfg["targets_template"].format(cam=cix + 1))
 
         cpar = ControlPar(len(yaml_conf["cameras"]), **yaml_conf["scene"])
-        vpar = VolumeParams(**yaml_conf["correspondences"])
-        tpar = TrackingParams(**yaml_conf["tracking"])
-        spar = SequenceParams(
-            image_base=img_base, frame_range=(seq_cfg["first"], seq_cfg["last"])
+        vpar = VolumePar(**yaml_conf["correspondences"])
+        tpar = TrackPar(**yaml_conf["tracking"])
+        spar = SequencePar(
+            img_base_name=img_base, first=seq_cfg["first"], last=seq_cfg["last"]
         )
 
         self.tracker = Tracker(cpar, vpar, tpar, spar, cals, framebuf_naming)

@@ -73,7 +73,7 @@ def compare_mm_np(mm_np1: MultimediaPar, mm_np2: MultimediaPar) -> bool:
 class SequencePar:
     """Sequence parameters."""
 
-    num_cams: int = 1
+    # num_cams: int = 1
     img_base_name: list[str] = field(default_factory=list)
     first: int = 10000
     last: int = 10004
