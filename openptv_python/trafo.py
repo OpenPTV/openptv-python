@@ -24,24 +24,21 @@ def pixel_to_metric(
     return (x_metric, y_metric)
 
 
-# def metric_to_pixel(
-#     x_metric: float, y_metric: float, parameters: ControlPar
-# ) -> Tuple[float, float]:
-#     """Convert metric coordinates to pixel coordinates.
+def arr_pixel_to_metric(pixel: np.ndarray, parameters: ControlPar) -> np.ndarray:
+    """Convert pixel coordinates to metric coordinates.
 
-#     Arguments:
-#     ---------
-#     x_pixel, y_pixel (float): input pixel coordinates.
-#     x_metric, y_metric (float): output metric coordinates.
-#     parameters (ControlPar): control structure holding image and pixel sizes.
-#     y_remap_mode (int): for use with interlaced cameras. Pass 0 for normal use,
-#         1 for odd lines and 2 for even lines.
+    Arguments:
+    ---------
+    metric (np.ndarray): output metric coordinates.
+    pixel (np.ndarray): input pixel coordinates.
+    parameters (ControlPar): control structure holding image and pixel sizes.
+    """
+    pixel = np.atleast_2d(np.array(pixel))
+    metric = np.empty_like(pixel)
+    metric[:, 0] = (pixel[:, 0] - float(parameters.imx) / 2.0) * parameters.pix_x
+    metric[:, 1] = (float(parameters.imy) / 2.0 - pixel[:, 1]) * parameters.pix_y
 
-#     """
-#     x_pixel = (x_metric / parameters.pix_x) + (float(parameters.imx) / 2.0)
-#     y_pixel = (float(parameters.imy) / 2.0) - (y_metric / parameters.pix_y)
-
-#     return x_pixel, y_pixel
+    return metric
 
 
 def metric_to_pixel(
@@ -64,9 +61,7 @@ def metric_to_pixel(
     return x_pixel, y_pixel
 
 
-def convert_arr_metric_to_pixel(
-    metric: np.ndarray, parameters: ControlPar
-) -> np.ndarray:
+def arr_metric_to_pixel(metric: np.ndarray, parameters: ControlPar) -> np.ndarray:
     """Convert an array of metric coordinates to pixel coordinates.
 
     Arguments:
@@ -203,7 +198,7 @@ def flat_to_dist(flat_x: float, flat_y: float, cal: Calibration) -> Tuple[float,
     return dist_x, dist_y
 
 
-def dist_to_flat(dist_x: float, dist_y: float, cal: Calibration, tol: float):
+def dist_to_flat(dist_x: float, dist_y: float, cal: Calibration, tol: float = 1e-5):
     """Attempt to restore metric flat-image positions from metric real-image coordinates.
 
     This is an inverse problem so some error is to be expected, but for small enough

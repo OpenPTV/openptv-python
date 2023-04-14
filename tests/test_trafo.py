@@ -3,19 +3,20 @@ import unittest
 import numpy as np
 
 from openptv_python.calibration import Calibration, read_calibration
-from openptv_python.parameters import ControlPar, read_control_par
+from openptv_python.parameters import ControlPar
 from openptv_python.trafo import (
+    arr_metric_to_pixel,
+    arr_pixel_to_metric,
     correct_brown_affine,
     dist_to_flat,
     distort_brown_affine,
-    metric_to_pixel,
-    pixel_to_metric,
 )
 
 
 class TestPixelToMetric(unittest.TestCase):
     def test_pixel_to_metric(self):
-        # define input pixel coordinates and parameters
+        """Test pixel_to_metric function."""
+        # define input_vec pixel coordinates and parameters
         x_pixel = 100
         y_pixel = 200
         parameters = ControlPar(imx=640, imy=480, pix_x=0.01, pix_y=0.01)
@@ -25,20 +26,23 @@ class TestPixelToMetric(unittest.TestCase):
         y_metric_expected = (float(parameters.imy) / 2.0 - y_pixel) * parameters.pix_y
 
         # call the function to get actual output metric coordinates
-        x_metric_actual, y_metric_actual = pixel_to_metric(x_pixel, y_pixel, parameters)
+        metric = arr_pixel_to_metric([x_pixel, y_pixel], parameters)
 
         # check if the actual output matches the expected output
-        self.assertAlmostEqual(x_metric_actual, x_metric_expected)
-        self.assertAlmostEqual(y_metric_actual, y_metric_expected)
+        self.assertAlmostEqual(metric[:, 0], x_metric_expected)
+        self.assertAlmostEqual(metric[:, 1], y_metric_expected)
 
 
 class Test_transforms(unittest.TestCase):
+    """Test the transforms module."""
+
     def setUp(self):
+        """Set up the test fixtures."""
         self.input_control_par_file_name = (
             "tests/testing_folder/control_parameters/control.par"
         )
         self.control = ControlPar(4)
-        self.control = read_control_par(self.input_control_par_file_name)
+        self.control.from_file(self.input_control_par_file_name)
 
         self.input_ori_file_name = "tests/testing_folder/calibration/cam1.tif.ori"
         self.input_add_file_name = "tests/testing_folder/calibration/cam2.tif.addpar"
@@ -50,19 +54,17 @@ class Test_transforms(unittest.TestCase):
 
     def test_transforms_typecheck(self):
         """Transform bindings check types."""
-        np.zeros((12, 2))
-        # Assert TypeError is raised when passing a non (n,2) shaped numpy ndarray
-        with self.assertRaises(TypeError):
-            [
-                [0 for x in range(2)] for x in range(10)
-            ]  # initialize a 10x2 list (but not numpy matrix)
-            pixel_to_metric(0, 0, self.control)
-        with self.assertRaises(TypeError):
-            pixel_to_metric(-1, -1, self.control)
-        with self.assertRaises(TypeError):
-            metric_to_pixel(0, 0, self.control)
-        with self.assertRaises(TypeError):
-            metric_to_pixel(-1, -1, self.control)
+
+        # irrelevant when we work with Python only
+        # # Assert TypeError is raised when passing a non (n,2) shaped numpy ndarray
+        # with self.assertRaises(TypeError):
+        #     arr_pixel_to_metric([0, 0], self.control)
+        # with self.assertRaises(TypeError):
+        #     arr_pixel_to_metric([-1, -1], self.control)
+        # with self.assertRaises(TypeError):
+        #     arr_metric_to_pixel([0, 0], self.control)
+        # with self.assertRaises(TypeError):
+        #     arr_metric_to_pixel([-1, -1], self.control)
 
     def test_transforms_regress(self):
         """Transformed values are as before."""
@@ -81,24 +83,24 @@ class Test_transforms(unittest.TestCase):
             [646.60066007, 505.81188119],
         ]
 
-        # Test when passing an array for output
-        output = pixel_to_metric(x_pixel, y_pixel, self.control)
+        # Test when passing a list
+        output = arr_pixel_to_metric([x_pixel, y_pixel], self.control)
         np.testing.assert_array_almost_equal(
-            output, correct_output_pixel_to_metric, decimal=7
-        )
-        output = np.zeros((3, 2))
-        output = metric_to_pixel(x_metric, y_metric, self.control)
-        np.testing.assert_array_almost_equal(
-            output, correct_output_metric_to_pixel, decimal=7
+            output, correct_output_pixel_to_metric[0], decimal=7
         )
 
-        # Test when NOT passing an array for output
-        output = pixel_to_metric(x_pixel, y_pixel, self.control)
+        output = arr_metric_to_pixel([x_metric, y_metric], self.control)
         np.testing.assert_array_almost_equal(
-            output, correct_output_pixel_to_metric, decimal=7
+            output, correct_output_metric_to_pixel[0], decimal=7
+        )
+
+        # Test when passing an array
+        output = arr_pixel_to_metric(np.array([x_pixel, y_pixel]), self.control)
+        np.testing.assert_array_almost_equal(
+            output, correct_output_pixel_to_metric[0], decimal=7
         )
         output = np.zeros((3, 2))
-        output = metric_to_pixel(x_metric, y_metric, self.control)
+        output = arr_metric_to_pixel([x_metric, y_metric], self.control)
         np.testing.assert_array_almost_equal(
             output, correct_output_metric_to_pixel, decimal=7
         )
@@ -106,54 +108,61 @@ class Test_transforms(unittest.TestCase):
     def test_transforms(self):
         """Transform in well-known setup gives precalculates results."""
         cpar = ControlPar(1)
-        cpar.set_image_size((1280, 1000))
-        cpar.set_pixel_size((0.1, 0.1))
+        cpar.set_image_size(1280, 1000)
+        cpar.set_pixel_size(0.1, 0.1)
 
         metric_pos = np.array([[1.0, 1.0], [-10.0, 15.0], [20.0, -30.0]])
         pixel_pos = np.array([[650.0, 490.0], [540.0, 350.0], [840.0, 800.0]])
 
         np.testing.assert_array_almost_equal(
-            pixel_pos, metric_to_pixel(metric_pos, cpar)
+            pixel_pos, arr_metric_to_pixel(metric_pos, cpar)
         )
         np.testing.assert_array_almost_equal(
-            metric_pos, pixel_to_metric(pixel_pos, cpar)
+            metric_pos, arr_pixel_to_metric(pixel_pos, cpar)
         )
 
     def test_brown_affine_types(self):
-        # Assert TypeError is raised when passing a non (n,2) shaped numpy ndarray
+        """Assert TypeError is raised when passing a non (n,2) shaped numpy ndarray."""
         with self.assertRaises(TypeError):
-            list = [
+            tmp = [
                 [0 for x in range(2)] for x in range(10)
             ]  # initialize a 10x2 list (but not numpy matrix)
-            correct_brown_affine(list, self.calibration, out=None)
+            for item in tmp:
+                correct_brown_affine(item[0], item[1], self.calibration.added_par)
         with self.assertRaises(TypeError):
-            correct_brown_affine(np.empty((10, 3)), self.calibration, out=None)
+            distort_brown_affine(np.empty(1), np.empty(1), self.calibration.added_par)
         with self.assertRaises(TypeError):
-            distort_brown_affine(np.empty((2, 1)), self.calibration, out=None)
-        with self.assertRaises(TypeError):
-            distort_brown_affine(
-                np.zeros((11, 2)), self.calibration, out=np.zeros((12, 2))
-            )
+            for item in np.zeros((11, 2)):
+                distort_brown_affine(item[0], item[1], self.calibration.added_par)
 
     def test_brown_affine_regress(self):
-        input = np.full((3, 2), 100.0)
+        """Test that the brown affine transform gives the same results as before."""
+        input_vec = np.full((3, 2), 100.0)
         output = np.zeros((3, 2))
         correct_output_corr = [[100.0, 100.0], [100.0, 100.0], [100.0, 100.0]]
         correct_output_dist = [[100.0, 100.0], [100.0, 100.0], [100.0, 100.0]]
 
         # Test when passing an array for output
-        correct_brown_affine(input, self.calibration, out=output)
+        for i in range(3):
+            output[i, 0], output[i, 1] = correct_brown_affine(
+                input_vec[i, 0], input_vec[i, 1], self.calibration.added_par
+            )
+
         np.testing.assert_array_almost_equal(output, correct_output_corr, decimal=7)
+
         output = np.zeros((3, 2))
-        distort_brown_affine(input, self.calibration, out=output)
+        for i in range(3):
+            output[i, 0], output[i, 1] = distort_brown_affine(
+                input_vec[i, 0], input_vec[i, 1], self.calibration.added_par
+            )
         np.testing.assert_array_almost_equal(output, correct_output_dist, decimal=7)
 
-        # Test when NOT passing an array for output
-        output = correct_brown_affine(input, self.calibration, out=None)
-        np.testing.assert_array_almost_equal(output, correct_output_corr, decimal=7)
-        output = np.zeros((3, 2))
-        output = distort_brown_affine(input, self.calibration, out=None)
-        np.testing.assert_array_almost_equal(output, correct_output_dist, decimal=7)
+        # # Test when NOT passing an array for output
+        # output = correct_brown_affine(input_vec, self.calibration)
+        # np.testing.assert_array_almost_equal(output, correct_output_corr, decimal=7)
+        # output = np.zeros((3, 2))
+        # output = distort_brown_affine(input_vec, self.calibration, out=None)
+        # np.testing.assert_array_almost_equal(output, correct_output_dist, decimal=7)
 
     def test_brown_affine(self):
         """Distortion and correction of pixel coordinates."""
@@ -171,12 +180,21 @@ class Test_transforms(unittest.TestCase):
         ref_pos = np.array([[0.1, 0.1], [1.0, -1.0], [-10.0, 10.0]])
 
         # Perfect camera: distortion = identity.
-        distorted = distort_brown_affine(ref_pos, cal)
+        distorted = np.empty_like(ref_pos)
+        for i in range(3):
+            distorted[i, :] = distort_brown_affine(
+                ref_pos[i, 0], ref_pos[i, 1], cal.added_par
+            )
+
         np.testing.assert_array_almost_equal(distorted, ref_pos)
 
         # Some small radial distortion:
         cal.set_radial_distortion(np.r_[0.001, 0.0, 0.0])
-        distorted = distort_brown_affine(ref_pos, cal)
+        for i in range(3):
+            distorted[i, :] = distort_brown_affine(
+                ref_pos[i, 0], ref_pos[i, 1], cal.added_par
+            )
+
         self.assertTrue(np.all(abs(distorted) > abs(ref_pos)))
 
     def test_full_correction(self):
@@ -197,8 +215,17 @@ class Test_transforms(unittest.TestCase):
         ref_pos = np.array([[0.1, 0.1], [1.0, -1.0], [-5.0, 5.0]])
 
         cal.set_radial_distortion(np.r_[0.001, 0.0, 0.0])
-        distorted = distort_brown_affine(ref_pos, cal)
-        corrected = dist_to_flat(distorted, cal)  # default tight tolerance
+
+        distorted = np.empty_like(ref_pos)
+        corrected = np.empty_like(distorted)
+
+        for i in range(3):
+            distorted[i, 0], distorted[i, 1] = distort_brown_affine(
+                ref_pos[i, 0], ref_pos[i, 1], cal.added_par
+            )
+            corrected[i, 0], corrected[i, 1] = dist_to_flat(
+                distorted[i, 0], distorted[i, 1], cal, tol=1e-6
+            )  # default tight tolerance
         np.testing.assert_array_almost_equal(ref_pos, corrected, decimal=6)
 
 

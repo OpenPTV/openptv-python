@@ -1,7 +1,7 @@
 """Calibration data structures and functions."""
 import pathlib
 from dataclasses import dataclass, field
-from typing import Optional, Tuple
+from typing import Optional
 
 import numpy as np
 
@@ -71,21 +71,74 @@ class Calibration:
     added_par: ap_52 = ap_52()
     mmlut: mmlut = mmlut()
 
-    def from_file(self, ori_file: str, addpar_file: str):
+    def from_file(self, ori_file: str, add_file: str = None, add_fallback: str = None):
         """
-        Populate calibration fields from .ori and .addpar files.
+        Read exterior and interior orientation, and if available, parameters for distortion corrections.
 
         Arguments:
         ---------
-        ori_file - path to file containing exterior, interior and glass
-            parameters.
-        add_file - optional path to file containing distortion parameters.
-        fallback_file - optional path to file used in case ``add_file`` fails
-            to open.
+        - ori_file: path of file containing interior and exterior orientation data.
+        - add_file: path of file containing added (distortions) parameters.
+        - add_fallback: path to file for use if add_file can't be opened.
+
+        Returns:
+        -------
+        - Ex, In, G, addp: Calibration object parts without multimedia lookup table.
         """
-        self.ext_par, self.int_par, self.glass_par, self.added_par = read_ori(
-            ori_file, addpar_file
-        )
+        if not pathlib.Path(ori_file).exists:
+            raise IOError(f"File {ori_file} does not exist")
+
+        with open(ori_file, "r", encoding="utf-8") as fp:
+            # Exterior
+            self.ext_par.x0, self.ext_par.y0, self.ext_par.z0 = map(
+                float, fp.readline().split()
+            )
+            self.ext_par.omega, self.ext_par.phi, self.ext_par.kappa = map(
+                float, fp.readline().split()
+            )
+            # Exterior rotation matrix
+            # skip line
+            fp.readline()
+
+            self.ext_par.dm = np.array(
+                [list(map(float, fp.readline().split())) for _ in range(3)]
+            )
+            self.ext_par.dm = self.ext_par.dm.reshape(3, 3)
+            # Interior
+            # skip
+            fp.readline()
+            self.int_par.xh, self.int_par.yh = map(float, fp.readline().split())
+            self.int_par.cc = float(fp.readline())
+
+            # Glass
+            # skip
+            fp.readline()
+            self.glass_par.vec_x, self.glass_par.vec_y, self.glass_par.vec_z = map(
+                float, fp.readline().split()
+            )
+
+        # Additional parameters
+        try:
+            with open(add_file or add_fallback, "r", encoding="utf-8") as fp:
+                (
+                    self.added_par.k1,
+                    self.added_par.k2,
+                    self.added_par.k3,
+                    self.added_par.p1,
+                    self.added_par.p2,
+                    self.added_par.scx,
+                    self.added_par.she,
+                ) = map(float, fp.readline().split())
+        except FileNotFoundError:
+            print("no addpar fallback used")  # Waits for proper logging.
+            self.added_par.k1 = (
+                self.added_par.k2
+            ) = (
+                self.added_par.k3
+            ) = self.added_par.p1 = self.added_par.p2 = self.added_par.she = 0.0
+            self.added_par.scx = 1.0
+
+        print(f"Calibration data read from files {ori_file} and {add_file}")
 
     def write(self, ori_file: str, addpar_file: str):
         """Write calibration to file."""
@@ -109,7 +162,7 @@ class Calibration:
         if len(x_y_z_np) != 3:
             raise ValueError(
                 "Illegal array argument "
-                + x_y_z_np.__str__()
+                + str(x_y_z_np)
                 + " for x, y, z. Expected array/list of 3 numbers"
             )
         self.ext_par.x0 = x_y_z_np[0]
@@ -322,7 +375,7 @@ def write_ori(
 
 def read_ori(
     ori_file: str, add_file: str = None, add_fallback: str = None
-) -> Tuple[Exterior, Interior, Glass, ap_52]:
+) -> Calibration:
     """
     Read exterior and interior orientation, and if available, parameters for distortion corrections.
 
@@ -336,47 +389,10 @@ def read_ori(
     -------
     - Ex, In, G, addp: Calibration object parts without multimedia lookup table.
     """
-    Ex = Exterior()
-    In = Interior()
-    G = Glass()
-    addp = ap_52()
+    ret = Calibration()
+    ret.from_file(ori_file, add_file, add_fallback)
 
-    if not pathlib.Path(ori_file).exists:
-        raise IOError(f"File {ori_file} does not exist")
-
-    with open(ori_file, "r", encoding="utf-8") as fp:
-        # Exterior
-        Ex.x0, Ex.y0, Ex.z0 = map(float, fp.readline().split())
-        Ex.omega, Ex.phi, Ex.kappa = map(float, fp.readline().split())
-        # Exterior rotation matrix
-        # skip line
-        fp.readline()
-
-        Ex.dm = np.array([list(map(float, fp.readline().split())) for _ in range(3)])
-        Ex.dm = Ex.dm.reshape(3, 3)
-        # Interior
-        # skip
-        fp.readline()
-        In.xh, In.yh = map(float, fp.readline().split())
-        In.cc = float(fp.readline())
-
-        # Glass
-        # skip
-        fp.readline()
-        G.vec_x, G.vec_y, G.vec_z = map(float, fp.readline().split())
-
-    # Additional parameters
-    try:
-        with open(add_file or add_fallback, "r", encoding="utf-8") as fp:
-            addp.k1, addp.k2, addp.k3, addp.p1, addp.p2, addp.scx, addp.she = map(
-                float, fp.readline().split()
-            )
-    except FileNotFoundError:
-        print("no addpar fallback used")  # Waits for proper logging.
-        addp.k1 = addp.k2 = addp.k3 = addp.p1 = addp.p2 = addp.she = 0.0
-        addp.scx = 1.0
-
-    return (Ex, In, G, addp)
+    return ret
 
 
 def compare_exterior(e1: Exterior, e2: Exterior) -> bool:
@@ -428,10 +444,12 @@ def compare_addpar(a1, a2):
 
 
 def read_calibration(
-    ori_file: pathlib.Path, addpar_file: str = None, fallback_file: str = None
+    ori_file: str, addpar_file: str = None, fallback_file: str = None
 ) -> Calibration:
     """Read the orientation file including the added parameters."""
-    ret = read_ori(ori_file, addpar_file, fallback_file)
+    ret = Calibration()
+    ret.from_file(ori_file, addpar_file, fallback_file)
+    # read_ori(ori_file, addpar_file, fallback_file)
     ret.ext_par = rotation_matrix(ret.ext_par)
     ret.mmlut.data = None  # no multimedia data yet
     return ret

@@ -73,7 +73,7 @@ def compare_mm_np(mm_np1: MultimediaPar, mm_np2: MultimediaPar) -> bool:
 class SequencePar:
     """Sequence parameters."""
 
-    # num_cams: int = 1
+    num_cams: int = 1
     img_base_name: list[str] = field(default_factory=list)
     first: int = 10000
     last: int = 10004
@@ -118,29 +118,58 @@ class TrackPar:
     dny: float = 1.0
     add: bool = False
 
+    def from_file(self, filename: str):
+        """Read tracking parameters from file and return TrackPar object."""
+        try:
+            with open(filename, "r", encoding="utf-8") as fpp:
+                self.dvxmin = float(fpp.readline().rstrip())
+                self.dvxmax = float(fpp.readline().rstrip())
+                self.dvymin = float(fpp.readline().rstrip())
+                self.dvymax = float(fpp.readline().rstrip())
+                self.dvzmin = float(fpp.readline().rstrip())
+                self.dvzmax = float(fpp.readline().rstrip())
+                self.dangle = float(fpp.readline().rstrip())
+                self.dacc = float(fpp.readline().rstrip())
+                self.add = bool(int(fpp.readline().rstrip()))
+        except IOError as exc:
+            raise (f"Error reading tracking parameters from {filename}") from exc
+
+    def get_dvxmin(self):
+        """Return the minimum velocity in x direction."""
+        return self.dvxmin
+
+    def get_dvxmax(self):
+        """Return the maximum velocity in x direction."""
+        return self.dvxmax
+
+    def get_dvymin(self):
+        """Return the minimum velocity in y direction."""
+        return self.dvymin
+
+    def get_dvymax(self):
+        """Return the maximum velocity in y direction."""
+        return self.dvymax
+
+    def get_dvzmin(self):
+        """Return the minimum velocity in z direction."""
+        return self.dvzmin
+
+    def get_dangle(self):
+        """Return the maximum angle."""
+        return self.dangle
+
+    def get_dacc(self):
+        """Return the maximum acceleration."""
+        return self.dacc
+
+    def get_add(self):
+        """Return the adding new particles parameter."""
+        return self.add
+
 
 def read_track_par(filename: str) -> TrackPar:
     """Read tracking parameters from file and return TrackPar object."""
-    try:
-        with open(filename, "r", encoding="utf-8") as fpp:
-            return TrackPar(
-                dvxmin=float(fpp.readline().rstrip()),
-                dvxmax=float(fpp.readline().rstrip()),
-                dvymin=float(fpp.readline().rstrip()),
-                dvymax=float(fpp.readline().rstrip()),
-                dvzmin=float(fpp.readline().rstrip()),
-                dvzmax=float(fpp.readline().rstrip()),
-                dangle=float(fpp.readline().rstrip()),
-                dacc=float(fpp.readline().rstrip()),
-                add=bool(int(fpp.readline().rstrip())),
-                dsumg=0,
-                dn=0,
-                dnx=0,
-                dny=0,
-            )
-    except IOError:
-        print(f"Error reading tracking parameters from {filename}")
-        return None
+    return TrackPar().from_file(filename)
 
 
 def compare_track_par(t1: TrackPar, t2: TrackPar) -> bool:
@@ -270,34 +299,9 @@ class ControlPar:
 
 def read_control_par(filename: str) -> ControlPar:
     """Read control parameters from file and return ControlPar object."""
-    return ControlPar().from_file(filename)
-
-    # """Read control parameters from file and return ControlPar object."""
-    # if not os.path.isfile(filename):
-    #     raise FileNotFoundError(f"Could not open file {filename}")
-
-    # with open(filename, "r", encoding="utf-8") as par_file:
-    #     num_cams = int(par_file.readline().strip())
-    #     ret = ControlPar(num_cams=num_cams)
-
-    #     for _ in range(ret.num_cams):
-    #         ret.img_base_name.append(par_file.readline().strip())
-    #         ret.cal_img_base_name.append(par_file.readline().strip())
-
-    #     ret.hp_flag = int(par_file.readline().strip())
-    #     ret.allCam_flag = int(par_file.readline().strip())
-    #     ret.tiff_flag = int(par_file.readline().strip())
-    #     ret.imx = int(par_file.readline().strip())
-    #     ret.imy = int(par_file.readline().strip())
-    #     ret.pix_x = float(par_file.readline().strip())
-    #     ret.pix_y = float(par_file.readline().strip())
-    #     ret.chfield = int(par_file.readline().strip())
-    #     ret.mm.n1 = float(par_file.readline().strip())
-    #     ret.mm.n2 = float(par_file.readline().strip())
-    #     ret.mm.n3 = float(par_file.readline().strip())
-    #     ret.mm.d = float(par_file.readline().strip())
-
-    # return ret
+    cpar = ControlPar()
+    cpar.from_file(filename)
+    return cpar
 
 
 def compare_control_par(c1: ControlPar, c2: ControlPar) -> bool:

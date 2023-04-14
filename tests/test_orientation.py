@@ -19,7 +19,7 @@ from openptv_python.parameters import (
     read_volume_par,
 )
 from openptv_python.tracking_frame_buf import TargetArray
-from openptv_python.trafo import convert_arr_metric_to_pixel
+from openptv_python.trafo import arr_metric_to_pixel
 
 
 class Test_Orientation(unittest.TestCase):
@@ -53,7 +53,7 @@ class Test_Orientation(unittest.TestCase):
         xy_img_pts_metric = image_coordinates(
             xyz_input, self.calibration, self.control.mm
         )
-        xy_img_pts_pixel = convert_arr_metric_to_pixel(xy_img_pts_metric, self.control)
+        xy_img_pts_pixel = arr_metric_to_pixel(xy_img_pts_metric, self.control)
 
         # convert to TargetArray object
         target_array = TargetArray(coords_count)
@@ -122,7 +122,7 @@ class Test_Orientation(unittest.TestCase):
         for cam in range(num_cams):
             ori_name = ori_tmpl.format(cam_num=cam + 1).encode()
             new_cal = Calibration()
-            new_cal.from_file(ori_file=ori_name, addpar_file=add_file)
+            new_cal.from_file(ori_file=ori_name, add_file=add_file)
             calibs.append(new_cal)
 
         for cam_num, cam_cal in enumerate(calibs):
@@ -174,11 +174,11 @@ class Test_Orientation(unittest.TestCase):
         cpar_file = "tests/testing_folder/single_cam/parameters/ptv.par"
         vpar_file = "tests/testing_folder/single_cam/parameters/criteria.par"
         cpar = ControlPar(num_cams)
-        cpar.read_control_par(cpar_file)
+        cpar.from_file(cpar_file)
         mult_params = cpar.get_multimedia_params()
 
         vpar = VolumePar()
-        vpar.read_volume_par(vpar_file)
+        vpar.from_file(vpar_file)
 
         ori_name = "tests/testing_folder/single_cam/calibration/cam_1.tif.ori"
         add_name = "tests/testing_folder/single_cam/calibration/cam_1.tif.addpar"
@@ -236,7 +236,7 @@ class Test_Orientation(unittest.TestCase):
         for cam in range(num_cams):
             ori_name = ori_tmpl.format(cam_num=cam + 1)
             new_cal = Calibration()
-            new_cal.from_file(ori_file=ori_name, addpar_file=add_file)
+            new_cal.from_file(ori_file=ori_name, add_file=add_file)
             calibs.append(new_cal)
 
         for cam_cal in calibs:
@@ -293,7 +293,7 @@ class TestGradientDescent(unittest.TestCase):
         )
 
         # Fake the image points by back-projection
-        targets = convert_arr_metric_to_pixel(
+        targets = arr_metric_to_pixel(
             image_coordinates(ref_pts, self.cal, self.control.get_multimedia_params()),
             self.control,
         )
@@ -310,6 +310,7 @@ class TestGradientDescent(unittest.TestCase):
         )
 
     def test_full_calibration(self):
+        """Full calibration using clicked points."""
         ref_pts = np.array(
             [
                 a.flatten()
@@ -318,16 +319,16 @@ class TestGradientDescent(unittest.TestCase):
         ).T
 
         # Fake the image points by back-projection
-        targets = convert_arr_metric_to_pixel(
+        targets = arr_metric_to_pixel(
             image_coordinates(ref_pts, self.cal, self.control.get_multimedia_params()),
             self.control,
         )
 
         # Full calibration works with TargetArray objects, not NumPy.
         target_array = TargetArray(len(targets))
-        for i in range(len(targets)):
-            target_array[i].set_pnr(i)
-            target_array[i].set_pos(targets[i])
+        for i, trgt in enumerate(target_array):
+            trgt.set_pnr(i)
+            trgt.set_pos(targets[i])
 
         # Perturb the calibration object, then compore result to original.
         self.cal.set_pos(self.cal.get_pos() + np.r_[15.0, -15.0, 15.0])

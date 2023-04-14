@@ -67,6 +67,7 @@ def test_compare_sequence_par():
 
 class Test_MultimediaParams(unittest.TestCase):
     def test_mm_np_instantiation(self):
+        """Test that MultimediaPar can be instantiated with numpy arrays."""
         n2_np = numpy.array([11, 22, 33])
         d_np = numpy.array([55, 66, 77])
 
@@ -81,7 +82,7 @@ class Test_MultimediaParams(unittest.TestCase):
         numpy.testing.assert_array_equal(m.get_n2(), n2_np)
 
         self.assertEqual(
-            m.__str__(),
+            str(m),
             "nlay=\t3 \nn1=\t2.0 \nn2=\t{11.0, 22.0, 33.0} \nd=\t{55.0, 66.0, 77.0} \nn3=\t4.0 ",
         )
 
@@ -91,7 +92,7 @@ class Test_MultimediaParams(unittest.TestCase):
             m.set_layers(new_arr, d_np)
         new_arr = numpy.array([1, 2, 3])
 
-        arr = m.get_n2(copy=False)  # don't copy the values: link directly to memory
+        arr = m.get_n2()  # don't copy the values: link directly to memory
         arr[0] = 77.77
         arr[1] = 88.88
         arr[2] = 99.99
@@ -100,6 +101,8 @@ class Test_MultimediaParams(unittest.TestCase):
 
 
 class Test_TrackingParams(unittest.TestCase):
+    """Test TrackingParams class."""
+
     def setUp(self):
         self.input_tracking_par_file_name = (
             "tests/testing_folder/tracking_parameters/track.par"
@@ -122,20 +125,21 @@ class Test_TrackingParams(unittest.TestCase):
     # Testing getters according to the values passed in setUp
 
     def test_TrackingParams_getters(self):
-        self.assertTrue(self.track_obj1.get_dacc() == 1.1)
-        self.assertTrue(self.track_obj1.get_dangle() == 2.2)
-        self.assertTrue(self.track_obj1.get_dvxmin() == 3.3)
-        self.assertTrue(self.track_obj1.get_dvxmax() == 4.4)
-        self.assertTrue(self.track_obj1.get_dvymin() == 5.5)
-        self.assertTrue(self.track_obj1.get_dvymax() == 6.6)
-        self.assertTrue(self.track_obj1.get_dvzmin() == 7.7)
-        self.assertTrue(self.track_obj1.get_dvzmax() == 8.8)
-        self.assertTrue(self.track_obj1.get_add() == 1)
+        """Test getters."""
+        self.assertTrue(self.track_obj1.dacc == 1.1)
+        self.assertTrue(self.track_obj1.dangle == 2.2)
+        self.assertTrue(self.track_obj1.dvxmin == 3.3)
+        self.assertTrue(self.track_obj1.dvxmax == 4.4)
+        self.assertTrue(self.track_obj1.dvymin == 5.5)
+        self.assertTrue(self.track_obj1.dvymax == 6.6)
+        self.assertTrue(self.track_obj1.dvzmin == 7.7)
+        self.assertTrue(self.track_obj1.dvzmax == 8.8)
+        self.assertTrue(self.track_obj1.add == 1)
 
     def test_TrackingParams_read_from_file(self):
         """Filling a TrackPar object by reading file."""
         # read tracking parameters from file
-        self.track_obj1.read_track_par(self.input_tracking_par_file_name)
+        self.track_obj1.from_file(self.input_tracking_par_file_name)
 
         # check that the values of track_obj1 are equal to values in tracking parameters file
         # the check is performed according to the order the parameters were read from same file
