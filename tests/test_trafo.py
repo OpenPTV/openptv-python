@@ -10,7 +10,186 @@ from openptv_python.trafo import (
     correct_brown_affine,
     dist_to_flat,
     distort_brown_affine,
+    flat_to_dist,
+    metric_to_pixel,
 )
+
+
+class AffineParams:
+    def __init__(self, she, scx, k1, k2, k3, p1, p2):
+        self.she = she
+        self.scx = scx
+        self.k1 = k1
+        self.k2 = k2
+        self.k3 = k3
+        self.p1 = p1
+        self.p2 = p2
+
+
+class TestDistFlatRoundTrip(unittest.TestCase):
+    def test_round_trip(self):
+        """Check that the order of operations in converting metric flat image to.
+
+        distorted image coordinates and vice-versa is correct.
+
+        Distortion value in this one is kept to a level suitable (marginally)
+        to an Rmax = 10 mm sensor. The allowed round-trip error is adjusted
+        accordingly. Note that the higher the distortion parameter, the worse
+        will the round-trip error be, at least unless we introduce more iteration.
+        """
+        x, y = 10.0, 10.0
+        xres, yres = None, None
+        iter_eps = 1e-5
+
+        cal = Calibration()
+        cal.int_par.xh, cal.int_par.yh, cal.int_par.cc = 1.5, 1.5, 60.0
+        (
+            cal.added_par.k1,
+            cal.added_par.k2,
+            cal.added_par.k3,
+            cal.added_par.p1,
+            cal.added_par.p2,
+            cal.added_par.csx,
+            cal.added_par.she,
+        ) = (0.0005, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
+
+        xres, yres = flat_to_dist(x, y, cal)
+        xres, yres = dist_to_flat(xres, yres, cal, 0.00001)
+
+        self.assertAlmostEqual(xres, x, delta=iter_eps)
+        self.assertAlmostEqual(yres, y, delta=iter_eps)
+
+    def test_correct_brown_affine_exact(self):
+        # Define test input parameters
+        x = 10.0
+        y = 20.0
+        ap = AffineParams(0.1, 1.1, 0.01, 0.001, 0.0001, -0.0001, 0.0002)
+        tol = 1e-6
+
+        # Define expected output values
+        x1_expected = -9.213596346852953
+        y1_expected = 18.743734859657906
+
+        # Call the function
+        x1, y1 = correct_brown_affine(x, y, ap, tol)
+
+        # Check the output values against the expected values
+        assert np.isclose(x1, x1_expected, rtol=1e-6, atol=1e-6)
+        assert np.isclose(y1, y1_expected, rtol=1e-6, atol=1e-6)
+
+    def test_round_trip1(self):
+        """Less basic distortion test: with radial distortion, a point.
+
+        distorted/corrected would come back as the same point, up to floating
+        point errors and an error from the short iteration.
+        """
+        x, y = 1.0, 1.0
+        xres, yres = None, None
+        iter_eps = 1e-2
+
+        class AP:
+            def __init__(self, k1, k2, p1, p2, k3, fx, fy):
+                self.k1 = k1
+                self.k2 = k2
+                self.p1 = p1
+                self.p2 = p2
+                self.k3 = k3
+                self.fx = fx
+                self.fy = fy
+
+        ap = AP(0.05, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0)
+
+        xres, yres = distort_brown_affine(
+            x,
+            y,
+            ap,
+        )
+        xres, yres = correct_brown_affine(
+            xres,
+            yres,
+            ap,
+        )
+
+        self.assertAlmostEqual(xres, x, delta=iter_eps)
+        self.assertAlmostEqual(yres, y, delta=iter_eps)
+
+    def test_round_trip2(self):
+        """Do most basic distortion test: if there is no distortion.
+
+        a point distorted/corrected would come back as the same point, up to
+        floating point errors.
+        """
+        x, y = 1.0, 1.0
+        xres, yres = None, None
+        eps = 1e-5
+
+        class AP:
+            def __init__(self, k1, k2, p1, p2, k3, fx, fy):
+                self.k1 = k1
+                self.k2 = k2
+                self.p1 = p1
+                self.p2 = p2
+                self.k3 = k3
+                self.fx = fx
+                self.fy = fy
+
+        ap = AP(0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0)
+
+        xres, yres = distort_brown_affine(x, y, ap)
+        xres, yres = correct_brown_affine(xres, yres, ap)
+
+        self.assertAlmostEqual(xres, x, delta=eps)
+        self.assertAlmostEqual(yres, y, delta=eps)
+
+    def test_metric_to_pixel(self):
+        # input
+        xc = 0.0  # [mm]
+        yc = 0.0  # [mm]
+        cpar = ControlPar(1)
+        cpar.imx = 1024
+        cpar.imy = 1008
+        cpar.pix_x = 0.01
+        cpar.pix_y = 0.01
+        cpar.chfield = 0
+
+        # output
+        xp, yp = metric_to_pixel(xc, yc, cpar)
+
+        # expected output
+        expected_xp = 512.0
+        expected_yp = 504.0
+
+        # check that the output matches the expected output
+        self.assertAlmostEqual(xp, expected_xp, delta=1e-7)
+        self.assertAlmostEqual(yp, expected_yp, delta=1e-7)
+
+        xc = 1.0
+        yc = 0.0
+
+        # output
+        xp, yp = metric_to_pixel(xc, yc, cpar)
+
+        # expected output
+        expected_xp = 612.0
+        expected_yp = 504.0
+
+        # check that the output matches the expected output
+        self.assertAlmostEqual(xp, expected_xp, delta=1e-6)
+        self.assertAlmostEqual(yp, expected_yp, delta=1e-6)
+
+        xc = 0.0
+        yc = -1.0
+
+        # output
+        xp, yp = metric_to_pixel(xc, yc, cpar)
+
+        # expected output
+        expected_xp = 512.0
+        expected_yp = 604.0
+
+        # check that the output matches the expected output
+        self.assertAlmostEqual(xp, expected_xp, delta=1e-6)
+        self.assertAlmostEqual(yp, expected_yp, delta=1e-6)
 
 
 class TestPixelToMetric(unittest.TestCase):
@@ -52,26 +231,25 @@ class Test_transforms(unittest.TestCase):
             self.input_ori_file_name, self.input_add_file_name, "addpar.dat"
         )
 
-    def test_transforms_typecheck(self):
-        """Transform bindings check types."""
+    # def test_transforms_typecheck(self):
+    #     """Transform bindings check types."""
 
-        # irrelevant when we work with Python only
-        # # Assert TypeError is raised when passing a non (n,2) shaped numpy ndarray
-        # with self.assertRaises(TypeError):
-        #     arr_pixel_to_metric([0, 0], self.control)
-        # with self.assertRaises(TypeError):
-        #     arr_pixel_to_metric([-1, -1], self.control)
-        # with self.assertRaises(TypeError):
-        #     arr_metric_to_pixel([0, 0], self.control)
-        # with self.assertRaises(TypeError):
-        #     arr_metric_to_pixel([-1, -1], self.control)
+    # irrelevant when we work with Python only
+    # # Assert TypeError is raised when passing a non (n,2) shaped numpy ndarray
+    # with self.assertRaises(TypeError):
+    #     arr_pixel_to_metric([0, 0], self.control)
+    # with self.assertRaises(TypeError):
+    #     arr_pixel_to_metric([-1, -1], self.control)
+    # with self.assertRaises(TypeError):
+    #     arr_metric_to_pixel([0, 0], self.control)
+    # with self.assertRaises(TypeError):
+    #     arr_metric_to_pixel([-1, -1], self.control)
 
     def test_transforms_regress(self):
         """Transformed values are as before."""
         x_pixel = y_pixel = 1
         x_metric = y_metric = 1
 
-        output = np.zeros((3, 2))
         correct_output_pixel_to_metric = [
             [-8181.0, 6657.92],
             [-8181.0, 6657.92],
@@ -100,7 +278,7 @@ class Test_transforms(unittest.TestCase):
             output, correct_output_pixel_to_metric[0], decimal=7
         )
         output = np.zeros((3, 2))
-        output = arr_metric_to_pixel([x_metric, y_metric], self.control)
+        output = arr_metric_to_pixel(np.array([x_metric, y_metric]), self.control)
         np.testing.assert_array_almost_equal(
             output, correct_output_metric_to_pixel, decimal=7
         )
