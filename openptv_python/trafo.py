@@ -2,6 +2,7 @@
 from typing import Tuple
 
 import numpy as np
+from scipy.optimize import root_scalar
 
 from .calibration import Calibration, ap_52
 from .parameters import ControlPar
@@ -80,70 +81,127 @@ def arr_metric_to_pixel(metric: np.ndarray, parameters: ControlPar) -> np.ndarra
     return pixel
 
 
-def distort_brown_affine(x: float, y: float, ap: ap_52) -> Tuple[float, float]:
+def distort_brown_affine(
+    x: np.float64, y: np.float64, ap: ap_52
+) -> Tuple[float, float]:
     """Distort a point using the Brown affine model."""
-    r = np.sqrt(x * x + y * y)
-    if r != 0:
-        x += (
-            x * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
-            + ap.p1 * (r**2 + 2 * x**2)
-            + 2 * ap.p2 * x * y
-        )
-        y += (
-            y * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
-            + ap.p2 * (r**2 + 2 * y**2)
-            + 2 * ap.p1 * x * y
-        )
-        x1 = ap.scx * x - np.sin(ap.she) * y
-        y1 = np.cos(ap.she) * y
+    if x == 0 and y == 0:
+        return 0, 0
+
+    r = np.sqrt(x**2 + y**2)
+
+    x += (
+        x * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
+        + ap.p1 * (r**2 + 2 * x**2)
+        + 2 * ap.p2 * x * y
+    )
+    y += (
+        y * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
+        + ap.p2 * (r**2 + 2 * y**2)
+        + 2 * ap.p1 * x * y
+    )
+    x1 = ap.scx * x - np.sin(ap.she) * y
+    y1 = np.cos(ap.she) * y
 
     return x1, y1
 
 
+# def correct_brown_affine(x, y, ap, tol=1e-5):
+#     """Correct a distorted point using the Brown affine model."""
+#     r, rq, xq, yq = 0.0, 0.0, x, y
+#     itnum = 0
+
+#     if x == 0 and y == 0:
+#         return xq, yq
+
+#     rq = np.sqrt(x**2 + y**2)
+
+#     while True:
+#         r = rq
+#         xq = (
+#             (x + yq * np.sin(ap.she)) / ap.scx
+#             - xq * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
+#             - ap.p1 * (r**2 + 2 * xq**2)
+#             - 2 * ap.p2 * xq * yq
+#         )
+
+#         yq = (
+#             y / np.cos(ap.she)
+#             - yq * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
+#             - ap.p2 * (r**2 + 2 * yq**2)
+#             - 2 * ap.p1 * xq * yq
+#         )
+
+#         rq = np.sqrt(xq**2 + yq**2)
+
+#         if rq > 1.2 * r:
+#             rq = 0.5 * r
+
+#         itnum += 1
+
+#         if itnum >= 201 or abs(rq - r) / r <= tol:
+#             break
+
+#     r = rq
+#     x1 = (
+#         (x + yq * np.sin(ap.she)) / ap.scx
+#         - xq * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
+#         - ap.p1 * (r**2 + 2 * xq**2)
+#         - 2 * ap.p2 * xq * yq
+#     )
+
+#     y1 = (
+#         y / np.cos(ap.she)
+#         - yq * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
+#         - ap.p2 * (r**2 + 2 * yq**2)
+#         - 2 * ap.p1 * xq * yq
+#     )
+
+#     return x1, y1
+
+
 def correct_brown_affine(x, y, ap, tol=1e-5):
     """Correct a distorted point using the Brown affine model."""
-    r, rq, xq, yq = 0.0, 0.0, x, y
-    itnum = 0
-
-    if x == 0 and y == 0:
-        return xq, yq
-
+    xq, yq = x, y
     rq = np.sqrt(x**2 + y**2)
 
-    while True:
-        r = rq
+    def f(r, xq, yq):
         xq = (
             (x + yq * np.sin(ap.she)) / ap.scx
             - xq * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
             - ap.p1 * (r**2 + 2 * xq**2)
             - 2 * ap.p2 * xq * yq
         )
-
         yq = (
             y / np.cos(ap.she)
             - yq * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
             - ap.p2 * (r**2 + 2 * yq**2)
             - 2 * ap.p1 * xq * yq
         )
-
         rq = np.sqrt(xq**2 + yq**2)
+        return rq - r
 
-        if rq > 1.2 * r:
-            rq = 0.5 * r
+    r = root_scalar(f, args=(xq, yq), bracket=[0, 2 * rq], maxiter=200, xtol=tol).root
 
-        itnum += 1
+    xq = (
+        (x + yq * np.sin(ap.she)) / ap.scx
+        - xq * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
+        - ap.p1 * (r**2 + 2 * xq**2)
+        - 2 * ap.p2 * xq * yq
+    )
+    yq = (
+        y / np.cos(ap.she)
+        - yq * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
+        - ap.p2 * (r**2 + 2 * yq**2)
+        - 2 * ap.p1 * xq * yq
+    )
 
-        if itnum >= 201 or abs(rq - r) / r <= tol:
-            break
-
-    r = rq
     x1 = (
         (x + yq * np.sin(ap.she)) / ap.scx
         - xq * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
         - ap.p1 * (r**2 + 2 * xq**2)
         - 2 * ap.p2 * xq * yq
     )
-
     y1 = (
         y / np.cos(ap.she)
         - yq * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
@@ -168,55 +226,8 @@ def flat_to_dist(flat_x: float, flat_y: float, cal: Calibration) -> Tuple[float,
 
 
 def dist_to_flat(dist_x: float, dist_y: float, cal: Calibration, tol: float = 1e-5):
-    """Attempt to restore metric flat-image positions from metric real-image coordinates.
-
-    This is an inverse problem so some error is to be expected, but for small enough
-    distortions it's bearable.
-    """
-    flat_x = dist_x
-    flat_y = dist_y
-    r = np.sqrt(flat_x**2 + flat_y**2)
-
-    itnum = 0
-    while True:
-        xq = (
-            (flat_x + flat_y * np.sin(cal.added_par.she)) / cal.added_par.scx
-            - flat_x
-            * (
-                cal.added_par.k1 * r**2
-                + cal.added_par.k2 * r**4
-                + cal.added_par.k3 * r**6
-            )
-            - cal.added_par.p1 * (r**2 + 2 * flat_x**2)
-            - 2 * cal.added_par.p2 * flat_x * flat_y
-        )
-        yq = (
-            dist_y / np.cos(cal.added_par.she)
-            - flat_y
-            * (
-                cal.added_par.k1 * r**2
-                + cal.added_par.k2 * r**4
-                + cal.added_par.k3 * r**6
-            )
-            - cal.added_par.p2 * (r**2 + 2 * flat_y**2)
-            - 2 * cal.added_par.p1 * flat_x * flat_y
-        )
-        rq = np.sqrt(xq**2 + yq**2)
-
-        # Limit divergent iteration
-        if rq > 1.2 * r:
-            rq = 0.5 * r
-
-        itnum += 1
-
-        # Check if we can stop iterating
-        if itnum >= 201 or abs(rq - r) / r <= tol:
-            break
-
-        r = rq
-        flat_x = xq
-        flat_y = yq
-
+    """Convert real-image coordinates to flat-image coordinates."""
+    flat_x, flat_y = correct_brown_affine(dist_x, dist_y, cal.added_par, tol)
     flat_x -= cal.int_par.xh
     flat_y -= cal.int_par.yh
     return flat_x, flat_y

@@ -1,7 +1,7 @@
 """Calibration data structures and functions."""
 import pathlib
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import List, Optional
 
 import numpy as np
 
@@ -61,15 +61,15 @@ class mmlut:
     data: np.ndarray | None = None
 
 
-@dataclass
 class Calibration:
     """Calibration data structure."""
 
-    ext_par: Exterior = Exterior()
-    int_par: Interior = Interior()
-    glass_par: Glass = Glass()
-    added_par: ap_52 = ap_52()
-    mmlut: mmlut = mmlut()
+    def __init__(self):
+        self.ext_par = Exterior()
+        self.int_par = Interior()
+        self.glass_par = Glass()
+        self.added_par = ap_52()
+        self.mmlut = mmlut()
 
     def from_file(self, ori_file: str, add_file: str = None, add_fallback: str = None):
         """
@@ -340,6 +340,18 @@ class Calibration:
         ret[1] = self.glass_par.vec_y
         ret[2] = self.glass_par.vec_z
         return ret
+
+    def set_added_par(self, listpar: List[float]):
+        ap = ap_52()
+        ap.k1 = listpar[0]
+        ap.k2 = listpar[1]
+        ap.k3 = listpar[2]
+        ap.p1 = listpar[3]
+        ap.p2 = listpar[4]
+        ap.scx = listpar[5]
+        ap.she = listpar[6]
+
+        self.added_par = ap
 
 
 def write_ori(

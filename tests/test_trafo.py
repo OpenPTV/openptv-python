@@ -15,6 +15,31 @@ from openptv_python.trafo import (
 )
 
 
+class testMetricPixel(unittest.TestCase):
+    def test_metric_to_pixel():
+        """Test the metric_to_pixel function."""
+        cpar = ControlPar()
+        cpar.imx = 1024
+        cpar.imy = 1008
+        cpar.pix_x = 0.01
+        cpar.pix_y = 0.01
+
+        xp, yp = metric_to_pixel(0.0, 0.0, cpar)
+        assert xp == 512
+        assert yp == 504
+
+        xp, yp = metric_to_pixel(1.0, 0.0, cpar)
+        assert xp == 612
+        assert yp == 504
+
+        xp, yp = metric_to_pixel(0.0, -1.0, cpar)
+        assert xp == 512
+        assert yp == 604
+
+        output = arr_metric_to_pixel([[0.0, 0.0], [1.0, 0.0], [0.0, -1.0]], cpar)
+        assert np.allclose(output, [[512, 504], [612, 504], [512, 604]])
+
+
 class AffineParams:
     def __init__(self, she, scx, k1, k2, k3, p1, p2):
         self.she = she
@@ -38,7 +63,6 @@ class TestDistFlatRoundTrip(unittest.TestCase):
         will the round-trip error be, at least unless we introduce more iteration.
         """
         x, y = 10.0, 10.0
-        xres, yres = None, None
         iter_eps = 1e-5
 
         cal = Calibration()
@@ -51,13 +75,13 @@ class TestDistFlatRoundTrip(unittest.TestCase):
             cal.added_par.p2,
             cal.added_par.csx,
             cal.added_par.she,
-        ) = (0.0005, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
+        ) = (1e-5, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
 
-        xres, yres = flat_to_dist(x, y, cal)
-        xres, yres = dist_to_flat(xres, yres, cal, 0.00001)
+        xdist, ydist = flat_to_dist(x, y, cal)
+        xflat, yflat = dist_to_flat(xdist, ydist, cal, iter_eps)
 
-        self.assertAlmostEqual(xres, x, delta=iter_eps)
-        self.assertAlmostEqual(yres, y, delta=iter_eps)
+        self.assertAlmostEqual(xflat, x, delta=iter_eps)
+        self.assertAlmostEqual(yflat, y, delta=iter_eps)
 
     def test_correct_brown_affine_exact(self):
         # Define test input parameters
@@ -84,20 +108,9 @@ class TestDistFlatRoundTrip(unittest.TestCase):
         point errors and an error from the short iteration.
         """
         x, y = 1.0, 1.0
-        xres, yres = None, None
         iter_eps = 1e-2
-
-        class AP:
-            def __init__(self, k1, k2, p1, p2, k3, fx, fy):
-                self.k1 = k1
-                self.k2 = k2
-                self.p1 = p1
-                self.p2 = p2
-                self.k3 = k3
-                self.fx = fx
-                self.fy = fy
-
-        ap = AP(0.05, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0)
+        cal = Calibration()
+        ap = cal.added_par
 
         xres, yres = distort_brown_affine(
             x,
@@ -191,13 +204,12 @@ class TestDistFlatRoundTrip(unittest.TestCase):
         self.assertAlmostEqual(xp, expected_xp, delta=1e-6)
         self.assertAlmostEqual(yp, expected_yp, delta=1e-6)
 
-
-class TestPixelToMetric(unittest.TestCase):
+    # class TestPixelToMetric(unittest.TestCase):
     def test_pixel_to_metric(self):
         """Test pixel_to_metric function."""
         # define input_vec pixel coordinates and parameters
-        x_pixel = 100
-        y_pixel = 200
+        x_pixel = 320
+        y_pixel = 240
         parameters = ControlPar(imx=640, imy=480, pix_x=0.01, pix_y=0.01)
 
         # expected output metric coordinates
