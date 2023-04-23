@@ -138,7 +138,7 @@ class Calibration:
             ) = self.added_par.p1 = self.added_par.p2 = self.added_par.she = 0.0
             self.added_par.scx = 1.0
 
-        print(f"Calibration data read from files {ori_file} and {add_file}")
+        # print(f"Calibration data read from files {ori_file} and {add_file}")
 
     def write(self, ori_file: str, addpar_file: str):
         """Write calibration to file."""

@@ -100,8 +100,6 @@ def trans_Cam_Point(
     pos = np.array([pos_x, pos_y, pos_z])
 
     ex_t, pos_t, cross_p, cross_c = trans_Cam_Point(ex, mm, glass_dir, pos)
-
-
     """
     glass_dir = np.array([glass.vec_x, glass.vec_y, glass.vec_z])
     primary_point = np.array([ex.x0, ex.y0, ex.z0])

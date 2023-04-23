@@ -28,14 +28,18 @@ class TestTargRec(unittest.TestCase):
             dtype=np.uint8,
         )
 
-        cpar = ControlPar(4, image_size=(5, 5))
+        cpar = ControlPar(4)
+        cpar.set_image_size = (5, 5)
         tpar = TargetPar(
             gvthresh=[250, 100, 20, 20],
             discont=5,
-            pixel_count_bounds=(1, 10),
-            min_sum_grey=12,
-            xsize_bounds=(1, 10),
-            ysize_bounds=(1, 10),
+            nnmin=1,
+            nnmax=10,
+            sumg_min=12,
+            nxmin=1,
+            nxmax=10,
+            nymin=1,
+            nymax=10,
         )
 
         targs = target_recognition(img, tpar, 0, cpar)
@@ -55,14 +59,18 @@ class TestTargRec(unittest.TestCase):
             dtype=np.uint8,
         )
 
-        cpar = ControlPar(4, image_size=(5, 5))
+        cpar = ControlPar(4)
+        cpar.set_image_size = (5, 5)
         tpar = TargetPar(
             gvthresh=[250, 100, 20, 20],
             discont=5,
-            pixel_count_bounds=(1, 10),
-            min_sum_grey=12,
-            xsize_bounds=(1, 10),
-            ysize_bounds=(1, 10),
+            nnmin=1,
+            nnmax=10,
+            sumg_min=12,
+            nxmin=1,
+            nxmax=10,
+            nymin=1,
+            nymax=10,
         )
 
         targs = target_recognition(img, tpar, 0, cpar)
@@ -71,7 +79,7 @@ class TestTargRec(unittest.TestCase):
         self.assertEqual(targs[0].count_pixels(), (1, 1, 1))
 
         # Exclude the first target and try again:
-        tpar.set_grey_thresholds([252, 100, 20, 20])
+        tpar.gvthresh = [252, 100, 20, 20]
         targs = target_recognition(img, tpar, 0, cpar)
 
         self.assertEqual(len(targs), 1)
@@ -90,17 +98,22 @@ class TestTargRec(unittest.TestCase):
             dtype=np.uint8,
         )
 
-        cpar = ControlPar(4, image_size=(5, 5))
+        cpar = ControlPar(4)
+        cpar.set_image_size = (5, 5)
         tpar = TargetPar(
             gvthresh=[250, 100, 20, 20],
             discont=5,
-            pixel_count_bounds=(1, 10),
-            min_sum_grey=12,
-            xsize_bounds=(1, 10),
-            ysize_bounds=(1, 10),
+            nnmin=1,
+            nnmax=10,
+            sumg_min=12,
+            nxmin=1,
+            nxmax=10,
+            nymin=1,
+            nymax=10,
         )
 
         targs = target_recognition(img, tpar, 0, cpar)
+
         self.assertEqual(len(targs), 1)
         self.assertEqual(targs[0].count_pixels(), (4, 3, 2))
 
