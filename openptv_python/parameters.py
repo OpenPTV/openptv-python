@@ -194,6 +194,9 @@ class VolumePar:
     def set_Zmin_lay(self, Zmin_lay):
         self.Zmin_lay = Zmin_lay
 
+    def set_Zmax_lay(self, Zmax_lay):
+        self.Zmax_lay = Zmax_lay
+
     def from_file(self, filename: str):
         """Read volume parameters from file.
 
@@ -222,7 +225,9 @@ def read_volume_par(filename: str) -> VolumePar:
     -------
         VolumePar: volume of interest parameters
     """
-    return VolumePar().from_file(filename)
+    vpar = VolumePar()
+    vpar.from_file(filename)
+    return vpar
 
 
 def compare_volume_par(v1: VolumePar, v2: VolumePar) -> bool:

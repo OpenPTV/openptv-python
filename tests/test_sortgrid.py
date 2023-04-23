@@ -1,12 +1,17 @@
 import unittest
 
-from openptv_python.sortgrid import *
+from openptv_python.calibration import Calibration, read_calibration
+from openptv_python.parameters import ControlPar, read_control_par
+from openptv_python.sortgrid import (
+    nearest_neighbour_pix,
+    read_calblock,
+    read_sortgrid_par,
+    sortgrid,
+)
 from openptv_python.tracking_frame_buf import Target, read_targets
-from openptv_python.calibration import read_calibration, Calibration
 
 
 class TestSortgrid(unittest.TestCase):
-
     def test_nearest_neighbour_pix(self):
         target = Target(0, 1127.0000, 796.0000, 13320, 111, 120, 828903, 1)
         pnr = nearest_neighbour_pix(target, 1, 1128.0, 795.0, 0.0)
@@ -15,10 +20,10 @@ class TestSortgrid(unittest.TestCase):
         pnr = nearest_neighbour_pix(target, 1, 1128.0, 795.0, -1.0)
         self.assertEqual(pnr, -999)
 
-        pnr = nearest_neighbour_pix(target, 1, -1127.0, -796.0, 1E3)
+        pnr = nearest_neighbour_pix(target, 1, -1127.0, -796.0, 1e3)
         self.assertEqual(pnr, -999)
 
-        pnr = nearest_neighbour_pix(target, 1, 1127.0, 796.0, 1E-5)
+        pnr = nearest_neighbour_pix(target, 1, 1127.0, 796.0, 1e-5)
         self.assertEqual(pnr, 0)
 
     def test_read_sortgrid_par(self):
@@ -35,15 +40,14 @@ class TestSortgrid(unittest.TestCase):
         with self.assertRaises(FileNotFoundError):
             calblock_file.exists()
 
-        fix = read_calblock(num_points, calblock_file)
+        read_calblock(num_points, calblock_file)
         self.assertEqual(num_points, correct_num_points)
 
     def test_sortgrid(self):
         calibration = Calibration()
-        control_par = control_par()
-        vec3d = vec3d()
-        target = target()
-        sorted_pix = target()
+        control_par = ControlPar()
+        target = Target()
+        sorted_pix = Target()
         nfix, i, eps, correct_eps = 5, 0, 25, 25
 
         eps = read_sortgrid_par("testing_fodder/parameters/sortgrid.par")
@@ -53,7 +57,7 @@ class TestSortgrid(unittest.TestCase):
         frame_num = 42
         targets_read = 0
 
-        targets_read = read_targets(target, file_base, frame_num)
+        targets_read = read_targets(file_base, frame_num)
         self.assertEqual(targets_read, 2)
 
         ori_file = "testing_fodder/cal/cam1.tif.ori"
@@ -70,11 +74,15 @@ class TestSortgrid(unittest.TestCase):
 
         self.assertEqual(nfix, 5)
 
-        sorted_pix = sortgrid(calibration, control_par, nfix, fix, targets_read, eps, target)
+        sorted_pix = sortgrid(
+            calibration, control_par, nfix, fix, targets_read, eps, target
+        )
         self.assertEqual(sorted_pix[0].pnr, -999)
         self.assertEqual(sorted_pix[1].pnr, -999)
 
-        sorted_pix = sortgrid(calibration, control_par, nfix, fix, targets_read, 120, target)
+        sorted_pix = sortgrid(
+            calibration, control_par, nfix, fix, targets_read, 120, target
+        )
         self.assertEqual(sorted_pix[1].pnr, 1)
         self.assertEqual(sorted_pix[1].x, 796)
 
