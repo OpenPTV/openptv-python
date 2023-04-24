@@ -108,6 +108,7 @@ def trans_Cam_Point(
     dist_cam_glas = (
         np.dot(primary_point, glass_dir) / dist_o_glass - dist_o_glass - mm.d[0]
     )
+
     dist_point_glass = np.dot(pos, glass_dir) / dist_o_glass - dist_o_glass
 
     renorm_glass = glass_dir * (dist_cam_glas / dist_o_glass)

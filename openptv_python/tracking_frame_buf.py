@@ -14,6 +14,7 @@ from .constants import (
     POSI,
     PREV_NONE,
     PRIO_DEFAULT,
+    PT_UNUSED,
 )
 from .epi import Coord2d
 from .parameters import ControlPar
@@ -115,7 +116,7 @@ def sort_crd_x(crd):
 class Target:
     """Target structure for tracking."""
 
-    pnr: int = field(default_factory=int)  # target number
+    pnr: int = PT_UNUSED  # target number
     x: float = field(default_factory=float)  # pixel position
     y: float = field(default_factory=float)  # pixel position
     n: int = field(default_factory=int)  # number of pixels

@@ -1,7 +1,8 @@
 import unittest
+from pathlib import Path
 
-from openptv_python.calibration import Calibration, read_calibration
-from openptv_python.parameters import ControlPar, read_control_par
+from openptv_python.calibration import read_calibration
+from openptv_python.parameters import read_control_par
 from openptv_python.sortgrid import (
     nearest_neighbour_pix,
     read_calblock,
@@ -9,80 +10,76 @@ from openptv_python.sortgrid import (
     sortgrid,
 )
 from openptv_python.tracking_frame_buf import Target, read_targets
+from openptv_python.vec_utils import vec_set
 
 
 class TestSortgrid(unittest.TestCase):
     def test_nearest_neighbour_pix(self):
-        target = Target(0, 1127.0000, 796.0000, 13320, 111, 120, 828903, 1)
-        pnr = nearest_neighbour_pix(target, 1, 1128.0, 795.0, 0.0)
+        """Test finding the nearest neighbour pixel."""
+        targets = [Target(0, 1127.0000, 796.0000, 13320, 111, 120, 828903, 1)]
+        pnr = nearest_neighbour_pix(targets, 1128.0, 795.0, 0.0)
         self.assertEqual(pnr, -999)
 
-        pnr = nearest_neighbour_pix(target, 1, 1128.0, 795.0, -1.0)
+        pnr = nearest_neighbour_pix(targets, 1128.0, 795.0, -1.0)
         self.assertEqual(pnr, -999)
 
-        pnr = nearest_neighbour_pix(target, 1, -1127.0, -796.0, 1e3)
+        pnr = nearest_neighbour_pix(targets, -1127.0, -796.0, 1e3)
         self.assertEqual(pnr, -999)
 
-        pnr = nearest_neighbour_pix(target, 1, 1127.0, 796.0, 1e-5)
+        pnr = nearest_neighbour_pix(targets, 1127.0, 796.0, 1e-5)
         self.assertEqual(pnr, 0)
 
     def test_read_sortgrid_par(self):
-        eps = read_sortgrid_par("testing_fodder/parameters/sortgrid.par")
+        """Test reading sortgrid.par file."""
+        eps = read_sortgrid_par("tests/testing_fodder/parameters/sortgrid.par")
         self.assertEqual(eps, 25)
 
-        eps = read_sortgrid_par("testing_fodder/parameters/sortgrid_corrupted.par")
-        self.assertEqual(eps, 0)
+        eps = read_sortgrid_par(
+            "tests/testing_fodder/parameters/sortgrid_corrupted.par"
+        )
+        self.assertEqual(eps, None)
 
     def test_read_calblock(self):
-        num_points, correct_num_points = 5, 5
-        calblock_file = "testing_fodder/cal/calblock.txt"
+        """Test reading calblock.txt file."""
+        correct_num_points = 5
+        calblock_file = Path("tests/testing_fodder/cal/calblock.txt")
 
-        with self.assertRaises(FileNotFoundError):
-            calblock_file.exists()
+        # with self.assertRaises(FileNotFoundError):
+        assert calblock_file.exists()
 
-        read_calblock(num_points, calblock_file)
-        self.assertEqual(num_points, correct_num_points)
+        cal_points = read_calblock(calblock_file)
+        self.assertEqual(len(cal_points), correct_num_points)
 
     def test_sortgrid(self):
-        calibration = Calibration()
-        control_par = ControlPar()
-        target = Target()
-        sorted_pix = Target()
-        nfix, i, eps, correct_eps = 5, 0, 25, 25
+        """Test sorting the grid points according to the image coordinates."""
+        nfix, eps, correct_eps = 5, 25, 25
 
-        eps = read_sortgrid_par("testing_fodder/parameters/sortgrid.par")
+        eps = read_sortgrid_par("tests/testing_fodder/parameters/sortgrid.par")
         self.assertEqual(eps, correct_eps)
 
-        file_base = "testing_fodder/sample_"
+        file_base = "tests/testing_fodder/sample_"
         frame_num = 42
-        targets_read = 0
 
-        targets_read = read_targets(file_base, frame_num)
-        self.assertEqual(targets_read, 2)
+        targets = read_targets(file_base, frame_num)
+        self.assertEqual(len(targets), 2)
 
-        ori_file = "testing_fodder/cal/cam1.tif.ori"
-        add_file = "testing_fodder/cal/cam1.tif.addpar"
+        ori_file = "tests/testing_fodder/cal/cam1.tif.ori"
+        add_file = "tests/testing_fodder/cal/cam1.tif.addpar"
 
-        with self.assertRaises(ValueError):
-            calibration = read_calibration(ori_file, add_file, None)
-
-        with self.assertRaises(ValueError):
-            control_par = read_control_par("testing_fodder/parameters/ptv.par")
-
-        with self.assertRaises(ValueError):
-            fix = read_calblock(nfix, "testing_fodder/cal/calblock.txt")
+        cal = read_calibration(ori_file, add_file)
+        cpar = read_control_par("tests/testing_fodder/parameters/ptv.par")
+        cal_points = read_calblock("tests/testing_fodder/cal/calblock.txt")
 
         self.assertEqual(nfix, 5)
 
-        sorted_pix = sortgrid(
-            calibration, control_par, nfix, fix, targets_read, eps, target
-        )
+        # sortgrid expects only x,y,z
+        fix = [vec_set(p.x, p.y, p.z) for p in cal_points]
+
+        sorted_pix = sortgrid(cal, cpar, nfix, fix, eps, targets)
         self.assertEqual(sorted_pix[0].pnr, -999)
         self.assertEqual(sorted_pix[1].pnr, -999)
 
-        sorted_pix = sortgrid(
-            calibration, control_par, nfix, fix, targets_read, 120, target
-        )
+        sorted_pix = sortgrid(cal, cpar, nfix, fix, 120, targets)
         self.assertEqual(sorted_pix[1].pnr, 1)
         self.assertEqual(sorted_pix[1].x, 796)
 

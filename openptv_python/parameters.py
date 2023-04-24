@@ -53,8 +53,8 @@ class MultimediaPar:
         if len(refr_index) != len(thickness):
             raise ValueError("Lengths of refractive index and thickness must be equal.")
         else:
-            self.n2 = refr_index[:]
-            self.d = thickness[:]
+            self.n2 = np.array(refr_index[:])
+            self.d = np.array(thickness[:])
             self.nlay = len(refr_index)
 
 
@@ -296,6 +296,14 @@ class ControlPar:
             self.mm.n2 = float(par_file.readline().strip())
             self.mm.n3 = float(par_file.readline().strip())
             self.mm.d = float(par_file.readline().strip())
+
+        # the original idea is to have more layers inside water with different
+        # refractive indices and different thicknesses.
+        # therefore the following lines convert it to numpy arrays
+        # we expect the user to provide this parameter file lines with equal
+        # number of floats
+        self.mm.d = np.atleast_1d(self.mm.d)
+        self.mm.n2 = np.atleast_1d(self.mm.n2)
 
     def get_multimedia_params(self):
         """Return multimedia parameters."""
