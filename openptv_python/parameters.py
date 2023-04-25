@@ -9,7 +9,17 @@ import numpy as np
 class MultimediaPar:
     """Multimedia parameters."""
 
-    def __init__(self, n1: float, n2: np.ndarray, n3: float, d: np.ndarray):
+    def __init__(
+        self,
+        n1: float = 1.0,
+        n2: np.ndarray = np.ones(
+            1,
+        ),
+        n3: float = 1.0,
+        d: np.ndarray = np.ones(
+            1,
+        ),
+    ):
         """Initialize MultimediaPar object."""
         self.n1 = n1
         self.n2 = np.array(n2)

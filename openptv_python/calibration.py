@@ -34,7 +34,7 @@ class Glass:
 
     vec_x: float = field(default=0.0, metadata={"units": "mm"})
     vec_y: float = field(default=0.0, metadata={"units": "mm"})
-    vec_z: float = field(default=0.0, metadata={"units": "mm"})
+    vec_z: float = field(default=1.0, metadata={"units": "mm"})
 
 
 @dataclass

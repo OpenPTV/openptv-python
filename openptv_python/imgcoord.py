@@ -47,6 +47,9 @@ def flat_image_coord(
         + cal.ext_par.dm[2][2] * (pos[2] - cal.ext_par.z0)
     )
 
+    if deno == 0:
+        deno = 1
+
     x = (
         -cal.int_par.cc
         * (

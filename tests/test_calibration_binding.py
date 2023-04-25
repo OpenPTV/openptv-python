@@ -50,7 +50,12 @@ class Test_Calibration(unittest.TestCase):
             she=affine[1],
         )
 
-        cal = Calibration(Ext, In, G, addpar)
+        cal = Calibration()
+        cal.ext_par = Ext
+        cal.int_par = In
+        cal.glass_par = G
+        cal.added_par = addpar
+        # cal.mmlut = mmlut
 
         numpy.testing.assert_array_equal(pos, cal.get_pos())
         numpy.testing.assert_array_equal(angs, cal.get_angles())

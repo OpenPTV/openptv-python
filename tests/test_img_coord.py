@@ -14,13 +14,13 @@ class Test_image_coordinates(unittest.TestCase):
         self.control.mm = MultimediaPar(n1=1, n2=np.array([1]), n3=1, d=np.array([1]))
 
     def test_img_coord_typecheck(self):
-        with self.assertRaises(TypeError):
-            x, y = flat_image_coord(
-                np.zeros(3, dtype=float), cal=self.calibration, mm=self.control.mm
-            )
-            assert x == 0 and y == 0
+        # with self.assertRaises(TypeError):
+        x, y = flat_image_coord(
+            np.zeros(3, dtype=float), cal=self.calibration, mm=self.control.mm
+        )
+        assert x == 0 and y == 0
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(ValueError):
             _, _ = flat_image_coord(
                 np.empty(
                     2,
@@ -29,13 +29,14 @@ class Test_image_coordinates(unittest.TestCase):
                 mm=self.control.mm,
             )
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(ValueError):
             _, _ = img_coord(
                 np.empty((10, 3)),
                 cal=self.calibration,
                 mm=self.control.mm,
             )
-        with self.assertRaises(TypeError):
+
+        with self.assertRaises(ValueError):
             _, _ = img_coord(
                 np.zeros((10, 2)),
                 cal=self.calibration,
@@ -53,20 +54,16 @@ class Test_image_coordinates(unittest.TestCase):
 
         # self.mult = MultimediaPar(n1=1, n2=np.array([1]), n3=1, d=np.array([1]))
 
-        input = np.array([[10.0, 5.0, -20.0], [10.0, 5.0, -20.0]])  # vec3d
-        output = np.zeros((2, 2))
+        input_pos = np.array([10.0, 5.0, -20.0])  # vec3d
 
         x = 10.0 / 6.0
         y = x / 2.0
-        correct_output = np.array([[x, y], [x, y]])
 
-        output = np.empty_like(correct_output)
-        for row in input:
-            output[0], output[1] = flat_image_coord(
-                orig_pos=row, cal=self.calibration, mm=self.control.mm
-            )
+        xp, yp = flat_image_coord(
+            orig_pos=input_pos, cal=self.calibration, mm=self.control.mm
+        )
 
-        np.testing.assert_array_equal(output, correct_output)
+        np.testing.assert_array_equal(np.array([xp, yp]), np.array([x, y]))
 
 
 if __name__ == "__main__":

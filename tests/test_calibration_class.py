@@ -12,7 +12,8 @@ from openptv_python.calibration import (
 
 def test_exterior_initialization():
     """Test exterior parameters initialization."""
-    ext = Calibration().ext_par
+    cal = Calibration()
+    ext = cal.ext_par
     assert np.all(ext.dm == np.zeros((3, 3)))
     assert ext.omega == 0.0
     assert ext.phi == 0.0
@@ -32,15 +33,17 @@ def test_interior_initialization():
 
 def test_glass_initialization():
     """Test glass parameters initialization."""
-    glass = Calibration().glass_par
+    cal = Calibration()
+    glass = cal.glass_par
     assert glass.vec_x == 0.0
     assert glass.vec_y == 0.0
-    assert glass.vec_z == 0.0
+    assert glass.vec_z == 1.0
 
 
 def test_ap_52_initialization():
     """Test ap_52 parameters initialization."""
-    ap = Calibration().added_par
+    cal = Calibration()
+    ap = cal.added_par
     assert ap.k1 == 0.0
     assert ap.k2 == 0.0
     assert ap.k3 == 0.0
@@ -52,7 +55,8 @@ def test_ap_52_initialization():
 
 def test_mmlut_initialization():
     """Test mmlut parameters initialization."""
-    mml = Calibration().mmlut
+    cal = Calibration()
+    mml = cal.mmlut
     assert np.all(mml.origin == np.zeros(3))
     assert mml.nr == 0
     assert mml.nz == 0
@@ -70,3 +74,12 @@ def test_calibration_initialization():
     assert isinstance(calib.glass_par, Glass)
     assert isinstance(calib.added_par, ap_52)
     assert isinstance(calib.mmlut, mmlut)
+
+
+if __name__ == "__main__":
+    test_exterior_initialization()
+    test_interior_initialization()
+    test_glass_initialization()
+    test_ap_52_initialization()
+    test_mmlut_initialization()
+    test_calibration_initialization()
