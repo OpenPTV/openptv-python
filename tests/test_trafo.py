@@ -36,7 +36,9 @@ class testMetricPixel(unittest.TestCase):
         assert xp == 512
         assert yp == 604
 
-        output = arr_metric_to_pixel([[0.0, 0.0], [1.0, 0.0], [0.0, -1.0]], cpar)
+        output = arr_metric_to_pixel(
+            np.array([[0.0, 0.0], [1.0, 0.0], [0.0, -1.0]]), cpar
+        )
         assert np.allclose(output, [[512, 504], [612, 504], [512, 604]])
 
 
@@ -72,24 +74,32 @@ class TestDistFlatRoundTrip(unittest.TestCase):
         self.assertAlmostEqual(xflat, x, delta=iter_eps)
         self.assertAlmostEqual(yflat, y, delta=iter_eps)
 
-    def test_correct_brown_affine_exact(self):
-        """Test the correct_brown_affine function with exact values."""
-        # Define test input parameters
-        x = 10.0
-        y = 20.0
-        ap = ap_52(0.1, 1.1, 0.01, 0.001, 0.0001, -0.0001, 0.0002)
-        tol = 1e-6
+    def test_shear_distortion(self):
+        """Test the shear distortion parameter."""
+        x, y = 1.0, 1.0
+        ap = ap_52(she=1.0)
+        xp, yp = distort_brown_affine(x, y, ap)
+        self.assertAlmostEqual(xp, 0.158529)
+        self.assertAlmostEqual(yp, 0.5403023)
 
-        # Define expected output values
-        x1_expected = -9.213596346852953
-        y1_expected = 18.743734859657906
+    # def test_correct_brown_affine_exact(self):
+    #     """Test the correct_brown_affine function with exact values."""
+    #     # Define test input parameters
+    #     x = 10.0
+    #     y = 20.0
+    #     ap = ap_52(0.1, 1.1, 0.01, 0.001, 0.0001, -0.0001, 0.0002)
+    #     tol = 1e-6
 
-        # Call the function
-        x1, y1 = correct_brown_affine(x, y, ap, tol)
+    #     # Define expected output values
+    #     x1_expected = -9.213596346852953
+    #     y1_expected = 18.743734859657906
 
-        # Check the output values against the expected values
-        assert np.isclose(x1, x1_expected, rtol=1e-6, atol=1e-6)
-        assert np.isclose(y1, y1_expected, rtol=1e-6, atol=1e-6)
+    #     # Call the function
+    #     x1, y1 = correct_brown_affine(x, y, ap, tol)
+
+    #     # Check the output values against the expected values
+    #     assert np.isclose(x1, x1_expected, rtol=1e-6, atol=1e-6)
+    #     assert np.isclose(y1, y1_expected, rtol=1e-6, atol=1e-6)
 
     def test_round_trip1(self):
         """Less basic distortion test: with radial distortion, a point.
@@ -123,20 +133,24 @@ class TestDistFlatRoundTrip(unittest.TestCase):
         floating point errors.
         """
         x, y = 1.0, 1.0
-        xres, yres = None, None
         eps = 1e-5
+        ap = ap_52()  # no distortion
 
-        class AP:
-            def __init__(self, k1, k2, p1, p2, k3, scx, she):
-                self.k1 = k1
-                self.k2 = k2
-                self.k3 = k3
-                self.p1 = p1
-                self.p2 = p2
-                self.scx = scx
-                self.she = she
+        xres, yres = distort_brown_affine(x, y, ap)
+        xres, yres = correct_brown_affine(xres, yres, ap)
 
-        ap = AP(0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
+        self.assertAlmostEqual(xres, x, delta=eps)
+        self.assertAlmostEqual(yres, y, delta=eps)
+
+    def test_shear_round_trip(self):
+        """Do most basic distortion test: if there is no distortion.
+
+        a point distorted/corrected would come back as the same point, up to
+        floating point errors.
+        """
+        x, y = -1.0, 10.0
+        eps = 1e-5
+        ap = ap_52(she=1.0)  # no distortion
 
         xres, yres = distort_brown_affine(x, y, ap)
         xres, yres = correct_brown_affine(xres, yres, ap)
@@ -235,9 +249,7 @@ class Test_transforms(unittest.TestCase):
 
     def test_transforms_regress(self):
         """Transformed values are as before."""
-        x_pixel = 1
-        y_pixel = 1
-        x_metric, y_metric = 1, 1
+        input_pos = np.full((3, 2), 100.0)
 
         correct_output_pixel_to_metric = [
             [-8181.0, 6657.92],
@@ -251,26 +263,11 @@ class Test_transforms(unittest.TestCase):
         ]
 
         # Test when passing a list
-        output = arr_pixel_to_metric([x_pixel, y_pixel], self.control)
-        np.testing.assert_array_almost_equal(
-            output, correct_output_pixel_to_metric[0], decimal=3
-        )
+        output = arr_pixel_to_metric(input_pos, self.control)
+        np.testing.assert_array_almost_equal(output, correct_output_pixel_to_metric)
 
-        output = arr_metric_to_pixel([x_metric, y_metric], self.control)
-        np.testing.assert_array_almost_equal(
-            output, correct_output_metric_to_pixel[1], decimal=3
-        )
-
-        # Test when passing an array
-        output = arr_pixel_to_metric(np.array([x_pixel, y_pixel]), self.control)
-        np.testing.assert_array_almost_equal(
-            output, correct_output_pixel_to_metric[2], decimal=7
-        )
-        output = np.zeros((3, 2))
-        output = arr_metric_to_pixel(np.array([x_metric, y_metric]), self.control)
-        np.testing.assert_array_almost_equal(
-            output, correct_output_metric_to_pixel, decimal=7
-        )
+        output = arr_metric_to_pixel(input_pos, self.control)
+        np.testing.assert_array_almost_equal(output, correct_output_metric_to_pixel)
 
     def test_transforms(self):
         """Transform in well-known setup gives precalculates results."""

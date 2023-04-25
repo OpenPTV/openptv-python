@@ -2,7 +2,6 @@
 from typing import Tuple
 
 import numpy as np
-from scipy.optimize import root_scalar
 
 from .calibration import Calibration, ap_52
 from .parameters import ControlPar
@@ -106,102 +105,50 @@ def distort_brown_affine(
     return x1, y1
 
 
-# def correct_brown_affine(x, y, ap, tol=1e-5):
-#     """Correct a distorted point using the Brown affine model."""
-#     r, rq, xq, yq = 0.0, 0.0, x, y
-#     itnum = 0
-
-#     if x == 0 and y == 0:
-#         return xq, yq
-
-#     rq = np.sqrt(x**2 + y**2)
-
-#     while True:
-#         r = rq
-#         xq = (
-#             (x + yq * np.sin(ap.she)) / ap.scx
-#             - xq * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
-#             - ap.p1 * (r**2 + 2 * xq**2)
-#             - 2 * ap.p2 * xq * yq
-#         )
-
-#         yq = (
-#             y / np.cos(ap.she)
-#             - yq * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
-#             - ap.p2 * (r**2 + 2 * yq**2)
-#             - 2 * ap.p1 * xq * yq
-#         )
-
-#         rq = np.sqrt(xq**2 + yq**2)
-
-#         if rq > 1.2 * r:
-#             rq = 0.5 * r
-
-#         itnum += 1
-
-#         if itnum >= 201 or abs(rq - r) / r <= tol:
-#             break
-
-#     r = rq
-#     x1 = (
-#         (x + yq * np.sin(ap.she)) / ap.scx
-#         - xq * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
-#         - ap.p1 * (r**2 + 2 * xq**2)
-#         - 2 * ap.p2 * xq * yq
-#     )
-
-#     y1 = (
-#         y / np.cos(ap.she)
-#         - yq * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
-#         - ap.p2 * (r**2 + 2 * yq**2)
-#         - 2 * ap.p1 * xq * yq
-#     )
-
-#     return x1, y1
-
-
 def correct_brown_affine(x, y, ap, tol=1e-5):
     """Correct a distorted point using the Brown affine model."""
-    xq, yq = x, y
+    r, rq, xq, yq = 0.0, 0.0, x, y
+    itnum = 0
+
+    if x == 0 and y == 0:
+        return xq, yq
+
     rq = np.sqrt(x**2 + y**2)
 
-    def f(r, xq, yq):
+    while True:
+        r = rq
         xq = (
             (x + yq * np.sin(ap.she)) / ap.scx
             - xq * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
             - ap.p1 * (r**2 + 2 * xq**2)
             - 2 * ap.p2 * xq * yq
         )
+
         yq = (
             y / np.cos(ap.she)
             - yq * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
             - ap.p2 * (r**2 + 2 * yq**2)
             - 2 * ap.p1 * xq * yq
         )
+
         rq = np.sqrt(xq**2 + yq**2)
-        return rq - r
 
-    r = root_scalar(f, args=(xq, yq), bracket=[0, 2 * rq], maxiter=200, xtol=tol).root
+        if rq > 1.2 * r:
+            rq = 0.5 * r
 
-    xq = (
-        (x + yq * np.sin(ap.she)) / ap.scx
-        - xq * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
-        - ap.p1 * (r**2 + 2 * xq**2)
-        - 2 * ap.p2 * xq * yq
-    )
-    yq = (
-        y / np.cos(ap.she)
-        - yq * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
-        - ap.p2 * (r**2 + 2 * yq**2)
-        - 2 * ap.p1 * xq * yq
-    )
+        itnum += 1
 
+        if itnum >= 201 or abs(rq - r) / r <= tol:
+            break
+
+    r = rq
     x1 = (
         (x + yq * np.sin(ap.she)) / ap.scx
         - xq * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
         - ap.p1 * (r**2 + 2 * xq**2)
         - 2 * ap.p2 * xq * yq
     )
+
     y1 = (
         y / np.cos(ap.she)
         - yq * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
@@ -210,6 +157,58 @@ def correct_brown_affine(x, y, ap, tol=1e-5):
     )
 
     return x1, y1
+
+
+# def correct_brown_affine(x, y, ap, tol=1e-5):
+#     """Correct a distorted point using the Brown affine model."""
+#     xq, yq = x, y
+#     rq = np.sqrt(x**2 + y**2)
+
+#     def f(r, xq, yq):
+#         xq = (
+#             (x + yq * np.sin(ap.she)) / ap.scx
+#             - xq * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
+#             - ap.p1 * (r**2 + 2 * xq**2)
+#             - 2 * ap.p2 * xq * yq
+#         )
+#         yq = (
+#             y / np.cos(ap.she)
+#             - yq * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
+#             - ap.p2 * (r**2 + 2 * yq**2)
+#             - 2 * ap.p1 * xq * yq
+#         )
+#         rq = np.sqrt(xq**2 + yq**2)
+#         return rq - r
+
+#     r = root_scalar(f, args=(xq, yq), bracket=[0, 2 * rq], maxiter=200, xtol=tol).root
+
+#     xq = (
+#         (x + yq * np.sin(ap.she)) / ap.scx
+#         - xq * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
+#         - ap.p1 * (r**2 + 2 * xq**2)
+#         - 2 * ap.p2 * xq * yq
+#     )
+#     yq = (
+#         y / np.cos(ap.she)
+#         - yq * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
+#         - ap.p2 * (r**2 + 2 * yq**2)
+#         - 2 * ap.p1 * xq * yq
+#     )
+
+#     x1 = (
+#         (x + yq * np.sin(ap.she)) / ap.scx
+#         - xq * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
+#         - ap.p1 * (r**2 + 2 * xq**2)
+#         - 2 * ap.p2 * xq * yq
+#     )
+#     y1 = (
+#         y / np.cos(ap.she)
+#         - yq * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
+#         - ap.p2 * (r**2 + 2 * yq**2)
+#         - 2 * ap.p1 * xq * yq
+#     )
+
+#     return x1, y1
 
 
 def flat_to_dist(flat_x: float, flat_y: float, cal: Calibration) -> Tuple[float, float]:
