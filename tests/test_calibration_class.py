@@ -14,7 +14,7 @@ def test_exterior_initialization():
     """Test exterior parameters initialization."""
     cal = Calibration()
     ext = cal.ext_par
-    assert np.all(ext.dm == np.zeros((3, 3)))
+    assert np.allclose(ext.dm, np.zeros((3, 3)))
     assert ext.omega == 0.0
     assert ext.phi == 0.0
     assert ext.kappa == 0.0
