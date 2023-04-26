@@ -113,8 +113,10 @@ def safely_allocate_adjacency_lists(lists, num_cams, target_counts):
     return lists
 
 
-def four_camera_matching(corr_list, base_target_count, accept_corr, scratch, scratch_size):
-    """ Four-camera matching """
+def four_camera_matching(
+    corr_list, base_target_count, accept_corr, scratch, scratch_size
+):
+    """Four-camera matching."""
     matched = 0
 
     for i in range(base_target_count):
@@ -178,7 +180,7 @@ def four_camera_matching(corr_list, base_target_count, accept_corr, scratch, scr
 def three_camera_matching(
     corr_list, num_cams, target_counts, accept_corr, scratch, scratch_size, tusage
 ):
-    """ Three-camera matching. """ 
+    """Three-camera matching."""
     matched = 0
     nmax = NMAX
 
@@ -232,8 +234,8 @@ def three_camera_matching(
 
 def consistent_pair_matching(
     corr_list, num_cams, target_counts, accept_corr, scratch, scratch_size, tusage
-)-> int:
-    """ Find consistent pairs of correspondences """
+) -> int:
+    """Find consistent pairs of correspondences."""
     matched = 0
     # nmax = np.inf
     nmax = NMAX
@@ -271,7 +273,7 @@ def consistent_pair_matching(
 
 
 def match_pairs(corr_list, corrected, frm, vpar, cpar, calib):
-    """ Match pairs of cameras """
+    """Match pairs of cameras."""
     MAXCAND = 100
     for i1 in range(cpar.num_cams - 1):
         for i2 in range(i1 + 1, cpar.num_cams):
@@ -325,7 +327,7 @@ def match_pairs(corr_list, corrected, frm, vpar, cpar, calib):
 
 
 def take_best_candidates(src, dst, num_cams, num_cands, tusage):
-    """ Take the best candidates from the corr_list of candidates. """
+    """Take the best candidates from the corr_list of candidates."""
     taken = 0
 
     # sort candidates by match quality (.corr)
@@ -366,7 +368,7 @@ def correspondences(
     calib: List[List[Calibration]],
     match_counts: List[int],
 ) -> List[n_tupel]:
-    """ Find correspondences between cameras. """
+    """Find correspondences between cameras."""
     # nmax = 1000
     nmax = NMAX
 

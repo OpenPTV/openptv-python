@@ -369,7 +369,7 @@ def epipolar_curve(
     x, y = pixel_to_metric(image_point[0], image_point[1], cparam)
     x, y = dist_to_flat(x, y, origin_cam, 0.00001)
 
-    vertex, direct = ray_tracing(x, y, origin_cam._calibration, cparam.mm)
+    vertex, direct = ray_tracing(x, y, origin_cam, cparam.mm)
 
     for pt_ix, Z in enumerate(
         np.linspace(vparam.Zmin_lay[0], vparam.Zmax_lay[0], num_points)

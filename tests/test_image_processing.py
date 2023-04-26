@@ -24,7 +24,7 @@ class Test_image_processing(unittest.TestCase):
         )
         self.filter_hp = 0
         self.control = ControlPar(4)
-        self.control.set_image_size(5, 5)
+        self.control.set_image_size((5, 5))
 
     def test_arguments(self):
         """Test that the function raises errors when it should."""

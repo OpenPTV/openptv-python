@@ -272,7 +272,7 @@ class Test_transforms(unittest.TestCase):
     def test_transforms(self):
         """Transform in well-known setup gives precalculates results."""
         cpar = ControlPar(1)
-        cpar.set_image_size(1280, 1000)
+        cpar.set_image_size((1280, 1000))
         cpar.set_pixel_size(0.1, 0.1)
 
         metric_pos = np.array([[1.0, 1.0], [-10.0, 15.0], [20.0, -30.0]])

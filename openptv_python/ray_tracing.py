@@ -41,16 +41,7 @@ def ray_tracing(
             _type_: _description_
     """
     d1, d2, c, dist_cam_glass, n, p = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
-    start_dir = np.zeros(3)
     primary_point = np.array([cal.ext_par.x0, cal.ext_par.y0, cal.ext_par.z0])
-    glass_dir = np.zeros(3)
-    bp = np.zeros(3)
-    tmp1 = np.zeros(3)
-    tmp2 = np.zeros(3)
-    Xb = np.zeros(3)
-    a2 = np.zeros(3)
-    X = np.zeros(3)
-    out = np.zeros(3)
 
     # Initial ray direction in global coordinate system
     start_dir = np.dot(cal.ext_par.dm, unit_vector(np.array([x, y, -cal.int_par.cc])))
@@ -62,7 +53,12 @@ def ray_tracing(
     glass_dir = tmp1.copy()
     c = np.linalg.norm(tmp1) + mm.d[0]
     dist_cam_glass = np.dot(glass_dir, primary_point) - c
-    d1 = -dist_cam_glass / np.dot(glass_dir, start_dir)
+    normed = np.dot(glass_dir, start_dir)
+    if normed != 0:
+        d1 = -dist_cam_glass / normed
+    else:
+        d1 = -dist_cam_glass
+
     tmp1 = start_dir * d1
     Xb = primary_point + tmp1
 
@@ -70,7 +66,7 @@ def ray_tracing(
     n = np.dot(start_dir, glass_dir)
     tmp1 = glass_dir * n
     bp = start_dir - tmp1
-    bp = bp / np.linalg.norm(bp)
+    bp = unit_vector(bp)
 
     # Transform to direction inside glass, using Snell's law.
     p = np.sqrt(1 - n * n) * mm.n1 / mm.n2[0]  # glass parallel
@@ -80,7 +76,11 @@ def ray_tracing(
     tmp1 = bp * p
     tmp2 = glass_dir * n
     a2 = tmp1 + tmp2
-    d2 = mm.d[0] / abs(np.dot(glass_dir, a2))
+    normed = abs(np.dot(glass_dir, a2))
+    if normed > 0:
+        d2 = mm.d[0] / normed
+    else:
+        d2 = mm.d[0]
 
     # Point on the horizontal plane between n2,n3.
     tmp1 = a2 * d2
@@ -89,7 +89,7 @@ def ray_tracing(
     # Again, direction in next medium.
     n = np.dot(a2, glass_dir)
     tmp2 = a2 - glass_dir * n
-    bp = tmp2 / np.linalg.norm(tmp2)
+    bp = unit_vector(tmp2)
 
     p = np.sqrt(1 - n * n)
     p = p * mm.n2[0] / mm.n3

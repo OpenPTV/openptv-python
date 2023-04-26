@@ -29,7 +29,7 @@ class TestTargRec(unittest.TestCase):
         )
 
         cpar = ControlPar(4)
-        cpar.set_image_size = (5, 5)
+        cpar.set_image_size((5, 5))
         tpar = TargetPar(
             gvthresh=[250, 100, 20, 20],
             discont=5,
@@ -60,7 +60,7 @@ class TestTargRec(unittest.TestCase):
         )
 
         cpar = ControlPar(4)
-        cpar.set_image_size = (5, 5)
+        cpar.set_image_size((5, 5))
         tpar = TargetPar(
             gvthresh=[250, 100, 20, 20],
             discont=5,
@@ -99,7 +99,7 @@ class TestTargRec(unittest.TestCase):
         )
 
         cpar = ControlPar(4)
-        cpar.set_image_size = (5, 5)
+        cpar.set_image_size((5, 5))
         tpar = TargetPar(
             gvthresh=[250, 100, 20, 20],
             discont=5,
