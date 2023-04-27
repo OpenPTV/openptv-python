@@ -12,9 +12,13 @@ class MultimediaPar:
     def __init__(
         self,
         n1: float = 1.0,
-        n2: np.ndarray = np.ones(1,),
+        n2: np.ndarray = np.ones(
+            1,
+        ),
         n3: float = 1.0,
-        d: np.ndarray = np.ones(1,),
+        d: np.ndarray = np.ones(
+            1,
+        ),
     ):
         """Initialize MultimediaPar object."""
         self.n1 = n1
@@ -159,7 +163,7 @@ class TrackPar:
     def get_dvzmin(self):
         """Return the minimum velocity in z direction."""
         return self.dvzmin
-    
+
     def get_dvzmax(self):
         """Return the minimum velocity in z direction."""
         return self.dvzmax
@@ -175,7 +179,7 @@ class TrackPar:
     def get_add(self):
         """Return the adding new particles parameter."""
         return self.add
-    
+
     def get_dsumg(self):
         """Return the maximum sum of the gradient."""
         return self.dsumg
@@ -183,30 +187,31 @@ class TrackPar:
     def set_dsumg(self, dsumg):
         """Set the maximum sum of the gradient."""
         self.dsumg = dsumg
-        
+
     def get_dn(self):
         """Return the maximum refractive index."""
         return self.dn
-    
+
     def set_dn(self, dn):
         """Set the maximum refractive index."""
         self.dn = dn
-        
+
     def get_dnx(self):
         """Return the maximum refractive index in x direction."""
         return self.dnx
-    
+
     def set_dnx(self, dnx):
         """Set the maximum refractive index in x direction."""
         self.dnx = dnx
-        
+
     def set_dny(self, dny):
         """Set the maximum refractive index in y direction."""
         self.dny = dny
-        
+
     def get_dny(self):
         """Return the maximum refractive index in y direction."""
         return self.dny
+
 
 def read_track_par(filename: str) -> TrackPar:
     """Read tracking parameters from file and return TrackPar object."""
@@ -300,7 +305,7 @@ class ControlPar:
         self.imx = imsize[0]
         self.imy = imsize[1]
 
-    def get_image_size(self)-> Tuple[int, int]:
+    def get_image_size(self) -> Tuple[int, int]:
         """Set image size in pixels."""
         return (self.imx, self.imy)
 
@@ -308,15 +313,15 @@ class ControlPar:
         """Set pixel size in mm."""
         self.pix_x = pixsize[0]
         self.pix_y = pixsize[1]
-        
-    def get_pixel_size(self)-> Tuple[float, float]:
+
+    def get_pixel_size(self) -> Tuple[float, float]:
         """Set pixel size in mm."""
         return (self.pix_x, self.pix_y)
-    
+
     def set_chfield(self, chfield: int):
         """Set chfield."""
         self.chfield = chfield
-    
+
     def get_chfield(self):
         """Set chfield."""
         return self.chfield
@@ -324,7 +329,7 @@ class ControlPar:
     def get_multimedia_par(self):
         """Return multimedia parameters."""
         return self.mm
-    
+
     def get_num_cams(self):
         """Return number of cameras."""
         return self.num_cams
@@ -336,14 +341,14 @@ class ControlPar:
     def get_hp_flag(self):
         """Return high pass flag."""
         return self.hp_flag
-    
+
     def get_allCam_flag(self):
         """Return allCam flag."""
         return self.allCam_flag
-    
+
     def get_tiff_flag(self):
         """Return tiff flag."""
-        return self.tiff_flag      
+        return self.tiff_flag
 
     def from_file(self, filename: str):
         """Read control parameters from file and return ControlPar object."""
@@ -428,33 +433,33 @@ class TargetPar:
 
 def read_target_par(filename: str) -> TargetPar | None:
     """Read target parameters from file and returns target_par object.
-    
-        Reads target recognition parameters from a legacy .par file, which 
-        holds one parameter per line. The arguments are read in this order:
-        
-        1. gvthres[0]
-        2. gvthres[1]
-        3. gvthres[2]
-        4. gvthres[3]
-        5. discont
-        6. nnmin
-        7. nnmax
-        8. nxmin
-        9. nxmax
-        10. nymin
-        11. nymax
-        12. sumg_min
-        13. cr_sz    
-    
-    
-    
+
+    Reads target recognition parameters from a legacy .par file, which
+    holds one parameter per line. The arguments are read in this order:
+
+    1. gvthres[0]
+    2. gvthres[1]
+    3. gvthres[2]
+    4. gvthres[3]
+    5. discont
+    6. nnmin
+    7. nnmax
+    8. nxmin
+    9. nxmax
+    10. nymin
+    11. nymax
+    12. sumg_min
+    13. cr_sz
+
+
+
     """
     ret = TargetPar()
     try:
         with open(filename, "r", encoding="utf-8") as file:
-            for i in range(4): #todo - make it no. cameras
+            for i in range(4):  # todo - make it no. cameras
                 ret.gvthresh.append(int(file.readline()))
-            
+
             ret.discont = int(file.readline())
             ret.nnmin = float(file.readline())
             ret.nnmax = float(file.readline())

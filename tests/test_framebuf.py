@@ -7,15 +7,19 @@ from openptv_python.tracking_frame_buf import Frame, Target, TargetArray, read_t
 
 
 class TestTargets(unittest.TestCase):
+    """Test the Target class."""
+
     def test_fill_target(self):
+        """Test filling a target."""
         t = Target(pnr=1, tnr=2, x=1.5, y=2.5, n=20, nx=4, ny=5, sumg=30)
-        self.assertEqual(t.pnr(), 1)
-        self.assertEqual(t.tnr(), 2)
+        self.assertEqual(t.pnr, 1)
+        self.assertEqual(t.tnr, 2)
         self.assertEqual(t.pos(), (1.5, 2.5))
         self.assertEqual(t.count_pixels(), (20, 4, 5))
         self.assertEqual(t.sum_grey_value(), 30)
 
     def test_fill_target_array(self):
+        """Test filling a target array."""
         tarr = TargetArray(2)
         tarr[0].set_pos((1.5, 2.5))
         tarr[1].set_pos((3.5, 4.5))

@@ -66,7 +66,8 @@ def test_compare_sequence_par():
 
 
 class Test_MultimediaParams(unittest.TestCase):
-    """ Test MultimediaPar class. """
+    """Test MultimediaPar class."""
+
     def test_mm_np_instantiation(self):
         """Test that MultimediaPar can be instantiated with numpy arrays."""
         n2_np = numpy.array([11, 22, 33], dtype=float)
@@ -139,15 +140,31 @@ class Test_TrackingParams(unittest.TestCase):
 
         # check that the values of track_obj1 are equal to values in tracking parameters file
         # the check is performed according to the order the parameters were read from same file
-        with open(self.input_tracking_par_file_name, "r", encoding="utf-8") as track_file:
+        with open(
+            self.input_tracking_par_file_name, "r", encoding="utf-8"
+        ) as track_file:
             self.assertTrue(self.track_obj1.get_add() == int(track_file.readline()))
-            self.assertTrue(self.track_obj1.get_dvxmin() == float(track_file.readline()))
-            self.assertTrue(self.track_obj1.get_dvxmax() == float(track_file.readline()))
-            self.assertTrue(self.track_obj1.get_dvymin() == float(track_file.readline()))
-            self.assertTrue(self.track_obj1.get_dvymax() == float(track_file.readline()))
-            self.assertTrue(self.track_obj1.get_dvzmin() == float(track_file.readline()))
-            self.assertTrue(self.track_obj1.get_dvzmax() == float(track_file.readline()))
-            self.assertTrue(self.track_obj1.get_dangle() == float(track_file.readline()))
+            self.assertTrue(
+                self.track_obj1.get_dvxmin() == float(track_file.readline())
+            )
+            self.assertTrue(
+                self.track_obj1.get_dvxmax() == float(track_file.readline())
+            )
+            self.assertTrue(
+                self.track_obj1.get_dvymin() == float(track_file.readline())
+            )
+            self.assertTrue(
+                self.track_obj1.get_dvymax() == float(track_file.readline())
+            )
+            self.assertTrue(
+                self.track_obj1.get_dvzmin() == float(track_file.readline())
+            )
+            self.assertTrue(
+                self.track_obj1.get_dvzmax() == float(track_file.readline())
+            )
+            self.assertTrue(
+                self.track_obj1.get_dangle() == float(track_file.readline())
+            )
             self.assertTrue(self.track_obj1.get_dacc() == float(track_file.readline()))
             self.assertTrue(self.track_obj1.get_add() == int(track_file.readline()))
 
@@ -356,18 +373,10 @@ class Test_ControlPar(unittest.TestCase):
         # Fill the ControlPar object with parameters from test file
         self.cp_obj.from_file(self.input_control_par_file_name)
         # check if all parameters are equal to the contents of test file
-        self.assertTrue(
-            self.cp_obj.img_base_name[0] == "dumbbell/cam1_Scene77_4085"
-        )
-        self.assertTrue(
-            self.cp_obj.img_base_name[1] == "dumbbell/cam2_Scene77_4085"
-        )
-        self.assertTrue(
-            self.cp_obj.img_base_name[2] == "dumbbell/cam3_Scene77_4085"
-        )
-        self.assertTrue(
-            self.cp_obj.img_base_name[3] == "dumbbell/cam4_Scene77_4085"
-        )
+        self.assertTrue(self.cp_obj.img_base_name[0] == "dumbbell/cam1_Scene77_4085")
+        self.assertTrue(self.cp_obj.img_base_name[1] == "dumbbell/cam2_Scene77_4085")
+        self.assertTrue(self.cp_obj.img_base_name[2] == "dumbbell/cam3_Scene77_4085")
+        self.assertTrue(self.cp_obj.img_base_name[3] == "dumbbell/cam4_Scene77_4085")
 
         self.assertTrue(self.cp_obj.cal_img_base_name[0] == "cal/cam1.tif")
         self.assertTrue(self.cp_obj.cal_img_base_name[1] == "cal/cam2.tif")
@@ -388,7 +397,7 @@ class Test_ControlPar(unittest.TestCase):
         self.assertTrue(self.cp_obj.get_multimedia_params().get_d()[0] == 21.21)
 
     def test_getters_setters(self):
-        """ Test getters and setters of ControlPar class."""
+        """Test getters and setters of ControlPar class."""
         cams_num = 4
         for cam in range(cams_num):
             new_str = str(cam) + "some string" + str(cam)
@@ -425,7 +434,7 @@ class Test_ControlPar(unittest.TestCase):
 
     # testing __richcmp__ comparison method of ControlPar class
     def test_rich_compare(self):
-        """ Test __richcmp__ method of ControlPar class."""
+        """Test __richcmp__ method of ControlPar class."""
         self.cp_obj2 = ControlPar(num_cams=4)
         self.cp_obj2.from_file(self.input_control_par_file_name)
 
@@ -446,7 +455,7 @@ class Test_ControlPar(unittest.TestCase):
 
 class TestTargetPar(unittest.TestCase):
     def test_read(self):
-        """ Test reading of TargetPar class. """
+        """Test reading of TargetPar class."""
         inp_filename = "tests/testing_folder/target_parameters/targ_rec.par"
         tp = read_target_par(inp_filename)
         if tp is None:
@@ -484,6 +493,7 @@ class TestTargetPar(unittest.TestCase):
         self.assertEqual(tp.sumg_min, 60)
 
         numpy.testing.assert_array_equal(tp.gvthresh, [2, 3, 4, 5])
+
 
 if __name__ == "__main__":
     unittest.main()

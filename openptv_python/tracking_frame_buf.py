@@ -157,6 +157,11 @@ class Target:
         """Set sum of grey values."""
         self.sumg = sumg
 
+    def pos(self):
+        """Return target position."""
+        # return Coord2d(self.x, self.y)
+        return (self.x, self.y)
+
 
 @dataclass
 class TargetArray:
