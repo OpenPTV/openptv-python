@@ -162,6 +162,10 @@ class Target:
         # return Coord2d(self.x, self.y)
         return (self.x, self.y)
 
+    def count_pixels(self):
+        """Return number of pixels."""
+        return (self.n, self.nx, self.ny)
+
 
 @dataclass
 class TargetArray:

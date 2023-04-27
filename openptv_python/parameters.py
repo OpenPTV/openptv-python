@@ -1,6 +1,7 @@
 """Parameters for OpenPTV-Python."""
 import os
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import List, Tuple
 
 import numpy as np
@@ -22,7 +23,7 @@ class MultimediaPar:
     ):
         """Initialize MultimediaPar object."""
         self.n1 = n1
-        self.n2 = np.array(n2)
+        self.n2 = np.array(n2)  # converts list to array
         self.d = np.array(d)
         self.n3 = n3
         if self.n2.shape[0] != self.d.shape[0]:
@@ -83,23 +84,61 @@ def compare_mm_np(mm_np1: MultimediaPar, mm_np2: MultimediaPar) -> bool:
 class SequencePar:
     """Sequence parameters."""
 
-    num_cams: int = 1
-    img_base_name: list[str] = field(default_factory=list)
-    first: int = 10000
-    last: int = 10004
+    num_cams: int = field(default_factory=int)
+    img_base_name: List[str] = field(default_factory=list)
+    first: int = field(default_factory=int)
+    last: int = field(default_factory=int)
+
+    def __post_init__(self):
+        if len(self.img_base_name) != self.num_cams:
+            self.img_base_name = [""] * self.num_cams
+
+    def set_img_base_name(self, icam, new_name):
+        """Set the image base name for each camera."""
+        if icam > self.num_cams:
+            raise ValueError("Length of names must be equal to num_cams.")
+        self.img_base_name[icam] = new_name
+
+    def get_img_base_name(self, icam):
+        """Get the image base name for each camera."""
+        if icam > self.num_cams:
+            raise ValueError("Length of names must be equal to num_cams.")
+        return self.img_base_name[icam]
+
+    def set_first(self, newfirst: int):
+        """Set the first frame number."""
+        self.first = newfirst
+
+    def get_first(self):
+        """Get the first frame number."""
+        return self.first
+
+    def set_last(self, newlast: int):
+        """Set the last frame number."""
+        self.last = newlast
+
+    def get_last(self):
+        """Get the last frame number."""
+        return self.last
+
+    def from_file(self, filename: str):
+        """Read sequence parameters from file."""
+        if not Path(filename).exists():
+            raise IOError("File {filename} does not exist.")
+
+        with open(filename, "r", encoding="utf-8") as par_file:
+            self.img_base_name = [
+                par_file.readline().strip() for _ in range(self.num_cams)
+            ]
+            self.first = int(par_file.readline().strip())
+            self.last = int(par_file.readline().strip())
 
 
 def read_sequence_par(filename: str, num_cams: int) -> SequencePar:
     """Read sequence parameters from file and return SequencePar object."""
-    try:
-        with open(filename, "r", encoding="utf-8") as par_file:
-            ret = SequencePar(num_cams=num_cams)
-            ret.img_base_name = [par_file.readline().strip() for _ in range(num_cams)]
-            ret.first = int(par_file.readline().strip())
-            ret.last = int(par_file.readline().strip())
-            return ret
-    except FileNotFoundError:
-        return None
+    ret = SequencePar(num_cams=num_cams)
+    ret.from_file(filename)
+    return ret
 
 
 def compare_sequence_par(sp1: SequencePar, sp2: SequencePar) -> bool:
@@ -112,35 +151,59 @@ def compare_sequence_par(sp1: SequencePar, sp2: SequencePar) -> bool:
 
 @dataclass
 class TrackPar:
-    """Tracking parameters."""
+    """Tracking parameters.
 
-    dacc: float = 0.0
-    dangle: float = 100.0
-    dvxmax: float = 1.0
-    dvxmin: float = 0.0
-    dvymax: float = 1.0
-    dvymin: float = 0.0
-    dvzmax: float = 1.0
-    dvzmin: float = 0.0
-    dsumg: float = 1.0
-    dn: float = 1.0
-    dnx: float = 1.0
-    dny: float = 1.0
-    add: bool = False
+    fpp = fopen(filename, "r");
+    if(fscanf(fpp, &(ret->dvxmin)) == 0) goto handle_error;
+    if(fscanf(fpp, &(ret->dvxmax)) == 0) goto handle_error;
+    if(fscanf(fpp, &(ret->dvymin)) == 0) goto handle_error;
+    if(fscanf(fpp, &(ret->dvymax)) == 0) goto handle_error;
+    if(fscanf(fpp, &(ret->dvzmin)) == 0) goto handle_error;
+    if(fscanf(fpp, &(ret->dvzmax)) == 0) goto handle_error;
+    if(fscanf(fpp, &(ret->dangle)) == 0) goto handle_error;
+    if(fscanf(fpp, &(ret->dacc)) == 0) goto handle_error;
+    if(fscanf(fpp, &(ret->add)) == 0) goto handle_error;
+    fclose (fpp);
+
+    ret->dsumg = ret->dn = ret->dnx = ret->dny = 0;
+    return ret;
+
+
+    """
+
+    dacc: float = field(default_factory=float)
+    dangle: float = field(default_factory=float)
+    dvxmax: float = field(default_factory=float)
+    dvxmin: float = field(default_factory=float)
+    dvymax: float = field(default_factory=float)
+    dvymin: float = field(default_factory=float)
+    dvzmax: float = field(default_factory=float)
+    dvzmin: float = field(default_factory=float)
+    dsumg: float = 0.0
+    dn: float = 0.0
+    dnx: float = 0.0
+    dny: float = 0.0
+    add: int = 0
 
     def from_file(self, filename: str):
-        """Read tracking parameters from file and return TrackPar object."""
+        """Read tracking parameters from file and return TrackPar object.
+
+        Note that the structure has 13 attributes, from which we read only 9
+        dsumg, dn, dnx, dny are set to 0 automatically and used later in
+        track.py
+
+        """
         try:
             with open(filename, "r", encoding="utf-8") as fpp:
+                self.dacc = float(fpp.readline().rstrip())
+                self.dangle = float(fpp.readline().rstrip())
                 self.dvxmin = float(fpp.readline().rstrip())
                 self.dvxmax = float(fpp.readline().rstrip())
                 self.dvymin = float(fpp.readline().rstrip())
                 self.dvymax = float(fpp.readline().rstrip())
                 self.dvzmin = float(fpp.readline().rstrip())
                 self.dvzmax = float(fpp.readline().rstrip())
-                self.dangle = float(fpp.readline().rstrip())
-                self.dacc = float(fpp.readline().rstrip())
-                self.add = bool(int(fpp.readline().rstrip()))
+                self.add = int(fpp.readline().rstrip())
         except IOError as exc:
             raise (f"Error reading tracking parameters from {filename}") from exc
 
@@ -225,11 +288,31 @@ def compare_track_par(t1: TrackPar, t2: TrackPar) -> bool:
 
 @dataclass
 class VolumePar:
-    """Volume parameters."""
+    """Volume parameters.
 
-    X_lay: list[float] = field(default_factory=list)
-    Zmin_lay: list[float] = field(default_factory=list)
-    Zmax_lay: list[float] = field(default_factory=list)
+    /* Volume parameters */
+    fpp = fopen(filename, "r");
+    if(fscanf(fpp, &(ret->X_lay[0])) == 0) goto handle_error;
+    if(fscanf(fpp, &(ret->Zmin_lay[0])) == 0) goto handle_error;
+    if(fscanf(fpp, &(ret->Zmax_lay[0])) == 0) goto handle_error;
+    if(fscanf(fpp, &(ret->X_lay[1])) == 0) goto handle_error;
+    if(fscanf(fpp, &(ret->Zmin_lay[1])) == 0) goto handle_error;
+    if(fscanf(fpp, &(ret->Zmax_lay[1])) == 0) goto handle_error;
+
+    if(fscanf(fpp, &(ret->cnx)) == 0) goto handle_error;
+    if(fscanf(fpp, &(ret->cny)) == 0) goto handle_error;
+    if(fscanf(fpp, &(ret->cn)) == 0) goto handle_error;
+    if(fscanf(fpp, &(ret->csumg)) == 0) goto handle_error;
+    if(fscanf(fpp, &(ret->corrmin)) == 0) goto handle_error;
+    if(fscanf(fpp, &(ret->eps0)) == 0) goto handle_error;
+    /* End of volume parameters */
+
+
+    """
+
+    X_lay: List[float] = field(default_factory=list)
+    Zmin_lay: List[float] = field(default_factory=list)
+    Zmax_lay: List[float] = field(default_factory=list)
     cn: float = field(default_factory=float)
     cnx: float = field(default_factory=float)
     cny: float = field(default_factory=float)
@@ -243,6 +326,21 @@ class VolumePar:
     def set_Zmax_lay(self, Zmax_lay: list[float]) -> None:
         self.Zmax_lay = Zmax_lay
 
+    def set_cn(self, cn: float) -> None:
+        self.cn = cn
+
+    def set_cnx(self, cnx: float) -> None:
+        self.cnx = cnx
+
+    def set_csumg(self, csumg: float) -> None:
+        self.csumg = csumg
+
+    def set_eps0(self, eps0: float) -> None:
+        self.eps0 = eps0
+
+    def set_corrmin(self, corrmin: float) -> None:
+        self.corrmin = corrmin
+
     def from_file(self, filename: str):
         """Read volume parameters from file.
 
@@ -252,9 +350,12 @@ class VolumePar:
 
         """
         with open(filename, "r", encoding="utf-8") as f:
-            self.X_lay = [float(f.readline()) for _ in range(2)]
-            self.Zmin_lay = float(f.readline())
-            self.Zmax_lay = float(f.readline())
+            self.X_lay.append(float(f.readline()))
+            self.Zmin_lay.append(float(f.readline()))
+            self.Zmax_lay.append(float(f.readline()))
+            self.X_lay.append(float(f.readline()))
+            self.Zmin_lay.append(float(f.readline()))
+            self.Zmax_lay.append(float(f.readline()))
             self.cnx, self.cny, self.cn, self.csumg, self.corrmin, self.eps0 = [
                 float(f.readline()) for _ in range(6)
             ]
