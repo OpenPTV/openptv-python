@@ -653,7 +653,7 @@ def raw_orient(
 
         n = 0
         for i in range(nfix):
-            xc, yc = cpar.pixel_to_metric(pix[i].x, pix[i].y)
+            xc, yc = pixel_to_metric(pix[i].x, pix[i].y, cpar)
 
             pos = vec_set(fix[i][0], fix[i][1], fix[i][2])
             cal.rotation_matrix()
@@ -817,8 +817,8 @@ def external_calibration(
     #     target *targs
     #     vec3d *ref_coord
 
-    ref_pts = np.ascontiguousarray(ref_pts)
-    ref_coord = ref_pts.data
+    # ref_pts = np.ascontiguousarray(ref_pts)
+    # ref_coord = ref_pts.data
 
     # Convert pixel coords to metric coords:
     # targs = <target *>calloc(len(img_pts), sizeof(target))
@@ -828,7 +828,7 @@ def external_calibration(
         targs[ptx].x = pt[0]
         targs[ptx].y = pt[1]
 
-    success = raw_orient(cal, cparam, len(ref_pts), ref_coord, targs)
+    success = raw_orient(cal, cparam, len(ref_pts), ref_pts, targs)
 
     # free(targs);
     del targs

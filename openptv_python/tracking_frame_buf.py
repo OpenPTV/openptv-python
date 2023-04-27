@@ -157,6 +157,10 @@ class Target:
         """Set sum of grey values."""
         self.sumg = sumg
 
+    def sum_grey_value(self):
+        """Return sum of grey values."""
+        return self.sumg
+
     def pos(self):
         """Return target position."""
         # return Coord2d(self.x, self.y)
@@ -167,14 +171,8 @@ class Target:
         return (self.n, self.nx, self.ny)
 
 
-@dataclass
 class TargetArray:
     """A list of targets and the number of targets in the list."""
-
-    num_targs: int = field(default_factory=int)
-    targs: List[Target] = field(
-        default_factory=lambda: [Target() for _ in range(MAX_TARGETS)]
-    )
 
     def __init__(self, num_targs: int):
         self.num_targs = num_targs
@@ -300,7 +298,7 @@ class Pathinfo:
 class Frame:
     """Frame structure for tracking."""
 
-    num_cams: int
+    num_cams: int = field(default_factory=int)
     max_targets: int = MAX_TARGETS
     path_info: Pathinfo | None = None
     correspond: Correspond | None = None

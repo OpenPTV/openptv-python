@@ -15,11 +15,15 @@ from openptv_python.trafo import metric_to_pixel
 
 
 class TestReadControlPar(unittest.TestCase):
+    """Test the read_control_par function."""
+
     def test_file_not_found(self):
+        """Read a nonexistent control.par file."""
         with self.assertRaises(FileNotFoundError):
             read_control_par("nonexistent_file.txt")
 
     def test_valid_file(self):
+        """Read a valid control.par file."""
         expected = ControlPar(num_cams=4)
         expected.img_base_name = [
             "dumbbell/cam1_Scene77_4085",
@@ -83,7 +87,7 @@ class TestReadControlPar(unittest.TestCase):
         cals = []
         img_pts = []
         corrected = []
-        for c in range(4):
+        for c in range(cpar.num_cams):
             cal = Calibration()
             cal.from_file(
                 f"tests/testing_folder/calibration/sym_cam{c+1:d}.tif.ori",
@@ -113,55 +117,53 @@ class TestReadControlPar(unittest.TestCase):
             mc = MatchedCoords(ta.targs, cpar, cal)
             corrected.append(mc)
 
-        _, _, num_targs = correspondences(img_pts, corrected, cals, vpar, cpar)
+        _, _, num_targs = correspondences(img_pts, corrected, vpar, cpar, cals, mc)
         assert num_targs == 16
 
-        def test_single_cam_corresp(self):
-            """Single camera correspondence."""
-            cpar = read_control_par(
-                "tests/testing_folder/single_cam/parameters/ptv.par"
-            )
-            vpar = read_volume_par(
-                "tests/testing_folder/single_cam/parameters/criteria.par"
-            )
+    def test_single_cam_corresp(self):
+        """Single camera correspondence."""
+        cpar = read_control_par("tests/testing_folder/single_cam/parameters/ptv.par")
+        vpar = read_volume_par(
+            "tests/testing_folder/single_cam/parameters/criteria.par"
+        )
 
-            # Cameras are at so high angles that opposing cameras don't see each
-            # other in the normal air-glass-water setting.
-            cpar.mm.set_layers([1.0], [1.0])
-            cpar.n3 = 1.0
+        # Cameras are at so high angles that opposing cameras don't see each
+        # other in the normal air-glass-water setting.
+        cpar.mm.set_layers([1.0], [1.0])
+        cpar.n3 = 1.0
 
-            cals = []
-            img_pts = []
-            corrected = []
-            cal = Calibration()
-            cal.from_file(
-                "tests/testing_folder/single_cam/calibration/cam_1.tif.ori",
-                "tests/testing_folder/single_cam/calibration/cam_1.tif.addpar",
-            )
-            cals.append(cal)
+        cals = []
+        img_pts = []
+        corrected = []
+        cal = Calibration()
+        cal.from_file(
+            "tests/testing_folder/single_cam/calibration/cam_1.tif.ori",
+            "tests/testing_folder/single_cam/calibration/cam_1.tif.addpar",
+        )
+        cals.append(cal)
 
-            # Generate test targets.
-            targs = TargetArray(9)
-            for row, col in np.ndindex(3, 3):
-                targ_ix = row * 3 + col
-                targ = targs[targ_ix]
+        # Generate test targets.
+        targs = TargetArray(9)
+        for row, col in np.ndindex(3, 3):
+            targ_ix = row * 3 + col
+            targ = targs[targ_ix]
 
-                pos3d = 10 * np.array([[col, row, 0]], dtype=np.float64)
-                x, y = img_coord(pos3d, cal, cpar.mm)
-                x, y = metric_to_pixel(x, y, cpar)
-                targ.set_pos(x, y)
+            pos3d = 10 * np.array([[col, row, 0]], dtype=np.float64)
+            x, y = img_coord(pos3d, cal, cpar.mm)
+            x, y = metric_to_pixel(x, y, cpar)
+            targ.set_pos(x, y)
 
-                targ.set_pnr(targ_ix)
-                targ.set_pixel_counts(25, 5, 5)
-                targ.set_sum_grey_value(10)
+            targ.set_pnr(targ_ix)
+            targ.set_pixel_counts(25, 5, 5)
+            targ.set_sum_grey_value(10)
 
-                img_pts.append(targs)
-                mc = MatchedCoords(targs, cpar, cal)
-                corrected.append(mc)
+            img_pts.append(targs)
+            mc = MatchedCoords(targs, cpar, cal)
+            corrected.append(mc)
 
-            _, _, num_targs = correspondences(img_pts, corrected, cals, vpar, cpar)
+        _, _, num_targs = correspondences(img_pts, corrected, vpar, cpar, cals, mc)
 
-            self.assertEqual(num_targs, 9)
+        self.assertEqual(num_targs, 9)
 
 
 if __name__ == "__main__":

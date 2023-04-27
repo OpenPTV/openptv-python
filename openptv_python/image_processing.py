@@ -86,7 +86,7 @@ def prepare_image(
     cpar: ControlPar,
     dim_lp: int = 1,
     filter_hp: int = 1,
-    filter_file: str = None,
+    filter_file: str | None = None,
 ):
     """Prepare an image for particle detection: an averaging (smoothing).
 
@@ -107,7 +107,7 @@ def prepare_image(
     # Subtract low-pass filtered image from original image
     img_hp = np.subtract(img, img_lp)
 
-    # Filter highpass image, if wanted
+    # Filter highpass image, if wanted, if filter_hp == 0, no highpass filtering
     if filter_hp == 1:
         img_hp = ndimage.uniform_filter(
             img_hp.reshape((cpar.imy, cpar.imx)),

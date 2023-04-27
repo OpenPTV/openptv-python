@@ -43,7 +43,7 @@ def targ_rec(
     n_targets = 0
     sumg = 0
     numpix = 0
-    thres = targ_par.gvthres[num_cam]
+    thres = targ_par.gvthresh[num_cam]
     disco = targ_par.discont
 
     imx = cpar.imx
@@ -619,7 +619,6 @@ def target_recognition(
         raise ValueError("dimensions are not correct")
 
     # The core Python implementation of targ_rec:
-    t = TargetArray()
-    t.num_targs, t.targs = targ_rec(img, tpar, xmin, xmax, ymin, ymax, cparam, cam)
+    target_array = targ_rec(img, tpar, xmin, xmax, ymin, ymax, cparam, cam)
 
-    return t
+    return target_array

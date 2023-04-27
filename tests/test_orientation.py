@@ -23,7 +23,10 @@ from openptv_python.trafo import arr_metric_to_pixel
 
 
 class Test_Orientation(unittest.TestCase):
+    """Test the orientation module."""
+
     def setUp(self):
+        """Set up the test."""
         self.input_ori_file_name = "tests/testing_folder/calibration/cam1.tif.ori"
         self.input_add_file_name = "tests/testing_folder/calibration/cam2.tif.addpar"
         self.control_file_name = "tests/testing_folder/control_parameters/control.par"
@@ -217,6 +220,7 @@ class Test_Orientation(unittest.TestCase):
             self.fail("Rays converge on wrong position after jigging.")
 
     def test_dumbbell(self):
+        """Point positions for a dumbbell case."""
         # prepare MultimediaParams
         mult_params = self.control.get_multimedia_params()
         mult_params.set_n1(1.0)

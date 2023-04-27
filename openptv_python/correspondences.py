@@ -86,30 +86,17 @@ def deallocate_adjacency_lists(
             lists[c1][c2] = None
 
 
-def safely_allocate_adjacency_lists(lists, num_cams, target_counts):
+def safely_allocate_adjacency_lists(
+    num_cams: int, target_counts: List[int]
+) -> List[List[List[Correspond]]]:
     """Safely allocate adjacency lists."""
-    error = False
-    lists = [[]]
+    lists = []
 
     for c1 in range(num_cams - 1):
+        list.append([])
         for c2 in range(c1 + 1, num_cams):
-            if not error:
-                lists[c1][c2] = [Correspond() for _ in range(target_counts[c1])]
-                if not lists[c1][c2]:
-                    error = True
-                    continue
+            lists[c1].append([Correspond(n=0, p1=0) for _ in range(target_counts[c1])])
 
-                for correspond in lists[c1][c2]:
-                    correspond.n = 0
-                    correspond.p1 = 0
-            else:
-                lists[c1][c2] = None
-
-    # if not error:
-    #     return 1
-
-    # deallocate_adjacency_lists(lists, num_cams)
-    # return 0
     return lists
 
 
@@ -382,11 +369,7 @@ def correspondences(
         return None
 
     # allocate memory for lists of correspondences
-    corr_list = [[None] * 4 for _ in range(4)]
-    if safely_allocate_adjacency_lists(corr_list, cpar.num_cams, frm.num_targets) == 0:
-        print("corr_list is not allocated")
-        deallocate_target_usage_marks(tim, cpar.num_cams)
-        return None
+    corr_list = safely_allocate_adjacency_lists(cpar.num_cams, frm.num_targets)
 
     # if I understand correctly, the number of matches cannot be more than the number of
     # targets (dots) in the first image. In the future we'll replace it by the maximum
