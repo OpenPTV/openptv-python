@@ -8,7 +8,7 @@ import numpy as np
 from .calibration import Calibration
 from .constants import (
     COORD_UNUSED,
-    MAX_TARGETS,
+    CORRES_NONE,
     NEXT_NONE,
     POSI,
     PREV_NONE,
@@ -53,7 +53,7 @@ class Corres:
     p: List[int] = field(default_factory=list)
 
     def __eq__(self, other):
-        return self.nr == other.nr and (self.p == other.p)
+        return self.nr == other.nr and np.all(self.p == other.p)
 
 
 def compare_corres(c1: Corres, c2: Corres) -> bool:
@@ -234,13 +234,13 @@ class Pathinfo:
         if not isinstance(other, Pathinfo):
             return False
         return (
-            self.x == other.x
+            (self.x == other.x).all()
             and self.prev == other.prev
             and self.next == other.next
             and self.prio == other.prio
-            and self.decis == other.decis
+            and (self.decis == other.decis).all()
             and self.finaldecis == other.finaldecis
-            and self.linkdecis == other.linkdecis
+            and (self.linkdecis == other.linkdecis).all()
             and self.inlist == other.inlist
         )
 
@@ -266,20 +266,24 @@ def compare_path_info(path_info1: Pathinfo, path_info2: Pathinfo) -> bool:
 class Frame:
     """Frame structure for tracking."""
 
+    path_info: List[Pathinfo] = field(default_factory=list)
+    correspond: List[Corres] = field(default_factory=list)
+    targets: List[List[Target]] = field(default_factory=list)
     num_cams: int = field(default_factory=int)
-    max_targets: int = MAX_TARGETS
-    path_info: List[Pathinfo] | None = None
-    correspond: List[Corres] | None = None
-    targets: List[List[Target]] | None = None
-    num_parts: int = 0
-    num_targets: List[int] | None = None
+    max_targets: int = field(default_factory=int)
+    num_parts: int = field(
+        default_factory=int
+    )  # number of 3D particles in correspondence buffer
+    num_targets: List[int] = field(
+        default_factory=list
+    )  # list of 2d particle counts per image
 
     def from_file(
         self,
         corres_file_base: Any,
         linkage_file_base: Any,
         prio_file_base: Any,
-        target_file_base: List[Any],
+        target_file_base: List[str],
         frame_num: int,
     ) -> bool:
         """Read a frame from the disk."""
@@ -295,12 +299,9 @@ class Frame:
         if self.num_parts == -1:
             return False
 
-        if self.num_targets == [0] * self.num_cams:
-            return False
-
         for cam in range(self.num_cams):
-            self.targets[cam] = read_targets(target_file_base[cam], frame_num)
-            self.num_targets[cam] = len(self.targets[cam])
+            self.targets.append(read_targets(target_file_base[cam], frame_num))
+            self.num_targets.append(len(self.targets[cam]))
 
             if self.num_targets[cam] == -1:
                 return False
@@ -342,8 +343,47 @@ class Frame:
 
         return True
 
+    def positions(self) -> np.ndarray:
+        """Return an (n,3) array 3D positions on n particles in the frame."""
+        pos3d = np.empty((self.num_parts, 3))
+        for pt in range(self.num_parts):
+            pos3d[pt] = self.path_info[pt].x
+
+        return pos3d
+
+    def target_positions_for_camera(self, cam: int) -> np.ndarray:
+        """
+        Get all targets in this frame as seen by the selected camere. The.
+
+        targets are returned in the order corresponding to the particle order
+        returned by ``positions()``.
+
+        Arguments:
+        ---------
+        int cam - camera number, starting from 0.
+
+        Returns:
+        -------
+        an (n,2) array with the 2D position of targets detected in the image
+            seen by camera ``cam``. for each 3D position. If no target in this
+            camera belongs to the 3D position, its target is set to NaN.
+        """
+        pos2d = np.empty((self.num_parts, 2))
+        for pt in range(self.num_parts):
+            tix = self.correspond[pt].p[cam]
+
+            if tix == CORRES_NONE:
+                pos2d[pt] = np.nan
+            else:
+                pos2d[pt, 0] = self.targets[cam][tix].x
+                pos2d[pt, 1] = self.targets[cam][tix].y
+
+        return pos2d
+
 
 class FrameBufBase:
+    """Base class for frame buffers."""
+
     def __init__(self, buf_len, num_cams, max_targets):
         self.buf_len = buf_len
         self.num_cams = num_cams
@@ -458,7 +498,7 @@ def frame_init(num_cams: int, max_targets: int):
 
 
 def read_path_frame(
-    cor_buf: List[n_tupel],
+    cor_buf: List[Corres],
     path_buf: List[Pathinfo],
     corres_file_base,
     linkage_file_base,
@@ -471,8 +511,6 @@ def read_path_frame(
 
     """
     filein, linkagein, prioin = None, None, None
-    path_buf = []
-    cor_buf = []
 
     fname = f"{corres_file_base}.{frame_num}"
     try:
@@ -512,31 +550,26 @@ def read_path_frame(
         if linkagein is not None:
             linkage_line = linkagein.readline()
             linkage_vals = np.fromstring(linkage_line, dtype=float, sep=" ")
-            path_buf.append(
-                Pathinfo(
-                    prev=linkage_vals[0].astype(int), next=linkage_vals[1].astype(int)
-                )
-            )
+            path_buf[targets].prev = linkage_vals[0].astype(int)
+            path_buf[targets].next = linkage_vals[1].astype(int)
+            # path_buf[targets].x = linkage_vals[2:]
 
         if prioin is not None:
             prio_line = prioin.readline()
             prio_vals = np.fromstring(prio_line, dtype=float, sep=" ")
-            path_buf[-1].prio = prio_vals[-1].astype(int)
+            path_buf[targets].prio = prio_vals[-1].astype(int)
         else:
-            path_buf[-1].prio = 4
+            path_buf[targets].prio = 4
 
-        path_buf[-1].inlist = 0
-        path_buf[-1].finaldecis = 1000000.0
-        path_buf[-1].decis = np.zeros(POSI)
-        path_buf[-1].linkdecis = np.zeros(POSI) - 999
+        path_buf[targets].inlist = 0
+        path_buf[targets].finaldecis = 1000000.0
+        path_buf[targets].decis = np.zeros(POSI)
+        path_buf[targets].linkdecis = np.zeros(POSI) - 999
 
         vals = np.fromstring(line, dtype=float, sep=" ")
-        cor_buf.nr = targets + 1
-        cor_buf.Pathinfo = vals[-4:].astype(int)
-        path_buf.x = vals[:-4]
-
-        cor_buf += 1
-        path_buf += 1
+        cor_buf[targets].nr = targets + 1
+        cor_buf[targets].p = vals[-4:].astype(int)
+        path_buf[targets].x = vals[1:-4]
 
         targets += 1
 

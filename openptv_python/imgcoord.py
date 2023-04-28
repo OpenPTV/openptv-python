@@ -77,7 +77,7 @@ def flat_image_coordinates(
     orig_pos: np.ndarray, cal: Calibration, mm: MultimediaPar
 ) -> np.ndarray:
     """Flat image coordinates in array mode."""
-    out = np.empty(orig_pos.shape[0], 2)
+    out = np.empty((orig_pos.shape[0], 2))
 
     for i, row in enumerate(orig_pos):
         out[i, 0], out[i, 1] = flat_image_coord(row, cal, mm)

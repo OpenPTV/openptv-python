@@ -8,10 +8,8 @@ from openptv_python.parameters import ControlPar
 from openptv_python.parameters import MultimediaPar as mm_np
 from openptv_python.ray_tracing import ray_tracing
 
-EPS = 1e-6
 
-
-class TestRayTracking(unittest.TestCase):
+class TestRayTracing(unittest.TestCase):
     """Test ray_tracing function."""
 
     def test_ray_tracing(self):
@@ -20,9 +18,7 @@ class TestRayTracking(unittest.TestCase):
         x, y = 0, 0
         cal = Calibration()  # create Variable for cal with necessary data
         cpar = ControlPar()
-        expected_output = np.array(
-            [cal.ext_par.x0, cal.ext_par.y0, cal.ext_par.z0]
-        ), np.zeros(3)
+        expected_output = np.zeros(3), np.zeros(3)
         output = ray_tracing(x, y, cal, cpar.mm)
         assert np.allclose(output, expected_output)
 
@@ -66,35 +62,8 @@ class TestRayTracking(unittest.TestCase):
         actual_X, actual_a = ray_tracing(x, y, test_cal, test_mm)
 
         # Check that the actual output values are equal to the expected output values
-        self.assertTrue(
-            np.abs(actual_X[0] - expected_X[0]) < EPS
-            and np.abs(actual_X[1] - expected_X[1]) < EPS
-            and np.abs(actual_X[2] - expected_X[2]) < EPS,
-            "Expected %f, %f, %f but found %f, %f, %f\n"
-            % (
-                expected_X[0],
-                expected_X[1],
-                expected_X[2],
-                actual_X[0],
-                actual_X[1],
-                actual_X[2],
-            ),
-        )
-
-        self.assertTrue(
-            np.abs(actual_a[0] - expected_a[0]) < EPS
-            and np.abs(actual_a[1] - expected_a[1]) < EPS
-            and np.abs(actual_a[2] - expected_a[2]) < EPS,
-            "Expected %f, %f, %f but found %f, %f, %f\n"
-            % (
-                expected_a[0],
-                expected_a[1],
-                expected_a[2],
-                actual_a[0],
-                actual_a[1],
-                actual_a[2],
-            ),
-        )
+        assert np.allclose(actual_X, expected_X)
+        assert np.allclose(actual_a, expected_a)
 
 
 if __name__ == "__main__":

@@ -59,11 +59,13 @@ class Test_Orientation(unittest.TestCase):
         xy_img_pts_pixel = arr_metric_to_pixel(xy_img_pts_metric, self.control)
 
         # convert to TargetArray object
-        target_array = TargetArray(coords_count)
+        target_array = TargetArray(num_targs=coords_count)
 
         for i in range(coords_count):
-            target_array[i].set_pnr(i)
-            target_array[i].set_pos((xy_img_pts_pixel[i][0], xy_img_pts_pixel[i][1]))
+            target_array.targs[i].set_pnr(i)
+            target_array.targs[i].set_pos(
+                (xy_img_pts_pixel[i][0], xy_img_pts_pixel[i][1])
+            )
 
         # create randomized target array
         indices = list(range(coords_count))
@@ -113,7 +115,7 @@ class Test_Orientation(unittest.TestCase):
         points = np.array([[17, 42, 0], [17, 42, 0]], dtype=float)
 
         num_cams = 4
-        ori_tmpl = "testing_folder/calibration/sym_cam{cam_num}.tif.ori"
+        ori_tmpl = "tests/testing_folder/calibration/sym_cam{cam_num}.tif.ori"
         add_file = "tests/testing_folder/calibration/cam1.tif.addpar"
         calibs = []
         targs_plain = []
@@ -231,8 +233,8 @@ class Test_Orientation(unittest.TestCase):
         points = np.array([[17.5, 42, 0], [-17.5, 42, 0]], dtype=float)
 
         num_cams = 4
-        ori_tmpl = "testing_folder/dumbbell/cam{cam_num}.tif.ori"
-        add_file = "testing_folder/calibration/cam1.tif.addpar"
+        ori_tmpl = "tests/testing_folder/dumbbell/cam{cam_num}.tif.ori"
+        add_file = "tests/testing_folder/calibration/cam1.tif.addpar"
         calibs = []
         targs_plain = []
 
@@ -330,7 +332,7 @@ class TestGradientDescent(unittest.TestCase):
 
         # Full calibration works with TargetArray objects, not NumPy.
         target_array = TargetArray(len(targets))
-        for i, trgt in enumerate(target_array):
+        for i, trgt in enumerate(target_array.targs):
             trgt.set_pnr(i)
             trgt.set_pos(targets[i])
 

@@ -296,13 +296,6 @@ def orient(
     cal = Calibration()
     maxsize = nfix * 2 + IDT
 
-    for i in range(maxsize):
-        for j in range(NPAR):
-            X[i][j] = 0.0
-            Xh[i][j] = 0.0
-        y[i] = 0.0
-        P[i] = 1.0
-
     sigmabeta = [0.0] * NPAR
 
     if flags.interfflag:
@@ -656,10 +649,10 @@ def raw_orient(
             xc, yc = pixel_to_metric(pix[i].x, pix[i].y, cpar)
 
             pos = vec_set(fix[i][0], fix[i][1], fix[i][2])
-            cal.rotation_matrix()
-            xp, yp = cal.img_coord(pos, cpar.mm)
+            cal.ext_par.rotation_matrix()
+            xp, yp = img_coord(pos, cal, cpar.mm)
 
-            X[n], X[n + 1] = cal.num_deriv_exterior(cpar, dm, drad, pos)
+            X[n], X[n + 1] = num_deriv_exterior(cal, cpar, dm, drad, pos)
             y[n], y[n + 1] = xc - xp, yc - yp
 
             n += 2
@@ -667,7 +660,11 @@ def raw_orient(
         # void ata (double *a, double *ata, int m, int n, int n_large )
         # ata(X, XPX, n, 6, 6)
         XPX = ata(X, 6)
-        XPXi = np.linalg.inv(XPX)
+        if np.any(XPX):
+            XPXi = np.linalg.inv(XPX)
+        else:
+            XPXi = XPX
+
         # atl (double *u, double *a, double *l, int m, int n, int n_large)
         XPy = atl(X, y, 6)
         beta = XPXi @ XPy
@@ -682,7 +679,7 @@ def raw_orient(
         cal.ext_par.kappa += beta[5]
 
     if stopflag:
-        cal.rotation_matrix()
+        cal.ext_par.rotation_matrix()
 
     return stopflag
 
@@ -896,18 +893,18 @@ def full_calibration(
     # a whole new class for what is no more than a list.
 
     orip = OrientPar()
-    orip[0].useflag = 0
-    orip[0].ccflag = 1 if "cc" in flags else 0
-    orip[0].xhflag = 1 if "xh" in flags else 0
-    orip[0].yhflag = 1 if "yh" in flags else 0
-    orip[0].k1flag = 1 if "k1" in flags else 0
-    orip[0].k2flag = 1 if "k2" in flags else 0
-    orip[0].k3flag = 1 if "k3" in flags else 0
-    orip[0].p1flag = 1 if "p1" in flags else 0
-    orip[0].p2flag = 1 if "p2" in flags else 0
-    orip[0].scxflag = 1 if "scale" in flags else 0
-    orip[0].sheflag = 1 if "shear" in flags else 0
-    orip[0].interfflag = 0  # This also solves for the glass, I'm skipping it.
+    orip.useflag = 0
+    orip.ccflag = 1 if "cc" in flags else 0
+    orip.xhflag = 1 if "xh" in flags else 0
+    orip.yhflag = 1 if "yh" in flags else 0
+    orip.k1flag = 1 if "k1" in flags else 0
+    orip.k2flag = 1 if "k2" in flags else 0
+    orip.k3flag = 1 if "k3" in flags else 0
+    orip.p1flag = 1 if "p1" in flags else 0
+    orip.p2flag = 1 if "p2" in flags else 0
+    orip.scxflag = 1 if "scale" in flags else 0
+    orip.sheflag = 1 if "shear" in flags else 0
+    orip.interfflag = 0  # This also solves for the glass, I'm skipping it.
 
     err_est = np.empty((NPAR + 1), dtype=np.float64)
     residuals = orient(
