@@ -16,7 +16,10 @@ from openptv_python.segmentation import target_recognition
 
 
 class TestTargRec(unittest.TestCase):
+    """Test the target recognition algorithm."""
+
     def test_single_target(self):
+        """Test a single target."""
         img = np.array(
             [
                 [0, 0, 0, 0, 0],
@@ -28,10 +31,10 @@ class TestTargRec(unittest.TestCase):
             dtype=np.uint8,
         )
 
-        cpar = ControlPar(4)
+        cpar = ControlPar(num_cams=1)
         cpar.set_image_size((5, 5))
         tpar = TargetPar(
-            gvthresh=[250, 100, 20, 20],
+            gvthresh=[250],
             discont=5,
             nnmin=1,
             nnmax=10,
@@ -42,12 +45,13 @@ class TestTargRec(unittest.TestCase):
             nymax=10,
         )
 
-        targs = target_recognition(img, tpar, 0, cpar)
+        target_array = target_recognition(img, tpar, 0, cpar)
 
-        self.assertEqual(len(targs), 1)
-        self.assertEqual(targs[0].count_pixels(), (9, 3, 3))
+        self.assertEqual(target_array.num_targs, 1)
+        self.assertEqual(target_array.targs[0].count_pixels(), (9, 3, 3))
 
     def test_two_targets(self):
+        """Test a single target."""
         img = np.array(
             [
                 [0, 0, 0, 0, 0],
@@ -73,20 +77,21 @@ class TestTargRec(unittest.TestCase):
             nymax=10,
         )
 
-        targs = target_recognition(img, tpar, 0, cpar)
+        target_array = target_recognition(img, tpar, 0, cpar)
 
-        self.assertEqual(len(targs), 2)
-        self.assertEqual(targs[0].count_pixels(), (1, 1, 1))
+        self.assertEqual(target_array.num_targs, 2)
+        self.assertEqual(target_array.targs[0].count_pixels(), (1, 1, 1))
 
         # Exclude the first target and try again:
         tpar.gvthresh = [252, 100, 20, 20]
-        targs = target_recognition(img, tpar, 0, cpar)
+        target_array = target_recognition(img, tpar, 0, cpar)
 
-        self.assertEqual(len(targs), 1)
-        self.assertEqual(targs[0].count_pixels(), (1, 1, 1))
+        self.assertEqual(target_array.num_targs, 1)
+        self.assertEqual(target_array.targs[0].count_pixels(), (1, 1, 1))
 
     # the following is a test code
     def test_one_targets2(self):
+        """Test a single target."""
         img = np.array(
             [
                 [0, 0, 0, 0, 0],
@@ -112,10 +117,10 @@ class TestTargRec(unittest.TestCase):
             nymax=10,
         )
 
-        targs = target_recognition(img, tpar, 0, cpar)
+        target_array = target_recognition(img, tpar, 0, cpar)
 
-        self.assertEqual(len(targs), 1)
-        self.assertEqual(targs[0].count_pixels(), (4, 3, 2))
+        self.assertEqual(target_array.num_targs, 1)
+        self.assertEqual(target_array.targs[0].count_pixels(), (4, 3, 2))
 
 
 if __name__ == "__main__":

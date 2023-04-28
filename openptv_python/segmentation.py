@@ -52,6 +52,8 @@ def targ_rec(
     # img0 = [0] * (imx * imy)  # create temporary mask
     img0 = img.copy()  # copy the original image
 
+    # Make sure the min/max coordinates don't cause us to access memory
+    # outside the image memory.
     if xmin <= 0:
         xmin = 1
     if ymin <= 0:
@@ -74,30 +76,32 @@ def targ_rec(
 
     for i in range(ymin, ymax):
         for j in range(xmin, xmax):
-            gv = img0[i * imx + j]
+            # note i=y = rows = top to bottom
+            # j=x = columns - left to right
+            gv = img0[i, j]
             if gv > thres:
                 if (
-                    (gv >= img0[i * imx + j - 1])
-                    and (gv >= img0[i * imx + j + 1])
-                    and (gv >= img0[(i - 1) * imx + j])
-                    and (gv >= img0[(i + 1) * imx + j])
-                    and (gv >= img0[(i - 1) * imx + j - 1])
-                    and (gv >= img0[(i + 1) * imx + j - 1])
-                    and (gv >= img0[(i - 1) * imx + j + 1])
-                    and (gv >= img0[(i + 1) * imx + j + 1])
+                    (gv >= img0[i, j - 1])
+                    and (gv >= img0[i, j + 1])
+                    and (gv >= img0[(i - 1), j])
+                    and (gv >= img0[(i + 1), j])
+                    and (gv >= img0[(i - 1), j - 1])
+                    and (gv >= img0[(i + 1), j - 1])
+                    and (gv >= img0[(i - 1), j + 1])
+                    and (gv >= img0[(i + 1), j + 1])
                 ):
                     yn = i
                     xn = j
 
                     sumg = gv
-                    img0[i * imx + j] = 0
+                    img0[i, j] = 0
 
                     xa = xn
                     xb = xn
                     ya = yn
                     yb = yn
 
-                    gv -= thres
+                    gv -= thres  # intensity above the threshold
                     x = (xn) * gv
                     y = yn * gv
                     numpix = 1
@@ -106,7 +110,7 @@ def targ_rec(
                     n_wait = 1
 
                     while n_wait > 0:
-                        gvref = img[imx * (waitlist[0][1]) + (waitlist[0][0])]
+                        gvref = img[waitlist[0][1], waitlist[0][0]]
 
                         x4[0] = waitlist[0][0] - 1
                         y4[0] = waitlist[0][1]
@@ -123,7 +127,7 @@ def targ_rec(
                             if xn >= xmax or yn >= ymax or xn < 0 or yn < 0:
                                 continue
 
-                            gv = img0[imx * yn + xn]
+                            gv = img0[yn, xn]
 
                             if (
                                 (gv > thres)
@@ -132,13 +136,13 @@ def targ_rec(
                                 and (yn > ymin - 1)
                                 and (yn < ymax + 1)
                                 and (gv <= gvref + disco)
-                                and (gvref + disco >= img[imx * (yn - 1) + xn])
-                                and (gvref + disco >= img[imx * (yn + 1) + xn])
-                                and (gvref + disco >= img[imx * yn + (xn - 1)])
-                                and (gvref + disco >= img[imx * yn + (xn + 1)])
+                                and (gvref + disco >= img[yn - 1, xn])
+                                and (gvref + disco >= img[yn + 1, xn])
+                                and (gvref + disco >= img[yn, xn - 1])
+                                and (gvref + disco >= img[yn, xn + 1])
                             ):
                                 sumg += gv
-                                img0[imx * yn + xn] = 0
+                                img0[yn, xn] = 0
                                 if xn < xa:
                                     xa = xn
                                 if xn > xb:
@@ -203,8 +207,8 @@ def targ_rec(
                         xn = x
                         yn = y
 
-    t = TargetArray()
-    t.num_targs = n_targets
+    t = TargetArray(num_targs=n_targets)
+    # t.num_targs = n_targets
     t.targs = pix
     return t
 
@@ -615,10 +619,60 @@ def target_recognition(
     else:
         ymin, ymax = subrange_y
 
-    if img.shape[0] != ymax or img.shape[1] != xmax:
-        raise ValueError("dimensions are not correct")
+    if img.shape[0] < ymax or img.shape[1] < xmax:
+        raise ValueError("region of detection is larger than image dimensions")
 
     # The core Python implementation of targ_rec:
     target_array = targ_rec(img, tpar, xmin, xmax, ymin, ymax, cparam, cam)
 
     return target_array
+
+
+def blob_detection(image, threshold):
+    # Initialize the output list.
+    blobs = []
+
+    # Convert the image to grayscale.
+    grayscale_image = np.array(image).mean(axis=2)
+
+    # Find all of the pixels in the image that are above the threshold.
+    above_threshold_pixels = np.where(grayscale_image > threshold)[0]
+
+    # Create a queue to store the pixels that are currently being processed.
+    waitlist = []
+
+    # Add the first pixel to the queue.
+    waitlist.append(above_threshold_pixels[0])
+
+    # While the queue is not empty:
+    while waitlist:
+        # Pop the first pixel from the queue.
+        pixel = waitlist.pop(0)
+
+        # Get the x- and y-coordinates of the pixel.
+        x = pixel % image.shape[1]
+        y = pixel // image.shape[1]
+
+        # Check to see if the pixel is within the bounds of the image.
+        if x < 0 or x >= image.shape[1] or y < 0 or y >= image.shape[0]:
+            continue
+
+        # Check to see if the pixel is already part of a blob.
+        if pixel in blobs:
+            continue
+
+        # Add the pixel to the current blob.
+        blobs.append(pixel)
+
+        # Add all of the neighboring pixels that are above the threshold to the queue.
+        for neighbor in [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)]:
+            if (
+                neighbor[0] >= 0
+                and neighbor[0] < image.shape[1]
+                and neighbor[1] >= 0
+                and neighbor[1] < image.shape[0]
+                and grayscale_image[neighbor] > threshold
+            ):
+                waitlist.append(neighbor)
+
+    return blobs
