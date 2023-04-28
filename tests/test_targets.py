@@ -1,6 +1,7 @@
 import unittest
 
-from openptv_python.tracking_frame_buf import Target, sort_crd_y
+from openptv_python.epi import sort_coord2d_y
+from openptv_python.tracking_frame_buf import Target
 
 
 class TestQsTargetY(unittest.TestCase):
@@ -20,7 +21,7 @@ class TestQsTargetY(unittest.TestCase):
             targs.append(Target(*t))
 
         # sorting test_pix vertically by 'y'
-        targs = sort_crd_y(targs)
+        targs = sort_coord2d_y(targs)
 
         # first point should be -1.1 and the last 0.8
         self.assertAlmostEqual(targs[0].y, -1.1, places=6)

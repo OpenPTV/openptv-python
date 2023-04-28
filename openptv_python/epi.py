@@ -1,6 +1,7 @@
 """Epipolar geometry."""
 import math
 from dataclasses import dataclass, field
+from typing import List
 
 import numpy as np
 
@@ -29,6 +30,16 @@ class Coord2d:
     pnr: int = field(default=PT_UNUSED)
     x: float = field(default=0.0)
     y: float = field(default=0.0)
+
+
+def sort_coord2d_x(crd: List[Coord2d]) -> List[Coord2d]:
+    """Quicksort for coordinates by x ."""
+    return sorted(crd, key=lambda p: p.x)
+
+
+def sort_coord2d_y(crd: List[Coord2d]) -> List[Coord2d]:
+    """Sort coordinates by y."""
+    return sorted(crd, key=lambda p: p.y)
 
 
 @dataclass

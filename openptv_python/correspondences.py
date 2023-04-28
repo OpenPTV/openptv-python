@@ -1,53 +1,31 @@
 """Correspondences."""
+from dataclasses import dataclass, field
 from typing import List
 
 import numpy as np
 
 from .calibration import Calibration
-from .constants import CORRES_NONE, NMAX, PT_UNUSED
+from .constants import CORRES_NONE, MAXCAND, NMAX, PT_UNUSED
 from .epi import Candidate, Coord2d, epi_mm, find_candidate
 from .parameters import ControlPar, VolumePar
-from .tracking_frame_buf import Correspond, Frame, n_tupel
+from .tracking_frame_buf import Frame, n_tupel
 
 
-def quicksort_con(con, num):
-    """Quicksort for correspondences."""
-    if num > 0:
-        qs_con(con, 0, num - 1)
+@dataclass
+class Correspond:
+    """Correspondence candidate data structure."""
 
-
-def qs_con(con, left, right):
-    """Quicksort for correspondences subroutine."""
-    if left >= right:
-        return
-
-    pivot = con[(left + right) // 2].corr
-    i, j = left, right
-    while i <= j:
-        while con[i].corr < pivot:
-            i += 1
-        while con[j].corr > pivot:
-            j -= 1
-        if i <= j:
-            con[i], con[j] = con[j], con[i]
-            i += 1
-            j -= 1
-
-    qs_con(con, left, j)
-    qs_con(con, i, right)
-
-
-# def quicksort_con(con):
-#     """ Quicksort for correspondences """
-#     if len(con) <= 1:
-#         return con
-
-#     pivot = con[len(con) // 2].corr
-#     left = np.array([x for x in con if x.corr < pivot], dtype=con.dtype)
-#     middle = np.array([x for x in con if x.corr == pivot], dtype=con.dtype)
-#     right = np.array([x for x in con if x.corr > pivot], dtype=con.dtype)
-
-#     return np.concatenate((quicksort_con(left), middle, quicksort_con(right)))
+    p1: int  # point number of master point
+    n: int  # number of candidates
+    p2: np.ndarray = field(
+        default=np.empty(MAXCAND, dtype=int)
+    )  # point numbers of candidates
+    corr: np.ndarray = field(
+        default=np.empty(MAXCAND, dtype=float)
+    )  # feature-based correlation coefficient
+    dist: np.ndarray = field(
+        default=np.empty(MAXCAND, dtype=float)
+    )  # distance perpendicular to epipolar line
 
 
 def deallocate_target_usage_marks(tusage, num_cams):

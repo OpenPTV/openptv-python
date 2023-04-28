@@ -9,14 +9,13 @@ from .calibration import Calibration
 from .constants import (
     COORD_UNUSED,
     MAX_TARGETS,
-    MAXCAND,
     NEXT_NONE,
     POSI,
     PREV_NONE,
     PRIO_DEFAULT,
     PT_UNUSED,
 )
-from .epi import Coord2d
+from .epi import Coord2d, sort_coord2d_x
 from .parameters import ControlPar
 from .trafo import dist_to_flat, pixel_to_metric
 
@@ -29,87 +28,32 @@ class n_tupel:
     corr: float
 
 
+def quicksort_n_tupel(n_tupel_list: List[n_tupel]) -> List[n_tupel]:
+    """
+    Quicksorts a list of n_tupel instances based on the corr attribute.
+
+    previously called quicksort_con
+
+    Args:
+    ----
+      n_tupel_list: A list of n_tupel instances.
+
+    Returns:
+    -------
+      A list of n_tupel instances, sorted by the corr attribute.
+    """
+    return sorted(n_tupel_list, key=lambda x: x.corr)
+
+
 @dataclass
-class Correspond:
-    """Correspondence candidate data structure."""
+class Corres:
+    """Correspondence data structure."""
 
-    p1: int  # point number of master point
-    n: int  # number of candidates
-    p2: np.ndarray = field(
-        default=np.empty(MAXCAND, dtype=int)
-    )  # point numbers of candidates
-    corr: np.ndarray = field(
-        default=np.empty(MAXCAND, dtype=float)
-    )  # feature-based correlation coefficient
-    dist: np.ndarray = field(
-        default=np.empty(MAXCAND, dtype=float)
-    )  # distance perpendicular to epipolar line
+    nr: int = field(default_factory=int)
+    p: List[int] = field(default_factory=list)
 
-
-def sort_crd_y(crd):
-    """Sort coordinates by y."""
-    return sorted(crd, key=lambda p: p.y)
-
-
-# def quicksort_target_y(pix, num):
-#     """Quicksort for targets."""
-#     pix = qs_target_y(pix, 0, num - 1)
-#     return pix
-
-
-# def qs_target_y(pix, left, right):
-#     """Quicksort for targets subroutine."""
-#     if left >= right:
-#         return
-
-#     pivot = pix[(left + right) // 2].y
-#     i, j = left, right
-#     while i <= j:
-#         while pix[i].y < pivot:
-#             i += 1
-#         while pix[j].y > pivot:
-#             j -= 1
-#         if i <= j:
-#             pix[i], pix[j] = pix[j], pix[i]
-#             i += 1
-#             j -= 1
-
-#     pix = qs_target_y(pix, left, j)
-#     pix = qs_target_y(pix, i, right)
-#     return pix
-
-
-# def quicksort_coord2d_x(crd, num):
-#     """Quicksort for coordinates."""
-#     crd = qs_coord2d_x(crd, 0, num - 1)
-#     return crd
-
-
-# def qs_coord2d_x(crd, left, right):
-#     """Quicksort for coordinates subroutine."""
-#     if left >= right:
-#         return
-
-#     pivot = crd[(left + right) // 2].x
-#     i, j = left, right
-#     while i <= j:
-#         while crd[i].x < pivot and i < right:
-#             i += 1
-#         while pivot < crd[j].x and j > left:
-#             j -= 1
-#         if i <= j:
-#             crd[i], crd[j] = crd[j], crd[i]
-#             i += 1
-#             j -= 1
-
-#     crd = qs_coord2d_x(crd, left, j)
-#     crd = qs_coord2d_x(crd, i, right)
-#     return crd
-
-
-def sort_crd_x(crd):
-    """Sort coordinates by x."""
-    return sorted(crd, key=lambda p: p.x)
+    def __eq__(self, other):
+        return self.nr == other.nr and (self.p == other.p)
 
 
 @dataclass
@@ -301,12 +245,12 @@ class Frame:
     num_cams: int = field(default_factory=int)
     max_targets: int = MAX_TARGETS
     path_info: Pathinfo | None = None
-    correspond: Correspond | None = None
+    correspond: List[Corres] | None = None
     targets: List[List[Target]] | None = None
     num_parts: int = 0
     num_targets: List[int] | None = None
 
-    def read_frame(
+    def from_file(
         self,
         corres_file_base: Any,
         linkage_file_base: Any,
@@ -490,14 +434,22 @@ def frame_init(num_cams: int, max_targets: int):
 
 
 def read_path_frame(
-    cor_buf, path_buf, corres_file_base, linkage_file_base, prio_file_base, frame_num
-) -> List[Target]:
+    cor_buf: List[n_tupel],
+    path_buf: List[Pathinfo],
+    corres_file_base,
+    linkage_file_base,
+    prio_file_base,
+    frame_num,
+) -> int:
     """Read a frame from the disk.
 
     cor_buf = array of correspondences, pnr, 4 x cam_pnr
 
     """
     filein, linkagein, prioin = None, None, None
+    path_buf = []
+    cor_buf = []
+
     fname = f"{corres_file_base}.{frame_num}"
     try:
         filein = open(fname, "r", encoding="utf-8")
@@ -536,15 +488,18 @@ def read_path_frame(
         if linkagein is not None:
             linkage_line = linkagein.readline()
             linkage_vals = np.fromstring(linkage_line, dtype=float, sep=" ")
-            path_buf["prev"] = linkage_vals[0].astype(int)
-            path_buf["next"] = linkage_vals[1].astype(int)
+            path_buf.append(
+                Pathinfo(
+                    prev=linkage_vals[0].astype(int), next=linkage_vals[1].astype(int)
+                )
+            )
 
         if prioin is not None:
             prio_line = prioin.readline()
             prio_vals = np.fromstring(prio_line, dtype=float, sep=" ")
-            path_buf["prio"] = prio_vals[-1].astype(int)
+            path_buf[-1].prio = prio_vals[-1].astype(int)
         else:
-            path_buf["prio"] = 4
+            path_buf[-1].prio = 4
 
         path_buf["inlist"] = 0
         path_buf["finaldecis"] = 1000000.0
@@ -749,7 +704,7 @@ class MatchedCoords:
             self.buf[tnum].pnr = targ.pnr
 
         # self.buf = quicksort_coord2d_x(self.buf, self._num_pts)
-        self.buf = sort_crd_x(self.buf)
+        self.buf = sort_coord2d_x(self.buf)
 
     def as_arrays(self):
         """

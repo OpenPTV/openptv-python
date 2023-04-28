@@ -68,12 +68,29 @@ class TestTargets(unittest.TestCase):
 
 class TestFrame(unittest.TestCase):
     def test_read_frame(self):
-        """Reading a frame."""
-        targ_files = ["testing_folder/frame/cam%d.".encode() % c for c in range(1, 5)]
-        frm = Frame(
-            4,
+        """Reading a frame.
+
+        num_cams: int = field(default_factory=int)
+        max_targets: int = MAX_TARGETS
+        path_info: Pathinfo | None = None
+        correspond: Correspond | None = None
+        targets: List[List[Target]] | None = None
+        num_parts: int = 0
+        num_targets: List[int] | None = None
+
+            corres_file_base: Any,
+            linkage_file_base: Any,
+            prio_file_base: Any,
+            target_file_base: List[Any],
+            frame_num: int,
+
+        """
+        targ_files = [f"tests/testing_folder/frame/cam{c:d}." for c in range(1, 5)]
+        frm = Frame(num_cams=4)
+        frm.from_file(
             corres_file_base="tests/testing_folder/frame/rt_is",
             linkage_file_base="tests/testing_folder/frame/ptv_is",
+            prio_file_base="tests/testing_folder/frame/added",
             target_file_base=targ_files,
             frame_num=333,
         )
