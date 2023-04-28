@@ -1,7 +1,7 @@
 """Tracking frame buffer."""
 from collections import deque
 from dataclasses import dataclass, field
-from typing import Any, List
+from typing import Any, List, Tuple
 
 import numpy as np
 
@@ -98,10 +98,10 @@ class Target:
             and self.tnr == other.tnr
         )
 
-    def set_pos(self, x, y):
+    def set_pos(self, pos: Tuple[float, float]) -> None:
         """Set target position."""
-        self.x = x
-        self.y = y
+        self.x = pos[0]
+        self.y = pos[1]
 
     def set_pnr(self, pnr):
         """Set target number."""
@@ -139,7 +139,7 @@ class TargetArray:
     targs: List[Target] = field(default_factory=list)
 
     def __post_init__(self):
-        self.targs = [Target()] * self.num_targs
+        self.targs = [Target() for _ in range(self.num_targs)]
 
     def set(self, targs: List[Target]):
         """Set targets."""
@@ -268,7 +268,7 @@ class Frame:
 
     num_cams: int = field(default_factory=int)
     max_targets: int = MAX_TARGETS
-    path_info: Pathinfo | None = None
+    path_info: List[Pathinfo] | None = None
     correspond: List[Corres] | None = None
     targets: List[List[Target]] | None = None
     num_parts: int = 0
@@ -525,10 +525,10 @@ def read_path_frame(
         else:
             path_buf[-1].prio = 4
 
-        path_buf.inlist = 0
-        path_buf.finaldecis = 1000000.0
-        path_buf.decis = np.zeros(POSI)
-        path_buf.linkdecis = np.zeros(POSI) - 999
+        path_buf[-1].inlist = 0
+        path_buf[-1].finaldecis = 1000000.0
+        path_buf[-1].decis = np.zeros(POSI)
+        path_buf[-1].linkdecis = np.zeros(POSI) - 999
 
         vals = np.fromstring(line, dtype=float, sep=" ")
         cor_buf.nr = targets + 1
