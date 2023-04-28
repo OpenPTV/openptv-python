@@ -1,14 +1,21 @@
 import unittest
 
-from openptv_python.correspondences import n_tupel
-from openptv_python.tracking_frame_buf import read_path_frame, Pathinfo as P
 from openptv_python.constants import POSI
+from openptv_python.correspondences import n_tupel
+from openptv_python.tracking_frame_buf import (
+    Corres,
+    compare_corres,
+    compare_path_info,
+    read_path_frame,
+)
+from openptv_python.tracking_frame_buf import Pathinfo as P
 
 
 class TestReadPathFrame(unittest.TestCase):
+    """Test the read_path_frame() function."""
+
     def test_read_path_frame(self):
         """Tests the read_path_frame() function."""
-
         # Create a buffer for the corres structures.
         cor_buf = [n_tupel() for _ in range(80)]
 
@@ -44,8 +51,8 @@ class TestReadPathFrame(unittest.TestCase):
         # Test unlinked frame:
 
         # Read the path frame.
-        targets_read = read_path_frame(cor_buf, path_buf, 
-            file_base, None, None, frame_num
+        targets_read = read_path_frame(
+            cor_buf, path_buf, file_base, None, None, frame_num
         )
 
         # Check that the correct number of targets were read.
@@ -86,9 +93,8 @@ class TestReadPathFrame(unittest.TestCase):
 
 
 def test_read_path_frame(self):
-    cor_buf = [corres() for _ in range(80)]
+    cor_buf = [Corres() for _ in range(80)]
     path_buf = [P() for _ in range(80)]
-    alt_link = 0
 
     # Correct values for particle 3
     path_correct = P(
@@ -101,7 +107,7 @@ def test_read_path_frame(self):
     )
     path_correct.decis = [0.0] * POSI
     path_correct.linkdecis = [-999] * POSI
-    c_correct = corres(nr=3, p=[96, 66, 26, 26])
+    c_correct = Corres(nr=3, p=[96, 66, 26, 26])
 
     file_base = "testing_fodder/rt_is"
     frame_num = 818

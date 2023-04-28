@@ -24,8 +24,8 @@ from .trafo import dist_to_flat, pixel_to_metric
 class n_tupel:
     """n_tupel data structure."""
 
-    p: List[int]
-    corr: float
+    p: List[int] = field(default_factory=list)
+    corr: float = field(default_factory=float)
 
 
 def quicksort_n_tupel(n_tupel_list: List[n_tupel]) -> List[n_tupel]:
@@ -54,6 +54,22 @@ class Corres:
 
     def __eq__(self, other):
         return self.nr == other.nr and (self.p == other.p)
+
+
+def compare_corres(c1: Corres, c2: Corres) -> bool:
+    """
+    Compare two Corres instances.
+
+    Args:
+    ----
+      c1: A Corres instance.
+      c2: A Corres instance.
+
+    Returns:
+    -------
+      True if the Corres instances are equal, False otherwise.
+    """
+    return c1 == c2
 
 
 @dataclass
@@ -115,12 +131,15 @@ class Target:
         return (self.n, self.nx, self.ny)
 
 
+@dataclass
 class TargetArray:
     """A list of targets and the number of targets in the list."""
 
-    def __init__(self, num_targs: int):
-        self.num_targs = num_targs
-        self.targs = [Target() for _ in range(num_targs)]
+    num_targs: int = field(default_factory=int)
+    targs: List[Target] = field(default_factory=list)
+
+    def __post_init__(self):
+        self.targs = [Target()] * self.num_targs
 
     def set(self, targs: List[Target]):
         """Set targets."""
@@ -236,6 +255,11 @@ class Pathinfo:
         self.prev = PREV_NONE
         self.next = NEXT_NONE
         self.prio = PRIO_DEFAULT
+
+
+def compare_path_info(path_info1: Pathinfo, path_info2: Pathinfo) -> bool:
+    """Compare path info."""
+    return path_info1 == path_info2
 
 
 @dataclass
@@ -501,15 +525,15 @@ def read_path_frame(
         else:
             path_buf[-1].prio = 4
 
-        path_buf["inlist"] = 0
-        path_buf["finaldecis"] = 1000000.0
-        path_buf["decis"] = np.zeros(POSI)
-        path_buf["linkdecis"] = np.zeros(POSI) - 999
+        path_buf.inlist = 0
+        path_buf.finaldecis = 1000000.0
+        path_buf.decis = np.zeros(POSI)
+        path_buf.linkdecis = np.zeros(POSI) - 999
 
         vals = np.fromstring(line, dtype=float, sep=" ")
-        cor_buf["nr"] = targets + 1
-        cor_buf["Pathinfo"] = vals[-4:].astype(int)
-        path_buf["x"] = vals[:-4]
+        cor_buf.nr = targets + 1
+        cor_buf.Pathinfo = vals[-4:].astype(int)
+        path_buf.x = vals[:-4]
 
         cor_buf += 1
         path_buf += 1
@@ -607,8 +631,8 @@ def write_path_frame(
                 ],
                 fmt="%4d %4d %10.3f %10.3f %10.3f %f",
             )
-    except Exception as e:
-        print(f"Error writing file: {e}")
+    except IOError as exc:
+        print(f"Error writing file: {exc}")
         return False
 
     return True

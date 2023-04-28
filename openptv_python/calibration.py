@@ -16,7 +16,35 @@ class Exterior:
     omega: float = field(default=0.0, metadata={"units": "rad"})
     phi: float = field(default=0.0, metadata={"units": "rad"})
     kappa: float = field(default=0.0, metadata={"units": "rad"})
-    dm: np.ndarray = field(default=np.zeros((3, 3), dtype=float))
+    dm: np.ndarray = field(default=np.identity(3, dtype=np.float64))
+
+    def rotation_matrix(self):
+        """Rotates the Dmatrix of Exterior Ex using three angles of the camera.
+
+        Args:
+        ----
+            Ex: The Exterior object.
+
+        Returns:
+        -------
+            The modified Exterior object.
+        """
+        cp = np.cos(self.phi)
+        sp = np.sin(self.phi)
+        co = np.cos(self.omega)
+        so = np.sin(self.omega)
+        ck = np.cos(self.kappa)
+        sk = np.sin(self.kappa)
+
+        self.dm[0][0] = cp * ck
+        self.dm[0][1] = -cp * sk
+        self.dm[0][2] = sp
+        self.dm[1][0] = co * sk + so * sp * ck
+        self.dm[1][1] = co * ck - so * sp * sk
+        self.dm[1][2] = -so * cp
+        self.dm[2][0] = so * sk - co * sp * ck
+        self.dm[2][1] = so * ck + co * sp * sk
+        self.dm[2][2] = co * cp
 
 
 @dataclass

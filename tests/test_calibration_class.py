@@ -1,3 +1,4 @@
+"""Test the Calibration class."""
 import unittest
 
 import numpy as np
@@ -17,17 +18,6 @@ class TestCalibrationClass(unittest.TestCase):
 
     def setUp(self):
         self.cal = Calibration()
-
-    def test_exterior_initialization(self):
-        """Test exterior parameters initialization."""
-        ext = self.cal.ext_par
-        assert np.allclose(ext.dm, np.zeros((3, 3)))
-        assert ext.omega == 0.0
-        assert ext.phi == 0.0
-        assert ext.kappa == 0.0
-        assert ext.x0 == 0.0
-        assert ext.y0 == 0.0
-        assert ext.z0 == 0.0
 
     def test_interior_initialization(self):
         """Test interior parameters initialization."""
@@ -72,6 +62,18 @@ class TestCalibrationClass(unittest.TestCase):
         assert isinstance(self.cal.glass_par, Glass)
         assert isinstance(self.cal.added_par, ap_52)
         assert isinstance(self.cal.mmlut, mmlut)
+
+    def test_exterior_initialization(self):
+        """Test exterior parameters initialization."""
+        ext = self.cal.ext_par
+        ext.rotation_matrix()
+        assert np.allclose(ext.dm, np.identity(3, dtype=np.float64))
+        assert ext.omega == 0.0
+        assert ext.phi == 0.0
+        assert ext.kappa == 0.0
+        assert ext.x0 == 0.0
+        assert ext.y0 == 0.0
+        assert ext.z0 == 0.0
 
 
 if __name__ == "__main__":

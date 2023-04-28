@@ -146,7 +146,7 @@ class TestReadControlPar(unittest.TestCase):
         targs = TargetArray(9)
         for row, col in np.ndindex(3, 3):
             targ_ix = row * 3 + col
-            targ = targs[targ_ix]
+            targ = targs.targs[targ_ix]
 
             pos3d = 10 * np.array([[col, row, 0]], dtype=np.float64)
             x, y = img_coord(pos3d, cal, cpar.mm)

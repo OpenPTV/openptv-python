@@ -20,12 +20,12 @@ class TestTargets(unittest.TestCase):
 
     def test_fill_target_array(self):
         """Test filling a target array."""
-        tarr = TargetArray(2)
-        tarr[0].set_pos((1.5, 2.5))
-        tarr[1].set_pos((3.5, 4.5))
+        tarr = TargetArray(num_targs=2)
+        tarr.targs[0].set_pos((1.5, 2.5))
+        tarr.targs[1].set_pos((3.5, 4.5))
 
-        self.assertEqual(tarr[0].pos(), (1.5, 2.5))
-        self.assertEqual(tarr[1].pos(), (3.5, 4.5))
+        self.assertEqual(tarr.targs[0].pos(), (1.5, 2.5))
+        self.assertEqual(tarr.targs[1].pos(), (3.5, 4.5))
 
     def test_read_targets(self):
         """Reading a targets file from Python."""
