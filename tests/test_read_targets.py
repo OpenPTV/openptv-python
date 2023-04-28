@@ -1,8 +1,6 @@
 import os
 import unittest
 
-import numpy as np
-
 from openptv_python.tracking_frame_buf import (
     Target,
     TargetArray,
@@ -69,6 +67,7 @@ class TestTargets(unittest.TestCase):
         filename = "tests/testing_folder/round_trip.0001_targets"
         if os.path.exists(filename):
             os.remove(filename)
+
 
 if __name__ == "__main__":
     unittest.main()

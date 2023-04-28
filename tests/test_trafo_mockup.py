@@ -8,13 +8,15 @@ EPS = 1e-10
 
 
 class TestFlatToDist(unittest.TestCase):
+    """Test the flat_to_dist function."""
+
     def test_no_calibration(self):
+        """Test if the function raises an error if no calibration is given."""
         with self.assertRaises(TypeError):
-            flat_to_dist([0, 0], None)
+            flat_to_dist([0, 0], None)  # ignore: E1120
 
     def test_zero_coordinates(self):
         cal = Calibration()
-        print(id(cal))
         dist_x, dist_y = flat_to_dist(0, 0, cal)
         self.assertEqual(dist_x, 0)
         self.assertEqual(dist_y, 0)

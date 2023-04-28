@@ -7,29 +7,22 @@ from typing import List, Tuple
 import numpy as np
 
 
+@dataclass
 class MultimediaPar:
     """Multimedia parameters."""
 
-    def __init__(
-        self,
-        n1: float = 1.0,
-        n2: np.ndarray = np.ones(
-            1,
-        ),
-        n3: float = 1.0,
-        d: np.ndarray = np.ones(
-            1,
-        ),
-    ):
+    nlay: int = 1
+    n1: float = 1.0
+    n2: List[float] = field(default_factory=list)
+    d: List[float] = field(default_factory=list)
+    n3: float = 1.0
+
+    def __post_init__(self):
         """Initialize MultimediaPar object."""
-        self.n1 = n1
-        self.n2 = np.array(n2)  # converts list to array
-        self.d = np.array(d)
-        self.n3 = n3
-        if self.n2.shape[0] != self.d.shape[0]:
+        if len(self.n2) != len(self.d):
             raise ValueError("n2 and d must have the same length")
 
-        self.nlay = self.d.shape[0]
+        self.nlay = len(self.d)
 
     def get_nlay(self):
         """Return the number of layers."""
@@ -64,8 +57,8 @@ class MultimediaPar:
         if len(refr_index) != len(thickness):
             raise ValueError("Lengths of refractive index and thickness must be equal.")
         else:
-            self.n2 = np.array(refr_index[:])
-            self.d = np.array(thickness[:])
+            self.n2 = refr_index
+            self.d = thickness
             self.nlay = len(refr_index)
 
 

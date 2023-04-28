@@ -89,14 +89,17 @@ class mmlut:
     data: np.ndarray | None = None
 
 
+@dataclass
 class Calibration:
     """Calibration data structure."""
 
-    def __init__(self):
-        self.ext_par = Exterior()
-        self.int_par = Interior()
-        self.glass_par = Glass()
-        self.added_par = ap_52()
+    ext_par: Exterior = field(default_factory=Exterior)
+    int_par: Interior = field(default_factory=Interior)
+    glass_par: Glass = field(default_factory=Glass)
+    added_par: ap_52 = field(default_factory=ap_52)
+    mmlut: mmlut = field(default_factory=mmlut)
+
+    def __post_init__(self):
         self.mmlut = mmlut()
 
     def from_file(self, ori_file: str, add_file: str = None, add_fallback: str = None):
