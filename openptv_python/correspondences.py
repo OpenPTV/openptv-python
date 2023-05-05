@@ -1,6 +1,6 @@
 """Correspondences."""
 from dataclasses import dataclass, field
-from typing import List
+from typing import List, Tuple
 
 import numpy as np
 
@@ -8,7 +8,7 @@ from .calibration import Calibration
 from .constants import CORRES_NONE, MAXCAND, NMAX, PT_UNUSED
 from .epi import Candidate, Coord2d, epi_mm, find_candidate
 from .parameters import ControlPar, VolumePar
-from .tracking_frame_buf import Frame, n_tupel
+from .tracking_frame_buf import Frame, Target, n_tupel
 
 
 @dataclass
@@ -35,33 +35,31 @@ def deallocate_target_usage_marks(tusage, num_cams):
     del tusage
 
 
-def safely_allocate_target_usage_marks(num_cams, nmax=NMAX):
-    """Safely allocate target usage marks."""
-    tusage = []
-    error = False
+# We can use numpy instead of this
+# def safely_allocate_target_usage_marks(num_cams, nmax=NMAX):
+#     """Safely allocate target usage marks."""
+#     tusage = []
 
-    try:
-        for cam in range(num_cams):
-            tusage_cam = [0] * nmax
-            tusage.append(tusage_cam)
-    except MemoryError:
-        error = True
+#     try:
+#         for _ in range(num_cams):
+#             tusage.append([0 for _ in range(nmax)])
 
-    if error:
-        deallocate_target_usage_marks(tusage, num_cams)
-        return None
-    else:
-        return tusage
+#     except MemoryError as exc:
+#         raise MemoryError("Memory allocation error in safely_allocate_target_usage_marks") from exc
+
+#     return tusage
 
 
-def deallocate_adjacency_lists(
-    lists: List[List[List[Correspond]]], num_cams: int
-) -> None:
-    for c1 in range(num_cams - 1):
-        for c2 in range(c1 + 1, num_cams):
-            for i in range(len(lists[c1][c2])):
-                lists[c1][c2][i] = None
-            lists[c1][c2] = None
+# Python should take care of memory collection
+# def deallocate_adjacency_lists(
+#     lists: List[List[List[Correspond]]], num_cams: int
+# ) -> None:
+#     """ Deallocate adjacency lists."""
+#     for c1 in range(num_cams - 1):
+#         for c2 in range(c1 + 1, num_cams):
+#             for i in range(len(lists[c1][c2])):
+#                 lists[c1][c2][i] = None
+#             lists[c1][c2] = None
 
 
 def safely_allocate_adjacency_lists(
@@ -72,7 +70,7 @@ def safely_allocate_adjacency_lists(
 
     for c1 in range(num_cams - 1):
         list.append([])
-        for c2 in range(c1 + 1, num_cams):
+        for _ in range(c1 + 1, num_cams):
             lists[c1].append([Correspond(n=0, p1=0) for _ in range(target_counts[c1])])
 
     return lists
@@ -239,7 +237,7 @@ def consistent_pair_matching(
 
 def match_pairs(corr_list, corrected, frm, vpar, cpar, calib):
     """Match pairs of cameras."""
-    MAXCAND = 100
+    # MAXCAND = 100
     for i1 in range(cpar.num_cams - 1):
         for i2 in range(i1 + 1, cpar.num_cams):
             for i in range(frm.num_targets[i1]):
@@ -325,6 +323,120 @@ def take_best_candidates(src, dst, num_cams, num_cands, tusage):
     return taken
 
 
+def py_correspondences(
+    img_pts: List[Target],
+    flat_coords: List[Coord2d],
+    calib: List[Calibration],
+    vparam: VolumePar,
+    cparam: ControlPar,
+) -> Tuple[Tuple, Tuple, int]:
+    """
+    Get the correspondences for each clique size.
+
+    Arguments:
+    ---------
+    img_pts - a list of c := len(cals), containing TargetArray objects, each
+        with the target coordinates of n detections in the respective image.
+        The target arrays are clobbered: returned arrays have the tnr property
+        set. the pnr property should be set to the target index in its array.
+    flat_coords - a list of MatchedCoordinates objects, one per camera, holding
+        the x-sorted flat-coordinates conversion of the respective image
+        targets.
+    cals - a list of Calibration objects, each for the camera taking one image.
+    VolumeParams vparam - an object holding observed volume size parameters.
+    ControlParams cparam - an object holding general control parameters.
+
+    Returns:
+    -------
+    sorted_pos - a tuple of (c,?,2) arrays, each with the positions in each of
+        c image planes of points belonging to quadruplets, triplets, pairs
+        found.
+    sorted_corresp - a tuple of (c,?) arrays, each with the point identifiers
+        of targets belonging to a quad/trip/etc per camera.
+    num_targs - total number of targets (must be greater than the sum of
+        previous 3).
+    """
+    num_cams = cparam.num_cams
+    frm = Frame(num_cams)
+    corrected = [Coord2d() for _ in range(num_cams)]
+
+    # Special case of a single camera, follow the single_cam_correspondence docstring
+    if num_cams == 1:
+        sorted_pos, sorted_corresp, num_targs = single_cam_correspondences(
+            img_pts, flat_coords
+        )
+        return sorted_pos, sorted_corresp, num_targs
+
+    # cdef:
+    #     calibration **calib = <calibration **> malloc(
+    #         num_cams * sizeof(calibration *))
+    #     coord_2d **corrected = <coord_2d **> malloc(
+    #         num_cams * sizeof(coord_2d *))
+    #     frame frm
+
+    # np.ndarray[ndim=2, dtype=np.int_t] clique_ids
+    # np.ndarray[ndim=3, dtype=np.float64_t] clique_targs
+
+    # Return buffers:
+    # int *match_counts = <int *> malloc(num_cams * sizeof(int))
+    # n_tupel *corresp_buf
+
+    match_counts = [0] * num_cams
+    corresp_buf = []  # of n_tupel
+
+    # Initialize frame partially, without the extra momory used by init_frame.
+    # frm.targets = <target**> calloc(num_cams, sizeof(target*))
+    # frm.num_targets = <int *> calloc(num_cams, sizeof(int))
+    frm.targets = [Target() for _ in range(num_cams)]
+    frm.num_targets = [0] * num_cams
+
+    for cam in range(num_cams):
+        # calib[cam] = (<Calibration>cals[cam])._calibration
+        # frm.targets[cam] = (<TargetArray>img_pts[cam])._tarr
+        frm.targets[cam] = [Target() for _ in range(len(img_pts[cam]))]
+        frm.num_targets[cam] = len(img_pts[cam])
+        # corrected[cam] = (<MatchedCoords>flat_coords[cam]).buf
+        # corrected[cam] = [MatchedCoords() for _ in range(len(flat_coords[cam]))]
+
+    # The biz:
+    corresp_buf = correspondences(frm, corrected, vparam, cparam, calib, match_counts)
+
+    # Distribute data to return structures:
+    sorted_pos = [None] * (num_cams - 1)
+    sorted_corresp = [None] * (num_cams - 1)
+    last_count = 0
+
+    for clique_type in range(num_cams - 1):
+        num_points = match_counts[4 - num_cams + clique_type]  # for 1-4 cameras
+        clique_targs = np.full((num_cams, num_points, 2), PT_UNUSED, dtype=np.float64)
+        clique_ids = np.full((num_cams, num_points), CORRES_NONE, dtype=np.int_)
+
+        # Trace back the pixel target properties through the flat metric
+        # intermediary that's x-sorted.
+        for cam in range(num_cams):
+            for pt in range(num_points):
+                geo_id = corresp_buf[pt + last_count].p[cam]
+                if geo_id < 0:
+                    continue
+
+                p1 = corrected[cam][geo_id].pnr
+                clique_ids[cam, pt] = p1
+
+                if p1 > -1:
+                    targ = img_pts[cam][p1]
+                    clique_targs[cam, pt, 0] = targ.x
+                    clique_targs[cam, pt, 1] = targ.y
+
+        last_count += num_points
+        sorted_pos[clique_type] = clique_targs
+        sorted_corresp[clique_type] = clique_ids
+
+    # Clean up.
+    num_targs = match_counts[num_cams - 1]
+
+    return sorted_pos, sorted_corresp, num_targs
+
+
 def correspondences(
     frm: Frame,
     corrected: List[List[Coord2d]],
@@ -334,17 +446,17 @@ def correspondences(
     match_counts: List[int],
 ) -> List[n_tupel]:
     """Find correspondences between cameras."""
-    # nmax = 1000
     nmax = NMAX
 
     # Allocation of scratch buffers for internal tasks and return-value space
-    con0 = (nmax * cpar.num_cams) * [n_tupel(p=[-1] * cpar.num_cams, corr=0.0)]
-    con = (nmax * cpar.num_cams) * [n_tupel(p=[-1] * cpar.num_cams, corr=0.0)]
+    con0 = [
+        n_tupel(p=[-1] * cpar.num_cams, corr=0.0) for _ in range(nmax * cpar.num_cams)
+    ]
+    con = [
+        n_tupel(p=[-1] * cpar.num_cams, corr=0.0) for _ in range(nmax * cpar.num_cams)
+    ]
 
-    tim = safely_allocate_target_usage_marks(cpar.num_cams)
-    if tim is None:
-        print("out of memory")
-        return None
+    tim = np.zeros((cpar.num_cams, nmax), dtype=np.int32)
 
     # allocate memory for lists of correspondences
     corr_list = safely_allocate_adjacency_lists(cpar.num_cams, frm.num_targets)
@@ -407,141 +519,14 @@ def correspondences(
                 frm.targets[j][p1].tnr = i
 
     # Free all other allocations
-    deallocate_adjacency_lists(corr_list, cpar.num_cams)
-    deallocate_target_usage_marks(tim, cpar.num_cams)
-    del con0
+    # deallocate_adjacency_lists(corr_list, cpar.num_cams)
+    # deallocate_target_usage_marks(tim, cpar.num_cams)
+    # del con0
 
     return con
 
 
-# class Target:
-#     _targ: List[target]
-#     _owns_data: int
-
-#     # def set(self, targ: List[target]):
-#     #     pass
-
-
-# class TargetArray:
-#     _tarr: List[Target]
-#     _num_targets: int
-#     _owns_data: int
-
-#     # cdef void set(TargetArray self, target* tarr, int num_targets,
-#     #     int owns_data)
-
-
-# def py_correspondences(
-#     img_pts: List[float],
-#     flat_coords: List[float],
-#     cals: List[Calibration],
-#     vparam: VolumePar,
-#     cparam: ControlPar,
-# ):
-#     """
-#     Get the correspondences for each clique size.
-
-#     Arguments:
-#     ---------
-#     img_pts - a corr_list of c := len(cals), containing TargetArray objects, each
-#         with the target coordinates of n detections in the respective image.
-#         The target arrays are clobbered: returned arrays have the tnr property
-#         set. the pnr property should be set to the target index in its array.
-#     flat_coords - a corr_list of MatchedCoordinates objects, one per camera, holding
-#         the x-sorted flat-coordinates conversion of the respective image
-#         targets.
-#     cals - a corr_list of Calibration objects, each for the camera taking one image.
-#     VolumeParams vparam - an object holding observed volume size parameters.
-#     ControlPar cparam - an object holding general control parameters.
-
-#     Returns:
-#     -------
-#     sorted_pos - a tuple of (c,?,2) arrays, each with the positions in each of
-#         c image planes of points belonging to quadruplets, triplets, pairs
-#         found.
-#     sorted_corresp - a tuple of (c,?) arrays, each with the point identifiers
-#         of targets belonging to a quad/trip/etc per camera.
-#     num_targs - total number of targets (must be greater than the sum of
-#         previous 3).
-#     """
-#     num_cams = len(cals)
-
-#     # Special case of a single camera, follow the single_cam_correspondence docstring
-#     if num_cams == 1:
-#         sorted_pos, sorted_corresp, num_targs = single_cam_correspondence(
-#             img_pts, flat_coords
-#         )
-#         return sorted_pos, sorted_corresp, num_targs
-
-#     calib = [Calibration()] * num_cams
-#     corrected = [Coord2d()] * num_cams
-
-#     # np.ndarray[ndim=2, dtype=np.int_t] clique_ids
-#     # np.ndarray[ndim=3, dtype=np.float64_t] clique_targs
-
-#     # Return buffers:
-#     # int *match_counts = <int *> malloc(num_cams * sizeof(int))
-#     match_counts = np.zeros(num_cams, dtype=int)
-
-#     # n_tupel *corresp_buf
-
-#     # Initialize frame partially, without the extra momory used by init_frame.
-#     # .targets = <target**> calloc(num_cams, sizeof(target*))
-#     # frm.num_targets = <int *> calloc(num_cams, sizeof(int))
-
-#     frm = Frame(num_cams=num_cams)
-
-#     for cam in range(num_cams):
-#         calib[cam] = cals[cam]
-#         frm.targets[cam] = img_pts[cam]._tarr
-#         frm.num_targets[cam] = len(img_pts[cam])
-#         corrected[cam] = flat_coords[cam].buf
-
-#     # The biz:
-#     corresp_buf = correspondences(frm, corrected, vparam, cparam, calib, match_counts)
-
-#     # Distribute data to return structures:
-#     sorted_pos = [None] * (num_cams - 1)
-#     sorted_corresp = [None] * (num_cams - 1)
-#     last_count = 0
-
-#     for clique_type in range(num_cams - 1):
-#         num_points = match_counts[4 - num_cams + clique_type]  # for 1-4 cameras
-#         clique_targs = np.full((num_cams, num_points, 2), PT_UNUSED, dtype=np.float64)
-#         clique_ids = np.full((num_cams, num_points), CORRES_NONE, dtype=np.int_)
-
-#         # Trace back the pixel target properties through the flat metric
-#         # intermediary that's x-sorted.
-#         for cam in range(num_cams):
-#             for pt in range(num_points):
-#                 geo_id = corresp_buf[pt + last_count].p[cam]
-#                 if geo_id < 0:
-#                     continue
-
-#                 p1 = corrected[cam][geo_id].pnr
-#                 clique_ids[cam, pt] = p1
-
-#                 if p1 > -1:
-#                     targ = img_pts[cam][p1]
-#                     clique_targs[cam, pt, 0] = targ._targ.x
-#                     clique_targs[cam, pt, 1] = targ._targ.y
-
-#         last_count += num_points
-#         sorted_pos[clique_type] = clique_targs
-#         sorted_corresp[clique_type] = clique_ids
-
-#     # Clean up.
-#     num_targs = match_counts[num_cams - 1]
-#     # free(frm.targets)
-#     # free(frm.num_targets)
-#     # free(calib)
-#     # free(match_counts)
-#     # free(corresp_buf) # Note this for future returning of correspondences.
-
-#     return sorted_pos, sorted_corresp, num_targs
-
-
-def single_cam_correspondence(img_pts: List[float], flat_coords: List[float]):
+def single_cam_correspondences(img_pts: List[Target], flat_coords: List[float]):
     """
     Single camera correspondence is not a real correspondence, it will be only a projection.
 
@@ -574,9 +559,6 @@ def single_cam_correspondence(img_pts: List[float], flat_coords: List[float]):
 
     corrected = flat_coords[0].buf
 
-    sorted_pos = [None]
-    sorted_corresp = [None]
-
     num_points = len(img_pts[0])
 
     clique_targs = np.full((1, num_points, 2), PT_UNUSED, dtype=np.float64)
@@ -592,12 +574,12 @@ def single_cam_correspondence(img_pts: List[float], flat_coords: List[float]):
 
         if p1 > -1:
             targ = img_pts[0][p1]
-            clique_targs[0, pt, 0] = targ._targ.x
-            clique_targs[0, pt, 1] = targ._targ.x
+            clique_targs[0, pt, 0] = targ.x
+            clique_targs[0, pt, 1] = targ.y
             # we also update the tnr, see docstring of correspondences
-            targ._targ.tnr = pt
+            targ.tnr = pt
 
-    sorted_pos[0] = clique_targs
-    sorted_corresp[0] = clique_ids
+    sorted_pos = [clique_targs]
+    sorted_corresp = [clique_ids]
 
     return sorted_pos, sorted_corresp, num_points

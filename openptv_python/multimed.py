@@ -123,7 +123,7 @@ def trans_Cam_Point(
     renorm_glass = glass_dir * (mm.d[0] / dist_o_glass)
     temp = cross_c - renorm_glass
     temp = cross_p - temp
-    pos_t = np.array([np.linalg.norm(temp), 0, dist_point_glass])
+    pos_t = np.r_[np.linalg.norm(temp), 0, dist_point_glass]
 
     return ex_t, pos_t, cross_p, cross_c
 

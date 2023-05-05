@@ -131,20 +131,45 @@ class Target:
         return (self.n, self.nx, self.ny)
 
 
-@dataclass
-class TargetArray:
+class TargetArray(list):
     """A list of targets and the number of targets in the list."""
 
-    num_targs: int = field(default_factory=int)
-    targs: List[Target] = field(default_factory=list)
+    def __init__(self, num_targets=None, *args, **kwargs):
+        super(TargetArray, self).__init__(*args, **kwargs)
+        if num_targets is not None:
+            for i in range(num_targets):
+                self.append(Target())
 
-    def __post_init__(self):
-        self.targs = [Target() for _ in range(self.num_targs)]
+    def append(self, target):
+        """Append a target to the list."""
+        if not isinstance(target, Target):
+            raise TypeError("TargetArray only accepts Target objects")
+        super(TargetArray, self).append(target)
 
-    def set(self, targs: List[Target]):
-        """Set targets."""
-        self.targs = targs
-        self.num_targs = len(targs)
+    @property
+    def num_targs(self):
+        """Return the number of targets in the list."""
+        return len(self)
+
+    def get_targets(self):
+        """Return the list of targets."""
+        return self
+
+
+# @dataclass
+# class TargetArray:
+#     """A list of targets and the number of targets in the list."""
+
+#     num_targs: int = field(default_factory=int)
+#     targs: List[Target] = field(default_factory=list)
+
+#     def __post_init__(self):
+#         self.targs = [Target() for _ in range(self.num_targs)]
+
+#     def set(self, targs: List[Target]):
+#         """Set targets."""
+#         self.targs = targs
+#         self.num_targs = len(targs)
 
 
 def read_targets(file_base: str, frame_num: int) -> List[Target]:
