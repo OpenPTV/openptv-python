@@ -1,17 +1,113 @@
+"""Unit tests for the correspondence code."""
 import unittest
 
 import numpy as np
 
 from openptv_python.calibration import Calibration
-from openptv_python.correspondences import py_correspondences
+from openptv_python.correspondences import (
+    consistent_pair_matching,
+    correspondences,
+    match_pairs,
+    py_correspondences,
+    safely_allocate_target_usage_marks,
+)
+from openptv_python.epi import Coord2d
 from openptv_python.imgcoord import img_coord
 from openptv_python.parameters import (
     ControlPar,
     read_control_par,
     read_volume_par,
 )
-from openptv_python.tracking_frame_buf import MatchedCoords, TargetArray, read_targets
-from openptv_python.trafo import metric_to_pixel
+from openptv_python.tracking_frame_buf import (
+    Frame,
+    MatchedCoords,
+    TargetArray,
+    n_tupel,
+    read_targets,
+)
+from openptv_python.trafo import dist_to_flat, metric_to_pixel, pixel_to_metric
+
+
+def read_all_calibration(cpar):
+    """Read all calibration files."""
+    ori_tmpl = "tests/testing_fodder/cal/sym_cam%d.tif.ori"
+    added_name = "tests/testing_fodder/cal/cam1.tif.addpar"
+
+    calib = []
+    for cam in range(cpar.num_cams):
+        ori_name = ori_tmpl % (cam + 1)
+        cal = Calibration()
+        cal.from_file(ori_name, added_name)
+        calib.append(cal)
+
+    return calib
+
+
+def correct_frame(frm, calib, cpar, tol):
+    """
+    Perform the transition from pixel to metric to flat coordinates.
+
+    and x-sorting as required by the correspondence code.
+
+    Arguments:
+    ---------
+    frm - target information for all cameras.
+    cpar - parameters of image size, pixel size etc.
+    tol - tolerance parameter for iterative flattening phase, see
+        trafo.h:correct_brown_affine_exact().
+    """
+    corrected = []
+    for cam in range(cpar.num_cams):
+        corrected.append([])
+        for part in range(frm.num_targets[cam]):
+            x, y = pixel_to_metric(
+                frm.targets[cam][part].x, frm.targets[cam][part].y, cpar
+            )
+            x, y = dist_to_flat(x, y, calib[cam], tol)
+
+            corrected[cam].append(Coord2d(x, y))
+            corrected[cam][part].pnr = frm.targets[cam][part].pnr
+
+        # This is expected by find_candidate()
+        corrected[cam].sort(key=lambda coord: coord.x)
+
+    return corrected
+
+
+def generate_test_set(calib, cpar):
+    """
+    Generate data for targets on 4 cameras.
+
+    The targets are organized on a 4x4 grid, 10 mm apart.
+    """
+    frm = Frame(cpar.num_cams, 16)
+
+    # Four cameras on 4 quadrants looking down into a calibration target.
+    # Calibration taken from an actual experimental setup
+    for cam in range(cpar.num_cams):
+        frm.num_targets[cam] = 16
+
+        # Construct a scene representing a calibration target, generate
+        # targets for it, then use them to reconstruct correspondences.
+        for cpt_horz in range(4):
+            for cpt_vert in range(4):
+                cpt_ix = cpt_horz * 4 + cpt_vert
+                if cam % 2:
+                    cpt_ix = 15 - cpt_ix  # Avoid symmetric case
+
+                targ = frm.targets[cam][cpt_ix]
+                targ.pnr = cpt_ix
+
+                tmp = np.r_[cpt_vert * 10, cpt_horz * 10, 0]
+                targ.x, targ.y = img_coord(tmp, calib[cam], cpar.mm)
+                targ.x, targ.y = metric_to_pixel(targ.x, targ.y, cpar)
+
+                # These values work in check_epi, so used here too
+                targ.n = 25
+                targ.nx = targ.ny = 5
+                targ.sumg = 10
+
+    return frm
 
 
 class TestReadControlPar(unittest.TestCase):
@@ -168,9 +264,65 @@ class TestReadControlPar(unittest.TestCase):
         self.assertEqual(len(sorted_pos), 1)  # 1 camera
         self.assertEqual(sorted_pos[0].shape, (1, 9, 2))
         np.testing.assert_array_equal(
-            sorted_corresp[0], np.r_[6, 3, 0, 7, 4, 1, 8, 5, 2]
+            sorted_corresp[0][0], np.r_[6, 3, 0, 7, 4, 1, 8, 5, 2]
         )
         self.assertEqual(num_targs, 9)
+
+    def test_two_camera_matching(self):
+        """Setup is the same as the 4-camera test, targets are darkened in two cameras to get 16 pairs."""
+        calib = [None] * 4
+        list = [[None] * 4 for _ in range(4)]
+
+        cpar = read_control_par("tests/testing_fodder/parameters/ptv.par")
+        vpar = read_volume_par("tests/testing_fodder/parameters/criteria.par")
+
+        cpar.mm.n2[0] = 1.0001
+        cpar.mm.n3 = 1.0001
+        vpar.Zmin_lay[0] = -1
+        vpar.Zmin_lay[1] = -1
+        vpar.Zmax_lay[0] = 1
+        vpar.Zmax_lay[1] = 1
+
+        calib = read_all_calibration(cpar)
+        frm = generate_test_set(calib, cpar)
+
+        cpar.num_cams = 2
+        corrected = correct_frame(frm, calib, cpar, 0.0001)
+        # lists = safely_allocate_adjacency_lists(cpar.num_cams, frm.num_targets)
+        match_pairs(corrected, frm, vpar, cpar, calib)
+
+        con = [n_tupel() for _ in range(4 * 16)]
+        tusage = safely_allocate_target_usage_marks(cpar.num_cams)
+
+        # high accept corr bcz of closeness to epipolar lines.
+        matched = consistent_pair_matching(
+            list, 2, frm.num_targets, 10000.0, con, 4 * 16, tusage
+        )
+
+        assert matched == 16
+
+    def test_correspondences(self):
+        frm = None
+        match_counts = [0] * 4
+
+        cpar = read_control_par("tests/testing_fodder/parameters/ptv.par")
+        vpar = read_volume_par("tests/testing_fodder/parameters/criteria.par")
+
+        # Cameras are at so high angles that opposing cameras don't see each other
+        # in the normal air-glass-water setting.
+        cpar.mm.n2[0] = 1.0001
+        cpar.mm.n3 = 1.0001
+
+        calib = read_all_calibration(cpar)
+        frm = generate_test_set(calib, cpar)
+        corrected = correct_frame(frm, calib, cpar, 0.0001)
+        _ = correspondences(frm, corrected, vpar, cpar, calib, match_counts)
+
+        # The example set is built to have all 16 quadruplets.
+        assert match_counts[0] == 16
+        assert match_counts[1] == 0
+        assert match_counts[2] == 0
+        assert match_counts[3] == 16  # last element is the sum of matches
 
 
 if __name__ == "__main__":

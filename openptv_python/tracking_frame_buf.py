@@ -287,21 +287,39 @@ def compare_path_info(path_info1: Pathinfo, path_info2: Pathinfo) -> bool:
     return path_info1 == path_info2
 
 
-@dataclass
 class Frame:
     """Frame structure for tracking."""
 
-    path_info: List[Pathinfo] = field(default_factory=list)
-    correspond: List[Corres] = field(default_factory=list)
-    targets: List[List[Target]] = field(default_factory=list)
-    num_cams: int = field(default_factory=int)
-    max_targets: int = field(default_factory=int)
-    num_parts: int = field(
-        default_factory=int
-    )  # number of 3D particles in correspondence buffer
-    num_targets: List[int] = field(
-        default_factory=list
-    )  # list of 2d particle counts per image
+    # num_cams: int = field(default_factory=int)
+    # max_targets: int = field(default_factory=int)
+    # path_info: List[Pathinfo] = field(default_factory=list)
+    # correspond: List[Corres] = field(default_factory=list)
+    # targets: List[List[Target]] = field(default_factory=list)
+    # # number of 3D particles in correspondence buffer
+    # num_parts: int = field(default_factory=int)
+    # num_targets: List[int] = field(
+    #     default_factory=list
+    # )  # list of 2d particle counts per image
+
+    def __init__(self, num_cams: int, max_targets: int):
+        """
+        Initialize a frame object, allocates its arrays and sets up the frame data.
+
+        Arguments:
+        ---------
+        num_cams - number of cameras per frame.
+        max_targets - number of elements to allocate for the different buffers
+            held by a frame.
+        """
+        self.path_info = [Pathinfo() for _ in range(max_targets)]
+        self.correspond = [Corres() for _ in range(max_targets)]
+
+        self.targets = [[Target() for _ in range(max_targets)] for _ in range(num_cams)]
+        self.num_targets = [0] * max_targets
+
+        self.num_cams = num_cams
+        self.max_targets = max_targets
+        self.num_parts = 0
 
     def from_file(
         self,
@@ -514,12 +532,12 @@ class FrameBuf(FrameBufBase):
 
 def frame_init(num_cams: int, max_targets: int):
     """Initialize a frame structure."""
-    new_frame = Frame(max_targets=max_targets, num_cams=num_cams)
+    self = Frame(max_targets=max_targets, num_cams=num_cams)
     for cam in range(num_cams):
-        new_frame.targets[cam] = [Target() for _ in range(max_targets)]
-        new_frame.num_targets[cam] = 0
+        self.targets[cam] = [Target() for _ in range(max_targets)]
+        self.num_targets[cam] = 0
 
-    return new_frame
+    return self
 
 
 def read_path_frame(
