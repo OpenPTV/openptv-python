@@ -1,5 +1,5 @@
 """Constants used in the Python version of OpenPTV."""
-NMAX = 1000  # 202400 not clear what max we should use
+NMAX = 202400  # correspondences
 MAXCAND = 100  # assuming a maximum capacity of MAXCAND candidates
 PT_UNUSED = -999
 

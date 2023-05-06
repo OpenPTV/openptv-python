@@ -24,7 +24,7 @@ from .trafo import dist_to_flat, pixel_to_metric
 class n_tupel:
     """n_tupel data structure."""
 
-    p: List[int] = field(default_factory=list)
+    p: List[int] = field(default_factory=lambda: [-1] * 4)
     corr: float = field(default_factory=float)
 
 

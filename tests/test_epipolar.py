@@ -13,12 +13,16 @@ import unittest
 import numpy as np
 
 from openptv_python.calibration import Calibration
-from openptv_python.epi import epipolar_curve
+from openptv_python.constants import MAXCAND
+from openptv_python.epi import Candidate, Coord2d, epipolar_curve
+from openptv_python.find_candidate import find_candidate
 from openptv_python.parameters import (
     ControlPar,
+    VolumePar,
     read_control_par,
     read_volume_par,
 )
+from openptv_python.tracking_frame_buf import Target
 
 
 class TestEpipolarCurve(unittest.TestCase):
@@ -67,6 +71,41 @@ class TestEpipolarCurve(unittest.TestCase):
         )
         np.testing.assert_array_equal(np.argsort(line[:, 0]), np.arange(5)[::-1])
         self.assertTrue(np.all(abs(line[:, 1] - mid[1]) < 1e-6))
+
+
+class TestFindCandidate(unittest.TestCase):
+    def test_find_candidate(self):
+        """Test the find_candidate function."""
+        crd = [Coord2d(0, 0, 0), Coord2d(1, 1, 1), Coord2d(2, 2, 2)]
+        pix = [Target(10, 20, 30, 40), Target(15, 25, 35, 45), Target(20, 30, 40, 50)]
+        num = len(crd)
+        xa, ya, xb, yb = -1, -1, 3, 3
+        n, nx, ny, sumg = 15, 25, 35, 45
+        cand = [Candidate() for _ in range(3)]
+        vpar = VolumePar()
+        cpar = ControlPar()
+        cal = Calibration()
+
+        # Expected output
+        expected = 2
+
+        # Test the function
+        output = find_candidate(
+            crd, pix, num, xa, ya, xb, yb, n, nx, ny, sumg, cand, vpar, cpar, cal
+        )
+
+        # Check the output
+        assert output == expected
+
+        # Test when there are more candidates than MAXCAND
+        crd = [Coord2d(x, x, x) for x in range(MAXCAND + 1)]
+        pix = [Target(10, 20, 30, 40) for _ in range(MAXCAND + 1)]
+        num = len(crd)
+        expected = -1
+        output = find_candidate(
+            crd, pix, num, xa, ya, xb, yb, n, nx, ny, sumg, cand, vpar, cpar, cal
+        )
+        assert output == expected
 
 
 if __name__ == "__main__":

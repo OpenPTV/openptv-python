@@ -9,6 +9,7 @@ from openptv_python.correspondences import (
     correspondences,
     match_pairs,
     py_correspondences,
+    safely_allocate_adjacency_lists,
     safely_allocate_target_usage_marks,
 )
 from openptv_python.epi import Coord2d
@@ -170,51 +171,51 @@ class TestReadControlPar(unittest.TestCase):
             pnr, np.r_[6, 11, 10, 8, 1, 4, 7, 0, 2, 9, 5, 3, 12]
         )
 
-    # def test_full_corresp(self):
-    #     """Full scene correspondences."""
-    #     cpar = read_control_par("tests/testing_folder/corresp/control.par")
-    #     vpar = read_volume_par("tests/testing_folder/corresp/criteria.par")
+    def test_full_corresp(self):
+        """Full scene correspondences."""
+        cpar = read_control_par("tests/testing_folder/corresp/control.par")
+        vpar = read_volume_par("tests/testing_folder/corresp/criteria.par")
 
-    #     # Cameras are at so high angles that opposing cameras don't see each
-    #     # other in the normal air-glass-water setting.
-    #     cpar.mm.set_layers([1.0001], [1.0])
-    #     cpar.mm.n3 = 1.0001
+        # Cameras are at so high angles that opposing cameras don't see each
+        # other in the normal air-glass-water setting.
+        cpar.mm.set_layers([1.0001], [1.0])
+        cpar.mm.n3 = 1.0001
 
-    #     cals = []
-    #     img_pts = []
-    #     corrected = []
-    #     for c in range(cpar.num_cams):
-    #         cal = Calibration()
-    #         cal.from_file(
-    #             f"tests/testing_folder/calibration/sym_cam{c+1:d}.tif.ori",
-    #             "tests/testing_folder/calibration/cam1.tif.addpar",
-    #         )
-    #         cals.append(cal)
+        cals = []
+        img_pts = []
+        corrected = []
+        for c in range(cpar.num_cams):
+            cal = Calibration()
+            cal.from_file(
+                f"tests/testing_folder/calibration/sym_cam{c+1:d}.tif.ori",
+                "tests/testing_folder/calibration/cam1.tif.addpar",
+            )
+            cals.append(cal)
 
-    #         # Generate test targets.
-    #         ta = TargetArray(16)
-    #         for row, col in np.ndindex(4, 4):
-    #             targ_ix = row * 4 + col
-    #             # Avoid symmetric case:
-    #             if c % 2:
-    #                 targ_ix = 15 - targ_ix
-    #             targ = ta.targs[targ_ix]
+            # Generate test targets.
+            ta = TargetArray(16)
+            for row, col in np.ndindex(4, 4):
+                targ_ix = row * 4 + col
+                # Avoid symmetric case:
+                if c % 2:
+                    targ_ix = 15 - targ_ix
+                targ = ta[targ_ix]
 
-    #             pos3d = 10 * np.array([col, row, 0], dtype=np.float64)
-    #             x, y = img_coord(pos3d, cal, cpar.mm)
-    #             x, y = metric_to_pixel(x, y, cpar)
-    #             targ.set_pos((x, y))
+                pos3d = 10 * np.array([col, row, 0], dtype=np.float64)
+                x, y = img_coord(pos3d, cal, cpar.mm)
+                x, y = metric_to_pixel(x, y, cpar)
+                targ.set_pos((x, y))
 
-    #             targ.set_pnr(targ_ix)
-    #             targ.set_pixel_counts(25, 5, 5)
-    #             targ.set_sum_grey_value(10)
+                targ.set_pnr(targ_ix)
+                targ.set_pixel_counts(25, 5, 5)
+                targ.set_sum_grey_value(10)
 
-    #         img_pts.append(ta.targs)
-    #         mc = MatchedCoords(ta.targs, cpar, cal)
-    #         corrected.append(mc)
+            img_pts.append(ta)
+            mc = MatchedCoords(ta, cpar, cal)
+            corrected.append(mc)
 
-    #     _, _, num_targs = correspondences(img_pts, corrected, vpar, cpar, cals, mc)
-    #     assert num_targs == 16
+        _, _, num_targs = correspondences(img_pts, corrected, vpar, cpar, cals, mc)
+        assert num_targs == 16
 
     def test_single_cam_corresp(self):
         """Single camera correspondence."""
@@ -271,7 +272,7 @@ class TestReadControlPar(unittest.TestCase):
     def test_two_camera_matching(self):
         """Setup is the same as the 4-camera test, targets are darkened in two cameras to get 16 pairs."""
         calib = [None] * 4
-        list = [[None] * 4 for _ in range(4)]
+        lists = [[None] * 4 for _ in range(4)]
 
         cpar = read_control_par("tests/testing_fodder/parameters/ptv.par")
         vpar = read_volume_par("tests/testing_fodder/parameters/criteria.par")
@@ -296,12 +297,13 @@ class TestReadControlPar(unittest.TestCase):
 
         # high accept corr bcz of closeness to epipolar lines.
         matched = consistent_pair_matching(
-            list, 2, frm.num_targets, 10000.0, con, 4 * 16, tusage
+            lists, 2, frm.num_targets, 10000.0, con, 4 * 16, tusage
         )
 
         assert matched == 16
 
     def test_correspondences(self):
+        """Test correspondences function."""
         frm = None
         match_counts = [0] * 4
 
@@ -323,6 +325,36 @@ class TestReadControlPar(unittest.TestCase):
         assert match_counts[1] == 0
         assert match_counts[2] == 0
         assert match_counts[3] == 16  # last element is the sum of matches
+
+
+class TestSafelyAllocateAdjacencyLists(unittest.TestCase):
+    def test_correct_list_size(self):
+        num_cams = 5
+        target_counts = [3, 5, 2, 4, 1]
+        lists = safely_allocate_adjacency_lists(num_cams, target_counts)
+        self.assertEqual(len(lists), num_cams)
+        for i in range(num_cams):
+            self.assertEqual(len(lists[i]), num_cams)
+            for j in range(num_cams):
+                if i < j:
+                    self.assertEqual(len(lists[i][j]), target_counts[i])
+
+    def test_memory_error(self):
+        """Memory stress test."""
+        # available_memory = 8GB = 8 * 1024 * 1024 * 1024 bytes
+        # overhead = 200MB = 200 * 1024 * 1024 bytes
+        # item_size = 4 bytes (for integers)
+
+        # max_items = (8 * 1024 * 1024 * 1024 - 200 * 1024 * 1024) // 4 = 1,995,116,800
+
+        num_cams = 4
+        target_counts = [10000, 10000, 10000, 10000]
+        # with self.assertRaises(MemoryError):
+        _ = safely_allocate_adjacency_lists(num_cams, target_counts)
+
+        # target_counts = [int(1e3), int(1e3), int(1e3), int(1e10)]
+        # with self.assertRaises(MemoryError):
+        #     safely_allocate_adjacency_lists(num_cams, target_counts)
 
 
 if __name__ == "__main__":

@@ -6,7 +6,8 @@ import numpy as np
 
 from .calibration import Calibration
 from .constants import CORRES_NONE, MAX_TARGETS, MAXCAND, NMAX, PT_UNUSED
-from .epi import Coord2d, epi_mm, find_candidate
+from .epi import Coord2d, epi_mm
+from .find_candidate import find_candidate
 from .parameters import ControlPar, VolumePar
 from .tracking_frame_buf import Frame, Target, n_tupel
 
@@ -28,26 +29,30 @@ class Correspond:
     )  # distance perpendicular to epipolar line
 
 
-def deallocate_target_usage_marks(tusage, num_cams):
-    """Deallocate target usage marks."""
+def safely_allocate_target_usage_marks(num_cams: int, nmax: int) -> List[List[int]]:
+    """Allocate space for per-camera arrays marking whether a certain target was used.
+
+    If some allocation failed, it cleans up memory and returns NULL. Allocated arrays are zeroed
+    out initially by the C library.
+
+    Args:
+    ----
+        num_cams: The number of cameras.
+
+    Returns:
+    -------
+        A list of lists of integers, or `None` if an allocation failed.
+    """
+    tusage = []
     for cam in range(num_cams):
-        del tusage[cam][:]
-    del tusage
+        tusage.append([0] * nmax)  # Initialize the array to all zeros.
 
+    # Check if any of the allocations failed.
+    for cam in range(num_cams):
+        if tusage[cam] is None:
+            return None
 
-# We can use numpy instead of this
-# def safely_allocate_target_usage_marks(num_cams, nmax=NMAX):
-#     """Safely allocate target usage marks."""
-#     tusage = []
-
-#     try:
-#         for _ in range(num_cams):
-#             tusage.append([0 for _ in range(nmax)])
-
-#     except MemoryError as exc:
-#         raise MemoryError("Memory allocation error in safely_allocate_target_usage_marks") from exc
-
-#     return tusage
+    return tusage
 
 
 # Python should take care of memory collection
@@ -65,35 +70,46 @@ def deallocate_target_usage_marks(tusage, num_cams):
 def safely_allocate_adjacency_lists(
     num_cams: int, target_counts: List[int]
 ) -> List[List[List[Correspond]]]:
-    """Safely allocate adjacency lists.
-
-    Allocates and initializes pairwise
-    adjacency lists. If an error occurs, cleans up memory and returns 0,
-    otherwise returns 1.
-
-    Arguments:
-    ---------
-    lists - an existing array of arrays of pointers,
-        where allocations will be stored.
-    num_cams - number of cameras to handle (up to 4).
-    target_counts - an array holding the number of targets in each camera.
-
     """
-    return [
-        [
-            [Correspond(n=0, p1=0) for _ in range(target_counts[c1])]
-            for _ in range(c1 + 1, num_cams)
-        ]
-        for c1 in range(num_cams - 1)
-    ]
+    Safely allocate adjacency lists.
 
-    # for c1 in range(num_cams - 1):
-    #     lists.append([])
-    #     for _ in range(c1 + 1, num_cams):
-    #         list_of_correspondences =
-    #         lists[c1].append(list_of_correspondences)
+    Args:
+    ----
+        num_cams: The number of cameras.
+        target_counts: A list of integers representing the number of targets detected by each camera.
 
-    # return lists
+    Returns:
+    -------
+        lists: A 2D list of lists representing the adjacency matrix between cameras.
+
+    Raises:
+    ------
+        MemoryError: If there is not enough memory to allocate the adjacency list.
+    """
+    lists = [
+        [[None] for _ in range(num_cams)] for _ in range(num_cams)
+    ]  # type: List[List[List[Correspond]]]
+    for c1 in range(num_cams - 1):
+        for c2 in range(c1 + 1, num_cams):
+            if lists[c1][c2][0] is None:
+                try:
+                    lists[c1][c2] = [
+                        Correspond(p1=0, n=0) for _ in range(target_counts[c1])
+                    ]
+                except MemoryError as exc:
+                    for i in range(num_cams - 1):
+                        for j in range(i + 1, num_cams):
+                            if lists[i][j][0] is not None:
+                                del lists[i][j]
+                                lists[i][j] = [None]
+                    raise MemoryError(
+                        "Not enough memory to allocate adjacency list."
+                    ) from exc
+            else:
+                for edge in range(target_counts[c1]):
+                    lists[c1][c2][edge].p1 = 0
+                    lists[c1][c2][edge].n = 0
+    return lists
 
 
 def four_camera_matching(
@@ -255,12 +271,47 @@ def consistent_pair_matching(
     return matched
 
 
-def match_pairs(corrected, frm, vpar, cpar, calib) -> List[List[List[Correspond]]]:
-    """Match pairs of cameras."""
-    # MAXCAND = 100
+def match_pairs(
+    corr_list: List[List[List[Correspond]]], corrected, frm, vpar, cpar, calib
+):
+    """Match pairs of cameras.
 
-    corr_list = safely_allocate_adjacency_lists(cpar.num_cams, frm.num_targets)
+    **This function matches pairs of cameras by finding corresponding points in each camera.
+    The correspondences are stored in the `corr_lists` argument.**
 
+    **The following steps are performed:**
+
+    1. For each pair of cameras, the epipolar lines for the two cameras are calculated.
+    2. For each target in the first camera, the corresponding points in the second camera
+    are found by searching along the epipolar line.
+    3. The correspondences are stored in the `corr_lists` argument.
+
+    **The `corr_lists` argument is a list of lists of lists of `Correspond` objects.
+    Each inner list corresponds to a pair of cameras, and each inner-most list corresponds
+    to a correspondence between two points in the two cameras. The `Correspond` objects
+    have the following attributes:**
+
+    * `p1`: The index of the target in the first camera.
+    * `p2`: The index of the target in the second camera.
+    * `corr`: The correspondence score.
+    * `dist`: The distance between the two points.
+
+    **The following are the arguments for the function:**
+
+    * `corr_lists`: A list of lists of lists of `Correspond` objects. Each inner list
+    corresponds to a pair of cameras, and each inner-most list corresponds to a
+    correspondence between two points in the two cameras.
+
+    * `corrected`: A list of lists of `coord_2d` objects. Each inner list corresponds to a
+    camera, and each inner-most object corresponds to the corrected coordinates of a target in
+    that camera.
+    * `frm`: A `frame` object.
+    * `vpar`: A `volume_par` object.
+    * `cpar`: A `control_par` object.
+    * `calib`: A list of `Calibration` objects.
+
+    **The function returns None.**
+    """
     for i1 in range(cpar.num_cams - 1):
         for i2 in range(i1 + 1, cpar.num_cams):
             for i in range(frm.num_targets[i1]):
@@ -311,10 +362,8 @@ def match_pairs(corrected, frm, vpar, cpar, calib) -> List[List[List[Correspond]
 
                 corr_list[i1][i2][i].n = count
 
-    return corr_list
 
-
-def take_best_candidates(src, dst, num_cams, num_cands, tusage):
+def take_best_candidates(src, dst, num_cams, tusage):
     """Take the best candidates from the corr_list of candidates."""
     taken = 0
 
@@ -470,18 +519,45 @@ def correspondences(
     calib: List[List[Calibration]],
     match_counts: List[int],
 ) -> List[n_tupel]:
-    """Find correspondences between cameras."""
+    """Find correspondences between cameras.
+
+    /*  correspondences() generates a list of tuple target numbers (one for each
+        camera), denoting the set of targets all corresponding to one 3D position.
+        Candidates are preferred by the number of cameras invoilved (more is
+        better) and the correspondence score calculated using epipolar lines.
+
+    Arguments:
+    ---------
+        frame *frm - a frame struct holding the observed targets and their number
+            for each camera.
+        coord_2d **corrected - for each camera, an array of the flat-image
+            coordinates corresponding to the targets in frm (the .pnr property
+            says which is which), sorted by the X coordinate.
+        volume_par *vpar - epipolar search zone and criteria for correspondence.
+        control_par *cpar - general scene parameters s.a. image size.
+        Calibration **calib - array of pointers to each camera's calibration
+            parameters.
+
+        Output Arguments:
+        int match_counts[] - output buffer, as long as the number of cameras.
+            stores the number of matches for each clique size, in descending
+            clique size order. The last element stores the total.
+
+    Returns:
+    -------
+        n_tupel con - the sorted list of correspondences in descending quality
+            order.
+    */
+
+
+
+    """
     nmax = NMAX
 
     # Allocation of scratch buffers for internal tasks and return-value space
-    con0 = [
-        n_tupel(p=[-1] * cpar.num_cams, corr=0.0) for _ in range(nmax * cpar.num_cams)
-    ]
-    con = [
-        n_tupel(p=[-1] * cpar.num_cams, corr=0.0) for _ in range(nmax * cpar.num_cams)
-    ]
-
-    tim = np.zeros((cpar.num_cams, nmax), dtype=np.int32)
+    con0 = [n_tupel() for _ in range(nmax * cpar.num_cams)]
+    con = [n_tupel() for _ in range(nmax * cpar.num_cams)]
+    tim = safely_allocate_target_usage_marks(cpar.num_cams, nmax)
 
     # allocate memory for lists of correspondences
     corr_list = safely_allocate_adjacency_lists(cpar.num_cams, frm.num_targets)
@@ -493,35 +569,35 @@ def correspondences(
 
     # Generate adjacency lists: mark candidates for correspondence.
     # matching 1 -> 2,3,4 + 2 -> 3,4 + 3 -> 4
-    corr_list = match_pairs(corrected, frm, vpar, cpar, calib)
+    match_pairs(corr_list, corrected, frm, vpar, cpar, calib)
 
     # search consistent quadruplets in the corr_list
     if cpar.num_cams == 4:
-        match0 = four_camera_matching(
+        four_camera_matching(
             corr_list, frm.num_targets[0], vpar.corrmin, con0, 4 * nmax
         )
 
-        match_counts[0] = take_best_candidates(con0, con, cpar.num_cams, match0, tim)
+        match_counts[0] = take_best_candidates(con0, con, cpar.num_cams, tim)
         match_counts[3] += match_counts[0]
 
     # search consistent triplets: 123, 124, 134, 234
     if (cpar.num_cams == 4 and cpar.allCam_flag == 0) or cpar.num_cams == 3:
-        match0 = three_camera_matching(
+        three_camera_matching(
             corr_list, cpar.num_cams, frm.num_targets, vpar.corrmin, con0, 4 * nmax, tim
         )
 
         match_counts[1] = take_best_candidates(
-            con0, con[match_counts[3] :], cpar.num_cams, match0, tim
+            con0, con[match_counts[3] :], cpar.num_cams, tim
         )
         match_counts[3] += match_counts[1]
 
     # Search consistent pairs: 12, 13, 14, 23, 24, 34
     if cpar.num_cams > 1 and cpar.allCam_flag == 0:
-        match0 = consistent_pair_matching(
+        consistent_pair_matching(
             corr_list, cpar.num_cams, frm.num_targets, vpar.corrmin, con0, 4 * nmax, tim
         )
         match_counts[2] = take_best_candidates(
-            con0, con[match_counts[3] :], cpar.num_cams, match0, tim
+            con0, con[match_counts[3] :], cpar.num_cams, tim
         )
         match_counts[3] += match_counts[2]
 
@@ -643,18 +719,3 @@ def single_cam_correspondences(img_pts: List[Target], flat_coords: List[float]):
 #                     return matched
 
 #     return matched
-
-
-def safely_allocate_target_usage_marks(num_cams):
-    """
-    Allocate space for per-camera arrays marking whether a certain target was used.
-
-    If some allocation arrays marking whether a certain target was used. If some allocation
-    failed, it cleans up memory and returns None. Allocated arrays are zeroed
-    out initially by the C library.
-    """
-    try:
-        tusage = [[0] * NMAX for _ in range(num_cams)]
-        return tusage
-    except MemoryError:
-        return None

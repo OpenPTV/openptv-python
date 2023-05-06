@@ -1,26 +1,25 @@
 """Epipolar geometry."""
-import math
 from dataclasses import dataclass, field
 from typing import List
 
 import numpy as np
 
 from .calibration import Calibration
-from .constants import MAXCAND, PT_UNUSED
+from .constants import PT_UNUSED
 from .imgcoord import flat_image_coord, img_coord
 from .multimed import move_along_ray
 from .parameters import ControlPar, MultimediaPar, VolumePar
 from .ray_tracing import ray_tracing
-from .trafo import correct_brown_affine, dist_to_flat, metric_to_pixel, pixel_to_metric
+from .trafo import dist_to_flat, metric_to_pixel, pixel_to_metric
 
 
 @dataclass
 class Candidate:
     """Candidate point in the second image."""
 
-    pnr: int = 0
-    tol: int = 0
-    corr: int = 0
+    pnr: int = field(default_factory=int)
+    tol: float = field(default_factory=float)
+    corr: float = field(default_factory=float)
 
 
 @dataclass
@@ -28,8 +27,8 @@ class Coord2d:
     """2D coordinates in the image plane."""
 
     pnr: int = field(default=PT_UNUSED)
-    x: float = field(default=0.0)
-    y: float = field(default=0.0)
+    x: float = field(default_factory=float)
+    y: float = field(default_factory=float)
 
 
 def sort_coord2d_x(crd: List[Coord2d]) -> List[Coord2d]:
@@ -157,177 +156,174 @@ def epi_mm_2D(
     return out
 
 
-def quality_ratio(a, b):
-    return a / b if a < b else b / a
+# def find_candidate(
+#     crd: List[Coord2d], pix, num, xa, ya, xb, yb, n, nx, ny, sumg, cand, vpar, cpar, cal
+# ):
+#     """Find the candidate in the image space of the image all the candidates around the epipolar line.
 
+#     originating from another camera. It is a binary search in an x-sorted coord-set,
+#     exploits shape information of the particles.
 
-def find_candidate(
-    crd, pix, num, xa, ya, xb, yb, n, nx, ny, sumg, cand, vpar, cpar, cal
-):
-    """Find the candidate in the image space of the image all the candidates around the epipolar line.
+#     /*  find_candidate() is searching in the image space of the image all the
+#         candidates around the epipolar line originating from another camera. It is
+#         a binary search in an x-sorted coord-set, exploits shape information of the
+#         particles.
 
-    originating from another camera. It is a binary search in an x-sorted coord-set,
-    exploits shape information of the particles.
+#     Arguments:
+#     ---------
+#         Coord2d *crd - points to an array of detected-points position information.
+#             the points must be in flat-image (brown/affine corrected) coordinates
+#             and sorted by their x coordinate, i.e. ``crd[i].x <= crd[i + 1].x``.
+#         target *pix - array of target information (size, grey value, etc.)
+#             structures. pix[j] describes the target corresponding to
+#             (crd[...].pnr == j).
+#         int num - number of particles in the image.
+#         double xa, xb, ya, yb - end points of the epipolar line [mm].
+#         int n, nx, ny - total, and per dimension pixel size of a typical target,
+#             used to evaluate the quality of each candidate by comparing to typical.
+#         int sumg - same, for the grey value.
 
-    /*  find_candidate() is searching in the image space of the image all the
-        candidates around the epipolar line originating from another camera. It is
-        a binary search in an x-sorted coord-set, exploits shape information of the
-        particles.
+#         Outputs:
+#         candidate cand[] - array of candidate properties. The .pnr property of cand
+#             points to an index in the x-sorted corrected detections array
+#             (``crd``).
 
-    Arguments:
-    ---------
-        Coord2d *crd - points to an array of detected-points position information.
-            the points must be in flat-image (brown/affine corrected) coordinates
-            and sorted by their x coordinate, i.e. ``crd[i].x <= crd[i + 1].x``.
-        target *pix - array of target information (size, grey value, etc.)
-            structures. pix[j] describes the target corresponding to
-            (crd[...].pnr == j).
-        int num - number of particles in the image.
-        double xa, xb, ya, yb - end points of the epipolar line [mm].
-        int n, nx, ny - total, and per dimension pixel size of a typical target,
-            used to evaluate the quality of each candidate by comparing to typical.
-        int sumg - same, for the grey value.
+#         Extra configuration Arguments:
+#         volume_par *vpar - observed volume dimensions.
+#         control_par *cpar - general scene data s.a. image size.
+#         Calibration *cal - position and other parameters on the camera seeing
+#             the candidates.
 
-        Outputs:
-        candidate cand[] - array of candidate properties. The .pnr property of cand
-            points to an index in the x-sorted corrected detections array
-            (``crd``).
+#     Returns:
+#     -------
+#         int count - the number of selected candidates, length of cand array.
+#             Negative if epipolar line out of sensor array.
+#     */
 
-        Extra configuration Arguments:
-        volume_par *vpar - observed volume dimensions.
-        control_par *cpar - general scene data s.a. image size.
-        Calibration *cal - position and other parameters on the camera seeing
-            the candidates.
+#     Args:
+#     ----
+#             crd (_type_): _description_
+#             pix (_type_): _description_
+#             num (_type_): _description_
+#             xa (_type_): _description_
+#             ya (_type_): _description_
+#             xb (_type_): _description_
+#             yb (_type_): _description_
+#             n (_type_): _description_
+#             nx (_type_): _description_
+#             ny (_type_): _description_
+#             sumg (_type_): _description_
+#             cand (_type_): _description_
+#             vpar (_type_): _description_
+#             cpar (_type_): _description_
+#             cal (_type_): _description_
 
-    Returns:
-    -------
-        int count - the number of selected candidates, length of cand array.
-            Negative if epipolar line out of sensor array.
-    */
+#     Returns:
+#     -------
+#             _type_: _description_
+#     """
+#     j = 0
+#     j0 = 0
+#     dj = 0
+#     p2 = 0
+#     count = 0
+#     tol_band_width = vpar.eps0
 
-    Args:
-    ----
-            crd (_type_): _description_
-            pix (_type_): _description_
-            num (_type_): _description_
-            xa (_type_): _description_
-            ya (_type_): _description_
-            xb (_type_): _description_
-            yb (_type_): _description_
-            n (_type_): _description_
-            nx (_type_): _description_
-            ny (_type_): _description_
-            sumg (_type_): _description_
-            cand (_type_): _description_
-            vpar (_type_): _description_
-            cpar (_type_): _description_
-            cal (_type_): _description_
+#     # define sensor format for search interrupt
+#     xmin = (-1) * cpar.pix_x * cpar.imx / 2
+#     xmax = cpar.pix_x * cpar.imx / 2
+#     ymin = (-1) * cpar.pix_y * cpar.imy / 2
+#     ymax = cpar.pix_y * cpar.imy / 2
+#     xmin -= cal.int_par.xh
+#     ymin -= cal.int_par.yh
+#     xmax -= cal.int_par.xh
+#     ymax -= cal.int_par.yh
+#     xmin, ymin = correct_brown_affine(xmin, ymin, cal.added_par)
+#     xmax, ymax = correct_brown_affine(xmax, ymax, cal.added_par)
 
-    Returns:
-    -------
-            _type_: _description_
-    """
-    j = 0
-    j0 = 0
-    dj = 0
-    p2 = 0
-    count = 0
-    tol_band_width = vpar.eps0
+#     # line equation: y = m*x + b
+#     if xa == xb:  # the line is a point or a vertical line in this camera
+#         xb += 1e-10  # if we use xa += 1e-10, we always switch later
 
-    # define sensor format for search interrupt
-    xmin = (-1) * cpar.pix_x * cpar.imx / 2
-    xmax = cpar.pix_x * cpar.imx / 2
-    ymin = (-1) * cpar.pix_y * cpar.imy / 2
-    ymax = cpar.pix_y * cpar.imy / 2
-    xmin -= cal.int_par.xh
-    ymin -= cal.int_par.yh
-    xmax -= cal.int_par.xh
-    ymax -= cal.int_par.yh
-    xmin, ymin = correct_brown_affine(xmin, ymin, cal.added_par)
-    xmax, ymax = correct_brown_affine(xmax, ymax, cal.added_par)
+#     # equation of a line
+#     m = (yb - ya) / (xb - xa)
+#     b = ya - m * xa
+#     if xa > xb:
+#         temp = xa
+#         xa = xb
+#         xb = temp
 
-    # line equation: y = m*x + b
-    if xa == xb:  # the line is a point or a vertical line in this camera
-        xb += 1e-10  # if we use xa += 1e-10, we always switch later
+#     if ya > yb:
+#         temp = ya
+#         ya = yb
+#         yb = temp
 
-    # equation of a line
-    m = (yb - ya) / (xb - xa)
-    b = ya - m * xa
-    if xa > xb:
-        temp = xa
-        xa = xb
-        xb = temp
+#     # If epipolar line out of sensor area, give up.
+#     if xb <= xmin or xa >= xmax or yb <= ymin or ya >= ymax:
+#         return -1
 
-    if ya > yb:
-        temp = ya
-        ya = yb
-        yb = temp
+#     # binary search for start point of candidate search
+#     j0 = num // 2
+#     dj = num // 4
+#     while dj > 1:
+#         if crd[j0].x < xa - tol_band_width:
+#             j0 += dj
+#         else:
+#             j0 -= dj
+#         dj //= 2
 
-    # If epipolar line out of sensor area, give up.
-    if xb <= xmin or xa >= xmax or yb <= ymin or ya >= ymax:
-        return -1
+#     # due to truncation error we might shift to smaller x
+#     j0 -= 12
+#     if j0 < 0:
+#         j0 = 0
 
-    # binary search for start point of candidate search
-    j0 = num // 2
-    dj = num // 4
-    while dj > 1:
-        if crd[j0].x < xa - tol_band_width:
-            j0 += dj
-        else:
-            j0 -= dj
-        dj //= 2
+#     # candidate search
+#     for j in range(j0, num):
+#         # Since the list is x-sorted, an out of x-bound candidate is after the
+#         # last possible candidate, so stop.
+#         if crd[j].x > xb + tol_band_width:
+#             return count
 
-    # due to truncation error we might shift to smaller x
-    j0 -= 12
-    if j0 < 0:
-        j0 = 0
+#         # Candidate should at the very least be in the epipolar search window
+#         # to be considred.
+#         if crd[j].y <= ya - tol_band_width or crd[j].y >= yb + tol_band_width:
+#             continue
+#         if crd[j].x <= xa - tol_band_width or crd[j].x >= xb + tol_band_width:
+#             continue
 
-    # candidate search
-    for j in range(j0, num):
-        # Since the list is x-sorted, an out of x-bound candidate is after the
-        # last possible candidate, so stop.
-        if crd[j].x > xb + tol_band_width:
-            return count
+#         # Only take candidates within a predefined distance from epipolar line.
+#         d = abs((crd[j].y - m * crd[j].x - b) / math.sqrt(m * m + 1))
+#         if d >= tol_band_width:
+#             continue
 
-        # Candidate should at the very least be in the epipolar search window
-        # to be considred.
-        if crd[j].y <= ya - tol_band_width or crd[j].y >= yb + tol_band_width:
-            continue
-        if crd[j].x <= xa - tol_band_width or crd[j].x >= xb + tol_band_width:
-            continue
+#         p2 = crd[j].pnr
 
-        # Only take candidates within a predefined distance from epipolar line.
-        d = abs((crd[j].y - m * crd[j].x - b) / math.sqrt(m * m + 1))
-        if d >= tol_band_width:
-            continue
+#         # quality of each parameter is a ratio of the values of the size n, nx, ny
+#         # and sum of grey values sumg
+#         qn = quality_ratio(n, pix[p2].n)
+#         qnx = quality_ratio(nx, pix[p2].nx)
+#         qny = quality_ratio(ny, pix[p2].ny)
+#         qsumg = quality_ratio(sumg, pix[p2].sumg)
 
-        p2 = crd[j].pnr
+#         # Enforce minimum quality values and maximum candidates
+#         if qn < vpar.cn or qnx < vpar.cnx or qny < vpar.cny or qsumg <= vpar.csumg:
+#             continue
+#         if count >= MAXCAND:
+#             print(f"More candidates than (maxcand): {count}")
+#             return count
 
-        # quality of each parameter is a ratio of the values of the size n, nx, ny and sum of grey values sumg
-        qn = quality_ratio(n, pix[p2].n)
-        qnx = quality_ratio(nx, pix[p2].nx)
-        qny = quality_ratio(ny, pix[p2].ny)
-        qsumg = quality_ratio(sumg, pix[p2].sumg)
+#         # empirical correlation coefficient from shape and brightness parameters
+#         corr = 4 * qsumg + 2 * qn + qnx + qny
 
-        # Enforce minimum quality values and maximum candidates
-        if qn < vpar.cn or qnx < vpar.cnx or qny < vpar.cny or qsumg <= vpar.csumg:
-            continue
-        if count >= MAXCAND:
-            print(f"More candidates than (maxcand): {count}")
-            return count
+#         # prefer matches with brighter targets
+#         corr *= float(sumg + pix[p2].sumg)
 
-        # empirical correlation coefficient from shape and brightness parameters
-        corr = 4 * qsumg + 2 * qn + qnx + qny
+#         cand[count].pnr = j
+#         cand[count].tol = d
+#         cand[count].corr = corr
+#         count += 1
 
-        # prefer matches with brighter targets
-        corr *= float(sumg + pix[p2].sumg)
-
-        cand[count].pnr = j
-        cand[count].tol = d
-        cand[count].corr = corr
-        count += 1
-
-    return count
+#     return count
 
 
 def epipolar_curve(
