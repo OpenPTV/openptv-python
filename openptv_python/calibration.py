@@ -82,10 +82,10 @@ class ap_52:
 class mmlut:
     """3D lookup table for the mapping between the image plane and the object."""
 
-    origin: np.ndarray = field(default=np.zeros(3, dtype=float))
-    nr: int = field(default=0)
-    nz: int = field(default=0)
-    rw: int = field(default=0)
+    origin: np.ndarray = field(default=np.zeros(3, dtype=np.float64))
+    nr: int = field(default_factory=int)
+    nz: int = field(default_factory=int)
+    rw: int = field(default_factory=int)
     data: np.ndarray | None = None
 
 

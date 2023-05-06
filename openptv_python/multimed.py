@@ -166,6 +166,9 @@ def move_along_ray(glob_Z: float, vertex: np.ndarray, direct: np.ndarray) -> vec
 
     """
     out = np.zeros(3, dtype=np.float64)
+    if direct[2] == 0:
+        direct[2] = 1  # avoid division by zero
+
     out[0] = vertex[0] + (glob_Z - vertex[2]) * direct[0] / direct[2]
     out[1] = vertex[1] + (glob_Z - vertex[2]) * direct[1] / direct[2]
     out[2] = glob_Z
@@ -181,26 +184,24 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> np.ndarra
     cal_t = Calibration()
 
     # image corners
-    xc = [0.0, cpar["imx"]]
-    yc = [0.0, cpar["imy"]]
+    xc = [0.0, cpar.imx]
+    yc = [0.0, cpar.imy]
 
     # find extrema of imaged object volume
-    Zmin = vpar["Zmin_lay"][0]
-    Zmax = vpar["Zmax_lay"][0]
+    Zmin = vpar.Zmin_lay[0]
+    Zmax = vpar.Zmax_lay[0]
     Zmin_t = Zmin
     Zmax_t = Zmax
 
     for i in range(2):
         for j in range(2):
             x, y = pixel_to_metric(xc[i], yc[j], cpar)
-            x -= cal["int_par"]["xh"]
-            y -= cal["int_par"]["yh"]
+            x -= cal.int_par.xh
+            y -= cal.int_par.yh
             x, y = correct_brown_affine(x, y, cal.added_par)
             pos, a = ray_tracing(x, y, cal, cpar.mm)
             xyz = move_along_ray(Zmin, pos, a)
-            _, xyz_t, _, _ = trans_Cam_Point(
-                cal["ext_par"], cpar["mm"], cal["glass_par"], xyz
-            )
+            _, xyz_t, _, _ = trans_Cam_Point(cal.ext_par, cpar.mm, cal.glass_par, xyz)
 
             if xyz_t[2] < Zmin_t:
                 Zmin_t = xyz_t[2]
@@ -213,18 +214,14 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> np.ndarra
                 Rmax = R
 
             xyz = move_along_ray(Zmax, pos, a)
-            _, xyz_t, _, _ = trans_Cam_Point(
-                cal["ext_par"], cpar["mm"], cal["glass_par"], xyz
-            )
+            _, xyz_t, _, _ = trans_Cam_Point(cal.ext_par, cpar.mm, cal.glass_par, xyz)
 
             if xyz_t[2] < Zmin_t:
                 Zmin_t = xyz_t[2]
             if xyz_t[2] > Zmax_t:
                 Zmax_t = xyz_t[2]
 
-            R = norm(
-                xyz_t[0] - cal["ext_par"]["x0"], xyz_t[1] - cal["ext_par"]["y0"], 0
-            )
+            R = norm(xyz_t[0] - cal.ext_par.x0, xyz_t[1] - cal.ext_par.y0, 0)
 
             if R > Rmax:
                 Rmax = R
@@ -258,6 +255,7 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> np.ndarra
 
 
 def get_mmf_from_mmlut(cal: Calibration, pos: np.ndarray) -> float:
+    """Get the refractive index of the medium at a given position."""
     i, ir, iz, nr, nz, rw, v4 = 0, 0, 0, 0, 0, 0, [0, 0, 0, 0]
     mmf = 1.0
     temp = [0.0, 0.0, 0.0]
@@ -339,7 +337,7 @@ def volumedimension(
 
                 x, y = correct_brown_affine(x, y, cal[i_cam]["added_par"])
 
-                pos, a = ray_tracing(x, y, cal[i_cam], cpar["mm"])
+                pos, a = ray_tracing(x, y, cal[i_cam], cpar.mm)
 
                 X = pos[0] + (Zmin - pos[2]) * a[0] / a[2]
                 Y = pos[1] + (Zmin - pos[2]) * a[1] / a[2]

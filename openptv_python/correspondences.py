@@ -16,20 +16,16 @@ from .tracking_frame_buf import Frame, Target, n_tupel
 class Correspond:
     """Correspondence candidate data structure."""
 
-    p1: int  # point number of master point
-    n: int  # number of candidates
-    p2: np.ndarray = field(
-        default=np.empty(MAXCAND, dtype=int)
-    )  # point numbers of candidates
-    corr: np.ndarray = field(
-        default=np.empty(MAXCAND, dtype=float)
-    )  # feature-based correlation coefficient
-    dist: np.ndarray = field(
-        default=np.empty(MAXCAND, dtype=float)
-    )  # distance perpendicular to epipolar line
+    p1: int = field(default_factory=int)  # point number of master point
+    n: int = field(default_factory=int)  # number of candidates
+    p2: list = field(default_factory=list)  # point numbers of candidates
+    corr: list = field(default_factory=list)  # feature-based correlation coefficient
+    dist: list = field(default_factory=list)  # distance perpendicular to epipolar line
 
 
-def safely_allocate_target_usage_marks(num_cams: int, nmax: int) -> List[List[int]]:
+def safely_allocate_target_usage_marks(
+    num_cams: int, nmax: int = NMAX
+) -> List[List[int]]:
     """Allocate space for per-camera arrays marking whether a certain target was used.
 
     If some allocation failed, it cleans up memory and returns NULL. Allocated arrays are zeroed
@@ -315,8 +311,8 @@ def match_pairs(
     for i1 in range(cpar.num_cams - 1):
         for i2 in range(i1 + 1, cpar.num_cams):
             for i in range(frm.num_targets[i1]):
-                if corrected[i1][i].x == PT_UNUSED:
-                    continue
+                # if corrected[i1][i].x == PT_UNUSED: # no idea why it's here
+                #     continue
 
                 xa12, ya12, xb12, yb12 = epi_mm(
                     corrected[i1][i].x,
@@ -677,45 +673,3 @@ def single_cam_correspondences(img_pts: List[Target], flat_coords: List[float]):
     sorted_corresp = [clique_ids]
 
     return sorted_pos, sorted_corresp, num_points
-
-
-# def consistent_pair_matching(
-#     list, num_cams, target_counts, accept_corr, scratch, scratch_size, tusage
-# ):
-#     """Search consistent pairs: 12, 13, 14, 23, 24, 34."""
-#     matched = 0
-
-#     for i1 in range(num_cams - 1):
-#         for i2 in range(i1 + 1, num_cams):
-#             for i in range(target_counts[i1]):
-#                 p1 = list[i1][i2][i].p1
-#                 if p1 > NMAX or tusage[i1][p1] > 0:
-#                     continue
-
-#                 # if the candidate is the only one, there is no ambiguity.
-#                 # we only take unambiguous pairs.
-#                 if list[i1][i2][i].n != 1:
-#                     continue
-
-#                 p2 = list[i1][i2][i].p2[0]
-#                 if p2 > NMAX or tusage[i2][p2] > 0:
-#                     continue
-
-#                 corr = list[i1][i2][i].corr[0] / list[i1][i2][i].dist[0]
-#                 if corr <= accept_corr:
-#                     continue
-
-#                 # This to catch the excluded cameras
-#                 for n in range(num_cams):
-#                     scratch[matched].p[n] = -2
-
-#                 scratch[matched].p[i1] = p1
-#                 scratch[matched].p[i2] = p2
-#                 scratch[matched].corr = corr
-
-#                 matched += 1
-#                 if matched == scratch_size:
-#                     print("Overflow in correspondences.")
-#                     return matched
-
-#     return matched

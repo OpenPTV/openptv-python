@@ -64,7 +64,8 @@ class TestEpipolarCurve(unittest.TestCase):
         # directly at each other.
         mid = np.r_[sens_size] / 2.0
         line = epipolar_curve(mid, orig_cal, proj_cal, 5, cpar, vpar)
-        self.assertTrue(np.all(np.abs(line - mid) < 1e-4))  # we need to improve this
+        # we need to improve this
+        self.assertTrue(np.all(np.abs(line - mid) < 1e-4))
 
         # An equatorial point draws a latitude.
         line = epipolar_curve(
@@ -75,7 +76,10 @@ class TestEpipolarCurve(unittest.TestCase):
 
 
 class TestFindCandidate(unittest.TestCase):
+    """Test the find_candidate function."""
+
     def test_find_candidate(self):
+        """Test the find_candidate function."""
         # set of particles to choose from
         test_pix = [
             [0, 0.0, -0.2, 5, 1, 2, 10, -999],
@@ -95,15 +99,11 @@ class TestFindCandidate(unittest.TestCase):
         # coord_2d is int pnr, double x,y
         # note that it's x-sorted by construction
         test_crd = [
-            [6, 0.1, 0.1],  # best candidate, right on the diagonal
+            [6, 0.1, 0.1],
             [3, 0.2, 0.8],
             [4, 0.4, -1.1],
             [1, 0.7, -0.1],
-            [
-                2,
-                1.2,
-                0.3,
-            ],  # this should fail as there's no candidate after 7, but why < 1. mm
+            [2, 1.2, 0.3],
             [0, 0.0, 0.0],
             [5, 10.4, 0.1],
         ]
