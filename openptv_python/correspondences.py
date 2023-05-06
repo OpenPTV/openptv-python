@@ -332,8 +332,8 @@ def match_pairs(
                 pt1 = corrected[i1][i].pnr
 
                 # search for a conjugate point in corrected[i2]
-                cand = [Correspond(0, 0) for _ in range(MAXCAND)]
-                count = find_candidate(
+                # cand = [Correspond() for _ in range(MAXCAND)]
+                cand = find_candidate(
                     corrected[i2],
                     frm.targets[i2],
                     frm.num_targets[i2],
@@ -345,13 +345,13 @@ def match_pairs(
                     frm.targets[i1][pt1].nx,
                     frm.targets[i1][pt1].ny,
                     frm.targets[i1][pt1].sumg,
-                    cand,
                     vpar,
                     cpar,
                     calib[i2],
                 )
 
                 # write all corresponding candidates to the preliminary corr_list of correspondences
+                count = len(cand)
                 if count > MAXCAND:
                     count = MAXCAND
 

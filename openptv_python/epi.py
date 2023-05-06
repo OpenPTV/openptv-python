@@ -26,7 +26,7 @@ class Candidate:
 class Coord2d:
     """2D coordinates in the image plane."""
 
-    pnr: int = field(default=PT_UNUSED)
+    pnr: int = field(default_factory=int)
     x: float = field(default_factory=float)
     y: float = field(default_factory=float)
 

@@ -306,29 +306,37 @@ class VolumePar:
     X_lay: List[float] = field(default_factory=list)
     Zmin_lay: List[float] = field(default_factory=list)
     Zmax_lay: List[float] = field(default_factory=list)
-    cn: float = field(default_factory=float)
-    cnx: float = field(default_factory=float)
-    cny: float = field(default_factory=float)
-    csumg: float = field(default_factory=float)
-    eps0: float = field(default_factory=float)
-    corrmin: float = field(default_factory=float)
+    cn: float = field(default_factory=float)  # minimal criteria for number of pixels
+    cnx: float = field(default_factory=float)  # same in x direction
+    cny: float = field(default_factory=float)  # same in y direction
+    csumg: float = field(default_factory=float)  # same in sum of grey values
+    eps0: float = field(default_factory=float)  # minimal criteria for epipolar distance
+    corrmin: float = field(
+        default_factory=float
+    )  # minimal correlation value of all criteria
 
     def set_Zmin_lay(self, Zmin_lay: list[float]) -> None:
+        """Set the minimum z coordinate of the layers."""
         self.Zmin_lay = Zmin_lay
 
     def set_Zmax_lay(self, Zmax_lay: list[float]) -> None:
+        """Set the maximum z coordinate of the layers."""
         self.Zmax_lay = Zmax_lay
 
     def set_cn(self, cn: float) -> None:
+        """Set the refractive index."""
         self.cn = cn
 
     def set_cnx(self, cnx: float) -> None:
+        """Set the refractive index in x direction."""
         self.cnx = cnx
 
     def set_csumg(self, csumg: float) -> None:
+        """Set the maximum sum of the gradient."""
         self.csumg = csumg
 
     def set_eps0(self, eps0: float) -> None:
+        """Set the maximum sum of the gradient."""
         self.eps0 = eps0
 
     def set_corrmin(self, corrmin: float) -> None:
