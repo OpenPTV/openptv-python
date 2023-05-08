@@ -1,11 +1,9 @@
 import unittest
 from pathlib import Path
 
-
-from openptv_python.calibration import read_calibration
-from openptv_python.parameters import read_volume_par, read_control_par
+from openptv_python.calibration import mmlut, read_calibration
 from openptv_python.multimed import init_mmlut
-from openptv_python.calibration import mmlut
+from openptv_python.parameters import read_control_par, read_volume_par
 
 
 class TestInitMmLut(unittest.TestCase):
@@ -68,5 +66,5 @@ class TestInitMmLut(unittest.TestCase):
         self.assertEqual(cal.mmlut.rw, correct_mmlut[i].rw)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

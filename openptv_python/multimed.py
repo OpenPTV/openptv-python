@@ -94,19 +94,19 @@ def trans_Cam_Point(
 ) -> Tuple[Exterior, np.ndarray, np.ndarray, np.ndarray]:
     """Transform the camera and point coordinates to the glass coordinates.
 
-    ex = np.array([ex_x, ex_y, ex_z])
-    mm = np.array([mm_d])
-    glass_dir = np.array([gl_vec_x, gl_vec_y, gl_vec_z])
+    ex = Exterior(x0=ex_x, y0=ex_y, z0=ex_z)
+    mm = MultimediaPar(d=mm_d)
+    glass = Glass(vec_x=gl_vec_x, vec_y=gl_vec_y, vec_z=gl_vec_z)
     pos = np.array([pos_x, pos_y, pos_z])
 
-    ex_t, pos_t, cross_p, cross_c = trans_Cam_Point(ex, mm, glass_dir, pos)
+    ex_t, pos_t, cross_p, cross_c = trans_Cam_Point(ex, mm, glass, pos)
     """
     glass_dir = np.array([glass.vec_x, glass.vec_y, glass.vec_z])
     primary_point = np.array([ex.x0, ex.y0, ex.z0])
 
     dist_o_glass = np.linalg.norm(glass_dir)  # vector length
     dist_cam_glas = (
-        np.dot(primary_point, glass_dir) / dist_o_glass - dist_o_glass - mm.d[0]
+        np.dot(primary_point, glass_dir) / dist_o_glass - dist_o_glass - mm.d
     )
 
     dist_point_glass = np.dot(pos, glass_dir) / dist_o_glass - dist_o_glass
@@ -118,9 +118,9 @@ def trans_Cam_Point(
     cross_p = pos - renorm_glass
 
     ex_t = Exterior()
-    ex_t.z0 = dist_cam_glas + mm.d[0]
+    ex_t.z0 = dist_cam_glas + mm.d
 
-    renorm_glass = glass_dir * (mm.d[0] / dist_o_glass)
+    renorm_glass = glass_dir * (mm.d / dist_o_glass)
     temp = cross_c - renorm_glass
     temp = cross_p - temp
     pos_t = np.r_[np.linalg.norm(temp), 0, dist_point_glass]
@@ -129,23 +129,52 @@ def trans_Cam_Point(
 
 
 def back_trans_Point(
-    pos_t: np.ndarray, mm, G: Glass, cross_p: np.ndarray, cross_c: np.ndarray
+    pos_t: np.ndarray,
+    mm: MultimediaPar,
+    G: Glass,
+    cross_p: np.ndarray,
+    cross_c: np.ndarray,
 ) -> np.ndarray:
-    """Transform the point coordinates from the glass to the camera coordinates."""
-    glass_dir = np.array([G.vec_x, G.vec_y, G.vec_z])
-    nGl = np.linalg.norm(glass_dir)
+    """
+    Transform the point coordinates from the glass to the camera coordinates.
 
-    renorm_glass = glass_dir * (mm.d[0] / nGl)
+    Args:
+    ----
+        pos_t: A numpy array representing the position of the point in the glass coordinate system.
+        mm: SomeType (TODO: specify type). A parameter used to scale the glass direction vector.
+        G: A Glass object representing the glass coordinate system.
+        cross_p: A numpy array representing the position of the point in the pixel coordinate system.
+        cross_c: A numpy array representing the position of the point in the camera coordinate system.
+
+    Returns:
+    -------
+        A numpy array representing the position of the point in the camera coordinate system.
+    """
+    # Calculate the glass direction vector
+    glass_direction = np.array([G.vec_x, G.vec_y, G.vec_z])
+    norm_glass_direction = np.linalg.norm(glass_direction)
+
+    # Normalize the glass direction vector
+    renorm_glass = glass_direction * (mm.d[0] / norm_glass_direction)
+
+    # Calculate the position of the point after passing through the glass
     after_glass = cross_c - renorm_glass
-    temp = cross_p - after_glass
-    nVe = np.linalg.norm(temp)
 
-    renorm_glass = glass_dir * (-pos_t[2] / nGl)
+    # Calculate the vector between the point in the glass and the point after passing through the glass
+    temp = cross_p - after_glass
+
+    # Calculate the norm of the vector temp
+    norm_temp = np.linalg.norm(temp)
+
+    # Calculate the position of the point in the camera coordinate system
+    renorm_glass = glass_direction * (-pos_t[2] / norm_glass_direction)
     pos = after_glass - renorm_glass
 
-    if nVe > 0:
-        renorm_glass = temp * (-pos_t[0] / nVe)
-        pos = pos - renorm_glass
+    # If the norm of the vector temp is greater than zero, adjust the position
+    # of the point in the camera coordinate system
+    if norm_temp > 0:
+        renorm_temp = temp * (-pos_t[0] / norm_temp)
+        pos = pos - renorm_temp
 
     return pos
 
