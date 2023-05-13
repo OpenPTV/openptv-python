@@ -1,3 +1,4 @@
+import copy
 import math
 from typing import List, Tuple
 
@@ -11,7 +12,7 @@ from .parameters import (
 )
 from .ray_tracing import ray_tracing
 from .trafo import correct_brown_affine, pixel_to_metric
-from .vec_utils import norm, vec3d, vec_set, vec_subt
+from .vec_utils import norm, vec3d, vec_set
 
 
 def multimed_nlay(
@@ -89,9 +90,9 @@ def multimed_r_nlay(cal: Calibration, mm: MultimediaPar, pos: np.ndarray) -> flo
         return 1.0
 
 
-def trans_Cam_Point(
-    ex: Exterior, mm: MultimediaPar, glass: Glass, pos: np.ndarray
-) -> Tuple[Exterior, np.ndarray, np.ndarray, np.ndarray]:
+def trans_cam_point(
+    ex: Exterior, mm: MultimediaPar, glass: Glass, pos: np.ndarray, ex_t: Exterior
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Transform the camera and point coordinates to the glass coordinates.
 
     ex = Exterior(x0=ex_x, y0=ex_y, z0=ex_z)
@@ -99,7 +100,7 @@ def trans_Cam_Point(
     glass = Glass(vec_x=gl_vec_x, vec_y=gl_vec_y, vec_z=gl_vec_z)
     pos = np.array([pos_x, pos_y, pos_z])
 
-    ex_t, pos_t, cross_p, cross_c = trans_Cam_Point(ex, mm, glass, pos)
+    pos_t, cross_p, cross_c = trans_cam_point(ex, mm, glass, pos, ex_t)
     """
     glass_dir = np.array([glass.vec_x, glass.vec_y, glass.vec_z])
     primary_point = np.array([ex.x0, ex.y0, ex.z0])
@@ -117,18 +118,19 @@ def trans_Cam_Point(
     renorm_glass = glass_dir * (dist_point_glass / dist_o_glass)
     cross_p = pos - renorm_glass
 
-    ex_t = Exterior()
-    ex_t.z0 = dist_cam_glas + mm.d
+    ex_t.x0 = 0.0
+    ex_t.y0 = 0.0
+    ex_t.z0 = dist_cam_glas + mm.d[0]
 
     renorm_glass = glass_dir * (mm.d / dist_o_glass)
     temp = cross_c - renorm_glass
     temp = cross_p - temp
     pos_t = np.r_[np.linalg.norm(temp), 0, dist_point_glass]
 
-    return ex_t, pos_t, cross_p, cross_c
+    return pos_t, cross_p, cross_c
 
 
-def back_trans_Point(
+def back_trans_point(
     pos_t: np.ndarray,
     mm: MultimediaPar,
     G: Glass,
@@ -204,23 +206,26 @@ def move_along_ray(glob_Z: float, vertex: np.ndarray, direct: np.ndarray) -> vec
     return out
 
 
-def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> np.ndarray:
+def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibration:
     """Initialize the multilayer lookup table."""
-    nr, nz = 0, 0
-    Rmax, Zmax = 0, 0
     rw = 2.0
-
-    cal_t = Calibration()
+    Rmax = 0.0
 
     # image corners
     xc = [0.0, cpar.imx]
     yc = [0.0, cpar.imy]
 
     # find extrema of imaged object volume
-    Zmin = vpar.Zmin_lay[0]
-    Zmax = vpar.Zmax_lay[0]
+    Zmin = min(vpar.Zmin_lay)
+    Zmax = max(vpar.Zmax_lay)
+    Zmin -= math.fmod(Zmin, rw)
+    Zmax += rw - math.fmod(Zmax, rw)
+
     Zmin_t = Zmin
     Zmax_t = Zmax
+
+    # intersect with image vertices rays
+    cal_t = copy.deepcopy(cal)
 
     for i in range(2):
         for j in range(2):
@@ -230,7 +235,9 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> np.ndarra
             x, y = correct_brown_affine(x, y, cal.added_par)
             pos, a = ray_tracing(x, y, cal, cpar.mm)
             xyz = move_along_ray(Zmin, pos, a)
-            _, xyz_t, _, _ = trans_Cam_Point(cal.ext_par, cpar.mm, cal.glass_par, xyz)
+            xyz_t, _, _ = trans_cam_point(
+                cal.ext_par, cpar.mm, cal.glass_par, xyz, cal_t.ext_par
+            )
 
             if xyz_t[2] < Zmin_t:
                 Zmin_t = xyz_t[2]
@@ -243,7 +250,9 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> np.ndarra
                 Rmax = R
 
             xyz = move_along_ray(Zmax, pos, a)
-            _, xyz_t, _, _ = trans_Cam_Point(cal.ext_par, cpar.mm, cal.glass_par, xyz)
+            xyz_t, _, _ = trans_cam_point(
+                cal.ext_par, cpar.mm, cal.glass_par, xyz, cal_t.ext_par
+            )
 
             if xyz_t[2] < Zmin_t:
                 Zmin_t = xyz_t[2]
@@ -256,20 +265,20 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> np.ndarra
                 Rmax = R
 
     # round values (-> enlarge)
-    Rmax += rw - (Rmax % rw)
+    Rmax += rw - math.fmod(Rmax, rw)
 
     # get # of rasterlines in r, z
     nr = int(Rmax / rw + 1)
     nz = int((Zmax_t - Zmin_t) / rw + 1)
 
     # create two dimensional mmlut structure
-    cal.mmlut.origin = [cal.ext_par.x0, cal.ext_par.y0, Zmin_t]
+    cal.mmlut.origin = np.r_[cal_t.ext_par.x0, cal_t.ext_par.y0, Zmin_t]
     cal.mmlut.nr = nr
     cal.mmlut.nz = nz
     cal.mmlut.rw = rw
 
     if cal.mmlut.data is None:
-        data = np.empty((nr * nz,), dtype=np.float64)
+        data = np.empty(nr * nz, dtype=np.float64)
         Ri = np.arange(nr) * rw
         Zi = np.arange(nz) * rw + Zmin_t
 
@@ -285,13 +294,6 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> np.ndarra
 
 def get_mmf_from_mmlut(cal: Calibration, pos: np.ndarray) -> float:
     """Get the refractive index of the medium at a given position."""
-    i, ir, iz, nr, nz, rw, v4 = 0, 0, 0, 0, 0, 0, [0, 0, 0, 0]
-    mmf = 1.0
-    temp = [0.0, 0.0, 0.0]
-
-    rw = cal.mmlut.rw
-
-    temp = vec_subt(pos, cal.mmlut.origin)
     rw = cal.mmlut.rw
     origin = cal.mmlut.origin
     data = cal.mmlut.data
@@ -303,24 +305,32 @@ def get_mmf_from_mmlut(cal: Calibration, pos: np.ndarray) -> float:
     iz = int(sz)
     sz -= iz
 
-    R = np.sqrt(temp[0] ** 2 + temp[1] ** 2)
+    R = norm(temp[0], temp[1], 0)
     sr = R / rw
     ir = int(sr)
     sr -= ir
 
-    if ir > nr or iz < 0 or iz > nz:
+    if ir > nr:
+        return 0.0
+    if iz < 0 or iz > nz:
         return 0.0
 
+    # bilinear interpolation in r/z box
+    # get vertices of box
     v4 = [
         ir * nz + iz,
         ir * nz + (iz + 1),
         (ir + 1) * nz + iz,
         (ir + 1) * nz + (iz + 1),
     ]
+
+    # 2. check wther point is inside camera's object volume
+    # important for epipolar line computation
     for i in range(4):
         if v4[i] < 0 or v4[i] > nr * nz:
             return 0.0
 
+    # interpolate
     mmf = (
         data[v4[0]] * (1 - sr) * (1 - sz)
         + data[v4[1]] * (1 - sr) * sz

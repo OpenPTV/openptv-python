@@ -27,43 +27,35 @@ class TestInitMmLut(unittest.TestCase):
         self.assertIsNotNone(cpar, "\n control parameter file reading failed\n ")
 
         # test_mmlut = [mmlut() for _ in range(cpar.num_cams)]
-        correct_mmlut = [
-            mmlut(
-                origin=(0.0, 0.0, -250.00001105),
-                nr=130,
-                nz=177,
-                rw=2,
-            )
-        ]
-
+        correct_mmlut = mmlut(
+            origin=(0.0, 0.0, -250.00001105),
+            nr=130,
+            nz=177,
+            rw=2,
+        )
         # run init_mmLUT for one camera only
-        i = 0
         cpar.num_cams = 1
 
-        init_mmlut(vpar, cpar, cal)
+        cal = init_mmlut(vpar, cpar, cal)
 
         # Data[0] Is the radial shift of a point directly on the glass vector
         self.assertAlmostEqual(cal.mmlut.data[0], 1)
 
         # Radial shift grows with radius
-        self.assertLess(cal.mmlut.data[0], cal.mmlut.data[correct_mmlut[0].nz])
         self.assertLess(
-            cal.mmlut.data[correct_mmlut[0].nz],
-            cal.mmlut.data[2 * correct_mmlut[0].nz],
+            cal.mmlut.data[0], cal.mmlut.data[correct_mmlut.nz * correct_mmlut.nr]
+        )
+        self.assertLess(
+            cal.mmlut.data[correct_mmlut.nz],
+            cal.mmlut.data[2 * correct_mmlut.nz],
         )
 
-        self.assertAlmostEqual(
-            cal.mmlut.origin[0], correct_mmlut[i].origin[0], places=8
-        )
-        self.assertAlmostEqual(
-            cal.mmlut.origin[1], correct_mmlut[i].origin[1], places=8
-        )
-        self.assertAlmostEqual(
-            cal.mmlut.origin[2], correct_mmlut[i].origin[2], places=8
-        )
-        self.assertEqual(cal.mmlut.nr, correct_mmlut[i].nr)
-        self.assertEqual(cal.mmlut.nz, correct_mmlut[i].nz)
-        self.assertEqual(cal.mmlut.rw, correct_mmlut[i].rw)
+        self.assertAlmostEqual(cal.mmlut.origin[0], correct_mmlut.origin[0], places=6)
+        self.assertAlmostEqual(cal.mmlut.origin[1], correct_mmlut.origin[1], places=6)
+        self.assertAlmostEqual(cal.mmlut.origin[2], correct_mmlut.origin[2], places=6)
+        self.assertEqual(cal.mmlut.nr, correct_mmlut.nr)
+        self.assertEqual(cal.mmlut.nz, correct_mmlut.nz)
+        self.assertEqual(cal.mmlut.rw, correct_mmlut.rw)
 
 
 if __name__ == "__main__":

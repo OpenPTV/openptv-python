@@ -20,7 +20,7 @@ def norm(x: float, y: float, z: float) -> float:
 
 def vec_set(x: float, y: float, z: float) -> vec3d:
     """Set the components of a  3D vector from separate doubles."""
-    return np.array([x, y, z], dtype=float)
+    return np.r_[x, y, z]
 
 
 def vec_copy(src: vec3d) -> vec3d:

@@ -6,7 +6,7 @@ from typing import Tuple
 import numpy as np
 
 from .calibration import Calibration
-from .multimed import back_trans_Point, multimed_nlay, trans_Cam_Point
+from .multimed import back_trans_point, multimed_nlay, trans_cam_point
 from .parameters import MultimediaPar
 from .trafo import flat_to_dist
 from .vec_utils import vec3d, vec_set
@@ -33,13 +33,13 @@ def flat_image_coord(
     # This block calculate 3D position in an imaginary air-filled space,
     # i.e. where the point will have been seen in the absence of refractive
     # layers between it and the camera.
-    cal_t.ext_par, pos_t, cross_p, cross_c = trans_Cam_Point(
-        cal.ext_par, mm, cal.glass_par, orig_pos
+    pos_t, cross_p, cross_c = trans_cam_point(
+        cal.ext_par, mm, cal.glass_par, orig_pos, cal_t.ext_par
     )
 
     X_t, Y_t = multimed_nlay(cal_t, mm, pos_t)
     pos_t = vec_set(X_t, Y_t, pos_t[2])
-    pos = back_trans_Point(pos_t, mm, cal.glass_par, cross_p, cross_c)
+    pos = back_trans_point(pos_t, mm, cal.glass_par, cross_p, cross_c)
 
     deno = (
         cal.ext_par.dm[0][2] * (pos[0] - cal.ext_par.x0)
