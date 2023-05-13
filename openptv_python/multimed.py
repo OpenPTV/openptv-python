@@ -30,20 +30,10 @@ def multimed_nlay(
 
 def multimed_r_nlay(cal: Calibration, mm: MultimediaPar, pos: np.ndarray) -> float:
     """Calculate the radial shift for the multimedia model."""
-    i, it = 0, 0
     n_iter = 40
-    beta1, beta2, beta3, r, rbeta, rdiff, rq, mmf = (
-        0.0,
-        [0.0] * 32,
-        0.0,
-        0.0,
-        0.0,
-        1.0,
-        0.0,
-        1.0,
-    )
-    X, Y, Z = 0.0, 0.0, 0.0
-    zout = 0.0
+
+    rdiff = 0.1
+    it = 0
 
     # 1-medium case
     if mm.n1 == 1 and mm.nlay == 1 and mm.n2[0] == 1 and mm.n3 == 1:
@@ -55,28 +45,28 @@ def multimed_r_nlay(cal: Calibration, mm: MultimediaPar, pos: np.ndarray) -> flo
         if mmf > 0:
             return mmf
 
-    # iterative procedure
-    X = pos[0]
-    Y = pos[1]
-    Z = pos[2]
+    r = norm(pos[0] - cal.ext_par.x0, pos[1] - cal.ext_par.y0, 0)
+    if r == 0:
+        return 1.0
 
     # Extra layers protrude into water side:
-    zout = Z + np.sum(mm.d[: mm.nlay])
-    # for i in range(1, mm.nlay):
-    #     zout += mm.d[i]
+    zout = pos[2] + np.sum(mm.d)
 
-    r = norm(X - cal.ext_par.x0, Y - cal.ext_par.y0, 0)
     rq = r.copy()
 
+    beta2 = [1.0] * mm.nlay
+
     while np.abs(rdiff) > 0.001 and it < n_iter:
-        beta1 = math.atan(rq / (cal.ext_par.z0 - Z))
-        for i in range(0, mm.nlay):
+        beta1 = (cal.ext_par.z0 - pos[2]) and math.atan(rq / (cal.ext_par.z0 - pos[2]))
+        for i in range(mm.nlay):
             beta2[i] = math.asin(math.sin(beta1) * mm.n1 / mm.n2[i])
         beta3 = math.asin(math.sin(beta1) * mm.n1 / mm.n3)
         rbeta = (cal.ext_par.z0 - mm.d[0]) * math.tan(beta1) - zout * math.tan(beta3)
-        for i in range(0, mm.nlay):
+        for i in range(1, mm.nlay):
             rbeta += mm.d[i] * math.tan(beta2[i])
+
         rdiff = r - rbeta
+        # print(beta1, beta2,beta3, r, rbeta, rdiff)
         rq += rdiff
         it += 1
 
@@ -84,10 +74,7 @@ def multimed_r_nlay(cal: Calibration, mm: MultimediaPar, pos: np.ndarray) -> flo
         print(f"multimed_r_nlay stopped after {n_iter} iterations\n")
         return 1.0
 
-    if r != 0:
-        return rq / r
-    else:
-        return 1.0
+    return rq / r
 
 
 def trans_cam_point(
@@ -212,12 +199,13 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibrati
     Rmax = 0.0
 
     # image corners
-    xc = [0.0, cpar.imx]
-    yc = [0.0, cpar.imy]
+    xc = [0.0, float(cpar.imx)]
+    yc = [0.0, float(cpar.imy)]
 
     # find extrema of imaged object volume
     Zmin = min(vpar.Zmin_lay)
     Zmax = max(vpar.Zmax_lay)
+
     Zmin -= math.fmod(Zmin, rw)
     Zmax += rw - math.fmod(Zmax, rw)
 
@@ -229,15 +217,23 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibrati
 
     for i in range(2):
         for j in range(2):
+            print(i, j)
             x, y = pixel_to_metric(xc[i], yc[j], cpar)
+            print(x, y)
             x -= cal.int_par.xh
             y -= cal.int_par.yh
             x, y = correct_brown_affine(x, y, cal.added_par)
+            print(f"corrected {x},{y}")
+            print(f"cal = {cal}")
+            print(f"cpar.mm = {cpar.mm}")
             pos, a = ray_tracing(x, y, cal, cpar.mm)
+            print(f"pos = {pos}, a = {a}")
             xyz = move_along_ray(Zmin, pos, a)
+            print(xyz)
             xyz_t, _, _ = trans_cam_point(
                 cal.ext_par, cpar.mm, cal.glass_par, xyz, cal_t.ext_par
             )
+            print(xyz_t)
 
             if xyz_t[2] < Zmin_t:
                 Zmin_t = xyz_t[2]
@@ -266,6 +262,8 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibrati
 
     # round values (-> enlarge)
     Rmax += rw - math.fmod(Rmax, rw)
+
+    print(f"inside init_mmlut: {Rmax}, {Zmin_t}, {Zmax_t}")
 
     # get # of rasterlines in r, z
     nr = int(Rmax / rw + 1)

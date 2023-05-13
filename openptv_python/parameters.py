@@ -11,11 +11,11 @@ import numpy as np
 class MultimediaPar:
     """Multimedia parameters."""
 
-    nlay: int = 1
-    n1: float = 1.0
+    nlay: int = field(default_factory=int)
+    n1: float = field(default_factory=float)
     n2: List[float] = field(default_factory=list)
     d: List[float] = field(default_factory=list)
-    n3: float = 1.0
+    n3: float = field(default_factory=float)
 
     def __post_init__(self):
         """Initialize MultimediaPar object."""

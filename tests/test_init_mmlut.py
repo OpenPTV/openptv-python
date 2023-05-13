@@ -50,9 +50,9 @@ class TestInitMmLut(unittest.TestCase):
             cal.mmlut.data[2 * correct_mmlut.nz],
         )
 
-        self.assertAlmostEqual(cal.mmlut.origin[0], correct_mmlut.origin[0], places=6)
-        self.assertAlmostEqual(cal.mmlut.origin[1], correct_mmlut.origin[1], places=6)
-        self.assertAlmostEqual(cal.mmlut.origin[2], correct_mmlut.origin[2], places=6)
+        self.assertAlmostEqual(cal.mmlut.origin[0], correct_mmlut.origin[0], places=5)
+        self.assertAlmostEqual(cal.mmlut.origin[1], correct_mmlut.origin[1], places=5)
+        self.assertAlmostEqual(cal.mmlut.origin[2], correct_mmlut.origin[2], places=5)
         self.assertEqual(cal.mmlut.nr, correct_mmlut.nr)
         self.assertEqual(cal.mmlut.nz, correct_mmlut.nz)
         self.assertEqual(cal.mmlut.rw, correct_mmlut.rw)

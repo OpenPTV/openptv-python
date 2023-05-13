@@ -4,8 +4,16 @@ from typing import Tuple
 import numpy as np
 
 from .calibration import Calibration
+from .lsqadj import matmul
 from .parameters import MultimediaPar
-from .vec_utils import unit_vector
+from .vec_utils import (
+    unit_vector,
+    vec_add,
+    vec_dot,
+    vec_norm,
+    vec_scalar_mul,
+    vec_subt,
+)
 
 
 def ray_tracing(
@@ -40,63 +48,58 @@ def ray_tracing(
     -------
             _type_: _description_
     """
-    d1, d2, c, dist_cam_glass, n, p = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
-    primary_point = np.array([cal.ext_par.x0, cal.ext_par.y0, cal.ext_par.z0])
-
     # Initial ray direction in global coordinate system
-    start_dir = np.dot(cal.ext_par.dm, unit_vector(np.array([x, y, -cal.int_par.cc])))
+    tmp1 = np.r_[x, y, -1 * cal.int_par.cc]
+    tmp1 = unit_vector(tmp1)
+    start_dir = np.empty(3, dtype=float)
+    start_dir = matmul(cal.ext_par.dm, tmp1, 3, 3, 1, 3, 3)
+
+    primary_point = np.r_[cal.ext_par.x0, cal.ext_par.y0, cal.ext_par.z0]
+
+    tmp1 = np.r_[cal.glass_par.vec_x, cal.glass_par.vec_y, cal.glass_par.vec_z]
+    glass_dir = unit_vector(tmp1)
+    c = vec_norm(tmp1) + mm.d[0]
 
     # Project start ray on glass vector to find n1/n2 interface.
-    tmp1 = unit_vector(
-        np.array([cal.glass_par.vec_x, cal.glass_par.vec_y, cal.glass_par.vec_z])
-    )
-    glass_dir = tmp1.copy()
-    c = np.linalg.norm(tmp1) + mm.d[0]
-    dist_cam_glass = np.dot(glass_dir, primary_point) - c
-    normed = np.dot(glass_dir, start_dir)
-    if normed != 0:
-        d1 = -dist_cam_glass / normed
-    else:
-        d1 = -dist_cam_glass
+    dist_cam_glass = vec_dot(glass_dir, primary_point) - c
+    d1 = -dist_cam_glass / vec_dot(glass_dir, start_dir)
+    tmp1 = vec_scalar_mul(start_dir, d1)
+    Xb = vec_add(primary_point, tmp1)
 
-    tmp1 = start_dir * d1
-    Xb = primary_point + tmp1
+    # Break down ray into glass-normal and glass-parallel components. */
+    n = vec_dot(start_dir, glass_dir)
+    tmp1 = vec_scalar_mul(glass_dir, n)
 
-    # Break down ray into glass-normal and glass-parallel components.
-    n = np.dot(start_dir, glass_dir)
-    tmp1 = glass_dir * n
-    bp = start_dir - tmp1
-    bp = unit_vector(bp)
+    tmp2 = vec_subt(start_dir, tmp1)
+    bp = unit_vector(tmp2)
 
-    # Transform to direction inside glass, using Snell's law.
-    p = np.sqrt(1 - n * n) * mm.n1 / mm.n2[0]  # glass parallel
-    n = -np.sqrt(1 - p * p)  # glass normal
+    # Transform to direction inside glass, using Snell's law
+    p = np.sqrt(1 - n * n) * mm.n1 / mm.n2[0]
+    # glass parallel
+    n = -np.sqrt(1 - p * p)
+    # glass normal
 
-    # Propagation length in glass parallel to glass vector.
-    tmp1 = bp * p
-    tmp2 = glass_dir * n
-    a2 = tmp1 + tmp2
-    normed = abs(np.dot(glass_dir, a2))
-    if normed > 0:
-        d2 = mm.d[0] / normed
-    else:
-        d2 = mm.d[0]
+    # Propagation length in glass parallel to glass vector */
+    tmp1 = vec_scalar_mul(bp, p)
+    tmp2 = vec_scalar_mul(glass_dir, n)
+    a2 = vec_add(tmp1, tmp2)
+    d2 = mm.d[0] / np.abs(vec_dot(glass_dir, a2))
 
-    # Point on the horizontal plane between n2,n3.
-    tmp1 = a2 * d2
-    X = Xb + tmp1
+    #   point on the horizontal plane between n2,n3  */
+    tmp1 = vec_scalar_mul(a2, d2)
+    X = vec_add(Xb, tmp1)
 
-    # Again, direction in next medium.
-    n = np.dot(a2, glass_dir)
-    tmp2 = a2 - glass_dir * n
+    # Again, direction in next medium */
+    n = vec_dot(a2, glass_dir)
+    tmp2 = vec_subt(a2, tmp2)
     bp = unit_vector(tmp2)
 
     p = np.sqrt(1 - n * n)
     p = p * mm.n2[0] / mm.n3
     n = -np.sqrt(1 - p * p)
 
-    tmp1 = bp * p
-    tmp2 = glass_dir * n
-    out = tmp1 + tmp2
+    tmp1 = vec_scalar_mul(bp, p)
+    tmp2 = vec_scalar_mul(glass_dir, n)
+    out = vec_add(tmp1, tmp2)
 
     return X, out

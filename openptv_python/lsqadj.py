@@ -146,44 +146,59 @@ def matinv(a: np.ndarray, n: int, n_large: int):
     return a
 
 
-def matmul(b: np.ndarray, c: np.ndarray, m: int, n: int, k: int):
-    """Multiply two matrices and store the result in a third matrix.
+# def matmul(b: np.ndarray, c: np.ndarray, m: int, n: int, k: int):
+#     """Multiply two matrices and store the result in a third matrix.
 
-        /* Calculate dot product of a matrix 'b' of the size (m_large x n_large) with
-    *  a vector 'c' of the size (n_large x 1) to get vector 'a' of the size
-    *  (m x 1), when m < m_large and n < n_large
-    *  i.e. one can get dot product of the submatrix of b with sub-vector of c
-    *   when n_large > n and m_large > m
-    *   Arguments:
-    *   a - output vector of doubles of the size (m x 1).
-    *   b - matrix of doubles of the size   (m x n)
-    *   c - vector of doubles of the size (n x 1)
-    *   m - integer, number of rows of a
-    *   n - integer, number of columns in a
-    *   k - integer, size of the vector output 'a', typically k = 1
-    */
+#         /* Calculate dot product of a matrix 'b' of the size (m_large x n_large) with
+#     *  a vector 'c' of the size (n_large x 1) to get vector 'a' of the size
+#     *  (m x 1), when m < m_large and n < n_large
+#     *  i.e. one can get dot product of the submatrix of b with sub-vector of c
+#     *   when n_large > n and m_large > m
+#     *   Arguments:
+#     *   a - output vector of doubles of the size (m x 1).
+#     *   b - matrix of doubles of the size   (m x n)
+#     *   c - vector of doubles of the size (n x 1)
+#     *   m - integer, number of rows of a
+#     *   n - integer, number of columns in a
+#     *   k - integer, size of the vector output 'a', typically k = 1
+#     */
 
-    """
-    a = np.zeros((m, 1), dtype=np.float64)
-    b_sub = b[:, :n]
-    c_sub = c[:n, :k]
-    a_sub = np.dot(b_sub, c_sub)
-    a[:m, :k] = a_sub
+#     """
+#     a = np.zeros((m, 1), dtype=np.float64)
+#     b_sub = b[:, :n]
+#     c_sub = c[:n, :k]
+#     a_sub = np.dot(b_sub, c_sub)
+#     a[:m, :k] = a_sub
 
-    return a
+#     return a
+
+# def matmul(a, b, c, m, n, k, m_large, n_large) -> None:
+#     """ Multiply two matrices and store the result in a third matrix."""
+#     for i in range(k):
+#         pb = b
+#         pa = a + i
+#         for j in range(m):
+#             pc = c
+#             x = 0.0
+#             for l in range(n):
+#                 x += pb[l] * pc
+#                 pc += k
+#             for l in range(n_large-n):
+#                 pb += 1
+#                 pc += k
+#             pa[0] = x
+#             pa += k
+#         for j in range(m_large-m):
+#             pa += k
+#         c += 1
 
 
-def matmul2(b, c, m, n, k, m_large, n_large):
+def matmul(
+    b: np.ndarray, c: np.ndarray, m: int, n: int, k: int, m_large: int, n_large: int
+) -> np.ndarray:
     """Multiply two matrices and store the result in a third matrix."""
-    a = np.zeros((m, k), dtype=np.float64)
-    for i in range(k):
-        pb = b
-        pa = a[:, i]
-        for j in range(m):
-            pc = c
-            x = np.dot(pb, pc[0:n])
-            pa[j] = x
-            pb += n_large
-        c += 1
-        a[:, i] = np.pad(pa, (0, m_large - m), mode="constant", constant_values=0)
-    return a[:, 1]
+    c = np.atleast_2d(c).T
+    if m_large < m or n_large < n:
+        raise ValueError("m_large < m or n_large < n")
+
+    return (b[:m, :n] @ c[:n, :k]).transpose()

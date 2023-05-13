@@ -75,3 +75,8 @@ def unit_vector(vec: vec3d) -> np.ndarray:
         normed = 1.0
     out = vec_scalar_mul(vec, 1.0 / normed)
     return out
+
+
+def vec_init():
+    """Initialize a vector to zero."""
+    return np.zeros(3, dtype=float)

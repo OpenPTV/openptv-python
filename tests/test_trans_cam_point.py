@@ -1,3 +1,4 @@
+import copy
 import unittest
 
 import numpy as np
@@ -23,7 +24,7 @@ class TestTransformFunctions(unittest.TestCase):
 
     def test_trans_cam_point(self):
         ex = Exterior(x0=1, y0=2, z0=3)
-        mm = MultimediaPar(d=[4])
+        mm = MultimediaPar(d=[4], n2=[1])
         glass = Glass(vec_x=5, vec_y=6, vec_z=7)
         pos = np.array([8, 9, 10])
 
@@ -32,7 +33,9 @@ class TestTransformFunctions(unittest.TestCase):
         expected_cross_p = np.array([8, 9, 10])
         expected_cross_c = np.array([9.49152542, 2.0, 3.0])
 
-        ex_t, pos_t, cross_p, cross_c = trans_cam_point(ex, mm, glass, pos)
+        ex_t = copy.deepcopy(ex)
+
+        pos_t, cross_p, cross_c = trans_cam_point(ex, mm, glass, pos, ex_t)
 
         np.testing.assert_allclose(ex_t.x0, expected_ex_t.x0, rtol=1e-7)
         np.testing.assert_allclose(ex_t.y0, expected_ex_t.y0, rtol=1e-7)
