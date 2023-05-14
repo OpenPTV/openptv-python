@@ -52,7 +52,7 @@ def ray_tracing(
     tmp1 = np.r_[x, y, -1 * cal.int_par.cc]
     tmp1 = unit_vector(tmp1)
     start_dir = np.empty(3, dtype=float)
-    start_dir = matmul(cal.ext_par.dm, tmp1, 3, 3, 1, 3, 3)
+    matmul(start_dir, cal.ext_par.dm, tmp1, 3, 3, 1, 3, 3)
 
     primary_point = np.r_[cal.ext_par.x0, cal.ext_par.y0, cal.ext_par.z0]
 

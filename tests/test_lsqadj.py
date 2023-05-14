@@ -32,12 +32,16 @@ class TestMatmul(unittest.TestCase):
 
         b = np.array([[1.0, 0.2, -0.3], [0.2, 1.0, 0.0], [-0.3, 0.0, 1.0]])
         c = np.array([1, 1, 1])
-        a = matmul(b, c, 3, 3, 1, 3, 3)
+        a = np.empty(
+            3,
+        )
+
+        matmul(a, b, c, 3, 3, 1, 3, 3)
 
         assert np.allclose(a, [0.9, 1.2, 0.7])
 
         a = np.array([1.0, 1.0, 1.0])
-        b = matmul(test_Ex.dm, a, 3, 3, 1, 3, 3)
+        matmul(b, test_Ex.dm, a, 3, 3, 1, 3, 3)
 
         self.assertTrue(
             abs(b[0, 0] - 0.9) < EPS
@@ -45,10 +49,10 @@ class TestMatmul(unittest.TestCase):
             and abs(b[0, 2] - 0.700) < EPS
         )
 
-        f = matmul(d, e, 3, 3, 1, 4, 4)
+        matmul(f, d, e, 3, 3, 1, 4, 4)
 
         for i in range(3):
-            self.assertTrue(abs(f[0, i] - expected[i]) < EPS)
+            self.assertTrue(abs(f[i] - expected[i]) < EPS)
 
 
 class TestAta(unittest.TestCase):
@@ -105,7 +109,7 @@ class TestMatinv(unittest.TestCase):
         # print(c)
         # print(np.linalg.inv(c))
         c = matinv(c, 3, 3)
-        print(c - expected)
+        # print(c - expected)
 
         for i in range(3):
             for j in range(3):

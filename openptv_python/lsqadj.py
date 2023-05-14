@@ -163,12 +163,106 @@ def matinv(a: np.ndarray, n: int, n_large: int) -> np.ndarray:
 #         c += 1
 
 
+# def matmul(
+#     b: np.ndarray, c: np.ndarray, m: int, n: int, k: int, m_large: int, n_large: int
+# ) -> np.ndarray:
+#     """Multiply two matrices and store the result in a third matrix."""
+#     c = np.atleast_2d(c).T
+#     if m_large < m or n_large < n:
+#         raise ValueError("m_large < m or n_large < n")
+
+#     return (b[:m, :n] @ c[:n, :k]).transpose()
+
+
+# def matmul(a, b, c, m, n, k, m_large, n_large):
+#     """
+#     Calculate dot product of a matrix 'b' of the size (m_large x n_large) with
+
+#     a vector 'c' of the size (n_large x 1) to get vector 'a' of the size (m x 1),
+#     when m < m_large and n < n_large.
+#     i.e. one can get dot product of the submatrix of b with sub-vector of c when
+#     n_large > n and m_large > m.
+
+#     Arguments:
+#     ---------
+#     a - output vector of doubles of the size (m x 1).
+#     b - matrix of doubles of the size (m_large x n_large)
+#     c - vector of doubles of the size (n x 1)
+#     m - integer, number of rows of a
+#     n - integer, number of columns in a
+#     k - integer, size of the vector output 'a', typically k = 1
+#     m_large - number of rows in matrix b
+#     n_large - number of columns in matrix b
+
+#     """
+#     if b.shape != (m_large, n_large):
+#         raise ValueError("b has wrong shape")
+
+#     c = np.atleast_2d(c).T
+#     if c.shape != (n_large, k):
+#         raise ValueError("c has wrong shape")
+
+#     a = np.atleast_2d(a).T
+#     if a.shape != (m, k):
+#         raise ValueError("a has wrong shape")
+
+#     b = b.flatten(order="C")
+#     # a = a.flatten(order="C")
+
+#     for i in range(k):
+#         print(f"i = {i}")
+#         pb[i] = b[i]
+#         pa[i] = a[i]
+#         print(f"pb = {pb}, pa = {pa}, a={a}")
+#         for j in range(m):
+#             pc = c
+#             x = 0.0
+#             for ll in range(n):
+#                 x += pb[ll] * pc[ll * k]
+#             for ll in range(n_large - n):
+#                 pb += 1
+#                 pc += k
+#             pa[0] = x
+#             pa += k
+#             pb += n
+#         for j in range(m_large - m):
+#             pa += k
+#         c += 1
+
+
 def matmul(
-    b: np.ndarray, c: np.ndarray, m: int, n: int, k: int, m_large: int, n_large: int
-) -> np.ndarray:
-    """Multiply two matrices and store the result in a third matrix."""
-    c = np.atleast_2d(c).T
+    a: np.ndarray,
+    b: np.ndarray,
+    c: np.ndarray,
+    m: int,
+    n: int,
+    k: int,
+    m_large: int,
+    n_large: int,
+) -> None:
+    """
+    Calculate dot product of a matrix 'b' of size (m_large x n_large).
+
+    with a vector 'c' of size (n_large x 1) to get
+    vector 'a' of size (m x 1), when m < m_large and n < n_large.
+
+    Arguments:
+    ---------
+    a -- output vector of doubles of size (m x 1).
+    b -- matrix of doubles of size (m x n)
+    c -- vector of doubles of size (n x 1)
+    m -- integer, number of rows of 'a'
+    n -- integer, number of columns in 'a'
+    k -- integer, size of the vector output 'a', typically k = 1
+    m_large -- integer, number of rows in matrix 'b'
+    n_large -- integer, number of columns in matrix 'b'
+    """
     if m_large < m or n_large < n:
         raise ValueError("m_large < m or n_large < n")
 
-    return (b[:m, :n] @ c[:n, :k]).transpose()
+    for i in range(k):
+        for j in range(m):
+            x = 0.0
+            for ll in range(n):
+                x += b.flat[j * n_large + ll] * c.flat[ll * k + i]
+            a.flat[j * k + i] = x
