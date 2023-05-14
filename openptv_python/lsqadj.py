@@ -26,59 +26,49 @@ import numpy as np
 #     return ata
 
 
-# def ata(a, m, n, n_large):
-def ata(a, n):
+def ata(a: np.ndarray, ata: np.ndarray, m: int, n: int, n_large: int) -> None:
+    """Return the product of the transpose of a matrix.
+
+    and the matrix itself, creating symmetric matrix.
+    matrix a and result matrix ata = at a
+    a is m * n_large, ata is an output n * n.
     """
-    Calculate the matrix product of A^T and A, where A is an m x n matrix,.
+    if a.shape != (m, n_large):
+        raise ValueError("a has wrong shape")
 
-    and stores the result in the n x n submatrix ata of a.
+    if ata.shape != (n, n):
+        raise ValueError("ata has wrong shape")
 
-    Parameters
-    ----------
-    a (ndarray): An m x n matrix.
-    ata (ndarray): An n x n submatrix of a.
-    m (int): Number of rows in matrix a.
-    n (int): Number of columns in matrix a and ata.
-    n_large (int): Number of columns in the full matrix a.
-
-    Returns
-    -------
-    None.
-    """
-    at = np.zeros((n, n), dtype=np.float64)
+    # a = a.flatten(order='C')
+    # ata = ata.flatten(order='C')
 
     for i in range(n):
         for j in range(n):
-            at[i, j] = np.sum(a[:, i] * a[:, j])
+            ata.flat[i * n_large + j] = 0.0
+            for k in range(m):
+                ata.flat[i * n_large + j] += (
+                    a.flat[k * n_large + i] * a.flat[k * n_large + j]
+                )
 
-    return at
 
+def atl(u: np.ndarray, a: np.ndarray, b: np.ndarray, m: int, n: int, n_large: int):
+    """Multiply transpose of a matrix A by vector b, creating vector u.
 
-# def atl(a: np.ndarray, l: np.ndarray, m: int, n: int, n_large: int) -> np.ndarray:
-def atl(a: np.ndarray, b: np.ndarray, n: int) -> np.ndarray:
+    with the option of working with the sub-vector only, when n < n_large.
+
+    Arguments:
+    ---------
+    u -- vector of doubles of the size (n x 1)
+    a -- matrix of doubles of the size (m x n_large)
+    l -- vector of doubles (m x 1)
+    m -- number of rows in matrix a
+    n -- length of the output u - the size of the sub-matrix
+    n_large -- number of columns in matrix a
     """
-    Multiply transpose of a matrix A by vector b.
-
-    creating vector u with the option of working with the sub-vector only,
-    when n < n_large.
-
-    Args:
-    ----
-        a: matrix of doubles of size (m x n_large).
-        b: vector of doubles of size (m x 1).
-        m: number of rows in matrix a.
-        n: length of the output u - the size of the sub-matrix.
-        n_large: number of columns in matrix a.
-
-    Returns:
-    -------
-        u: vector of the result multiply(a.T,l) of size (n x 1).
-    """
-    u = np.zeros(n, dtype=np.float64)
     for i in range(n):
-        u[i] = np.dot(a[:, i], b)
-
-    return u
+        u.flat[i] = 0.0
+        for k in range(m):
+            u.flat[i] += a.flat[k * n_large + i] * b.flat[k]
 
 
 # # Define a matrix
@@ -91,41 +81,21 @@ def atl(a: np.ndarray, b: np.ndarray, n: int) -> np.ndarray:
 # print(A_inv)
 
 
-def matinv(a: np.ndarray, n: int, n_large: int):
-    """Invert a matrix using Gauss-Jordan elimination.
-
-    This is a Python function that calculates the inverse of a
-    square matrix a of size n_large x n_large. The function uses
-    the Gauss-Jordan method to invert the matrix. If the size of
-    the sub-matrix is less than n_large, the function only works
-    with the sub-matrix of size n.
-
-    The function takes three arguments:
-
-        a: a NumPy array that represents the matrix to be inverted.
-        n: an integer that represents the size of the sub-matrix.
-        n_large: an integer that represents the number of rows and
-        columns in the matrix a.
-
-    The function starts by iterating over the rows of the sub-matrix
-    using the ipiv variable. It calculates the pivot element as
-    pivot = 1.0 / a[ipiv * n_large + ipiv] and its negative as
-    npivot = - pivot. Then it updates the elements of the sub-matrix to
-    get the identity matrix on the left side of the original matrix.
-    This is done using the nested for loops that iterate over the rows
-    and columns of the sub-matrix. The inner loops update the elements
-    of the sub-matrix using the pivot element.
-
-    The next loop updates the elements below the diagonal to make them
-    zero, as well as updating the diagonal elements to make them equal to 1.
-    Finally, the function sets the diagonal element to pivot as it was
-    updated to 1 in the previous loop.
-
-    At the end of the function, the inverse of the matrix is stored
-    in the original a array.
-
-
+def matinv(a: np.ndarray, n: int, n_large: int) -> np.ndarray:
     """
+    Calculate inverse of a matrix A, with the option of working with the sub-vector only, when n < n_large.
+
+    Arguments:
+    ---------
+    a - matrix of doubles of the size (n_large x n_large).
+    n - size of the output - size of the sub-matrix, number of observations
+    n_large - number of rows and columns in matrix a
+    """
+    if a.shape != (n_large, n_large):
+        raise ValueError("a has wrong shape")
+
+    a = a.flatten(order="C")
+
     for ipiv in range(n):
         pivot = 1.0 / a[ipiv * n_large + ipiv]
         npivot = -pivot
@@ -143,7 +113,7 @@ def matinv(a: np.ndarray, n: int, n_large: int):
                 a[irow * n_large + ipiv] *= pivot
         a[ipiv * n_large + ipiv] = pivot
 
-    return a
+    return a.reshape(n, n)
 
 
 # def matmul(b: np.ndarray, c: np.ndarray, m: int, n: int, k: int):
