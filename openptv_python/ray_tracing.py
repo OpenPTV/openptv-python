@@ -62,7 +62,13 @@ def ray_tracing(
 
     # Project start ray on glass vector to find n1/n2 interface.
     dist_cam_glass = vec_dot(glass_dir, primary_point) - c
-    d1 = -dist_cam_glass / vec_dot(glass_dir, start_dir)
+    tmp1 = vec_dot(glass_dir, start_dir)
+
+    # avoid division by zero
+    if tmp1 == 0:
+        tmp1 = 1.0
+    d1 = -dist_cam_glass / tmp1
+
     tmp1 = vec_scalar_mul(start_dir, d1)
     Xb = vec_add(primary_point, tmp1)
 
@@ -83,7 +89,13 @@ def ray_tracing(
     tmp1 = vec_scalar_mul(bp, p)
     tmp2 = vec_scalar_mul(glass_dir, n)
     a2 = vec_add(tmp1, tmp2)
-    d2 = mm.d[0] / np.abs(vec_dot(glass_dir, a2))
+
+    tmp1 = np.abs(vec_dot(glass_dir, a2))
+
+    # avoid division by zero
+    if tmp1 == 0:
+        tmp1 = 1.0
+    d2 = mm.d[0] / tmp1
 
     #   point on the horizontal plane between n2,n3  */
     tmp1 = vec_scalar_mul(a2, d2)
