@@ -17,6 +17,10 @@ class MultimediaPar:
     # d: List[float] = field(default_factory=list)
     # n3: float = field(default_factory=float)
 
+    # simplest case is a single layer of air
+    # a more typical example is 3 layers: air, glass, water
+    # but we also have option of more layers inside n2, d
+    # nlay = 3, n1 = 1, n2 = [1.5, 1.33, 1.33], d = [0.1, 0.1, 0.1], n3 = 1.33
     def __init__(self, nlay=1, n1=1, n2=[1], d=[0], n3=1):
         self.nlay = nlay
         self.n1 = n1

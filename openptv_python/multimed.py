@@ -217,21 +217,21 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibrati
         for j in range(2):
             print(i, j)
             x, y = pixel_to_metric(xc[i], yc[j], cpar)
-            print(x, y)
+            # print(x, y)
             x -= cal.int_par.xh
             y -= cal.int_par.yh
             x, y = correct_brown_affine(x, y, cal.added_par)
-            print(f"corrected {x},{y}")
-            print(f"cal = {cal}")
-            print(f"cpar.mm = {cpar.mm}")
+            # print(f"corrected {x},{y}")
+            # print(f"cal = {cal}")
+            # print(f"cpar.mm = {cpar.mm}")
             pos, a = ray_tracing(x, y, cal, cpar.mm)
-            print(f"pos = {pos}, a = {a}")
+            # print(f"pos = {pos}, a = {a}")
             xyz = move_along_ray(Zmin, pos, a)
-            print(xyz)
+            # print(xyz)
             xyz_t, _, _ = trans_cam_point(
                 cal.ext_par, cpar.mm, cal.glass_par, xyz, cal_t.ext_par
             )
-            print(xyz_t)
+            # print(xyz_t)
 
             if xyz_t[2] < Zmin_t:
                 Zmin_t = xyz_t[2]
@@ -261,7 +261,7 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibrati
     # round values (-> enlarge)
     Rmax += rw - math.fmod(Rmax, rw)
 
-    print(f"inside init_mmlut: {Rmax}, {Zmin_t}, {Zmax_t}")
+    # print(f"inside init_mmlut: {Rmax}, {Zmin_t}, {Zmax_t}")
 
     # get # of rasterlines in r, z
     nr = int(Rmax / rw + 1)
