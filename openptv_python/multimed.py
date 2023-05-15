@@ -31,50 +31,48 @@ def multimed_nlay(
 def multimed_r_nlay(cal: Calibration, mm: MultimediaPar, pos: np.ndarray) -> float:
     """Calculate the radial shift for the multimedia model."""
     n_iter = 40
-
+    # beta1 = 0.0
+    beta2 = [0] * mm.nlay
+    # beta3 = 0.0
+    # r = 0.0
+    # rbeta = 0.0
     rdiff = 0.1
+    # rq = 0.0
+    # mmf = 1.0
+    X, Y, Z = pos
+    zout = Z
+    for i in range(1, mm.nlay):
+        zout += mm.d[i]
+
+    r = norm(X - cal.ext_par.x0, Y - cal.ext_par.y0, 0)
+    rq = r
+
     it = 0
-
-    # 1-medium case
-    if mm.n1 == 1 and mm.nlay == 1 and mm.n2[0] == 1 and mm.n3 == 1:
-        return 1.0
-
-    # interpolation using the existing mmlut
-    if cal.mmlut.data is not None:
-        mmf = get_mmf_from_mmlut(cal, pos)
-        if mmf > 0:
-            return mmf
-
-    r = norm(pos[0] - cal.ext_par.x0, pos[1] - cal.ext_par.y0, 0)
-    if r == 0:
-        return 1.0
-
-    # Extra layers protrude into water side:
-    zout = pos[2] + np.sum(mm.d)
-
-    rq = r.copy()
-
-    beta2 = [1.0] * mm.nlay
-
-    while np.abs(rdiff) > 0.001 and it < n_iter:
-        beta1 = (cal.ext_par.z0 - pos[2]) and math.atan(rq / (cal.ext_par.z0 - pos[2]))
+    while (rdiff > 0.001 or rdiff < -0.001) and it < n_iter:
+        zdiff = cal.ext_par.z0 - Z
+        if zdiff == 0:
+            zdiff = 1.0
+        beta1 = math.atan(rq / zdiff)
         for i in range(mm.nlay):
             beta2[i] = math.asin(math.sin(beta1) * mm.n1 / mm.n2[i])
         beta3 = math.asin(math.sin(beta1) * mm.n1 / mm.n3)
+
         rbeta = (cal.ext_par.z0 - mm.d[0]) * math.tan(beta1) - zout * math.tan(beta3)
-        for i in range(1, mm.nlay):
+        for i in range(mm.nlay):
             rbeta += mm.d[i] * math.tan(beta2[i])
 
         rdiff = r - rbeta
-        # print(beta1, beta2,beta3, r, rbeta, rdiff)
         rq += rdiff
         it += 1
 
     if it >= n_iter:
-        print(f"multimed_r_nlay stopped after {n_iter} iterations\n")
+        print("multimed_r_nlay stopped after", n_iter, "iterations")
         return 1.0
 
-    return rq / r
+    if r != 0:
+        return rq / r
+    else:
+        return 1.0
 
 
 def trans_cam_point(
@@ -276,14 +274,14 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibrati
     cal.mmlut.rw = rw
 
     if cal.mmlut.data is None:
-        data = np.empty(nr * nz, dtype=np.float64)
+        data = np.empty((nr, nz), dtype=np.float64)
         Ri = np.arange(nr) * rw
         Zi = np.arange(nz) * rw + Zmin_t
 
         for i in range(nr):
             for j in range(nz):
                 xyz = vec_set(Ri[i] + cal_t.ext_par.x0, cal_t.ext_par.y0, Zi[j])
-                data[i * nz + j] = multimed_r_nlay(cal_t, cpar.mm, xyz)
+                data.flat[i * nz + j] = multimed_r_nlay(cal_t, cpar.mm, xyz)
 
         cal.mmlut.data = data
 
@@ -294,7 +292,7 @@ def get_mmf_from_mmlut(cal: Calibration, pos: np.ndarray) -> float:
     """Get the refractive index of the medium at a given position."""
     rw = cal.mmlut.rw
     origin = cal.mmlut.origin
-    data = cal.mmlut.data
+    data = cal.mmlut.data.flat
     nz = cal.mmlut.nz
     nr = cal.mmlut.nr
 

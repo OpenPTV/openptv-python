@@ -11,11 +11,18 @@ import numpy as np
 class MultimediaPar:
     """Multimedia parameters."""
 
-    nlay: int = field(default_factory=int)
-    n1: float = field(default_factory=float)
-    n2: List[float] = field(default_factory=list)
-    d: List[float] = field(default_factory=list)
-    n3: float = field(default_factory=float)
+    # nlay: int = field(default_factory=int)
+    # n1: float = field(default_factory=float)
+    # n2: List[float] = field(default_factory=list)
+    # d: List[float] = field(default_factory=list)
+    # n3: float = field(default_factory=float)
+
+    def __init__(self, nlay=1, n1=1, n2=[1], d=[0], n3=1):
+        self.nlay = nlay
+        self.n1 = n1
+        self.n2 = n2
+        self.d = d
+        self.n3 = n3
 
     def __post_init__(self):
         """Initialize MultimediaPar object."""
@@ -400,7 +407,7 @@ class ControlPar:
     pix_x: float = field(default_factory=float)
     pix_y: float = field(default_factory=float)
     chfield: int = field(default_factory=int)
-    mm: MultimediaPar = field(default=MultimediaPar(n1=1, n2=[1], n3=1, d=[1]))
+    mm: MultimediaPar = field(default_factory=MultimediaPar)
 
     def set_image_size(self, imsize: Tuple[int, int]):
         """Set image size in pixels."""

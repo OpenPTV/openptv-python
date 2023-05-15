@@ -11,7 +11,7 @@ from openptv_python.parameters import MultimediaPar
 class TestTransformFunctions(unittest.TestCase):
     def test_back_trans_point(self):
         pos_t = np.array([1, 2, 3])
-        mm = MultimediaPar(d=[4])
+        mm = MultimediaPar(nlay=1, n1=1, n2=[1], d=[4], n3=1)
         G = Glass(vec_x=5, vec_y=6, vec_z=7)
         cross_p = np.array([8, 9, 10])
         cross_c = np.array([11, 12, 13])
@@ -24,7 +24,7 @@ class TestTransformFunctions(unittest.TestCase):
 
     def test_trans_cam_point(self):
         ex = Exterior(x0=1, y0=2, z0=3)
-        mm = MultimediaPar(d=[4], n2=[1])
+        mm = MultimediaPar(nlay=1, n1=1, n2=[1], d=[4], n3=1)
         glass = Glass(vec_x=5, vec_y=6, vec_z=7)
         pos = np.array([8, 9, 10])
 
