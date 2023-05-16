@@ -1,4 +1,3 @@
-import copy
 import unittest
 
 import numpy as np
@@ -6,45 +5,98 @@ import numpy as np
 from openptv_python.calibration import Exterior, Glass
 from openptv_python.multimed import back_trans_point, trans_cam_point
 from openptv_python.parameters import MultimediaPar
+from openptv_python.vec_utils import vec_norm, vec_set
 
 
 class TestTransformFunctions(unittest.TestCase):
     def test_back_trans_point(self):
-        pos_t = np.array([1, 2, 3])
-        mm = MultimediaPar(nlay=1, n1=1, n2=[1], d=[4], n3=1)
-        G = Glass(vec_x=5, vec_y=6, vec_z=7)
-        cross_p = np.array([8, 9, 10])
-        cross_c = np.array([11, 12, 13])
+        """Test back trans point."""
+        pos = np.r_[100.0, 100.0, 0.0]
 
-        expected_result = np.array([3.72520005, 4.24471467, 4.76422929])
+        test_Ex = Exterior(
+            x0=0.0,
+            y0=0.0,
+            z0=100.0,
+            omega=0.0,
+            phi=0.0,
+            kappa=0.0,
+            dm=np.array([[1.0, 0.2, -0.3], [0.2, 1.0, 0.0], [-0.3, 0.0, 1.0]]),
+        )
 
-        result = back_trans_point(pos_t, mm, G, cross_p, cross_c)
+        correct_Ex_t = Exterior(
+            x0=0.0,
+            y0=0.0,
+            z0=99.0,
+            omega=-0.0,
+            phi=0.0,
+            kappa=0.0,
+            dm=np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]),
+        )
 
-        np.testing.assert_allclose(result, expected_result, rtol=1e-7)
+        # test_I = Interior(0.0, 0.0, 100.0)
+        test_G = Glass(0.0001, 0.00001, 1.0)
+        # test_addp = ap_52(0., 0., 0., 0., 0., 1., 0.)
+        # test_cal = Calibration(test_Ex, test_I, test_G, test_addp)
+
+        #
+        test_mm = MultimediaPar(1, 1.0, (1.49, 0.0, 0.0), (5.0, 0.0, 0.0), 1.33)
+
+        Ex_t = Exterior()
+
+        pos_t, cross_p, cross_c = trans_cam_point(test_Ex, test_mm, test_G, pos, Ex_t)
+
+        np.allclose(pos, np.r_[141.429134, 0.000000, -0.989000])
+        np.allclose(cross_p, np.r_[100.000099, 100.000010, 0.989000])
+        np.allclose(cross_c, np.r_[-0.009400, -0.000940, 6.000001])
+
+        pos1 = back_trans_point(pos_t, test_mm, test_G, cross_p, cross_c)  #
+
+        assert np.allclose(Ex_t.z0, correct_Ex_t.z0)
+        assert np.allclose(pos, pos1)
 
     def test_trans_cam_point(self):
-        ex = Exterior(x0=1, y0=2, z0=3)
-        mm = MultimediaPar(nlay=1, n1=1, n2=[1], d=[4], n3=1)
-        glass = Glass(vec_x=5, vec_y=6, vec_z=7)
-        pos = np.array([8, 9, 10])
+        pos = vec_set(100.0, 100.0, 0.0)
+        sep_norm = vec_norm(pos)
 
-        expected_ex_t = Exterior(x0=9.491525423728814, y0=2, z0=4)
-        expected_pos_t = np.array([8.77496439, 0.0, 4.48864969])
-        expected_cross_p = np.array([8, 9, 10])
-        expected_cross_c = np.array([9.49152542, 2.0, 3.0])
+        test_Ex = Exterior(
+            x0=0.0,
+            y0=0.0,
+            z0=100.0,
+            omega=0.0,
+            phi=0.0,
+            kappa=0.0,
+            dm=np.array([[1.0, 0.2, -0.3], [0.2, 1.0, 0.0], [-0.3, 0.0, 1.0]]),
+        )
+        correct_Ex_t = Exterior(
+            x0=0.0,
+            y0=0.0,
+            z0=50.0,
+            omega=0.0,
+            phi=0.0,
+            kappa=0.0,
+            dm=np.array([[1.0, 0.2, -0.3], [0.2, 1.0, 0.0], [-0.3, 0.0, 1.0]]),
+        )
 
-        ex_t = copy.deepcopy(ex)
+        test_G = Glass(0.0, 0.0, 50.0)
+        # ap_52 test_addp = {0., 0., 0., 0., 0., 1., 0.};
+        # Calibration test_cal = {test_Ex, test_I, test_G, test_addp};
 
-        pos_t, cross_p, cross_c = trans_cam_point(ex, mm, glass, pos, ex_t)
+        test_mm = MultimediaPar(1, 1.0, (1.49, 0.0, 0.0), (5.0, 0.0, 0.0), 1.33)
 
-        np.testing.assert_allclose(ex_t.x0, expected_ex_t.x0, rtol=1e-7)
-        np.testing.assert_allclose(ex_t.y0, expected_ex_t.y0, rtol=1e-7)
-        np.testing.assert_allclose(ex_t.z0, expected_ex_t.z0, rtol=1e-7)
+        Ex_t = Exterior()
+        pos_t, cross_p, cross_c = trans_cam_point(test_Ex, test_mm, test_G, pos, Ex_t)
 
-        np.testing.assert_allclose(pos_t, expected_pos_t, rtol=1e-7)
+        self.assertTrue(np.allclose(pos_t, np.r_[sep_norm, 0.0, -test_G.vec_z]))
+        self.assertTrue(np.allclose(cross_p, np.r_[pos[0], pos[1], test_G.vec_z]))
+        self.assertTrue(
+            np.allclose(
+                cross_c, np.r_[test_Ex.x0, test_Ex.y0, test_G.vec_z + test_mm.d[0]]
+            )
+        )
 
-        np.testing.assert_allclose(cross_p, expected_cross_p, rtol=1e-7)
-        np.testing.assert_allclose(cross_c, expected_cross_c, rtol=1e-7)
+        self.assertAlmostEqual(Ex_t.x0, correct_Ex_t.x0)
+        self.assertAlmostEqual(Ex_t.y0, correct_Ex_t.y0)
+        self.assertAlmostEqual(Ex_t.z0, correct_Ex_t.z0)
 
 
 if __name__ == "__main__":

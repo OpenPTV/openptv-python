@@ -12,7 +12,7 @@ from .parameters import (
 )
 from .ray_tracing import ray_tracing
 from .trafo import correct_brown_affine, pixel_to_metric
-from .vec_utils import norm, vec3d, vec_set
+from .vec_utils import norm, vec3d, vec_dot, vec_norm, vec_set
 
 
 def multimed_nlay(
@@ -90,12 +90,12 @@ def trans_cam_point(
     glass_dir = np.array([glass.vec_x, glass.vec_y, glass.vec_z])
     primary_point = np.array([ex.x0, ex.y0, ex.z0])
 
-    dist_o_glass = np.linalg.norm(glass_dir)  # vector length
+    dist_o_glass = vec_norm(glass_dir)  # vector length
     dist_cam_glas = (
-        np.dot(primary_point, glass_dir) / dist_o_glass - dist_o_glass - mm.d
+        np.dot(primary_point, glass_dir) / dist_o_glass - dist_o_glass - mm.d[0]
     )
 
-    dist_point_glass = np.dot(pos, glass_dir) / dist_o_glass - dist_o_glass
+    dist_point_glass = vec_dot(pos, glass_dir) / dist_o_glass - dist_o_glass
 
     renorm_glass = glass_dir * (dist_cam_glas / dist_o_glass)
     cross_c = primary_point - renorm_glass
@@ -107,7 +107,7 @@ def trans_cam_point(
     ex_t.y0 = 0.0
     ex_t.z0 = dist_cam_glas + mm.d[0]
 
-    renorm_glass = glass_dir * (mm.d / dist_o_glass)
+    renorm_glass = glass_dir * (mm.d[0] / dist_o_glass)
     temp = cross_c - renorm_glass
     temp = cross_p - temp
     pos_t = np.r_[np.linalg.norm(temp), 0, dist_point_glass]
