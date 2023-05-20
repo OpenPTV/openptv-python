@@ -29,14 +29,23 @@ class TestMultimedRnlay(unittest.TestCase):
 
         self.cal = init_mmlut(self.vpar, self.cpar, self.cal)
 
-        print("finished with init_mmlut \n")
-        print(self.cal.mmlut.nr, self.cal.mmlut.nz, self.cal.mmlut.rw)
+        # print("finished with init_mmlut \n")
+        # print(self.cal.mmlut.nr, self.cal.mmlut.nz, self.cal.mmlut.rw)
 
         # Set up input position and expected output values
         pos = [1.23, 1.23, 1.23]
 
         correct_Xq = 0.74811917
         correct_Yq = 0.75977975
+
+        # radial_shift = multimed_r_nlay (self.cal, self.cpar.mm, pos)
+        # print(f"radial shift is {radial_shift}")
+
+        # /* if radial_shift == 1.0, this degenerates to Xq = X, Yq = Y  */
+        # Xq = self.cal.ext_par.x0 + (pos[0] - self.cal.ext_par.x0) * radial_shift
+        # Yq = self.cal.ext_par.y0 + (pos[1] - self.cal.ext_par.y0) * radial_shift
+
+        # print("\n Xq = %f, Yq = %f \n" % (Xq, Yq));
 
         # Call function and check output values
         Xq, Yq = multimed_nlay(self.cal, self.cpar.mm, pos)

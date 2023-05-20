@@ -31,14 +31,20 @@ def multimed_nlay(
 def multimed_r_nlay(cal: Calibration, mm: MultimediaPar, pos: np.ndarray) -> float:
     """Calculate the radial shift for the multimedia model."""
     n_iter = 40
-    # beta1 = 0.0
     beta2 = [0] * mm.nlay
-    # beta3 = 0.0
-    # r = 0.0
-    # rbeta = 0.0
     rdiff = 0.1
-    # rq = 0.0
-    # mmf = 1.0
+
+    # 1-medium case
+    if mm.n1 == 1 and mm.nlay == 1 and mm.n2[0] == 1 and mm.n3 == 1:
+        return 1.0
+
+    #  interpolation using the existing mmlut
+    if cal.mmlut.data is not None:
+        print("going into get_mmf_from_mmlut\n")
+        mmf = get_mmf_from_mmlut(cal, pos)
+        if mmf > 0:
+            return mmf
+
     X, Y, Z = pos
     zout = Z
     for i in range(1, mm.nlay):
