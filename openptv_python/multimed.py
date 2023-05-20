@@ -215,30 +215,22 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibrati
 
     for i in range(2):
         for j in range(2):
-            print(i, j)
             x, y = pixel_to_metric(xc[i], yc[j], cpar)
-            # print(x, y)
             x -= cal.int_par.xh
             y -= cal.int_par.yh
             x, y = correct_brown_affine(x, y, cal.added_par)
-            # print(f"corrected {x},{y}")
-            # print(f"cal = {cal}")
-            # print(f"cpar.mm = {cpar.mm}")
             pos, a = ray_tracing(x, y, cal, cpar.mm)
-            # print(f"pos = {pos}, a = {a}")
             xyz = move_along_ray(Zmin, pos, a)
-            # print(xyz)
             xyz_t, _, _ = trans_cam_point(
                 cal.ext_par, cpar.mm, cal.glass_par, xyz, cal_t.ext_par
             )
-            # print(xyz_t)
 
             if xyz_t[2] < Zmin_t:
                 Zmin_t = xyz_t[2]
             if xyz_t[2] > Zmax_t:
                 Zmax_t = xyz_t[2]
 
-            R = norm(xyz_t[0] - cal.ext_par.x0, xyz_t[1] - cal.ext_par.y0, 0)
+            R = norm(xyz_t[0] - cal_t.ext_par.x0, xyz_t[1] - cal_t.ext_par.y0, 0)
 
             if R > Rmax:
                 Rmax = R
@@ -253,15 +245,13 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibrati
             if xyz_t[2] > Zmax_t:
                 Zmax_t = xyz_t[2]
 
-            R = norm(xyz_t[0] - cal.ext_par.x0, xyz_t[1] - cal.ext_par.y0, 0)
+            R = norm(xyz_t[0] - cal_t.ext_par.x0, xyz_t[1] - cal_t.ext_par.y0, 0)
 
             if R > Rmax:
                 Rmax = R
 
     # round values (-> enlarge)
     Rmax += rw - math.fmod(Rmax, rw)
-
-    # print(f"inside init_mmlut: {Rmax}, {Zmin_t}, {Zmax_t}")
 
     # get # of rasterlines in r, z
     nr = int(Rmax / rw + 1)

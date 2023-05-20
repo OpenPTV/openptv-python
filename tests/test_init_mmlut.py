@@ -39,15 +39,16 @@ class TestInitMmLut(unittest.TestCase):
         cal = init_mmlut(vpar, cpar, cal)
 
         # Data[0] Is the radial shift of a point directly on the glass vector
-        self.assertAlmostEqual(cal.mmlut.data[0], 1)
+
+        data = cal.mmlut.data.flatten()
+
+        self.assertAlmostEqual(data[0], 1)
 
         # Radial shift grows with radius
+        self.assertLess(data[0], data[correct_mmlut.nz])
         self.assertLess(
-            cal.mmlut.data[0], cal.mmlut.data[correct_mmlut.nz * correct_mmlut.nr]
-        )
-        self.assertLess(
-            cal.mmlut.data[correct_mmlut.nz],
-            cal.mmlut.data[2 * correct_mmlut.nz],
+            data[correct_mmlut.nz],
+            data[2 * correct_mmlut.nz],
         )
 
         self.assertAlmostEqual(cal.mmlut.origin[0], correct_mmlut.origin[0], places=5)
