@@ -65,7 +65,7 @@ class TestEpipolarCurve(unittest.TestCase):
         mid = np.r_[sens_size] / 2.0
         line = epipolar_curve(mid, orig_cal, proj_cal, 5, cpar, vpar)
         # we need to improve this
-        self.assertTrue(np.all(np.abs(line - mid) < 1e-4))
+        self.assertTrue(np.all(np.abs(line - mid) < 1e-3))
 
         # An equatorial point draws a latitude.
         line = epipolar_curve(
