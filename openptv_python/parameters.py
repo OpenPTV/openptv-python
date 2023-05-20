@@ -33,7 +33,7 @@ class MultimediaPar:
         if len(self.n2) != len(self.d):
             raise ValueError("n2 and d must have the same length")
 
-        self.nlay = len(self.d)
+        # self.nlay  = 1 # default that is not implemented yet otherwise
 
     def get_nlay(self):
         """Return the number of layers."""
@@ -70,7 +70,7 @@ class MultimediaPar:
         else:
             self.n2 = refr_index
             self.d = thickness
-            self.nlay = len(refr_index)
+            # self.nlay = len(refr_index)
 
 
 def compare_mm_np(mm_np1: MultimediaPar, mm_np2: MultimediaPar) -> bool:
