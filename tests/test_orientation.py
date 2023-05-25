@@ -344,7 +344,7 @@ class TestGradientDescent(unittest.TestCase):
 
         # Full calibration works with TargetArray objects, not NumPy.
         target_array = TargetArray(len(targets))
-        for i, trgt in enumerate(target_array.targs):
+        for i, trgt in enumerate(target_array):
             trgt.set_pnr(i)
             trgt.set_pos(targets[i])
 
