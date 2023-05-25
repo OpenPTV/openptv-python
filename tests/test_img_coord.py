@@ -11,7 +11,7 @@ class Test_image_coordinates(unittest.TestCase):
     def setUp(self):
         self.control = ControlPar(4)
         self.calibration = Calibration()
-        self.control.mm = MultimediaPar(n1=1, n2=np.array([1]), n3=1, d=np.array([1]))
+        self.control.mm = MultimediaPar(n1=1, n2=[1], n3=1, d=[1])
 
     def test_img_coord_typecheck(self):
         # with self.assertRaises(TypeError):

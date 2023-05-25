@@ -658,16 +658,20 @@ def raw_orient(
             n += 2
 
         # void ata (double *a, double *ata, int m, int n, int n_large )
-        # ata(X, XPX, n, 6, 6)
-        XPX = ata(X, 6)
+        ata(X, XPX, n, 6, 6)
         if np.any(XPX):
             XPXi = np.linalg.inv(XPX)
         else:
             XPXi = XPX
 
         # atl (double *u, double *a, double *l, int m, int n, int n_large)
-        XPy = atl(X, y, 6)
+        XPy = atl(XPy, X, y, 6)
         beta = XPXi @ XPy
+
+        # ata ((double *) X, (double *) XPX, n, 6, 6);
+        # matinv ((double *) XPX, 6, 6);
+        # atl ((double *) XPy, (double *) X, y, n, 6, 6);
+        # matmul ((double *) beta, (double *) XPX, (double *) XPy, 6,6,1,6,6);
 
         stopflag = all(abs(beta) <= 0.1)
 
@@ -981,7 +985,7 @@ def match_detection_to_ref(
 
 def point_positions(
     targets: np.ndarray, cparam: ControlPar, cals: List[Calibration], vparam: VolumePar
-):
+) -> Tuple[np.ndarray, np.ndarray]:
     """
     Calculate the 3D positions of the points given by their 2D projections.
 
@@ -1023,7 +1027,7 @@ def point_positions(
 
 def single_cam_point_positions(
     targets: np.ndarray, cparam: ControlPar, cals: List[Calibration], vparam: VolumePar
-):
+) -> Tuple[np.ndarray, np.ndarray]:
     """
     Calculate the 3D positions of the points from a single camera using.
 
@@ -1041,13 +1045,13 @@ def single_cam_point_positions(
     targets = np.ascontiguousarray(targets)
 
     num_targets = targets.shape[0]
-    targets.shape[1]
+    # num_cams = targets.shape[1]
     res = np.empty((num_targets, 3))
     rcm = np.zeros(num_targets)
 
     for pt in range(num_targets):
         targ = targets[pt]
-        res = epi_mm_2D(targ[0][0], targ[0][1], cals[0], cparam.mm, vparam)
+        res[pt, :] = epi_mm_2D(targ[0][0], targ[0][1], cals[0], cparam.mm, vparam)
         # <vec3d> np.PyArray_GETPTR2(res, pt, 0));
 
     return res, rcm

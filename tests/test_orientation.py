@@ -1,9 +1,10 @@
-import random
 import unittest
 
 import numpy as np
 
-from openptv_python.calibration import Calibration
+from openptv_python.calibration import (
+    Calibration,
+)
 from openptv_python.imgcoord import flat_image_coordinates, image_coordinates
 from openptv_python.orientation import (
     dumbbell_target_func,
@@ -62,17 +63,15 @@ class Test_Orientation(unittest.TestCase):
         target_array = TargetArray(num_targs=coords_count)
 
         for i in range(coords_count):
-            target_array.targs[i].set_pnr(i)
-            target_array.targs[i].set_pos(
-                (xy_img_pts_pixel[i][0], xy_img_pts_pixel[i][1])
-            )
+            target_array[i].set_pnr(i)
+            target_array[i].set_pos((xy_img_pts_pixel[i][0], xy_img_pts_pixel[i][1]))
 
         # create randomized target array
         indices = list(range(coords_count))
         shuffled_indices = list(range(coords_count))
 
         while indices == shuffled_indices:
-            random.shuffle(shuffled_indices)
+            np.random.shuffle(shuffled_indices)
 
         rand_targ_array = TargetArray(coords_count)
         for i in range(coords_count):
@@ -95,12 +94,14 @@ class Test_Orientation(unittest.TestCase):
             ):
                 self.fail()
 
-        # # pass ref_pts and img_pts with non-equal lengths
-        # with self.assertRaises(ValueError):
-        #     match_detection_to_ref(cal=self.calibration,
-        #                            ref_pts=xyz_input,
-        #                            img_pts=TargetArray(coords_count - 1),
-        #                            cparam=self.control)
+        # pass ref_pts and img_pts with non-equal lengths
+        with self.assertRaises(ValueError):
+            match_detection_to_ref(
+                cal=self.calibration,
+                ref_pts=xyz_input,
+                img_pts=TargetArray(coords_count - 1),
+                cparam=self.control,
+            )
 
     def test_point_positions(self):
         """Point positions."""
@@ -180,7 +181,7 @@ class Test_Orientation(unittest.TestCase):
         vpar_file = "tests/testing_folder/single_cam/parameters/criteria.par"
         cpar = ControlPar(num_cams)
         cpar.from_file(cpar_file)
-        mult_params = cpar.get_multimedia_params()
+        # mm_params = cpar.get_multimedia_params()
 
         vpar = VolumePar()
         vpar.from_file(vpar_file)
@@ -202,23 +203,34 @@ class Test_Orientation(unittest.TestCase):
 
         jigg_amp = 0.4
 
-        new_plain_targ = image_coordinates(points, calibs[0], mult_params)
+        new_plain_targ = image_coordinates(points, calibs[0], cpar.mm)
         targs_plain.append(new_plain_targ)
+
+        # print(f"new_plain_targ: {new_plain_targ}")
 
         jigged_points = points - np.r_[0, jigg_amp, 0]
 
-        new_jigged_targs = image_coordinates(jigged_points, calibs[0], mult_params)
+        new_jigged_targs = image_coordinates(jigged_points, calibs[0], cpar.mm)
         targs_jigged.append(new_jigged_targs)
+
+        # print(f"new_jigged_targs: {new_jigged_targs}")
 
         targs_plain = np.array(targs_plain).transpose(1, 0, 2)
         targs_jigged = np.array(targs_jigged).transpose(1, 0, 2)
+
+        # print(f"targs_plain: {targs_plain}")
+        # print(f"targs_jigged: {targs_jigged}")
+
         skew_dist_plain = point_positions(targs_plain, cpar, calibs, vpar)
         skew_dist_jigged = point_positions(targs_jigged, cpar, calibs, vpar)
 
-        if np.any(np.linalg.norm(points - skew_dist_plain[0], axis=1) > 1e-6):
+        # print(f"skew_dist_plain: {skew_dist_plain}")
+        # print(f"skew_dist_jigged: {skew_dist_jigged}")
+
+        if np.sum(np.linalg.norm(points - skew_dist_plain[0], axis=1)) > 1e-6:
             self.fail("Rays converge on wrong position.")
 
-        if np.any(np.linalg.norm(jigged_points - skew_dist_jigged[0], axis=1) > 1e-6):
+        if np.sum(np.linalg.norm(jigged_points - skew_dist_jigged[0], axis=1)) > 1e-6:
             self.fail("Rays converge on wrong position after jigging.")
 
     def test_dumbbell(self):

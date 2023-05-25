@@ -4,8 +4,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Tuple
 
-import numpy as np
-
 
 @dataclass
 class MultimediaPar:
@@ -21,7 +19,7 @@ class MultimediaPar:
     # a more typical example is 3 layers: air, glass, water
     # but we also have option of more layers inside n2, d
     # nlay = 3, n1 = 1, n2 = [1.5, 1.33, 1.33], d = [0.1, 0.1, 0.1], n3 = 1.33
-    def __init__(self, nlay=1, n1=1, n2=[1], d=[0], n3=1):
+    def __init__(self, nlay=1, n1=1, n2=[1], d=[1], n3=1):
         self.nlay = nlay
         self.n1 = n1
         self.n2 = n2
@@ -71,6 +69,9 @@ class MultimediaPar:
             self.n2 = refr_index
             self.d = thickness
             # self.nlay = len(refr_index)
+
+    def __str__(self) -> str:
+        return f"nlay = {self.nlay}, n1 = {self.n1}, n2 = {self.n2}, d = {self.d}, n3 = {self.n3}"
 
 
 def compare_mm_np(mm_np1: MultimediaPar, mm_np2: MultimediaPar) -> bool:
@@ -493,8 +494,8 @@ class ControlPar:
         # therefore the following lines convert it to numpy arrays
         # we expect the user to provide this parameter file lines with equal
         # number of floats
-        self.mm.d = np.atleast_1d(self.mm.d)
-        self.mm.n2 = np.atleast_1d(self.mm.n2)
+        self.mm.d = [self.mm.d]
+        self.mm.n2 = [self.mm.n2]
 
     def get_multimedia_params(self):
         """Return multimedia parameters."""

@@ -147,6 +147,9 @@ class Calibration:
             self.glass_par.vec_x, self.glass_par.vec_y, self.glass_par.vec_z = map(
                 float, fp.readline().split()
             )
+        # set correct rotation matrix
+        self.ext_par = rotation_matrix(self.ext_par)
+        self.mmlut.data = None  # no multimedia data yet
 
         # Additional parameters
         try:
@@ -493,8 +496,7 @@ def read_calibration(
     ret = Calibration()
     ret.from_file(ori_file, addpar_file, fallback_file)
     # read_ori(ori_file, addpar_file, fallback_file)
-    ret.ext_par = rotation_matrix(ret.ext_par)
-    ret.mmlut.data = None  # no multimedia data yet
+
     return ret
 
 

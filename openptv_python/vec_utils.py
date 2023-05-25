@@ -55,7 +55,7 @@ def vec_norm(vec: vec3d) -> float:
 
 def vec_dot(vec1: vec3d, vec2: vec3d) -> vec3d:
     """vec_dot() gives the dot product of two vectors as lists of floats."""
-    return vec1.dot(vec2)
+    return np.dot(vec1, vec2)
 
 
 def vec_cross(vec1: vec3d, vec2: vec3d) -> vec3d:
