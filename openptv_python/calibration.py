@@ -1,4 +1,5 @@
 """Calibration data structures and functions."""
+
 import pathlib
 from dataclasses import dataclass, field
 from typing import List, Optional
@@ -477,7 +478,16 @@ def compare_glass(g1: Glass, g2: Glass):
     return g1.vec_x == g2.vec_x and g1.vec_y == g2.vec_y and g1.vec_z == g2.vec_z
 
 
+def compare_calibration(c1: Calibration, c2: Calibration) -> bool:
+    return (
+        compare_exterior(c1.ext_par, c2.ext_par)
+        and compare_interior(c1.int_par, c2.int_par)
+        and compare_glass(c1.glass_par, c2.glass_par)
+    )
+
+
 def compare_addpar(a1, a2):
+    """Compare added parameters."""
     return (
         (a1.k1 == a2.k1)
         and (a1.k2 == a2.k2)

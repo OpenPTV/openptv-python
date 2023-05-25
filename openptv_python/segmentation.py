@@ -207,10 +207,10 @@ def targ_rec(
                         xn = x
                         yn = y
 
-    t = TargetArray(num_targs=n_targets)
+    # t = TargetArray(num_targs=n_targets)
     # t.num_targs = n_targets
-    t.targs = pix
-    return t
+    # t.targs = pix
+    return pix
 
 
 def peak_fit(

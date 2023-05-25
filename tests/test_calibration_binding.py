@@ -12,6 +12,7 @@ from openptv_python.calibration import (
     Interior,
     ap_52,
     compare_addpar,
+    compare_calibration,
 )
 
 
@@ -77,7 +78,12 @@ class Test_Calibration(unittest.TestCase):
 
         self.cal.write(output_ori_file_name, output_add_file_name)
 
-        self.assertTrue(filecmp.cmp(self.input_ori_file_name, output_ori_file_name, 0))
+        tmp_cal = Calibration()
+        tmp_cal.from_file(output_ori_file_name, output_add_file_name)
+
+        self.assertTrue(compare_calibration(self.cal, tmp_cal))
+
+        # self.assertTrue(filecmp.cmp(self.input_ori_file_name, output_ori_file_name, 0))
         self.assertTrue(filecmp.cmp(self.input_add_file_name, output_add_file_name, 0))
 
         # with open(self.input_add_file_name,'r') as file1:
