@@ -9,6 +9,7 @@ from .calibration import Calibration
 from .constants import (
     COORD_UNUSED,
     CORRES_NONE,
+    MAX_TARGETS,
     NEXT_NONE,
     POSI,
     PREV_NONE,
@@ -301,7 +302,7 @@ class Frame:
     #     default_factory=list
     # )  # list of 2d particle counts per image
 
-    def __init__(self, num_cams: int, max_targets: int):
+    def __init__(self, num_cams: int, max_targets: int = MAX_TARGETS):
         """
         Initialize a frame object, allocates its arrays and sets up the frame data.
 
@@ -314,8 +315,8 @@ class Frame:
         self.path_info = [Pathinfo() for _ in range(max_targets)]
         self.correspond = [Corres() for _ in range(max_targets)]
 
-        self.targets = [[Target() for _ in range(max_targets)] for _ in range(num_cams)]
-        self.num_targets = [0] * max_targets
+        self.targets = [TargetArray(max_targets) for _ in range(num_cams)]
+        self.num_targets = [0] * num_cams
 
         self.num_cams = num_cams
         self.max_targets = max_targets

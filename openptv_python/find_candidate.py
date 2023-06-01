@@ -148,6 +148,8 @@ def find_candidate(
 
 def quality_ratio(a, b):
     """Return the ratio of the smaller to the larger of the two numbers."""
+    if a == 0 and b == 0:
+        return 0
     return min(a, b) / max(a, b)
 
 

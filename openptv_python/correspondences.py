@@ -1,5 +1,4 @@
 """Correspondences."""
-from dataclasses import dataclass, field
 from typing import List, Tuple
 
 import numpy as np
@@ -9,18 +8,26 @@ from .constants import CORRES_NONE, MAX_TARGETS, MAXCAND, NMAX, PT_UNUSED
 from .epi import Coord2d, epi_mm
 from .find_candidate import find_candidate
 from .parameters import ControlPar, VolumePar
-from .tracking_frame_buf import Frame, Target, n_tupel
+from .tracking_frame_buf import Frame, MatchedCoords, Target, TargetArray, n_tupel
+
+# @dataclass
+# class Correspond:
+#     """Correspondence candidate data structure."""
+
+#     p1: int = field(default_factory=int)  # point number of master point
+#     n: int = field(default_factory=int)  # number of candidates
+#     p2: list = field(default_factory=list)  # point numbers of candidates
+#     corr: list = field(default_factory=list)  # feature-based correlation coefficient
+#     dist: list = field(default_factory=list)  # distance perpendicular to epipolar line
 
 
-@dataclass
 class Correspond:
-    """Correspondence candidate data structure."""
-
-    p1: int = field(default_factory=int)  # point number of master point
-    n: int = field(default_factory=int)  # number of candidates
-    p2: list = field(default_factory=list)  # point numbers of candidates
-    corr: list = field(default_factory=list)  # feature-based correlation coefficient
-    dist: list = field(default_factory=list)  # distance perpendicular to epipolar line
+    def __init__(self):
+        self.p1 = 0
+        self.n = 0
+        self.p2 = [0] * MAXCAND
+        self.corr = [0.0] * MAXCAND
+        self.dist = [0.0] * MAXCAND
 
 
 def safely_allocate_target_usage_marks(
@@ -89,9 +96,7 @@ def safely_allocate_adjacency_lists(
         for c2 in range(c1 + 1, num_cams):
             if lists[c1][c2][0] is None:
                 try:
-                    lists[c1][c2] = [
-                        Correspond(p1=0, n=0) for _ in range(target_counts[c1])
-                    ]
+                    lists[c1][c2] = [Correspond() for _ in range(target_counts[c1])]
                 except MemoryError as exc:
                     for i in range(num_cams - 1):
                         for j in range(i + 1, num_cams):
@@ -103,7 +108,7 @@ def safely_allocate_adjacency_lists(
                     ) from exc
             else:
                 for edge in range(target_counts[c1]):
-                    lists[c1][c2][edge].p1 = 0
+                    lists[c1][c2][edge].p1 = PT_UNUSED
                     lists[c1][c2][edge].n = 0
     return lists
 
@@ -268,7 +273,7 @@ def consistent_pair_matching(
 
 
 def match_pairs(
-    corr_list: List[List[List[Correspond]]], corrected, frm, vpar, cpar, calib
+    corr_list: List[List[List[Correspond]]], corrected, frm: Frame, vpar, cpar, calib
 ):
     """Match pairs of cameras.
 
@@ -394,8 +399,8 @@ def take_best_candidates(src, dst, num_cams, tusage):
 
 
 def py_correspondences(
-    img_pts: List[Target],
-    flat_coords: List[Coord2d],
+    img_pts: List[TargetArray],
+    flat_coords: List[MatchedCoords],
     calib: List[Calibration],
     vparam: VolumePar,
     cparam: ControlPar,
@@ -428,7 +433,7 @@ def py_correspondences(
     """
     num_cams = cparam.num_cams
     frm = Frame(num_cams, MAX_TARGETS)
-    corrected = [Coord2d() for _ in range(num_cams)]
+    corrected = [None] * num_cams
 
     # Special case of a single camera, follow the single_cam_correspondence docstring
     if num_cams == 1:
@@ -452,21 +457,20 @@ def py_correspondences(
     # n_tupel *corresp_buf
 
     match_counts = [0] * num_cams
-    corresp_buf = []  # of n_tupel
+    # corresp_buf = []  # of n_tupel
 
     # Initialize frame partially, without the extra momory used by init_frame.
     # frm.targets = <target**> calloc(num_cams, sizeof(target*))
     # frm.num_targets = <int *> calloc(num_cams, sizeof(int))
-    frm.targets = [Target() for _ in range(num_cams)]
-    frm.num_targets = [0] * num_cams
+    # frm.targets = [TargetArray(MAX_TARGETS) for _ in range(num_cams)]
+    # frm.num_targets = [0] * num_cams
 
     for cam in range(num_cams):
         # calib[cam] = (<Calibration>cals[cam])._calibration
         # frm.targets[cam] = (<TargetArray>img_pts[cam])._tarr
-        frm.targets[cam] = [Target() for _ in range(len(img_pts[cam]))]
         frm.num_targets[cam] = len(img_pts[cam])
-        # corrected[cam] = (<MatchedCoords>flat_coords[cam]).buf
-        # corrected[cam] = [MatchedCoords() for _ in range(len(flat_coords[cam]))]
+        frm.targets[cam] = [Target() for _ in range(frm.num_targets[cam])]
+        corrected[cam] = flat_coords[cam].buf
 
     # The biz:
     corresp_buf = correspondences(frm, corrected, vparam, cparam, calib, match_counts)
@@ -512,7 +516,7 @@ def correspondences(
     corrected: List[List[Coord2d]],
     vpar: VolumePar,
     cpar: ControlPar,
-    calib: List[List[Calibration]],
+    calib: List[Calibration],
     match_counts: List[int],
 ) -> List[n_tupel]:
     """Find correspondences between cameras.
@@ -616,7 +620,9 @@ def correspondences(
     return con
 
 
-def single_cam_correspondences(img_pts: List[Target], flat_coords: List[float]):
+def single_cam_correspondences(
+    img_pts: List[TargetArray], flat_coords: List[MatchedCoords]
+):
     """
     Single camera correspondence is not a real correspondence, it will be only a projection.
 

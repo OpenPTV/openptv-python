@@ -17,18 +17,19 @@ from .trafo import dist_to_flat, metric_to_pixel, pixel_to_metric
 class Candidate:
     """Candidate point in the second image."""
 
-    pnr: int = field(default_factory=int)
-    tol: float = field(default_factory=float)
-    corr: float = field(default_factory=float)
+    def __init__(self, pnr=PT_UNUSED, tol=0.0, corr=0.0):
+        self.pnr = pnr
+        self.tol = tol
+        self.corr = corr
 
 
-@dataclass
 class Coord2d:
-    """2D coordinates in the image plane."""
+    """2D coordinates in the image space."""
 
-    pnr: int = field(default_factory=int)
-    x: float = field(default_factory=float)
-    y: float = field(default_factory=float)
+    def __init__(self, pnr=PT_UNUSED, x=0.0, y=0.0):
+        self.pnr = pnr
+        self.x = x
+        self.y = y
 
 
 def sort_coord2d_x(crd: List[Coord2d]) -> List[Coord2d]:

@@ -26,15 +26,13 @@ class TestMatchPairs(unittest.TestCase):
         self.vpar = read_volume_par("tests/testing_fodder/parameters/criteria.par")
 
         self.cpar.num_cams = 2
-        self.cpar.mm.n2[0] = 1.0
-        self.cpar.mm.n3 = 1.0
 
-        # self.vpar.Zmin_lay[0] = -1
-        # self.vpar.Zmin_lay[1] = -1
-        # self.vpar.Zmax_lay[0] = 1
-        # self.vpar.Zmax_lay[1] = 1
+        self.vpar.Zmin_lay[0] = -1
+        self.vpar.Zmin_lay[1] = -1
+        self.vpar.Zmax_lay[0] = 1
+        self.vpar.Zmax_lay[1] = 1
 
-        self.calib = read_all_calibration(self.cpar)
+        self.calib = read_all_calibration(self.cpar.num_cams)
         self.frm = generate_test_set(self.calib, self.cpar)
 
         self.corrected = correct_frame(self.frm, self.calib, self.cpar, 0.0001)
