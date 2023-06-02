@@ -312,7 +312,7 @@ class TestGradientDescent(unittest.TestCase):
 
         # Fake the image points by back-projection
         targets = arr_metric_to_pixel(
-            image_coordinates(ref_pts, self.cal, self.control.get_multimedia_params()),
+            image_coordinates(ref_pts, self.cal, self.control.mm),
             self.control,
         )
 

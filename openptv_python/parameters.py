@@ -10,10 +10,10 @@ class MultimediaPar:
     """Multimedia parameters."""
 
     nlay: int = 1
-    n1: float = field(default_factory=float)
-    n2: List[float] = field(default_factory=list)
-    n3: float = field(default_factory=float)
-    d: List[float] = field(default_factory=list)
+    n1: float = 1.0
+    n2: List[float] = field(default_factory=lambda: [1.0])
+    d: List[float] = field(default_factory=lambda: [0.0])
+    n3: float = 1.0
 
     def __post_init__(self):
         if len(self.n2) != len(self.d):
@@ -71,28 +71,22 @@ def compare_mm_np(mm_np1: MultimediaPar, mm_np2: MultimediaPar) -> bool:
     )
 
 
+@dataclass
 class SequencePar:
     """Sequence parameters."""
 
-    def __init__(
-        self,
-        num_cams: int = 0,
-        img_base_name: List[str] | None = None,
-        first: int | None = None,
-        last: int | None = None,
-    ):
-        self.num_cams = num_cams
-        self.img_base_name = img_base_name
-        self.first = first
-        self.last = last
-
-        # if len(self.img_base_name) != self.num_cams:
-        #     self.img_base_name = [""] * self.num_cams
+    num_cams: int = 0
+    img_base_name: List[str] | None = None
+    first: int | None = None
+    last: int | None = None
 
     def set_img_base_name(self, icam, new_name):
         """Set the image base name for each camera."""
         if icam > self.num_cams:
             raise ValueError("Length of names must be equal to num_cams.")
+        if self.img_base_name is None:
+            self.img_base_name = [None] * self.num_cams
+
         self.img_base_name[icam] = new_name
 
     def get_img_base_name(self, icam):
@@ -145,21 +139,21 @@ def compare_sequence_par(sp1: SequencePar, sp2: SequencePar) -> bool:
     )
 
 
+@dataclass
 class TrackPar:
-    def __init__(self):
-        self.dacc = 0.0
-        self.dangle = 0.0
-        self.dvxmax = 0.0
-        self.dvxmin = 0.0
-        self.dvymax = 0.0
-        self.dvymin = 0.0
-        self.dvzmax = 0.0
-        self.dvzmin = 0.0
-        self.dsumg = 0.0
-        self.dn = 0.0
-        self.dnx = 0.0
-        self.dny = 0.0
-        self.add = 0
+    dacc: float = 0.0
+    dangle: float = 0.0
+    dvxmax: float = 0.0
+    dvxmin: float = 0.0
+    dvymax: float = 0.0
+    dvymin: float = 0.0
+    dvzmax: float = 0.0
+    dvzmin: float = 0.0
+    dsumg: float = 0.0
+    dn: float = 0.0
+    dnx: float = 0.0
+    dny: float = 0.0
+    add: int = 0
 
     def from_file(self, filename: str):
         """Read tracking parameters from file and return TrackPar object.

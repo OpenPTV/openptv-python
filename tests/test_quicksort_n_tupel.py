@@ -20,11 +20,15 @@ class TestQuicksortNTuple(unittest.TestCase):
 
         actual_list = quicksort_n_tupel(n_tupel_list)
 
-        self.assertEqual(actual_list, expected_list)
+        for i, j in zip(actual_list, expected_list):
+            self.assertEqual(i.corr, j.corr)
+            self.assertEqual(i.p, j.p)
 
         # equivalent to :
         n_tupel_list.sort(key=lambda x: x.corr)
-        self.assertEqual(n_tupel_list, expected_list)
+        for i, j in zip(n_tupel_list, expected_list):
+            self.assertEqual(i.corr, j.corr)
+            self.assertEqual(i.p, j.p)
 
 
 if __name__ == "__main__":

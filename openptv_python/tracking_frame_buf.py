@@ -301,7 +301,7 @@ class Frame:
         self.path_info = [Pathinfo() for _ in range(max_targets)]
         self.correspond = [Corres() for _ in range(max_targets)]
 
-        self.targets = [TargetArray(num_targets=max_targets) for _ in range(num_cams)]
+        self.targets = [[] for _ in range(num_cams)]
         self.num_targets = [0] * num_cams
 
         self.num_cams = num_cams
@@ -330,8 +330,8 @@ class Frame:
             return False
 
         for cam in range(self.num_cams):
-            self.targets.append(read_targets(target_file_base[cam], frame_num))
-            self.num_targets.append(len(self.targets[cam]))
+            self.targets[cam] = read_targets(target_file_base[cam], frame_num)
+            self.num_targets[cam] = len(self.targets[cam])
 
             if self.num_targets[cam] == -1:
                 return False

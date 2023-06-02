@@ -111,11 +111,11 @@ class ap_52:
 
 @dataclass
 class mmlut:
-    origin: np.ndarray = np.zeros(3, dtype=np.float64)
+    origin: np.ndarray = np.r_[0.0, 0.0, 0.0]
     nr: int = 0
     nz: int = 0
     rw: int = 0
-    data: np.ndarray = field(default=None)
+    data: np.ndarray | None = None
 
 
 @dataclass
@@ -126,7 +126,17 @@ class Calibration:
     int_par: Interior = field(default_factory=Interior)
     glass_par: Glass = field(default_factory=Glass)
     added_par: ap_52 = field(default_factory=ap_52)
-    mmlut: mmlut = field(default_factory=mmlut)
+    mmlut: mmlut = field(
+        default_factory=lambda: mmlut(
+            np.zeros(
+                3,
+            ),
+            0,
+            0,
+            0,
+            None,
+        )
+    )
 
     def from_file(self, ori_file: str, add_file: str = None, add_fallback: str = None):
         """

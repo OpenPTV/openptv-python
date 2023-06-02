@@ -23,7 +23,9 @@ class TestMultimedRnlay(unittest.TestCase):
         test_I = Interior(0.0, 0.0, 100.0)
         test_G = Glass(0.0001, 0.00001, 1.0)
         test_addp = ap_52(0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
-        test_cal = Calibration(test_Ex, test_I, test_G, test_addp, None)
+        test_cal = Calibration(
+            test_Ex, test_I, test_G, test_addp
+        )  # note that mmlut is default
 
         test_mm = MultimediaPar(1, 1.0, [1.49, 0.0, 0.0], [5.0, 0.0, 0.0], 1.33)
         print(test_mm.nlay, test_mm.n1, test_mm.n2, test_mm.d, test_mm.n3)
