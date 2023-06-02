@@ -21,12 +21,12 @@ from .parameters import ControlPar
 from .trafo import dist_to_flat, pixel_to_metric
 
 
-@dataclass
 class n_tupel:
     """n_tupel data structure."""
 
-    p: List[int] = field(default_factory=lambda: [-1] * 4)
-    corr: float = field(default_factory=float)
+    def __init__(self, p: List[int] = None, corr: float = None):
+        self.p = p
+        self.corr = corr
 
 
 def quicksort_n_tupel(n_tupel_list: List[n_tupel]) -> List[n_tupel]:

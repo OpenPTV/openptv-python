@@ -19,7 +19,7 @@ class TestFlatCenteredCam(unittest.TestCase):
             added_par=ap_52(0, 0, 0, 0, 0, 1, 0),
         )
         mm = MultimediaPar(  # All in air, simplest case.
-            nlay=1, n1=1, n2=[1, 0, 0], n3=1, d=[1, 0, 0]
+            nlay=1, n1=1, n2=[1], n3=1, d=[1]
         )
 
         # Output variables

@@ -94,14 +94,19 @@ class mmlut:
 class Calibration:
     """Calibration data structure."""
 
-    ext_par: Exterior = field(default_factory=Exterior)
-    int_par: Interior = field(default_factory=Interior)
-    glass_par: Glass = field(default_factory=Glass)
-    added_par: ap_52 = field(default_factory=ap_52)
-    mmlut: mmlut = field(default_factory=mmlut)
-
-    def __post_init__(self):
-        self.mmlut = mmlut()
+    def __init__(
+        self,
+        ext_par=Exterior(),
+        int_par=Interior(),
+        glass_par=Glass(),
+        added_par=ap_52(),
+        mmlut=mmlut(),
+    ):
+        self.ext_par = ext_par
+        self.int_par = int_par
+        self.glass_par = glass_par
+        self.added_par = added_par
+        self.mmlut = mmlut
 
     def from_file(self, ori_file: str, add_file: str = None, add_fallback: str = None):
         """

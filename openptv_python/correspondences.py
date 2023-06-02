@@ -178,7 +178,13 @@ def four_camera_matching(
 
 
 def three_camera_matching(
-    corr_list, num_cams, target_counts, accept_corr, scratch, scratch_size, tusage
+    corr_list: List[List[List[Correspond]]],
+    num_cams,
+    target_counts,
+    accept_corr,
+    scratch,
+    scratch_size,
+    tusage,
 ):
     """Three-camera matching."""
     matched = 0
@@ -233,7 +239,13 @@ def three_camera_matching(
 
 
 def consistent_pair_matching(
-    corr_list, num_cams, target_counts, accept_corr, scratch, scratch_size, tusage
+    corr_list: List[List[List[Correspond]]],
+    num_cams: int,
+    target_counts: List[int],
+    accept_corr: float,
+    scratch,
+    scratch_size: int,
+    tusage: List[List[int]],
 ) -> int:
     """Find consistent pairs of correspondences."""
     matched = 0
@@ -364,21 +376,60 @@ def match_pairs(
                 corr_list[i1][i2][i].n = count
 
 
-def take_best_candidates(src, dst, num_cams, tusage):
-    """Take the best candidates from the corr_list of candidates."""
+def take_best_candidates(
+    src: List[n_tupel], dst: List[n_tupel], num_cams: int, tusage: List[List[int]]
+):
+    """
+    Take the best candidates from the candidate list based on their correlation measure.
+
+    Arguments:
+    ---------
+    src (list): The list of candidates to choose from.
+    dst (list): The list to store the chosen candidates.
+    num_cams (int): The number of cameras in the scene.
+    tusage (list): Record of currently used/unused targets in each camera.
+
+    Returns:
+    -------
+    int: The number of candidates taken from the source list.
+
+    /*  take_best_candidates() takes candidates out of a candidate list by their
+        correlation measure. A candidate is not taken if it has been marked used
+        for a larger clique or for a same-size clique with a better correlation
+        score.
+
+    Arguments:
+    ---------
+        n_tupel *src - the array of candidates. sorted in place by correlation
+            score.
+        n_tupel *dst - an array to receive the chosen cliques in order. Must have
+            enough space allocated.
+        int num_cams - the number of cameras in the scene, which defines the size
+            of other parameters.
+        int num_cands - number of elements in ``src``.
+        int **tusage - record of currently used/unused targets in each camera.
+            Targets that are already marked used (e.g. by quadruplets) will not be
+            taken.
+
+    Returns:
+    -------
+        the number of cliques taken from the candidate list.
+    */
+
+    """
     taken = 0
 
-    # sort candidates by match quality (.corr)
+    # Sort candidates by match quality (.corr)
     src.sort(key=lambda x: x.corr, reverse=True)
 
-    # take quadruplets from the top to the bottom of the sorted corr_list
-    # only if none of the points has already been used
+    # Take candidates from the top to the bottom of the sorted list
+    # Only take if none of the corresponding targets have been used
     for cand in src:
         has_used_target = False
         for cam in range(num_cams):
             tnum = cand.p[cam]
 
-            # if any correspondence in this camera, check that target is free
+            # If any correspondence in this camera, check if the target is free
             if tnum > -1 and tusage[cam][tnum] > 0:
                 has_used_target = True
                 break
@@ -386,7 +437,7 @@ def take_best_candidates(src, dst, num_cams, tusage):
         if has_used_target:
             continue
 
-        # Only now can we commit to marking used targets.
+        # Mark the targets as used
         for cam in range(num_cams):
             tnum = cand.p[cam]
             if tnum > -1:
@@ -552,7 +603,7 @@ def correspondences(
 
 
     """
-    nmax = NMAX
+    nmax = 1000  # NMAX
 
     # Allocation of scratch buffers for internal tasks and return-value space
     con0 = [n_tupel() for _ in range(nmax * cpar.num_cams)]
