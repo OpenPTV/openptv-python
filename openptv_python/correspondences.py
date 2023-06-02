@@ -702,8 +702,6 @@ def single_cam_correspondences(img_pts: List[TargetArray], corrected: List[Coord
     #     int pt, num_points
     #     coord_2d *corrected = <coord_2d *> malloc(sizeof(coord_2d *))
 
-    # corrected = flat_coords[0].buf
-
     num_points = len(img_pts[0])
 
     clique_targs = np.full((1, num_points, 2), PT_UNUSED, dtype=np.float64)

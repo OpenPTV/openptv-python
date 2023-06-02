@@ -34,7 +34,7 @@ class Test_Calibration(unittest.TestCase):
     def test_full_instantiate(self):
         pos = np.r_[1.0, 3.0, 5.0]
         angs = np.r_[2.0, 4.0, 6.0]
-        prim_point = pos[:2] * 3
+        prim_point = pos * 3
         rad_dist = pos * 4
         decent = pos[:2] * 5
         affine = decent * 1.5
@@ -135,12 +135,12 @@ class Test_Calibration(unittest.TestCase):
 
     def test_set_primary(self):
         """Set primary point (interior) position, only for admissible values."""
-        new_pp = np.array([111.1111, 222.2222])
+        new_pp = np.array([111.1111, 222.2222, 333.3333])
         self.cal.set_primary_point(new_pp)
 
         np.testing.assert_array_equal(new_pp, self.cal.get_primary_point())
         self.assertRaises(ValueError, self.cal.set_primary_point, np.ones(4))
-        self.assertRaises(ValueError, self.cal.set_primary_point, np.ones(3))
+        self.assertRaises(ValueError, self.cal.set_primary_point, np.ones(2))
 
     def test_set_radial(self):
         """Set radial distortion, only for admissible values."""

@@ -2,7 +2,7 @@
 
 import pathlib
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import Optional
 
 import numpy as np
 
@@ -50,11 +50,11 @@ class Exterior:
         """Set the rotation matrix of the camera."""
         self.dm = dm
 
-    def set_pos(self, pos: List) -> None:
+    def set_pos(self, pos: np.ndarray) -> None:
         """Set the position of the camera."""
         self.x0, self.y0, self.z0 = pos
 
-    def set_angles(self, angles: List) -> None:
+    def set_angles(self, angles: np.ndarray) -> None:
         """Set the angles of the camera."""
         self.omega, self.phi, self.kappa = angles
 
@@ -68,8 +68,8 @@ class Interior:
     yh: float = 0.0
     cc: float = 0.0
 
-    def set_primary_point(self, point: List) -> None:
-        self.xh, self.yh = point
+    def set_primary_point(self, point: np.ndarray) -> None:
+        self.xh, self.yh, self.cc = point
 
     def set_back_focal_distance(self, cc: float) -> None:
         """Set the back focal distance of the camera."""
@@ -82,7 +82,7 @@ class Glass:
     vec_y: float = 0.0
     vec_z: float = 1.0
 
-    def set_glass_vec(self, vec: List) -> None:
+    def set_glass_vec(self, vec: np.ndarray) -> None:
         self.vec_x, self.vec_y, self.vec_z = vec
 
 
@@ -96,15 +96,15 @@ class ap_52:
     scx: float = 1.0
     she: float = 0.0
 
-    def set_radial_distortion(self, dist_list: list) -> None:
+    def set_radial_distortion(self, dist_list: np.ndarray) -> None:
         """Set the radial distortion parameters k1, k2, k3."""
         self.k1, self.k2, self.k3 = dist_list
 
-    def set_decentering(self, decent: list) -> None:
+    def set_decentering(self, decent: np.ndarray) -> None:
         """Set the decentring parameters p1 and p2."""
         self.p1, self.p2 = decent
 
-    def set_affine_distortion(self, affine: list) -> None:
+    def set_affine_distortion(self, affine: np.ndarray) -> None:
         """Set the affine distortion parameters scx and she."""
         self.scx, self.she = affine
 
@@ -161,8 +161,10 @@ class Calibration:
             # Interior
             # skip
             fp.readline()
-            self.int_par.set_primary_point([float(x) for x in fp.readline().split()])
-            self.int_par.set_back_focal_distance(float(fp.readline()))
+            tmp = [float(x) for x in fp.readline().split()]  # xh,yh
+            tmp += [float(x) for x in fp.readline().split()]  # cc
+            self.int_par.set_primary_point(tmp)
+            # self.int_par.set_back_focal_distance(float(fp.readline()))
 
             # Glass
             # skip
@@ -172,7 +174,8 @@ class Calibration:
         # double-check that we have the correct rotation matrix
         # self.ext_par.rotation_matrix()
 
-        self.mmlut.data = None  # no multimedia data yet
+        # this is anyhow default
+        # self.mmlut.data = None  # no multimedia data yet
 
         # Additional parameters
         try:
@@ -262,7 +265,7 @@ class Calibration:
             of point from sensor middle and sensor-point distance, in this
             order.
         """
-        if len(prim_point_pos) != 2:
+        if len(prim_point_pos) != 3:
             raise ValueError("Expected a 3-element list")
 
         self.int_par.set_primary_point(prim_point_pos)
@@ -274,7 +277,7 @@ class Calibration:
         element array holding the values of x and y shift of point from sensor
         middle and sensor-point distance, in this order.
         """
-        return np.r_[self.int_par.xh, self.int_par.yh]
+        return np.r_[self.int_par.xh, self.int_par.yh, self.int_par.cc]
 
     def set_radial_distortion(self, dist_coeffs: np.ndarray):
         """
@@ -355,7 +358,11 @@ class Calibration:
         """Return the glass vector, a 3-element array."""
         return np.r_[self.glass_par.vec_x, self.glass_par.vec_y, self.glass_par.vec_z]
 
-    def set_added_par(self, listpar: np.ndarray):
+    def set_added_par(self, listpar: np.ndarray | list):
+        """Set added par from an numpy array of parameters."""
+        if isinstance(listpar, list):
+            listpar = np.array(listpar)
+
         self.added_par = ap_52(*listpar.tolist())
 
 

@@ -5,26 +5,17 @@ from pathlib import Path
 from typing import List, Tuple
 
 
+@dataclass
 class MultimediaPar:
     """Multimedia parameters."""
 
-    # nlay: int = field(default_factory=int)
-    # n1: float = field(default_factory=float)
-    # n2: List[float] = field(default_factory=list)
-    # d: List[float] = field(default_factory=list)
-    # n3: float = field(default_factory=float)
+    nlay: int = 1
+    n1: float = field(default_factory=float)
+    n2: List[float] = field(default_factory=list)
+    n3: float = field(default_factory=float)
+    d: List[float] = field(default_factory=list)
 
-    # simplest case is a single layer of air
-    # a more typical example is 3 layers: air, glass, water
-    # but we also have option of more layers inside n2, d
-    # nlay = 3, n1 = 1, n2 = [1.5, 1.33, 1.33], d = [0.1, 0.1, 0.1], n3 = 1.33
-    def __init__(self, nlay=1, n1=1, n2=[1], d=[1], n3=1):
-        self.nlay = nlay
-        self.n1 = n1
-        self.n2 = n2
-        self.d = d
-        self.n3 = n3
-
+    def __post_init__(self):
         if len(self.n2) != len(self.d):
             raise ValueError("n2 and d must have the same length")
 
@@ -36,7 +27,7 @@ class MultimediaPar:
         """Return the refractive index of the first medium."""
         return self.n1
 
-    def set_n1(self, n1):
+    def set_n1(self, n1: float):
         """Return the refractive index of the first medium."""
         self.n1 = n1
 
@@ -44,7 +35,7 @@ class MultimediaPar:
         """Return the refractive index of the last medium."""
         return self.n3
 
-    def set_n3(self, n3):
+    def set_n3(self, n3: float):
         """Return the refractive index of the last medium."""
         self.n3 = n3
 
@@ -56,7 +47,7 @@ class MultimediaPar:
         """Return the thickness of the second medium."""
         return self.d
 
-    def set_layers(self, refr_index, thickness):
+    def set_layers(self, refr_index: list[float], thickness: list[float]):
         """Set the layers of the medium."""
         if len(refr_index) != len(thickness):
             raise ValueError("Lengths of refractive index and thickness must be equal.")

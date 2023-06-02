@@ -7,6 +7,7 @@ import numpy as np
 
 from .calibration import Calibration
 from .constants import (
+    COORD_UNUSED,
     CORRES_NONE,
     MAX_TARGETS,
     NEXT_NONE,
@@ -77,31 +78,17 @@ class Target:
     """Target structure for tracking."""
 
     pnr: int = PT_UNUSED  # target number
-    x: float = field(default_factory=float)  # pixel position
-    y: float = field(default_factory=float)  # pixel position
-    n: int = field(default_factory=int)  # number of pixels
-    nx: int = field(default_factory=int)  # in x
-    ny: int = field(default_factory=int)  # in y
-    sumg: int = field(default_factory=int)  # sum of grey values
-    tnr: int = field(default_factory=int)  # used in tracking
-
-    def __eq__(self, other) -> bool:
-        """Compare two targets."""
-        return (
-            self.pnr == other.pnr
-            and self.x == other.x
-            and self.y == other.y
-            and self.n == other.n
-            and self.nx == other.nx
-            and self.ny == other.ny
-            and self.sumg == other.sumg
-            and self.tnr == other.tnr
-        )
+    x: float = 0.0  # pixel position
+    y: float = 0.0  # pixel position
+    n: int = 0  # number of pixels
+    nx: int = 0  # in x
+    ny: int = 0  # in y
+    sumg: int = 0  # sum of grey values
+    tnr: int = 0  # used in tracking
 
     def set_pos(self, pos: Tuple[float, float]) -> None:
         """Set target position."""
-        self.x = pos[0]
-        self.y = pos[1]
+        self.x, self.y = pos
 
     def set_pnr(self, pnr):
         """Set target number."""
@@ -132,27 +119,28 @@ class Target:
 
 
 class TargetArray(list):
-    """A list of targets and the number of targets in the list."""
+    def __init__(self, num_targets: int = 0):
+        super().__init__(Target() for item in range(num_targets))
 
-    def __init__(self, num_targets=None, *args, **kwargs):
-        super(TargetArray, self).__init__(*args, **kwargs)
-        if num_targets is not None:
-            self = [Target() for _ in range(num_targets)]
+    def __setitem__(self, index, item):
+        super().__setitem__(index, item)
 
-    def append(self, target):
-        """Append a target to the list."""
-        if not isinstance(target, Target):
-            raise TypeError("TargetArray only accepts Target objects")
-        super(TargetArray, self).append(target)
+    def insert(self, index, item):
+        super().insert(index, item)
+
+    def append(self, item):
+        super().append(str(item))
+
+    def extend(self, other):
+        if isinstance(other, type(self)):
+            super().extend(other)
+        else:
+            super().extend(item for item in other)
 
     @property
     def num_targs(self):
         """Return the number of targets in the list."""
         return len(self)
-
-    def get_targets(self):
-        """Return the list of targets."""
-        return self
 
 
 # @dataclass
@@ -313,7 +301,7 @@ class Frame:
         self.path_info = [Pathinfo() for _ in range(max_targets)]
         self.correspond = [Corres() for _ in range(max_targets)]
 
-        self.targets = [TargetArray(max_targets) for _ in range(num_cams)]
+        self.targets = [TargetArray(num_targets=max_targets) for _ in range(num_cams)]
         self.num_targets = [0] * num_cams
 
         self.num_cams = num_cams
@@ -809,39 +797,45 @@ def match_coords(
 #         # self.buf = quicksort_coord2d_x(self.buf, self._num_pts)
 #         self.buf = sort_coord2d_x(self.buf)
 
-#     def as_arrays(self):
-#         """
-#         Return the data associated with the object (the matched coordinates.
 
-#         block) as NumPy arrays.
+def matched_coords_as_arrays(
+    matched_coords: List[Coord2d],
+) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Return the data associated with the object (the matched coordinates.
 
-#         Returns
-#         -------
-#         pos - (n,2) array, the (x,y) flat-coordinates position of n targets.
-#         pnr - n-length array, the corresponding target number for each point.
-#         """
-#         pos = np.empty((self._num_pts, 2))
-#         pnr = np.empty(self._num_pts, dtype=np.int_)
+    block) as NumPy arrays.
 
-#         for pt in range(self._num_pts):
-#             pos[pt, 0] = self.buf[pt].x
-#             pos[pt, 1] = self.buf[pt].y
-#             pnr[pt] = self.buf[pt].pnr
+    Returns
+    -------
+    pos - (n,2) array, the (x,y) flat-coordinates position of n targets.
+    pnr - n-length array, the corresponding target number for each point.
+    """
+    num_pts = len(matched_coords)
+    pos = np.empty((num_pts, 2))
+    pnr = np.empty(num_pts, dtype=np.int_)
 
-#         return pos, pnr
+    for pt, mc in enumerate(matched_coords):
+        pos[pt, 0] = mc.x
+        pos[pt, 1] = mc.y
+        pnr[pt] = mc.pnr
 
-#     def get_by_pnrs(self, pnrs: np.ndarray):
-#         """
-#         Return the flat positions of points whose pnr property is given, as an.
+    return pos, pnr
 
-#         (n,2) flat position array. Assumes all pnrs are to be found, otherwise
-#         there will be garbage at the end of the position array.
-#         """
-#         pos = np.full((len(pnrs), 2), COORD_UNUSED, dtype=np.float64)
-#         for pt in range(self._num_pts):
-#             which = np.flatnonzero(self.buf[pt].pnr == pnrs)
-#             if len(which) > 0:
-#                 which = which[0]
-#                 pos[which, 0] = self.buf[pt].x
-#                 pos[which, 1] = self.buf[pt].y
-#         return pos
+
+def get_by_pnrs(matched_coords: List[Coord2d], pnrs: np.ndarray) -> np.ndarray:
+    """
+    Return the flat positions of points whose pnr property is given, as an.
+
+    (n,2) flat position array. Assumes all pnrs are to be found, otherwise
+    there will be garbage at the end of the position array.
+    """
+    pos = np.full((len(pnrs), 2), COORD_UNUSED, dtype=np.float64)
+    for pt in matched_coords:
+        which = np.flatnonzero(pt.pnr == pnrs)
+        if len(which) > 0:
+            which = which[0]
+            pos[which, 0] = pt.x
+            pos[which, 1] = pt.y
+
+    return pos
