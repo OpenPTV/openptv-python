@@ -8,7 +8,7 @@ from .constants import CORRES_NONE, MAX_TARGETS, MAXCAND, NMAX, PT_UNUSED
 from .epi import Coord2d, epi_mm
 from .find_candidate import find_candidate
 from .parameters import ControlPar, VolumePar
-from .tracking_frame_buf import Frame, MatchedCoords, Target, TargetArray, n_tupel
+from .tracking_frame_buf import Frame, Target, TargetArray, n_tupel
 
 # @dataclass
 # class Correspond:
@@ -451,7 +451,7 @@ def take_best_candidates(
 
 def py_correspondences(
     img_pts: List[TargetArray],
-    flat_coords: List[MatchedCoords],
+    flat_coords: List[List[Coord2d]],
     calib: List[Calibration],
     vparam: VolumePar,
     cparam: ControlPar,
@@ -671,9 +671,7 @@ def correspondences(
     return con
 
 
-def single_cam_correspondences(
-    img_pts: List[TargetArray], flat_coords: List[MatchedCoords]
-):
+def single_cam_correspondences(img_pts: List[TargetArray], corrected: List[Coord2d]):
     """
     Single camera correspondence is not a real correspondence, it will be only a projection.
 
@@ -704,7 +702,7 @@ def single_cam_correspondences(
     #     int pt, num_points
     #     coord_2d *corrected = <coord_2d *> malloc(sizeof(coord_2d *))
 
-    corrected = flat_coords[0].buf
+    # corrected = flat_coords[0].buf
 
     num_points = len(img_pts[0])
 

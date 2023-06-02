@@ -17,8 +17,8 @@ from openptv_python.imgcoord import img_coord
 from openptv_python.parameters import ControlPar, read_control_par, read_volume_par
 from openptv_python.tracking_frame_buf import (
     Frame,
-    MatchedCoords,
     TargetArray,
+    match_coords,
     n_tupel,
     read_targets,
 )
@@ -163,7 +163,8 @@ class TestReadControlPar(unittest.TestCase):
         cpar = read_control_par("tests/testing_folder/corresp/control.par")
         targs = read_targets("tests/testing_folder/frame/cam1.", 333)
 
-        mc = MatchedCoords(targs, cpar, cal)
+        # mc = MatchedCoords(targs, cpar, cal)
+        mc = match_coords(targs, cpar, cal)
         pos, pnr = mc.as_arrays()
 
         # x sorted?
@@ -216,7 +217,7 @@ class TestReadControlPar(unittest.TestCase):
     #             targ.set_sum_grey_value(10)
 
     #         img_pts.append(ta)
-    #         mc = MatchedCoords(ta, cpar, cal)
+    #         mc = match_coords(ta, cpar, cal)
     #         corrected.append(mc)
 
     #     _, _, num_targs = py_correspondences(img_pts, corrected, cals, vpar, cpar)
@@ -261,7 +262,7 @@ class TestReadControlPar(unittest.TestCase):
             targ.set_sum_grey_value(10)
 
         img_pts.append(targs)
-        mc = MatchedCoords(targs, cpar, cal)
+        mc = match_coords(targs, cpar, cal)
         corrected.append(mc)
 
         sorted_pos, sorted_corresp, num_targs = py_correspondences(

@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import List, Tuple
 
 
-@dataclass
 class MultimediaPar:
     """Multimedia parameters."""
 
@@ -26,12 +25,8 @@ class MultimediaPar:
         self.d = d
         self.n3 = n3
 
-    def __post_init__(self):
-        """Initialize MultimediaPar object."""
         if len(self.n2) != len(self.d):
             raise ValueError("n2 and d must have the same length")
-
-        # self.nlay  = 1 # default that is not implemented yet otherwise
 
     def get_nlay(self):
         """Return the number of layers."""
@@ -85,18 +80,23 @@ def compare_mm_np(mm_np1: MultimediaPar, mm_np2: MultimediaPar) -> bool:
     )
 
 
-@dataclass
 class SequencePar:
     """Sequence parameters."""
 
-    num_cams: int = field(default_factory=int)
-    img_base_name: List[str] = field(default_factory=list)
-    first: int = field(default_factory=int)
-    last: int = field(default_factory=int)
+    def __init__(
+        self,
+        num_cams: int = 0,
+        img_base_name: List[str] | None = None,
+        first: int | None = None,
+        last: int | None = None,
+    ):
+        self.num_cams = num_cams
+        self.img_base_name = img_base_name
+        self.first = first
+        self.last = last
 
-    def __post_init__(self):
-        if len(self.img_base_name) != self.num_cams:
-            self.img_base_name = [""] * self.num_cams
+        # if len(self.img_base_name) != self.num_cams:
+        #     self.img_base_name = [""] * self.num_cams
 
     def set_img_base_name(self, icam, new_name):
         """Set the image base name for each camera."""
@@ -154,41 +154,21 @@ def compare_sequence_par(sp1: SequencePar, sp2: SequencePar) -> bool:
     )
 
 
-@dataclass
 class TrackPar:
-    """Tracking parameters.
-
-    fpp = fopen(filename, "r");
-    if(fscanf(fpp, &(ret->dvxmin)) == 0) goto handle_error;
-    if(fscanf(fpp, &(ret->dvxmax)) == 0) goto handle_error;
-    if(fscanf(fpp, &(ret->dvymin)) == 0) goto handle_error;
-    if(fscanf(fpp, &(ret->dvymax)) == 0) goto handle_error;
-    if(fscanf(fpp, &(ret->dvzmin)) == 0) goto handle_error;
-    if(fscanf(fpp, &(ret->dvzmax)) == 0) goto handle_error;
-    if(fscanf(fpp, &(ret->dangle)) == 0) goto handle_error;
-    if(fscanf(fpp, &(ret->dacc)) == 0) goto handle_error;
-    if(fscanf(fpp, &(ret->add)) == 0) goto handle_error;
-    fclose (fpp);
-
-    ret->dsumg = ret->dn = ret->dnx = ret->dny = 0;
-    return ret;
-
-
-    """
-
-    dacc: float = field(default_factory=float)
-    dangle: float = field(default_factory=float)
-    dvxmax: float = field(default_factory=float)
-    dvxmin: float = field(default_factory=float)
-    dvymax: float = field(default_factory=float)
-    dvymin: float = field(default_factory=float)
-    dvzmax: float = field(default_factory=float)
-    dvzmin: float = field(default_factory=float)
-    dsumg: float = 0.0
-    dn: float = 0.0
-    dnx: float = 0.0
-    dny: float = 0.0
-    add: int = 0
+    def __init__(self):
+        self.dacc = 0.0
+        self.dangle = 0.0
+        self.dvxmax = 0.0
+        self.dvxmin = 0.0
+        self.dvymax = 0.0
+        self.dvymin = 0.0
+        self.dvzmax = 0.0
+        self.dvzmin = 0.0
+        self.dsumg = 0.0
+        self.dn = 0.0
+        self.dnx = 0.0
+        self.dny = 0.0
+        self.add = 0
 
     def from_file(self, filename: str):
         """Read tracking parameters from file and return TrackPar object.
@@ -318,11 +298,13 @@ class VolumePar:
     X_lay: List[float] = field(default_factory=list)
     Zmin_lay: List[float] = field(default_factory=list)
     Zmax_lay: List[float] = field(default_factory=list)
-    cn: float = field(default_factory=float)  # minimal criteria for number of pixels
+    # minimal criteria for number of pixels
+    cn: float = field(default_factory=float)
     cnx: float = field(default_factory=float)  # same in x direction
     cny: float = field(default_factory=float)  # same in y direction
     csumg: float = field(default_factory=float)  # same in sum of grey values
-    eps0: float = field(default_factory=float)  # minimal criteria for epipolar distance
+    # minimal criteria for epipolar distance
+    eps0: float = field(default_factory=float)
     corrmin: float = field(
         default_factory=float
     )  # minimal correlation value of all criteria

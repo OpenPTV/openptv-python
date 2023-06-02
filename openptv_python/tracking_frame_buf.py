@@ -7,7 +7,6 @@ import numpy as np
 
 from .calibration import Calibration
 from .constants import (
-    COORD_UNUSED,
     CORRES_NONE,
     MAX_TARGETS,
     NEXT_NONE,
@@ -16,7 +15,7 @@ from .constants import (
     PRIO_DEFAULT,
     PT_UNUSED,
 )
-from .epi import Coord2d, sort_coord2d_x
+from .epi import Coord2d
 from .parameters import ControlPar
 from .trafo import dist_to_flat, pixel_to_metric
 
@@ -138,8 +137,7 @@ class TargetArray(list):
     def __init__(self, num_targets=None, *args, **kwargs):
         super(TargetArray, self).__init__(*args, **kwargs)
         if num_targets is not None:
-            for i in range(num_targets):
-                self.append(Target())
+            self = [Target() for _ in range(num_targets)]
 
     def append(self, target):
         """Append a target to the list."""
@@ -715,42 +713,18 @@ def write_path_frame(
     return True
 
 
-# cdef extern from "optv/tracking_frame_buf.h":
-#     ctypedef struct target:
-#         int pnr
-#         double x, y
-#         int n, nx, ny, sumg
-#         int tnr
+def match_coords(
+    targs: List[Target],
+    cpar: ControlPar,
+    cal: Calibration(),
+    tol: float = 1e-5,
+    reset_numbers: bool = False,
+) -> List[Coord2d]:
+    """Match coordinates from all cameras into a single block.
 
-# ctypedef struct corres:
-#     int nr
-#     int p[4]
+    replaces MatchedCoords class in Cython
 
-# cpdef enum:
-#     CORRES_NONE = -1
-#     PT_UNUSED = -999
-
-# ctypedef struct path_inf "P":
-#     vec3d x
-#     int prev, next, prio
-
-# ctypedef struct frame:
-#     path_inf *path_info
-#     corres *correspond
-#     target **targets
-#     int num_cams, max_targets, num_parts
-#     int *num_targets
-
-# ctypedef struct framebuf:
-#     pass
-
-# void fb_free(framebuf *self)
-
-
-class MatchedCoords:
-    """Keep a block of 2D flat coordinates, each with a point number.
-
-    the same as the number on one ``target`` from the block to which this block is kept
+    The output is the same as the number on one ``target`` from the block to which this block is kept
     matched. This block is x-sorted.
 
     NB: the data is not meant to be directly manipulated at this point. The
@@ -758,88 +732,116 @@ class MatchedCoords:
     manipulated only by other liboptv functions. Although one can imagine a
     use case for direct manipulation in Python, it is rare and supporting it
     is a low priority.
+
     """
+    matched_coords = [Coord2d() for _ in range(len(targs))]
 
-    buf: List[Coord2d]
-    _num_pts: int
+    for tnum in range(len(targs)):
+        targ = targs[tnum]
+        if reset_numbers:
+            targ.pnr = tnum
 
-    def __init__(
-        self,
-        targs: List[Target],
-        cpar: ControlPar,
-        cal: Calibration,
-        tol: float = 0.00001,
-        reset_numbers=True,
-    ):
-        """
-        Allocate and initialize the memory, including coordinate conversion.
+        x, y = pixel_to_metric(targ.x, targ.y, cpar)
+        matched_coords[tnum].x, matched_coords[tnum].y = dist_to_flat(x, y, cal, tol)
+        matched_coords[tnum].pnr = targ.pnr
 
-        and sorting.
+    matched_coords.sort(key=lambda mc: mc.x)
+    return matched_coords
 
-        Arguments:
-        ---------
-        TargetArray targs - the TargetArray to be converted and matched.
-        ControlPar cpar - parameters of image size etc. for conversion.
-        Calibration cal - representation of the camera parameters to use in
-            the flat/distorted transforms.
-        double tol - optional tolerance for the lens distortion correction
-            phase, see ``optv.transforms``.
-        reset_numbers - if True (default) numbers the targets too, in their
-            current order. This shouldn't be necessary since all TargetArray
-            creators number the targets, but this gets around cases where they
-            don't.
-        """
-        # cdef:
-        #     target *targ
 
-        self._num_pts = len(targs)
-        self.buf = [Coord2d() for _ in range(self._num_pts)]
+# class MatchedCoords:
+#     """Keep a block of 2D flat coordinates, each with a point number.
 
-        for tnum in range(self._num_pts):
-            targ = targs[tnum]
-            if reset_numbers:
-                targ.pnr = tnum
+#     the same as the number on one ``target`` from the block to which this block is kept
+#     matched. This block is x-sorted.
 
-            x, y = pixel_to_metric(targ.x, targ.y, cpar)
-            self.buf[tnum].x, self.buf[tnum].y = dist_to_flat(x, y, cal, tol)
-            self.buf[tnum].pnr = targ.pnr
+#     NB: the data is not meant to be directly manipulated at this point. The
+#     coord_2d arrays are most useful as intermediate objects created and
+#     manipulated only by other liboptv functions. Although one can imagine a
+#     use case for direct manipulation in Python, it is rare and supporting it
+#     is a low priority.
+#     """
 
-        # self.buf = quicksort_coord2d_x(self.buf, self._num_pts)
-        self.buf = sort_coord2d_x(self.buf)
+#     buf: List[Coord2d]
+#     _num_pts: int
 
-    def as_arrays(self):
-        """
-        Return the data associated with the object (the matched coordinates.
+#     def __init__(
+#         self,
+#         targs: List[Target],
+#         cpar: ControlPar,
+#         cal: Calibration,
+#         tol: float = 0.00001,
+#         reset_numbers=False,
+#     ):
+#         """
+#         Allocate and initialize the memory, including coordinate conversion.
 
-        block) as NumPy arrays.
+#         and sorting.
 
-        Returns
-        -------
-        pos - (n,2) array, the (x,y) flat-coordinates position of n targets.
-        pnr - n-length array, the corresponding target number for each point.
-        """
-        pos = np.empty((self._num_pts, 2))
-        pnr = np.empty(self._num_pts, dtype=np.int_)
+#         Arguments:
+#         ---------
+#         TargetArray targs - the TargetArray to be converted and matched.
+#         ControlPar cpar - parameters of image size etc. for conversion.
+#         Calibration cal - representation of the camera parameters to use in
+#             the flat/distorted transforms.
+#         double tol - optional tolerance for the lens distortion correction
+#             phase, see ``optv.transforms``.
+#         reset_numbers - if True (default) numbers the targets too, in their
+#             current order. This shouldn't be necessary since all TargetArray
+#             creators number the targets, but this gets around cases where they
+#             don't.
+#         """
+#         # cdef:
+#         #     target *targ
 
-        for pt in range(self._num_pts):
-            pos[pt, 0] = self.buf[pt].x
-            pos[pt, 1] = self.buf[pt].y
-            pnr[pt] = self.buf[pt].pnr
+#         self._num_pts = len(targs)
+#         self.buf = [Coord2d() for _ in range(self._num_pts)]
 
-        return pos, pnr
+#         for tnum in range(self._num_pts):
+#             targ = targs[tnum]
+#             if reset_numbers:
+#                 targ.pnr = tnum
 
-    def get_by_pnrs(self, pnrs: np.ndarray):
-        """
-        Return the flat positions of points whose pnr property is given, as an.
+#             x, y = pixel_to_metric(targ.x, targ.y, cpar)
+#             self.buf[tnum].x, self.buf[tnum].y = dist_to_flat(x, y, cal, tol)
+#             self.buf[tnum].pnr = targ.pnr
 
-        (n,2) flat position array. Assumes all pnrs are to be found, otherwise
-        there will be garbage at the end of the position array.
-        """
-        pos = np.full((len(pnrs), 2), COORD_UNUSED, dtype=np.float64)
-        for pt in range(self._num_pts):
-            which = np.flatnonzero(self.buf[pt].pnr == pnrs)
-            if len(which) > 0:
-                which = which[0]
-                pos[which, 0] = self.buf[pt].x
-                pos[which, 1] = self.buf[pt].y
-        return pos
+#         # self.buf = quicksort_coord2d_x(self.buf, self._num_pts)
+#         self.buf = sort_coord2d_x(self.buf)
+
+#     def as_arrays(self):
+#         """
+#         Return the data associated with the object (the matched coordinates.
+
+#         block) as NumPy arrays.
+
+#         Returns
+#         -------
+#         pos - (n,2) array, the (x,y) flat-coordinates position of n targets.
+#         pnr - n-length array, the corresponding target number for each point.
+#         """
+#         pos = np.empty((self._num_pts, 2))
+#         pnr = np.empty(self._num_pts, dtype=np.int_)
+
+#         for pt in range(self._num_pts):
+#             pos[pt, 0] = self.buf[pt].x
+#             pos[pt, 1] = self.buf[pt].y
+#             pnr[pt] = self.buf[pt].pnr
+
+#         return pos, pnr
+
+#     def get_by_pnrs(self, pnrs: np.ndarray):
+#         """
+#         Return the flat positions of points whose pnr property is given, as an.
+
+#         (n,2) flat position array. Assumes all pnrs are to be found, otherwise
+#         there will be garbage at the end of the position array.
+#         """
+#         pos = np.full((len(pnrs), 2), COORD_UNUSED, dtype=np.float64)
+#         for pt in range(self._num_pts):
+#             which = np.flatnonzero(self.buf[pt].pnr == pnrs)
+#             if len(which) > 0:
+#                 which = which[0]
+#                 pos[which, 0] = self.buf[pt].x
+#                 pos[which, 1] = self.buf[pt].y
+#         return pos
