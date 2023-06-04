@@ -301,6 +301,7 @@ class Frame:
         self.path_info = [Pathinfo() for _ in range(max_targets)]
         self.correspond = [Corres() for _ in range(max_targets)]
 
+        # self.targets = [[Target() for _ in range(max_targets)] for _ in range(num_cams)]
         self.targets = [[] for _ in range(num_cams)]
         self.num_targets = [0] * num_cams
 

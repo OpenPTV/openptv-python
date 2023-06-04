@@ -17,7 +17,7 @@ class Exterior:
     kappa: float = 0.0
     dm: np.ndarray = field(default_factory=lambda: np.identity(3, dtype=np.float64))
 
-    def rotation_matrix(self) -> None:
+    def update_rotation_matrix(self) -> None:
         """Rotates the Dmatrix of Exterior using three angles of the camera.
 
         Args:
@@ -59,7 +59,7 @@ class Exterior:
         self.omega, self.phi, self.kappa = angles
 
         # adjust rotation matrix
-        self.rotation_matrix()
+        self.update_rotation_matrix()
 
 
 @dataclass
@@ -165,8 +165,9 @@ class Calibration:
             fp.readline()
 
             # read 3 lines and set a rotation matrix
-            float_list = [[float(x) for x in fp.readline().split()] for _ in range(3)]
-            self.set_rotation_matrix(np.array(float_list).reshape(3, 3))
+            [[float(x) for x in fp.readline().split()] for _ in range(3)]
+            # I skip reading rotation matrix as it's set up by set_angles.
+            # self.set_rotation_matrix(np.array(float_list).reshape(3, 3))
 
             # Interior
             # skip

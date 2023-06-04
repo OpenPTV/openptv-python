@@ -73,44 +73,28 @@ def safely_allocate_target_usage_marks(
 def safely_allocate_adjacency_lists(
     num_cams: int, target_counts: List[int]
 ) -> List[List[List[Correspond]]]:
-    """
-    Safely allocate adjacency lists.
+    """Allocate adjacency lists."""
+    lists = [[None for _ in range(num_cams)] for _ in range(num_cams)]
+    error = 0
 
-    Args:
-    ----
-        num_cams: The number of cameras.
-        target_counts: A list of integers representing the number of targets detected by each camera.
-
-    Returns:
-    -------
-        lists: A 2D list of lists representing the adjacency matrix between cameras.
-
-    Raises:
-    ------
-        MemoryError: If there is not enough memory to allocate the adjacency list.
-    """
-    lists = [
-        [[None] for _ in range(num_cams)] for _ in range(num_cams)
-    ]  # type: List[List[List[Correspond]]]
     for c1 in range(num_cams - 1):
         for c2 in range(c1 + 1, num_cams):
-            if lists[c1][c2][0] is None:
-                try:
-                    lists[c1][c2] = [Correspond() for _ in range(target_counts[c1])]
-                except MemoryError as exc:
-                    for i in range(num_cams - 1):
-                        for j in range(i + 1, num_cams):
-                            if lists[i][j][0] is not None:
-                                del lists[i][j]
-                                lists[i][j] = [None]
-                    raise MemoryError(
-                        "Not enough memory to allocate adjacency list."
-                    ) from exc
-            else:
+            if error == 0:
+                lists[c1][c2] = [Correspond() for _ in range(target_counts[c1])]
+                if lists[c1][c2] is None:
+                    error = 1
+                    continue
+
                 for edge in range(target_counts[c1]):
-                    lists[c1][c2][edge].p1 = PT_UNUSED
                     lists[c1][c2][edge].n = 0
-    return lists
+                    lists[c1][c2][edge].p1 = 0
+            else:
+                lists[c1][c2] = None
+
+    if error == 0:
+        return lists
+
+    return False
 
 
 def four_camera_matching(

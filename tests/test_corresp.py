@@ -17,6 +17,7 @@ from openptv_python.imgcoord import img_coord
 from openptv_python.parameters import ControlPar, read_control_par, read_volume_par
 from openptv_python.tracking_frame_buf import (
     Frame,
+    Target,
     TargetArray,
     match_coords,
     matched_coords_as_arrays,
@@ -90,7 +91,9 @@ def generate_test_set(calib: list[Calibration], cpar: ControlPar) -> Frame:
     # Four cameras on 4 quadrants looking down into a calibration target.
     # Calibration taken from an actual experimental setup
     for cam in range(cpar.num_cams):
+        # fill in only what's needed
         frm.num_targets[cam] = 16
+        frm.targets[cam] = [Target() for _ in range(frm.num_targets[cam])]
 
         # Construct a scene representing a calibration target, generate
         # targets for it, then use them to reconstruct correspondences.
@@ -298,6 +301,7 @@ class TestReadControlPar(unittest.TestCase):
 
         corrected = correct_frame(frm, calib, cpar, 0.0001)
         corr_lists = safely_allocate_adjacency_lists(cpar.num_cams, frm.num_targets)
+
         match_pairs(corr_lists, corrected, frm, vpar, cpar, calib)
 
         # Assert each target has the real matches as candidates
