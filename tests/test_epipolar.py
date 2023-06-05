@@ -14,7 +14,7 @@ from math import isclose
 import numpy as np
 
 from openptv_python.calibration import Calibration, Exterior, Glass, Interior, ap_52
-from openptv_python.epi import Candidate, Coord2d, epipolar_curve
+from openptv_python.epi import Candidate, Coord2d, epi_mm, epi_mm_2D, epipolar_curve
 from openptv_python.find_candidate import find_candidate
 from openptv_python.parameters import (
     ControlPar,
@@ -74,6 +74,106 @@ class TestEpipolarCurve(unittest.TestCase):
         np.testing.assert_array_equal(np.argsort(line[:, 0]), np.arange(5)[::-1])
         self.assertTrue(np.all(abs(line[:, 1] - mid[1]) < 1e-6))
 
+    def test_epi_mm_2D(self):
+        """Test the epi_mm_2D function."""
+        test_Ex = Exterior(0.0, 0.0, 100.0, 0.0, 0.0, 0.0)
+        test_I = Interior(0.0, 0.0, 100.0)
+        test_G = Glass(0.0, 0.0, 50.0)
+        test_addp = ap_52(0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
+        test_cal = Calibration(test_Ex, test_I, test_G, test_addp)
+
+        test_mm = MultimediaPar(1, 1.0, [1.49, 0.0, 0.0], [5.0, 0.0, 0.0], 1.33)
+
+        test_vpar = VolumePar(
+            (-250.0, 250.0),
+            (-100.0, -100.0),
+            (100.0, 100.0),
+            0.01,
+            0.3,
+            0.3,
+            0.01,
+            1.0,
+            33,
+        )
+
+        x = 1.0
+        y = 10.0
+
+        out = epi_mm_2D(x, y, test_cal, test_mm, test_vpar)
+
+        self.assertAlmostEqual(out[0], 0.85858163)
+        self.assertAlmostEqual(out[1], 8.58581626)
+        self.assertAlmostEqual(out[2], 0.0)
+
+        out = epi_mm_2D(0.0, 0.0, test_cal, test_mm, test_vpar)
+
+        self.assertAlmostEqual(out[0], 0.0)
+        self.assertAlmostEqual(out[1], 0.0)
+        self.assertAlmostEqual(out[2], 0.0)
+
+    def test_epi_mm(self):
+        """Test the epi_mm function."""
+        test_Ex = Exterior(10.0, 0.0, 100.0, 0.0, -0.01, 0.0)
+        test_I = Interior(0.0, 0.0, 100.0)
+        test_G = Glass(0.0, 0.0, 50.0)
+        test_addp = ap_52(0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
+        test_cal_1 = Calibration(test_Ex, test_I, test_G, test_addp)
+
+        test_Ex_2 = Exterior(-10.0, 0.0, 100.0, 0.0, 0.01, 0.0)
+        test_cal_2 = Calibration(test_Ex_2, test_I, test_G, test_addp)
+
+        test_mm = MultimediaPar(1, 1.0, [1.49, 0.0, 0.0], [5.0, 0.0, 0.0], 1.33)
+
+        test_vpar = VolumePar(
+            (-250.0, 250.0), (-50.0, -50.0), (50.0, 50.0), 0.01, 0.3, 0.3, 0.01, 1.0, 33
+        )
+
+        x = 10.0
+        y = 10.0
+
+        xmin, xmax, ymin, ymax = epi_mm(
+            x, y, test_cal_1, test_cal_2, test_mm, test_vpar
+        )
+
+        self.assertAlmostEqual(xmin, 26.44927852)
+        self.assertAlmostEqual(xmax, 10.08218486)
+        self.assertAlmostEqual(ymin, 51.60078764)
+        self.assertAlmostEqual(ymax, 10.04378909)
+
+    def test_epi_mm_perpendicular(self):
+        """Test the epi_mm function."""
+        test_Ex = Exterior(0.0, 0.0, 100.0, 0.0, 0.0, 0.0)
+        test_I = Interior(0.0, 0.0, 100.0)
+        test_G = Glass(0.0, 0.0, 50.0)
+        test_addp = ap_52(0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
+        test_cal_1 = Calibration(test_Ex, test_I, test_G, test_addp)
+
+        test_Ex_2 = Exterior(100.0, 0.0, 0.0, 0.0, 1.57, 0.0)
+        test_cal_2 = Calibration(test_Ex_2, test_I, test_G, test_addp)
+
+        test_mm = MultimediaPar(1, 1.0, [1.0, 0.0, 0.0], [1.0, 0.0, 0.0], 1.0)
+
+        test_vpar = VolumePar(
+            (-100.0, 100.0),
+            (-100.0, -100.0),
+            (100.0, 100.0),
+            0.01,
+            0.3,
+            0.3,
+            0.01,
+            1.0,
+            33,
+        )
+
+        xmin, xmax, ymin, ymax = epi_mm(
+            0, 0, test_cal_1, test_cal_2, test_mm, test_vpar
+        )
+
+        self.assertAlmostEqual(xmin, -100.0)
+        self.assertAlmostEqual(xmax, 0.0)
+        self.assertAlmostEqual(ymin, 100.0)
+        self.assertAlmostEqual(ymax, 0.0)
+
 
 class TestFindCandidate(unittest.TestCase):
     """Test the find_candidate function."""
@@ -116,7 +216,7 @@ class TestFindCandidate(unittest.TestCase):
         ny = 3
         sumg = 100
 
-        test_Ex = Exterior(x0=0.0, y0=0.0, z0=100.0, omega=0.0, phi=0.0, kappa=0.0)
+        test_Ex = Exterior(0.0, 0.0, 100.0, 0.0, 0.0, 0.0)
         test_I = Interior(0.0, 0.0, 100.0)
         test_G = Glass(0.0, 0.0, 50.0)
         test_addp = ap_52(0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
@@ -145,8 +245,6 @@ class TestFindCandidate(unittest.TestCase):
         ya = -10.0
         xb = 10.0
         yb = 10.0
-
-        print(test_vpar.eps0)
 
         test_cand = find_candidate(
             test_crd,
@@ -187,7 +285,7 @@ class TestFindCandidate(unittest.TestCase):
         for t, e in zip(test_cand, expected):
             self.assertTrue(t.pnr == e.pnr)
             self.assertTrue(t.corr == e.corr)
-            print(t.tol, e.tol)
+            # print(t.tol, e.tol)
             self.assertTrue(isclose(t.tol, e.tol, abs_tol=1e-5))
 
 

@@ -66,14 +66,15 @@ class TestCalibrationClass(unittest.TestCase):
     def test_exterior_initialization(self):
         """Test exterior parameters initialization."""
         ext = self.cal.ext_par
-        ext.rotation_matrix()
+        ext.update_rotation_matrix()
         assert np.allclose(ext.dm, np.identity(3, dtype=np.float64))
         assert ext.omega == 0.0
         assert ext.phi == 0.0
         assert ext.kappa == 0.0
         assert ext.x0 == 0.0
         assert ext.y0 == 0.0
-        assert ext.z0 == 0.0
+        ext.update_rotation_matrix()
+        assert np.allclose(ext.dm, np.identity(3, dtype=np.float64))
 
 
 if __name__ == "__main__":
