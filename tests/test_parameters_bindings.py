@@ -116,7 +116,7 @@ class Test_TrackingParams(unittest.TestCase):
         typedef struct
     {
         double  dacc, dangle, dvxmax, dvxmin;
-        double dvymax, dvymin, dvzmax, dvzmin;
+        double dvymax, dvymin, dvzmax, dvz_min;
         int dsumg, dn, dnx, dny, add;
     } track
 
@@ -138,7 +138,7 @@ class Test_TrackingParams(unittest.TestCase):
             dvxmax=4.4,
             dvymin=5.5,
             dvymax=6.6,
-            dvzmin=7.7,
+            dvz_min=7.7,
             dvzmax=8.8,
         )
 
@@ -152,7 +152,7 @@ class Test_TrackingParams(unittest.TestCase):
         self.assertTrue(self.track_obj1.dvxmax == 4.4)
         self.assertTrue(self.track_obj1.dvymin == 5.5)
         self.assertTrue(self.track_obj1.dvymax == 6.6)
-        self.assertTrue(self.track_obj1.dvzmin == 7.7)
+        self.assertTrue(self.track_obj1.dvz_min == 7.7)
         self.assertTrue(self.track_obj1.dvzmax == 8.8)
         self.assertTrue(self.track_obj1.add == 1)
 
@@ -184,7 +184,7 @@ class Test_TrackingParams(unittest.TestCase):
                 self.track_obj1.get_dvymax() == float(track_file.readline())
             )
             self.assertTrue(
-                self.track_obj1.get_dvzmin() == float(track_file.readline())
+                self.track_obj1.get_dvz_min() == float(track_file.readline())
             )
 
             self.assertTrue(
@@ -290,7 +290,7 @@ class Test_VolumeParams(unittest.TestCase):
             numpy.array([111.111, 222.222]), self.vol_obj.X_lay
         )
         numpy.testing.assert_array_equal(
-            numpy.array([333.333, 444.444]), self.vol_obj.Zmin_lay
+            numpy.array([333.333, 444.444]), self.vol_obj.z_min_lay
         )
         numpy.testing.assert_array_equal(
             numpy.array([555.555, 666.666]), self.vol_obj.Zmax_lay
@@ -309,9 +309,9 @@ class Test_VolumeParams(unittest.TestCase):
         self.vol_obj.X_lay = xlay
         numpy.testing.assert_array_equal(xlay, self.vol_obj.X_lay)
 
-        zmin = numpy.array([333.3, 444.4])
-        self.vol_obj.set_Zmin_lay(zmin)
-        numpy.testing.assert_array_equal(zmin, self.vol_obj.Zmin_lay)
+        z_min = numpy.array([333.3, 444.4])
+        self.vol_obj.set_z_min_lay(z_min)
+        numpy.testing.assert_array_equal(z_min, self.vol_obj.z_min_lay)
 
         zmax = numpy.array([555.5, 666.6])
         self.vol_obj.set_Zmax_lay(zmax)
@@ -339,11 +339,11 @@ class Test_VolumeParams(unittest.TestCase):
         """Initialize volume parameters with keyword arguments."""
         xlay = numpy.array([111.1, 222.2])
         zlay = [r_[333.3, 555.5], r_[444.4, 666.6]]
-        zmin, zmax = list(zip(*zlay))
+        z_min, zmax = list(zip(*zlay))
 
         vol_obj = VolumePar(
             X_lay=xlay,
-            Zmin_lay=zmin,
+            z_min_lay=z_min,
             Zmax_lay=zmax,
             cn=1,
             cnx=2,
@@ -354,7 +354,7 @@ class Test_VolumeParams(unittest.TestCase):
         )
 
         numpy.testing.assert_array_equal(xlay, vol_obj.X_lay)
-        numpy.testing.assert_array_equal(zmin, vol_obj.Zmin_lay)
+        numpy.testing.assert_array_equal(z_min, vol_obj.z_min_lay)
         numpy.testing.assert_array_equal(zmax, vol_obj.Zmax_lay)
 
         self.assertTrue(vol_obj.cn == 1)

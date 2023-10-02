@@ -172,15 +172,15 @@ def back_trans_point(
     return pos
 
 
-def move_along_ray(glob_Z: float, vertex: np.ndarray, direct: np.ndarray) -> vec3d:
-    """Move along the ray to the global Z plane.
+def move_along_ray(glob_z: float, vertex: np.ndarray, direct: np.ndarray) -> vec3d:
+    """Move along the ray to the global z plane.
 
     move_along_ray() calculates the position of a point in a global Z value
     along a ray whose vertex and direction are given.
 
     Arguments:
     ---------
-    double glob_Z - the Z value of the result point in the global
+    double glob_z - the Z value of the result point in the global
         coordinate system.
     vec3d vertex - the ray vertex.
     vec3d direct - the ray direction, a unit vector.
@@ -191,9 +191,10 @@ def move_along_ray(glob_Z: float, vertex: np.ndarray, direct: np.ndarray) -> vec
     if direct[2] == 0:
         direct[2] = 1  # avoid division by zero
 
-    out[0] = vertex[0] + (glob_Z - vertex[2]) * direct[0] / direct[2]
-    out[1] = vertex[1] + (glob_Z - vertex[2]) * direct[1] / direct[2]
-    out[2] = glob_Z
+    out[0] = vertex[0] + (glob_z - vertex[2]) * direct[0] / direct[2]
+    out[1] = vertex[1] + (glob_z - vertex[2]) * direct[1] / direct[2]
+    out[2] = glob_z
+
     return out
 
 
@@ -207,13 +208,13 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibrati
     yc = [0.0, float(cpar.imy)]
 
     # find extrema of imaged object volume
-    Zmin = min(vpar.Zmin_lay)
+    z_min = min(vpar.z_min_lay)
     Zmax = max(vpar.Zmax_lay)
 
-    Zmin -= math.fmod(Zmin, rw)
+    z_min -= math.fmod(z_min, rw)
     Zmax += rw - math.fmod(Zmax, rw)
 
-    Zmin_t = Zmin
+    z_min_t = z_min
     Zmax_t = Zmax
 
     # intersect with image vertices rays
@@ -226,13 +227,13 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibrati
             y -= cal.int_par.yh
             x, y = correct_brown_affine(x, y, cal.added_par)
             pos, a = ray_tracing(x, y, cal, cpar.mm)
-            xyz = move_along_ray(Zmin, pos, a)
+            xyz = move_along_ray(z_min, pos, a)
             xyz_t, _, _ = trans_cam_point(
                 cal.ext_par, cpar.mm, cal.glass_par, xyz, cal_t.ext_par
             )
 
-            if xyz_t[2] < Zmin_t:
-                Zmin_t = xyz_t[2]
+            if xyz_t[2] < z_min_t:
+                z_min_t = xyz_t[2]
             if xyz_t[2] > Zmax_t:
                 Zmax_t = xyz_t[2]
 
@@ -246,8 +247,8 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibrati
                 cal.ext_par, cpar.mm, cal.glass_par, xyz, cal_t.ext_par
             )
 
-            if xyz_t[2] < Zmin_t:
-                Zmin_t = xyz_t[2]
+            if xyz_t[2] < z_min_t:
+                z_min_t = xyz_t[2]
             if xyz_t[2] > Zmax_t:
                 Zmax_t = xyz_t[2]
 
@@ -261,10 +262,10 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibrati
 
     # get # of rasterlines in r, z
     nr = int(Rmax / rw + 1)
-    nz = int((Zmax_t - Zmin_t) / rw + 1)
+    nz = int((Zmax_t - z_min_t) / rw + 1)
 
     # create two dimensional mmlut structure
-    cal.mmlut.origin = np.r_[cal_t.ext_par.x0, cal_t.ext_par.y0, Zmin_t]
+    cal.mmlut.origin = np.r_[cal_t.ext_par.x0, cal_t.ext_par.y0, z_min_t]
     cal.mmlut.nr = nr
     cal.mmlut.nz = nz
     cal.mmlut.rw = rw
@@ -272,7 +273,7 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibrati
     if cal.mmlut.data is None:
         data = np.empty((nr, nz), dtype=np.float64)
         Ri = np.arange(nr) * rw
-        Zi = np.arange(nz) * rw + Zmin_t
+        Zi = np.arange(nz) * rw + z_min_t
 
         for i in range(nr):
             for j in range(nz):
@@ -339,7 +340,7 @@ def volumedimension(
     ymax: float,
     ymin: float,
     zmax: float,
-    zmin: float,
+    z_min: float,
     vpar: VolumePar,
     cpar: ControlPar,
     cal: List[Calibration],
@@ -347,15 +348,15 @@ def volumedimension(
     xc = [0.0, cpar["imx"]]
     yc = [0.0, cpar["imy"]]
 
-    Zmin = vpar["Zmin_lay"][0]
+    z_min = vpar["z_min_lay"][0]
     Zmax = vpar["Zmax_lay"][0]
 
-    if vpar["Zmin_lay"][1] < Zmin:
-        Zmin = vpar["Zmin_lay"][1]
+    if vpar["z_min_lay"][1] < z_min:
+        z_min = vpar["z_min_lay"][1]
     if vpar["Zmax_lay"][1] > Zmax:
         Zmax = vpar["Zmax_lay"][1]
 
-    zmin = Zmin
+    z_min = z_min
     zmax = Zmax
 
     for i_cam in range(cpar["num_cams"]):
@@ -370,8 +371,8 @@ def volumedimension(
 
                 pos, a = ray_tracing(x, y, cal[i_cam], cpar.mm)
 
-                X = pos[0] + (Zmin - pos[2]) * a[0] / a[2]
-                Y = pos[1] + (Zmin - pos[2]) * a[1] / a[2]
+                X = pos[0] + (z_min - pos[2]) * a[0] / a[2]
+                Y = pos[1] + (z_min - pos[2]) * a[1] / a[2]
 
                 if X > xmax:
                     xmax = X
@@ -394,4 +395,4 @@ def volumedimension(
                 if Y < ymin:
                     ymin = Y
 
-    return (xmax, xmin, ymax, ymin, zmax, zmin)
+    return (xmax, xmin, ymax, ymin, zmax, z_min)

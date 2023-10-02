@@ -435,7 +435,7 @@ def take_best_candidates(
 
 def py_correspondences(
     img_pts: List[TargetArray],
-    flat_coords: List[List[Coord2d]],
+    flat_coords: List[Coord2d],
     calib: List[Calibration],
     vparam: VolumePar,
     cparam: ControlPar,
@@ -655,7 +655,9 @@ def correspondences(
     return con
 
 
-def single_cam_correspondences(img_pts: List[TargetArray], corrected: List[Coord2d]):
+def single_cam_correspondences(
+    img_pts: List[TargetArray], corrected: List[Coord2d]
+) -> Tuple[List[np.ndarray], List[np.ndarray], int]:
     """
     Single camera correspondence is not a real correspondence, it will be only a projection.
 
@@ -709,4 +711,4 @@ def single_cam_correspondences(img_pts: List[TargetArray], corrected: List[Coord
     sorted_pos = [clique_targs]
     sorted_corresp = [clique_ids]
 
-    return sorted_pos, sorted_corresp, num_points
+    return (sorted_pos, sorted_corresp, num_points)

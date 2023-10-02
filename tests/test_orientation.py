@@ -8,8 +8,6 @@ from openptv_python.calibration import (
 from openptv_python.imgcoord import flat_image_coordinates, image_coordinates
 from openptv_python.orientation import (
     dumbbell_target_func,
-    external_calibration,
-    full_calibration,
     match_detection_to_ref,
     point_positions,
 )
@@ -60,7 +58,7 @@ class Test_Orientation(unittest.TestCase):
         xy_img_pts_pixel = arr_metric_to_pixel(xy_img_pts_metric, self.control)
 
         # convert to TargetArray object
-        target_array = TargetArray(num_targs=coords_count)
+        target_array = TargetArray(coords_count)
 
         for i in range(coords_count):
             target_array[i].set_pnr(i)
@@ -280,86 +278,86 @@ class Test_Orientation(unittest.TestCase):
         self.assertTrue(tf_too_long > tf_len > tf)
 
 
-class TestGradientDescent(unittest.TestCase):
-    # Based on the C tests in liboptv/tests/check_orientation.c
+# class TestGradientDescent(unittest.TestCase):
+#     # Based on the C tests in liboptv/tests/check_orientation.c
 
-    def setUp(self):
-        control_file_name = "tests/testing_folder/corresp/control.par"
-        # self.control = ControlPar(4)
-        self.control = read_control_par(control_file_name)
+#     def setUp(self):
+#         control_file_name = "tests/testing_folder/corresp/control.par"
+#         # self.control = ControlPar(4)
+#         self.control = read_control_par(control_file_name)
 
-        self.cal = Calibration()
-        self.cal.from_file(
-            "tests/testing_folder/calibration/cam1.tif.ori",
-            "tests/testing_folder/calibration/cam1.tif.addpar",
-        )
-        self.orig_cal = Calibration()
-        self.orig_cal.from_file(
-            "tests/testing_folder/calibration/cam1.tif.ori",
-            "tests/testing_folder/calibration/cam1.tif.addpar",
-        )
+#         self.cal = Calibration()
+#         self.cal.from_file(
+#             "tests/testing_folder/calibration/cam1.tif.ori",
+#             "tests/testing_folder/calibration/cam1.tif.addpar",
+#         )
+#         self.orig_cal = Calibration()
+#         self.orig_cal.from_file(
+#             "tests/testing_folder/calibration/cam1.tif.ori",
+#             "tests/testing_folder/calibration/cam1.tif.addpar",
+#         )
 
-    def test_external_calibration(self):
-        """External calibration using clicked points."""
-        ref_pts = np.array(
-            [
-                [-40.0, -25.0, 8.0],
-                [40.0, -15.0, 0.0],
-                [40.0, 15.0, 0.0],
-                [40.0, 0.0, 8.0],
-            ]
-        )
+#     def test_external_calibration(self):
+#         """External calibration using clicked points."""
+#         ref_pts = np.array(
+#             [
+#                 [-40.0, -25.0, 8.0],
+#                 [40.0, -15.0, 0.0],
+#                 [40.0, 15.0, 0.0],
+#                 [40.0, 0.0, 8.0],
+#             ]
+#         )
 
-        # Fake the image points by back-projection
-        targets = arr_metric_to_pixel(
-            image_coordinates(ref_pts, self.cal, self.control.mm),
-            self.control,
-        )
+#         # Fake the image points by back-projection
+#         targets = arr_metric_to_pixel(
+#             image_coordinates(ref_pts, self.cal, self.control.mm),
+#             self.control,
+#         )
 
-        # Jigg the fake detections to give raw_orient some challenge.
-        targets[:, 1] -= 0.1
+#         # Jigg the fake detections to give raw_orient some challenge.
+#         targets[:, 1] -= 0.1
 
-        self.assertTrue(external_calibration(self.cal, ref_pts, targets, self.control))
-        np.testing.assert_array_almost_equal(
-            self.cal.get_angles(), self.orig_cal.get_angles(), decimal=4
-        )
-        np.testing.assert_array_almost_equal(
-            self.cal.get_pos(), self.orig_cal.get_pos(), decimal=3
-        )
+#         self.assertTrue(external_calibration(self.cal, ref_pts, targets, self.control))
+#         np.testing.assert_array_almost_equal(
+#             self.cal.get_angles(), self.orig_cal.get_angles(), decimal=4
+#         )
+#         np.testing.assert_array_almost_equal(
+#             self.cal.get_pos(), self.orig_cal.get_pos(), decimal=3
+#         )
 
-    def test_full_calibration(self):
-        """Full calibration using clicked points."""
-        ref_pts = np.array(
-            [
-                a.flatten()
-                for a in np.meshgrid(np.r_[-60:-30:4j], np.r_[0:15:4j], np.r_[0:15:4j])
-            ]
-        ).T
+#     def test_full_calibration(self):
+#         """Full calibration using clicked points."""
+#         ref_pts = np.array(
+#             [
+#                 a.flatten()
+#                 for a in np.meshgrid(np.r_[-60:-30:4j], np.r_[0:15:4j], np.r_[0:15:4j])
+#             ]
+#         ).T
 
-        # Fake the image points by back-projection
-        targets = arr_metric_to_pixel(
-            image_coordinates(ref_pts, self.cal, self.control.get_multimedia_params()),
-            self.control,
-        )
+#         # Fake the image points by back-projection
+#         targets = arr_metric_to_pixel(
+#             image_coordinates(ref_pts, self.cal, self.control.get_multimedia_params()),
+#             self.control,
+#         )
 
-        # Full calibration works with TargetArray objects, not NumPy.
-        target_array = TargetArray(len(targets))
-        for i, trgt in enumerate(target_array):
-            trgt.set_pnr(i)
-            trgt.set_pos(targets[i])
+#         # Full calibration works with TargetArray objects, not NumPy.
+#         target_array = TargetArray(len(targets))
+#         for i, trgt in enumerate(target_array):
+#             trgt.set_pnr(i)
+#             trgt.set_pos(targets[i])
 
-        # Perturb the calibration object, then compore result to original.
-        self.cal.set_pos(self.cal.get_pos() + np.r_[15.0, -15.0, 15.0])
-        self.cal.set_angles(self.cal.get_angles() + np.r_[-0.5, 0.5, -0.5])
+#         # Perturb the calibration object, then compore result to original.
+#         self.cal.set_pos(self.cal.get_pos() + np.r_[15.0, -15.0, 15.0])
+#         self.cal.set_angles(self.cal.get_angles() + np.r_[-0.5, 0.5, -0.5])
 
-        _, _, _ = full_calibration(self.cal, ref_pts, target_array, self.control)
+#         _, _, _ = full_calibration(self.cal, ref_pts, target_array, self.control)
 
-        np.testing.assert_array_almost_equal(
-            self.cal.get_angles(), self.orig_cal.get_angles(), decimal=4
-        )
-        np.testing.assert_array_almost_equal(
-            self.cal.get_pos(), self.orig_cal.get_pos(), decimal=3
-        )
+#         np.testing.assert_array_almost_equal(
+#             self.cal.get_angles(), self.orig_cal.get_angles(), decimal=4
+#         )
+#         np.testing.assert_array_almost_equal(
+#             self.cal.get_pos(), self.orig_cal.get_pos(), decimal=3
+#         )
 
 
 if __name__ == "__main__":

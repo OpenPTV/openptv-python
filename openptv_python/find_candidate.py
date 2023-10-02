@@ -52,7 +52,7 @@ def find_candidate(
 
     Returns:
     -------
-        The number of candidates found.
+        cand: list of candidates, or empty list if nothing is found
     """
     cand = []
 

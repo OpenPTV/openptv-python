@@ -41,7 +41,9 @@ def read_all_calibration(num_cams: int = 4) -> list[Calibration]:
     return calib
 
 
-def correct_frame(frm: Frame, calib: list[Calibration], cpar: ControlPar, tol: float):
+def correct_frame(
+    frm: Frame, calib: list[Calibration], cpar: ControlPar, tol: float
+) -> list[list[Coord2d]]:
     """
     Perform the transition from pixel to metric to flat coordinates.
 
@@ -67,12 +69,12 @@ def correct_frame(frm: Frame, calib: list[Calibration], cpar: ControlPar, tol: f
             corrected[cam][part].y = y
             corrected[cam][part].pnr = frm.targets[cam][part].pnr
 
-            print(f"frm.targets[cam][part].x: {frm.targets[cam][part].x}")
-            print(f"frm.targets[cam][part].y: {frm.targets[cam][part].y}")
-            print(f"frm.targets[cam][part].pnr: {frm.targets[cam][part].pnr}")
-            print(corrected[cam][part].x)
-            print(corrected[cam][part].y)
-            print(corrected[cam][part].pnr)
+            print(
+                f"frm.targets:{cam},{part},{frm.targets[cam][part].x},{frm.targets[cam][part].y},{frm.targets[cam][part].pnr}"
+            )
+            print(
+                f"corrected: {corrected[cam][part].x} {corrected[cam][part].y} {corrected[cam][part].pnr}"
+            )
 
         # This is expected by find_candidate()
         corrected[cam].sort(key=lambda coord: coord.x)
@@ -82,7 +84,7 @@ def correct_frame(frm: Frame, calib: list[Calibration], cpar: ControlPar, tol: f
 
 def generate_test_set(calib: list[Calibration], cpar: ControlPar) -> Frame:
     """
-    Generate data for targets on 4 cameras.
+    Generate data for targets on N cameras.
 
     The targets are organized on a 4x4 grid, 10 mm apart.
     """
@@ -291,8 +293,8 @@ class TestReadControlPar(unittest.TestCase):
 
         cpar.num_cams = 2
 
-        vpar.Zmin_lay[0] = -1
-        vpar.Zmin_lay[1] = -1
+        vpar.z_min_lay[0] = -1
+        vpar.z_min_lay[1] = -1
         vpar.Zmax_lay[0] = 1
         vpar.Zmax_lay[1] = 1
 

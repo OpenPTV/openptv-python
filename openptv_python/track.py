@@ -270,7 +270,7 @@ def pos3d_in_bounds(pos, bounds):
     return (
         bounds.dvxmin < pos[0] < bounds.dvxmax
         and bounds.dvymin < pos[1] < bounds.dvymax
-        and bounds.dvzmin < pos[2] < bounds.dvzmax
+        and bounds.dvz_min < pos[2] < bounds.dvzmax
     )
 
 
@@ -456,7 +456,7 @@ def searchquader(point, tpar, cpar, cal):
     center = np.zeros(2)
     corner = np.zeros(2)
 
-    vec_set(mins, tpar.dvxmin, tpar.dvymin, tpar.dvzmin)
+    vec_set(mins, tpar.dvxmin, tpar.dvymin, tpar.dvz_min)
     vec_set(maxes, tpar.dvxmax, tpar.dvymax, tpar.dvzmax)
 
     # 3D positions of search volume - eight corners of a box
@@ -885,7 +885,7 @@ def trackcorr_c_loop(run_info, step):
                 and X[4][0] < vpar.X_lay[1]
                 and run_info.ymin < X[4][1]
                 and X[4][1] < run_info.ymax
-                and vpar.Zmin_lay[0] < X[4][2]
+                and vpar.z_min_lay[0] < X[4][2]
                 and X[4][2] < vpar.Zmax_lay[1]
             ):
                 in_volume = 1
@@ -939,7 +939,7 @@ def trackcorr_c_loop(run_info, step):
                     if (
                         vpar.X_lay[0] < X[3][0] < vpar.X_lay[1]
                         and run_info.ymin < X[3][1] < run_info.ymax
-                        and vpar.Zmin_lay[0] < X[3][2] < vpar.Zmax_lay[1]
+                        and vpar.z_min_lay[0] < X[3][2] < vpar.Zmax_lay[1]
                     ):
                         in_volume = 1
 
@@ -1132,7 +1132,7 @@ def trackback_c(run_info: TrackingRun):
                         if (
                             vpar.X_lay[0] < X[3][0] < vpar.X_lay[1]
                             and Ymin < X[3][1] < Ymax
-                            and vpar.Zmin_lay[0] < X[3][2] < vpar.Zmax_lay[1]
+                            and vpar.z_min_lay[0] < X[3][2] < vpar.Zmax_lay[1]
                         ):
                             in_volume = 1
 
