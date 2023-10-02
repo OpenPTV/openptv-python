@@ -83,7 +83,7 @@ def safely_allocate_adjacency_lists(
                 lists[c1][c2] = [Correspond() for _ in range(target_counts[c1])]
                 if lists[c1][c2] is None:
                     error = 1
-                    continue
+                    lists[c1][c2] = None
 
                 for edge in range(target_counts[c1]):
                     lists[c1][c2][edge].n = 0

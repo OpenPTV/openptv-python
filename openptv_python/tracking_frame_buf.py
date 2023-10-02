@@ -411,6 +411,9 @@ class Frame:
 
         return pos2d
 
+    def __repr__(self):
+        return f"<Frame num_parts={self.num_parts} num_cams={self.num_cams} max_targets={self.max_targets}>"
+
 
 class FrameBufBase:
     """Base class for frame buffers."""

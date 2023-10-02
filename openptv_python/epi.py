@@ -31,6 +31,9 @@ class Coord2d:
         self.x = x
         self.y = y
 
+    def __repr__(self):
+        return f"Coord2d(pnr={self.pnr}, x={self.x}, y={self.y})"
+
 
 def sort_coord2d_x(crd: List[Coord2d]) -> List[Coord2d]:
     """Quicksort for coordinates by x ."""

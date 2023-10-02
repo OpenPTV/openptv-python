@@ -1,6 +1,8 @@
 import math
 from typing import List
 
+import numpy as np
+
 from .calibration import Calibration
 from .constants import MAXCAND
 from .epi import Candidate, Coord2d
@@ -153,7 +155,7 @@ def quality_ratio(a, b):
     return min(a, b) / max(a, b)
 
 
-def find_start_point(crd, num, xa, vpar):
+def find_start_point(crd: List[Coord2d], num: int, xa: float, vpar: VolumePar) -> int:
     """Find the start point of the candidate search.
 
     Args:
@@ -179,8 +181,35 @@ def find_start_point(crd, num, xa, vpar):
             high = mid
 
     # Due to truncation error we might shift to smaller x.
-    start_point = low - 12
+    start_point = low - 1  # why in C it's -12 ? -12 is a magic number
     if start_point < 0:
         start_point = 0
+
+    return start_point
+
+
+def find_start_point_numpy(crd: List[Coord2d], xa: float, vpar: VolumePar) -> int:
+    """
+    Find the start point of the candidate search.
+
+    Args:
+    ----
+        crd: A NumPy array of structures with an 'x' attribute, representing
+             the corrected coordinates of targets in an image.
+        xa: The x-coordinate of the start point of the epipolar line.
+        vpar: A `volume_par` object (or relevant parameters).
+
+    Returns:
+    -------
+        The start point of the candidate search.
+    """
+    # Convert the structured array to a regular NumPy array of x-coordinates
+    x_coords = np.array([c.x for c in crd])
+
+    # Find indices where x_coords is greater than or equal to (xa - vpar.eps0)
+    indices = np.where(x_coords >= (xa - vpar.eps0))[0]
+
+    # Adjust the start point as per your logic
+    start_point = max(0, indices[0] - 1)
 
     return start_point
