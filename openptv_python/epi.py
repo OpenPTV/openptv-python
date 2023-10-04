@@ -89,7 +89,7 @@ def epi_mm(xl, yl, cal1, cal2, mmp, vpar) -> tuple[float, float, float, float]:
     -------
         _type_: _description_
     """
-    z_min, Zmax = 0, 0
+    z_min, z_max = 0, 0
     pos, v, X = [0, 0, 0], [0, 0, 0], [0, 0, 0]
 
     pos, v = ray_tracing(xl, yl, cal1, mmp)
@@ -99,14 +99,14 @@ def epi_mm(xl, yl, cal1, cal2, mmp, vpar) -> tuple[float, float, float, float]:
         vpar.z_min_lay[1] - vpar.z_min_lay[0]
     ) / (vpar.X_lay[1] - vpar.X_lay[0])
 
-    Zmax = vpar.Zmax_lay[0] + (pos[0] - vpar.X_lay[0]) * (
-        vpar.Zmax_lay[1] - vpar.Zmax_lay[0]
+    z_max = vpar.z_max_lay[0] + (pos[0] - vpar.X_lay[0]) * (
+        vpar.z_max_lay[1] - vpar.z_max_lay[0]
     ) / (vpar.X_lay[1] - vpar.X_lay[0])
 
     X = move_along_ray(z_min, pos, v)
     xmin, ymin = flat_image_coord(X, cal2, mmp)
 
-    X = move_along_ray(Zmax, pos, v)
+    X = move_along_ray(z_max, pos, v)
     xmax, ymax = flat_image_coord(X, cal2, mmp)
 
     return xmin, ymin, xmax, ymax
@@ -122,7 +122,7 @@ def epi_mm_2D(
         It takes a point in images space of one (single) camera, positions of this
         camera and returns the position (in millimeter units) inside the 3D space
         that corresponds to the provided point of interest, limited in the middle of
-        the 3D space, half-way between z_min and Zmax. In purely 2D experiment, with
+        the 3D space, half-way between z_min and z_max. In purely 2D experiment, with
         an infinitely small light sheet thickness or on a flat surface, this will
         mean the point ray traced through the multi-media into the 3D space.
 
@@ -135,7 +135,7 @@ def epi_mm_2D(
 
         Output:
         vec3d out - 3D position of the point in the mid-plane between z_min and
-            Zmax, which are estimated using volume limits provided in vpar.
+            z_max, which are estimated using volume limits provided in vpar.
     */
 
     Args:
@@ -152,11 +152,11 @@ def epi_mm_2D(
     z_min = vpar.z_min_lay[0] + (pos[0] - vpar.X_lay[0]) * (
         vpar.z_min_lay[1] - vpar.z_min_lay[0]
     ) / (vpar.X_lay[1] - vpar.X_lay[0])
-    Zmax = vpar.Zmax_lay[0] + (pos[0] - vpar.X_lay[0]) * (
-        vpar.Zmax_lay[1] - vpar.Zmax_lay[0]
+    z_max = vpar.z_max_lay[0] + (pos[0] - vpar.X_lay[0]) * (
+        vpar.z_max_lay[1] - vpar.z_max_lay[0]
     ) / (vpar.X_lay[1] - vpar.X_lay[0])
 
-    out = move_along_ray(0.5 * (z_min + Zmax), pos, v)
+    out = move_along_ray(0.5 * (z_min + z_max), pos, v)
     return out
 
 
@@ -383,7 +383,7 @@ def epipolar_curve(
     vertex, direct = ray_tracing(x, y, origin_cam, cparam.mm)
 
     for pt_ix, Z in enumerate(
-        np.linspace(vparam.z_min_lay[0], vparam.Zmax_lay[0], num_points)
+        np.linspace(vparam.z_min_lay[0], vparam.z_max_lay[0], num_points)
     ):
         # x = line_points[pt_ix], 0)
         # y = <double *>np.PyArray_GETPTR2(line_points, pt_ix, 1)

@@ -53,7 +53,7 @@ class TestEpipolarCurve(unittest.TestCase):
 
         vpar = read_volume_par("tests/testing_folder/corresp/criteria.par")
         vpar.set_z_min_lay([-10, -10])
-        vpar.set_Zmax_lay([10, 10])
+        vpar.set_z_max_lay([10, 10])
 
         mult_params = cpar.mm
         mult_params.set_n1(1.0)

@@ -78,14 +78,16 @@ def tr_new(
     )
 
     tr.lmax = np.norm(
-        tpar.dvxmin - tpar.dvxmax, tpar.dvymin - tpar.dvymax, tpar.dvz_min - tpar.dvzmax
+        tpar.dvxmin - tpar.dvxmax,
+        tpar.dvymin - tpar.dvymax,
+        tpar.dvz_min - tpar.dvz_max,
     )
     volumedimension(
         vpar.X_lay[1],
         vpar.X_lay[0],
         tr.ymax,
         tr.ymin,
-        vpar.Zmax_lay[1],
+        vpar.z_max_lay[1],
         vpar.z_min_lay[0],
         vpar,
         cpar,

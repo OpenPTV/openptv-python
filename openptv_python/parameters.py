@@ -147,7 +147,7 @@ class TrackPar:
     dvxmin: float = 0.0
     dvymax: float = 0.0
     dvymin: float = 0.0
-    dvzmax: float = 0.0
+    dvz_max: float = 0.0
     dvz_min: float = 0.0
     dsumg: float = 0.0
     dn: float = 0.0
@@ -172,7 +172,7 @@ class TrackPar:
                 self.dvymin = float(fpp.readline().rstrip())
                 self.dvymax = float(fpp.readline().rstrip())
                 self.dvz_min = float(fpp.readline().rstrip())
-                self.dvzmax = float(fpp.readline().rstrip())
+                self.dvz_max = float(fpp.readline().rstrip())
                 self.add = int(fpp.readline().rstrip())
         except IOError as exc:
             raise (f"Error reading tracking parameters from {filename}") from exc
@@ -197,9 +197,9 @@ class TrackPar:
         """Return the minimum velocity in z direction."""
         return self.dvz_min
 
-    def get_dvzmax(self):
+    def get_dvz_max(self):
         """Return the minimum velocity in z direction."""
-        return self.dvzmax
+        return self.dvz_max
 
     def get_dangle(self):
         """Return the maximum angle."""
@@ -264,10 +264,10 @@ class VolumePar:
     fpp = fopen(filename, "r");
     if(fscanf(fpp, &(ret->X_lay[0])) == 0) goto handle_error;
     if(fscanf(fpp, &(ret->z_min_lay[0])) == 0) goto handle_error;
-    if(fscanf(fpp, &(ret->Zmax_lay[0])) == 0) goto handle_error;
+    if(fscanf(fpp, &(ret->z_max_lay[0])) == 0) goto handle_error;
     if(fscanf(fpp, &(ret->X_lay[1])) == 0) goto handle_error;
     if(fscanf(fpp, &(ret->z_min_lay[1])) == 0) goto handle_error;
-    if(fscanf(fpp, &(ret->Zmax_lay[1])) == 0) goto handle_error;
+    if(fscanf(fpp, &(ret->z_max_lay[1])) == 0) goto handle_error;
 
     if(fscanf(fpp, &(ret->cnx)) == 0) goto handle_error;
     if(fscanf(fpp, &(ret->cny)) == 0) goto handle_error;
@@ -282,7 +282,7 @@ class VolumePar:
 
     X_lay: List[float] = field(default_factory=list)
     z_min_lay: List[float] = field(default_factory=list)
-    Zmax_lay: List[float] = field(default_factory=list)
+    z_max_lay: List[float] = field(default_factory=list)
     # minimal criteria for number of pixels
     cn: float = field(default_factory=float)
     cnx: float = field(default_factory=float)  # same in x direction
@@ -298,9 +298,9 @@ class VolumePar:
         """Set the minimum z coordinate of the layers."""
         self.z_min_lay = z_min_lay
 
-    def set_Zmax_lay(self, Zmax_lay: list[float]) -> None:
+    def set_z_max_lay(self, z_max_lay: list[float]) -> None:
         """Set the maximum z coordinate of the layers."""
-        self.Zmax_lay = Zmax_lay
+        self.z_max_lay = z_max_lay
 
     def set_cn(self, cn: float) -> None:
         """Set the refractive index."""
@@ -332,10 +332,10 @@ class VolumePar:
         with open(filename, "r", encoding="utf-8") as f:
             self.X_lay.append(float(f.readline()))
             self.z_min_lay.append(float(f.readline()))
-            self.Zmax_lay.append(float(f.readline()))
+            self.z_max_lay.append(float(f.readline()))
             self.X_lay.append(float(f.readline()))
             self.z_min_lay.append(float(f.readline()))
-            self.Zmax_lay.append(float(f.readline()))
+            self.z_max_lay.append(float(f.readline()))
             self.cnx, self.cny, self.cn, self.csumg, self.corrmin, self.eps0 = [
                 float(f.readline()) for _ in range(6)
             ]

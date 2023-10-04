@@ -209,13 +209,13 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibrati
 
     # find extrema of imaged object volume
     z_min = min(vpar.z_min_lay)
-    Zmax = max(vpar.Zmax_lay)
+    z_max = max(vpar.z_max_lay)
 
     z_min -= math.fmod(z_min, rw)
-    Zmax += rw - math.fmod(Zmax, rw)
+    z_max += rw - math.fmod(z_max, rw)
 
     z_min_t = z_min
-    Zmax_t = Zmax
+    z_max_t = z_max
 
     # intersect with image vertices rays
     cal_t = copy.deepcopy(cal)
@@ -234,23 +234,23 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibrati
 
             if xyz_t[2] < z_min_t:
                 z_min_t = xyz_t[2]
-            if xyz_t[2] > Zmax_t:
-                Zmax_t = xyz_t[2]
+            if xyz_t[2] > z_max_t:
+                z_max_t = xyz_t[2]
 
             R = norm(xyz_t[0] - cal_t.ext_par.x0, xyz_t[1] - cal_t.ext_par.y0, 0)
 
             if R > Rmax:
                 Rmax = R
 
-            xyz = move_along_ray(Zmax, pos, a)
+            xyz = move_along_ray(z_max, pos, a)
             xyz_t, _, _ = trans_cam_point(
                 cal.ext_par, cpar.mm, cal.glass_par, xyz, cal_t.ext_par
             )
 
             if xyz_t[2] < z_min_t:
                 z_min_t = xyz_t[2]
-            if xyz_t[2] > Zmax_t:
-                Zmax_t = xyz_t[2]
+            if xyz_t[2] > z_max_t:
+                z_max_t = xyz_t[2]
 
             R = norm(xyz_t[0] - cal_t.ext_par.x0, xyz_t[1] - cal_t.ext_par.y0, 0)
 
@@ -262,7 +262,7 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibrati
 
     # get # of rasterlines in r, z
     nr = int(Rmax / rw + 1)
-    nz = int((Zmax_t - z_min_t) / rw + 1)
+    nz = int((z_max_t - z_min_t) / rw + 1)
 
     # create two dimensional mmlut structure
     cal.mmlut.origin = np.r_[cal_t.ext_par.x0, cal_t.ext_par.y0, z_min_t]
@@ -339,7 +339,7 @@ def volumedimension(
     xmin: float,
     ymax: float,
     ymin: float,
-    zmax: float,
+    z_max: float,
     z_min: float,
     vpar: VolumePar,
     cpar: ControlPar,
@@ -349,15 +349,15 @@ def volumedimension(
     yc = [0.0, cpar["imy"]]
 
     z_min = vpar["z_min_lay"][0]
-    Zmax = vpar["Zmax_lay"][0]
+    z_max = vpar["z_max_lay"][0]
 
     if vpar["z_min_lay"][1] < z_min:
         z_min = vpar["z_min_lay"][1]
-    if vpar["Zmax_lay"][1] > Zmax:
-        Zmax = vpar["Zmax_lay"][1]
+    if vpar["z_max_lay"][1] > z_max:
+        z_max = vpar["z_max_lay"][1]
 
     z_min = z_min
-    zmax = Zmax
+    z_max = z_max
 
     for i_cam in range(cpar["num_cams"]):
         for i in range(2):
@@ -383,8 +383,8 @@ def volumedimension(
                 if Y < ymin:
                     ymin = Y
 
-                X = pos[0] + (Zmax - pos[2]) * a[0] / a[2]
-                Y = pos[1] + (Zmax - pos[2]) * a[1] / a[2]
+                X = pos[0] + (z_max - pos[2]) * a[0] / a[2]
+                Y = pos[1] + (z_max - pos[2]) * a[1] / a[2]
 
                 if X > xmax:
                     xmax = X
@@ -395,4 +395,4 @@ def volumedimension(
                 if Y < ymin:
                     ymin = Y
 
-    return (xmax, xmin, ymax, ymin, zmax, z_min)
+    return (xmax, xmin, ymax, ymin, z_max, z_min)

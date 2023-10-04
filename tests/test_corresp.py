@@ -300,8 +300,8 @@ class TestReadControlPar(unittest.TestCase):
 
         vpar.z_min_lay[0] = -1
         vpar.z_min_lay[1] = -1
-        vpar.Zmax_lay[0] = 1
-        vpar.Zmax_lay[1] = 1
+        vpar.z_max_lay[0] = 1
+        vpar.z_max_lay[1] = 1
 
         calib = read_all_calibration(cpar.num_cams)
         frm = generate_test_set(calib, cpar)
