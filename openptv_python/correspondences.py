@@ -269,7 +269,7 @@ def consistent_pair_matching(
 
 
 def match_pairs(
-    corr_list: List[List[List[Correspond]]], corrected, frm: Frame, vpar, cpar, calib
+    corr_lists: List[List[List[Correspond]]], corrected, frm: Frame, vpar, cpar, calib
 ):
     """Match pairs of cameras.
 
@@ -325,7 +325,7 @@ def match_pairs(
                 )
 
                 # origin point in the corr_list
-                corr_list[i1][i2][i].p1 = i
+                corr_lists[i1][i2][i].p1 = i
                 pt1 = corrected[i1][i].pnr
 
                 # search for a conjugate point in corrected[i2]
@@ -353,11 +353,11 @@ def match_pairs(
                     count = MAXCAND
 
                 for j in range(count):
-                    corr_list[i1][i2][i].p2[j] = cand[j].pnr
-                    corr_list[i1][i2][i].corr[j] = cand[j].corr
-                    corr_list[i1][i2][i].dist[j] = cand[j].tol
+                    corr_lists[i1][i2][i].p2[j] = cand[j].pnr
+                    corr_lists[i1][i2][i].corr[j] = cand[j].corr
+                    corr_lists[i1][i2][i].dist[j] = cand[j].tol
 
-                corr_list[i1][i2][i].n = count
+                corr_lists[i1][i2][i].n = count
 
 
 def take_best_candidates(
@@ -439,7 +439,7 @@ def py_correspondences(
     calib: List[Calibration],
     vparam: VolumePar,
     cparam: ControlPar,
-) -> Tuple[Tuple, Tuple, int]:
+) -> Tuple[list[np.ndarray], list[np.ndarray], int]:
     """
     Get the correspondences for each clique size.
 
