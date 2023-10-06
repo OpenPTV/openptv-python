@@ -22,6 +22,9 @@ class Candidate:
         self.tol = tol
         self.corr = corr
 
+    def __repr__(self):
+        return f"Candidate(pnr={self.pnr}, tol={self.tol}, corr={self.corr})"
+
 
 class Coord2d:
     """2D coordinates in the image space."""

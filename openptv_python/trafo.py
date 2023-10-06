@@ -105,7 +105,9 @@ def distort_brown_affine(
     return x1, y1
 
 
-def correct_brown_affine(x, y, ap, tol=1e-5):
+def correct_brown_affine(
+    x: float, y: float, ap: ap_52, tol: float = 1e-5
+) -> Tuple[float, float]:
     """Correct a distorted point using the Brown affine model."""
     r, rq, xq, yq = 0.0, 0.0, x, y
     itnum = 0
