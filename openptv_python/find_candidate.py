@@ -90,6 +90,8 @@ def find_candidate(
 
     j0 = find_start_point(crd, num, xa, vpar)
 
+    # print(f"j0: {j0}")
+
     for j in range(j0, num):
         # Since the list is x-sorted, an out of x-bound candidate is after the
         # last possible candidate, so stop.
@@ -109,6 +111,8 @@ def find_candidate(
             continue
 
         p2 = crd[j].pnr
+
+        # print(f"p2 = {p2}, d = {d}, eps0 = {vpar.eps0}")
 
         # Quality of each parameter is a ratio of the values of the
         # size n, nx, ny and sum of grey values sumg.
@@ -133,10 +137,7 @@ def find_candidate(
 
         cand.append(Candidate(pnr=j, tol=d, corr=corr))
 
-        # cand[count].pnr = j
-        # cand[count].tol = d
-        # cand[count].corr = corr
-        # count += 1
+        # print(f"appended: {cand[-1]}")
 
     return cand
 
@@ -168,18 +169,21 @@ def find_start_point(crd: List[Coord2d], num: int, xa: float, vpar: VolumePar) -
     -------
         The start point of the candidate search.
     """
-    # Binary search for start point of candidate search.
-    low = 0
-    high = num - 1
-    while low < high:
-        mid = (low + high) // 2
-        if crd[mid].x < (xa - vpar.eps0):
-            low = mid + 1
+    num = len(crd)
+    j0 = num // 2
+    dj = num // 4
+
+    while dj > 1:
+        if crd[j0].x < (xa - vpar.eps0):
+            j0 += dj
         else:
-            high = mid
+            j0 -= dj
+        dj //= 2
+
+    # print(f"j0 before: {j0}")
 
     # Due to truncation error we might shift to smaller x.
-    start_point = low - 1  # why in C it's -12 ? -12 is a magic number
+    start_point = j0 - 12  # why in C it's -12 ? -12 is a magic number
     if start_point < 0:
         start_point = 0
 

@@ -24,7 +24,7 @@ from .orientation import point_position
 from .parameters import ControlPar, SequencePar, TrackPar, VolumePar
 from .tracking_frame_buf import FrameBuf
 from .trafo import dist_to_flat, metric_to_pixel, pixel_to_metric
-from .vec_utils import vec2d, vec3d, vec_copy, vec_diff_norm, vec_subt
+from .vec_utils import vec_copy, vec_diff_norm, vec_subt
 
 default_naming = {
     "corres": b"res/rt_is",
@@ -573,7 +573,7 @@ def sort(a, b):
     return a, b
 
 
-def point_to_pixel(point, cal, cpar) -> np.ndarray:
+def point_to_pixel(point: np.ndarray, cal: Calibration, cpar: ControlPar) -> np.ndarray:
     """Return vec2d with pixel positions (x,y) in the camera.
 
     Arguments:
@@ -737,12 +737,14 @@ def trackcorr_c_loop(run_info, step):
     count1, count2, count3, num_added = 0, 0, 0, 0
     quali = 0
     diff_pos, X = (
-        vec3d,
-        [vec3d] * 6,
+        np.empty((3,)),
+        [np.empty((3,))] * 6,
     )  # 7 reference points used in the algorithm, TODO: check if can reuse some
     angle, acc, angle0, acc0, dl = 0.0, 0.0, 0.0, 0.0, 0.0
     angle1, acc1 = 0.0, 0.0
-    v1, v2 = [vec2d] * 4, [vec2d] * 4  # volume center projection on cameras
+    v1, v2 = [np.empty((2,))] * 4, [
+        np.empty((2,))
+    ] * 4  # volume center projection on cameras
     rr = 0.0
 
     # Shortcuts to inside current frame
@@ -773,7 +775,7 @@ def trackcorr_c_loop(run_info, step):
     orig_parts = fb.buf[1].num_parts
     for h in range(orig_parts):
         for j in range(6):
-            X[j] = vec3d
+            X[j] = np.empty((3,))
 
         curr_path_inf = fb.buf[1].path_info[h]
         curr_corres = fb.buf[1].correspond[h]
@@ -1038,9 +1040,9 @@ def trackback_c(run_info: TrackingRun):
     count1, count2, num_added, quali = 0, 0, 0, 0
     Ymin = Ymax = npart = nlinks = 0
     philf = np.zeros((4, MAX_CANDS))
-    X = [vec3d] * 6
-    n = [vec2d] * 4
-    v2 = [vec2d] * 4
+    X = [np.empty((3,))] * 6
+    n = [np.empty((2,))] * 4
+    v2 = [np.empty((2,))] * 4
 
     fb = run_info.fb
     seq_par = run_info.seq_par

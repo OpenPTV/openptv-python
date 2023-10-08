@@ -269,8 +269,13 @@ def consistent_pair_matching(
 
 
 def match_pairs(
-    corr_lists: List[List[List[Correspond]]], corrected, frm: Frame, vpar, cpar, calib
-):
+    corr_lists: List[List[List[Correspond]]],
+    corrected: List[List[Coord2d]],
+    frm: Frame,
+    vpar: VolumePar,
+    cpar: ControlPar,
+    calib: List[Calibration],
+) -> None:
     """Match pairs of cameras.
 
     **This function matches pairs of cameras by finding corresponding points in each camera.
@@ -309,6 +314,8 @@ def match_pairs(
 
     **The function returns None.**
     """
+    count = 0
+
     for i1 in range(cpar.num_cams - 1):
         for i2 in range(i1 + 1, cpar.num_cams):
             for i in range(frm.num_targets[i1]):
@@ -323,6 +330,8 @@ def match_pairs(
                     cpar.mm,
                     vpar,
                 )
+
+                # print(f" xa12: {xa12}, ya12: {ya12}, xb12: {xb12}, yb12: {yb12} ")
 
                 # origin point in the corr_list
                 corr_lists[i1][i2][i].p1 = i
@@ -347,10 +356,8 @@ def match_pairs(
                     calib[i2],
                 )
 
-                # write all corresponding candidates to the preliminary corr_list of correspondences
-                count = len(cand)
-                if count > MAXCAND:
-                    count = MAXCAND
+                # write first MAXCAND corresponding candidates to the preliminary corr_list of correspondences
+                count = min(len(cand), MAXCAND)
 
                 for j in range(count):
                     corr_lists[i1][i2][i].p2[j] = cand[j].pnr

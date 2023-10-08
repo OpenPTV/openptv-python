@@ -15,10 +15,12 @@ from .ray_tracing import ray_tracing
 from .sortgrid import sortgrid
 from .tracking_frame_buf import Target, TargetArray
 from .trafo import correct_brown_affine, pixel_to_metric
-from .vec_utils import unit_vector, vec2d, vec3d, vec_norm, vec_set
+from .vec_utils import unit_vector, vec_norm, vec_set
 
 
-def skew_midpoint(vert1: vec3d, direct1: vec3d, vert2: vec3d, direct2: vec3d):
+def skew_midpoint(
+    vert1: np.ndarray, direct1: np.ndarray, vert2: np.ndarray, direct2: np.ndarray
+):
     """Find the midpoint of the line segment that is the shortest distance."""
     perp_both = np.cross(direct1, direct2)
     scale = np.dot(perp_both, perp_both)
@@ -108,7 +110,7 @@ def weighted_dumbbell_precision(
     db_weight: float,
 ) -> float:
     """Calculate the weighted dumbbell precision of the current orientation."""
-    res = [vec3d, vec3d]
+    res = [np.empty((3,)), np.empty((3,))]
     dtot = 0
     len_err_tot = 0
 
@@ -122,11 +124,11 @@ def weighted_dumbbell_precision(
                 db_length / dist if dist > db_length else dist / db_length
             )
 
-    return dtot / num_targs + db_weight * len_err_tot / (0.5 * num_targs)
+    return float(dtot / num_targs + db_weight * len_err_tot / (0.5 * num_targs))
 
 
 def num_deriv_exterior(
-    cal: Calibration, cpar: ControlPar, dpos: float, dang: float, pos: vec3d
+    cal: Calibration, cpar: ControlPar, dpos: float, dang: float, pos: np.ndarray
 ):
     """Calculate the partial numerical derivative of image coordinates of a.
 
@@ -781,7 +783,7 @@ def dumbbell_target_func(
     num_cams = targets.shape[1]
     num_pts = targets.shape[0]
     # ctargets = <vec2d **>calloc(num_pts, sizeof(vec2d*))
-    ctargets = [vec2d for _ in range(num_pts)]
+    ctargets = [np.empty((2,)) for _ in range(num_pts)]
 
     for pt in range(num_pts):
         targ = targets[pt]

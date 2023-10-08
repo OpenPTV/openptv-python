@@ -9,11 +9,11 @@ from .calibration import Calibration
 from .multimed import back_trans_point, multimed_nlay, trans_cam_point
 from .parameters import MultimediaPar
 from .trafo import flat_to_dist
-from .vec_utils import vec3d, vec_set
+from .vec_utils import vec_set
 
 
 def flat_image_coord(
-    orig_pos: vec3d, cal: Calibration, mm: MultimediaPar
+    orig_pos: np.ndarray, cal: Calibration, mm: MultimediaPar
 ) -> Tuple[float, float]:
     """Flat image coordinate.
 
@@ -37,8 +37,8 @@ def flat_image_coord(
         cal.ext_par, mm, cal.glass_par, orig_pos, cal_t.ext_par
     )
 
-    X_t, Y_t = multimed_nlay(cal_t, mm, pos_t)
-    pos_t = vec_set(X_t, Y_t, pos_t[2])
+    x_t, y_t = multimed_nlay(cal_t, mm, pos_t)
+    pos_t = vec_set(x_t, y_t, pos_t[2])
     pos = back_trans_point(pos_t, mm, cal.glass_par, cross_p, cross_c)
 
     deno = (
@@ -85,10 +85,13 @@ def flat_image_coordinates(
     return out
 
 
-def img_coord(pos: vec3d, cal: Calibration, mm: MultimediaPar) -> Tuple[float, float]:
+def img_coord(
+    pos: np.ndarray, cal: Calibration, mm: MultimediaPar
+) -> Tuple[float, float]:
     """Image coordinate."""
     # Estimate metric coordinates in image space using flat_image_coord()
     x, y = flat_image_coord(pos, cal, mm)
+    # print(f"flat_image_coord: x = {x}, y = {y}")
 
     # Distort the metric coordinates using the Brown distortion model
     x, y = flat_to_dist(x, y, cal)

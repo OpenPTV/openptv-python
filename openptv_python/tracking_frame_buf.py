@@ -24,9 +24,12 @@ from .trafo import dist_to_flat, pixel_to_metric
 class n_tupel:
     """n_tupel data structure."""
 
-    def __init__(self, p: List[int] = None, corr: float = None):
-        self.p = p
-        self.corr = corr
+    def __init__(self, p=None, corr=None):
+        self.p = [] if p is None else p
+        self.corr = 0.0 if corr is None else corr
+
+    def __repr__(self):
+        return f"<n_tupel p={self.p} corr={self.corr}>"
 
 
 def quicksort_n_tupel(n_tupel_list: List[n_tupel]) -> List[n_tupel]:
