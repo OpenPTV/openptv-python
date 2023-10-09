@@ -386,61 +386,52 @@ class TestReadControlPar(unittest.TestCase):
     #     # assert match_counts[2] == 0
     #     # assert match_counts[3] == 16  # last element is the sum of matches
 
-    # def test_pairwise_matching(self):
-    #     """Test pairwise matching function."""
-    #     cpar = read_control_par("tests/testing_fodder/parameters/ptv.par")
-    #     vpar = read_volume_par("tests/testing_fodder/parameters/criteria.par")
+    def test_pairwise_matching(self):
+        """Test pairwise matching function."""
+        cand = 0
+        cpar = read_control_par("tests/testing_fodder/parameters/ptv.par")
+        vpar = read_volume_par("tests/testing_fodder/parameters/criteria.par")
 
-    #     # /* Cameras are at so high angles that opposing cameras don't see each other
-    #     #    in the normal air-glass-water setting. */
-    #     cpar.mm.n2[0] = 1.0001
-    #     cpar.mm.n3 = 1.0001
+        # /* Cameras are at so high angles that opposing cameras don't see each other
+        #    in the normal air-glass-water setting. */
+        cpar.mm.n2[0] = 1.0001
+        cpar.mm.n3 = 1.0001
 
-    #     calib = read_all_calibration(cpar.num_cams)
-    #     frm = generate_test_set(calib, cpar)
+        calib = read_all_calibration(cpar.num_cams)
+        frm = generate_test_set(calib, cpar)
 
-    #     print("frame generated\n")
-    #     print(
-    #         "%f %f %d\n"
-    #         % (frm.targets[0][0].x, frm.targets[0][0].y, frm.targets[0][0].pnr)
-    #     )
-    #     print(
-    #         "%f %f %d\n"
-    #         % (frm.targets[1][0].x, frm.targets[1][0].y, frm.targets[1][0].pnr)
-    #     )
+        corrected = correct_frame(frm, calib, cpar, 0.0001)
+        corr_list = safely_allocate_adjacency_lists(cpar.num_cams, frm.num_targets)
 
-    #     corrected = correct_frame(frm, calib, cpar, 0.0001)
-    #     corr_list = safely_allocate_adjacency_lists(cpar.num_cams, frm.num_targets)
+        match_pairs(corr_list, corrected, frm, vpar, cpar, calib)
 
-    #     match_pairs(corr_list, corrected, frm, vpar, cpar, calib)
+        # /* Well, I guess we should at least check that each target has the
+        # real matches as candidates, as a sample check. */
+        for cam in range(cpar.num_cams - 1):
+            for subcam in range(cam + 1, cpar.num_cams):
+                for part in range(frm.num_targets[cam]):
+                    # /* Complications here:
+                    # 1. target numbering scheme alternates.
+                    # 2. Candidte 'pnr' is an index into the x-sorted array, not
+                    #     the original pnr.
+                    # */
+                    if (subcam - cam) % 2 == 0:
+                        correct_pnr = corrected[cam][
+                            corr_list[cam][subcam][part].p1
+                        ].pnr
+                    else:
+                        correct_pnr = (
+                            15 - corrected[cam][corr_list[cam][subcam][part].p1].pnr
+                        )
 
-    #     # /* Well, I guess we should at least check that each target has the
-    #     # real matches as candidates, as a sample check. */
-    #     for cam in range(cpar.num_cams - 1):
-    #         for subcam in range(cam + 1, cpar.num_cams):
-    #             for part in range(frm.num_targets[cam]):
-    #                 # /* Complications here:
-    #                 # 1. target numbering scheme alternates.
-    #                 # 2. Candidte 'pnr' is an index into the x-sorted array, not
-    #                 #     the original pnr.
-    #                 # */
-    #                 if (subcam - cam) % 2 == 0:
-    #                     correct_pnr = corrected[cam][
-    #                         corr_list[cam][subcam][part].p1
-    #                     ].pnr
-    #                 else:
-    #                     correct_pnr = (
-    #                         15 - corrected[cam][corr_list[cam][subcam][part].p1].pnr
-    #                     )
+                    for cand in range(MAXCAND):
+                        if (
+                            corrected[subcam][corr_list[cam][subcam][part].p2[cand]].pnr
+                            == correct_pnr
+                        ):
+                            break
 
-    #                 for cand in range(MAXCAND):
-    #                     if (
-    #                         corrected[subcam][corr_list[cam][subcam][part].p2[cand]].pnr
-    #                         == correct_pnr
-    #                     ):
-    #                         break
-
-    #                 self.assertFalse(cand == MAXCAND)
+                    self.assertFalse(cand == MAXCAND)
 
 
 class TestSafelyAllocateAdjacencyLists(unittest.TestCase):
