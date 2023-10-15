@@ -98,8 +98,12 @@ def safely_allocate_adjacency_lists(
 
 
 def four_camera_matching(
-    corr_list, base_target_count, accept_corr, scratch, scratch_size
-) -> List[List[List[Correspond]]]:
+    corr_list: List[List[List[Correspond]]],
+    base_target_count,
+    accept_corr,
+    scratch,
+    scratch_size,
+) -> int:
     """Four-camera matching."""
     matched = 0
 
@@ -169,7 +173,7 @@ def three_camera_matching(
     scratch,
     scratch_size,
     tusage,
-):
+) -> int:
     """Three-camera matching."""
     matched = 0
     nmax = NMAX
@@ -196,6 +200,7 @@ def three_camera_matching(
                             if indices.size == 0:
                                 continue
 
+                            print(f"indices {indices}")
                             m = indices[0]
                             corr = (
                                 corr_list[i1][i2][i].corr[j]
@@ -216,6 +221,8 @@ def three_camera_matching(
                             scratch[matched].corr = corr
 
                             matched += 1
+                            print(f"matched: {matched} p: {p}")
+
                             if matched == scratch_size:
                                 print("Overflow in correspondences.\n")
                                 return matched

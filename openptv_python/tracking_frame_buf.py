@@ -25,7 +25,7 @@ class n_tupel:
     """n_tupel data structure."""
 
     def __init__(self, p=None, corr=None):
-        self.p = [] if p is None else p
+        self.p = [0, 0, 0, 0] if p is None else p
         self.corr = 0.0 if corr is None else corr
 
     def __repr__(self):

@@ -452,17 +452,17 @@ class ControlPar:
             self.pix_y = float(par_file.readline().strip())
             self.chfield = int(par_file.readline().strip())
             self.mm.n1 = float(par_file.readline().strip())
-            self.mm.n2 = float(par_file.readline().strip())
+            self.mm.n2[0] = float(par_file.readline().strip())
             self.mm.n3 = float(par_file.readline().strip())
-            self.mm.d = float(par_file.readline().strip())
+            self.mm.d[0] = float(par_file.readline().strip())
 
         # the original idea is to have more layers inside water with different
         # refractive indices and different thicknesses.
         # therefore the following lines convert it to numpy arrays
         # we expect the user to provide this parameter file lines with equal
         # number of floats
-        self.mm.d = [self.mm.d]
-        self.mm.n2 = [self.mm.n2]
+        # self.mm.d = [self.mm.d]
+        # self.mm.n2 = [self.mm.n2]
 
     def get_multimedia_params(self):
         """Return multimedia parameters."""

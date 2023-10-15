@@ -6,8 +6,10 @@ import numpy as np
 from openptv_python.calibration import Calibration, read_calibration
 from openptv_python.constants import MAXCAND
 from openptv_python.correspondences import (
+    consistent_pair_matching,
     match_pairs,
     safely_allocate_adjacency_lists,
+    safely_allocate_target_usage_marks,
 )
 from openptv_python.epi import Coord2d
 from openptv_python.imgcoord import img_coord
@@ -15,6 +17,7 @@ from openptv_python.parameters import ControlPar, read_control_par, read_volume_
 from openptv_python.tracking_frame_buf import (
     Frame,
     Target,
+    n_tupel,
 )
 from openptv_python.trafo import dist_to_flat, metric_to_pixel, pixel_to_metric
 
@@ -204,13 +207,13 @@ class TestTwoCameraMatching(unittest.TestCase):
                     self.assertTrue(found_correct_pnr)
 
         # # continue to the consistent_pair matching test
-        # con = [n_tupel() for _ in range(4 * 16)]
-        # tusage = safely_allocate_target_usage_marks(cpar.num_cams)
+        con = [n_tupel() for _ in range(4 * 16)]
+        tusage = safely_allocate_target_usage_marks(cpar.num_cams)
 
-        # # high accept corr bcz of closeness to epipolar lines.
-        # matched = consistent_pair_matching(
-        #     corr_lists, cpar.num_cams, frm.num_targets, 10000.0, con, 4 * 16, tusage
-        # )
+        # high accept corr bcz of closeness to epipolar lines.
+        consistent_pair_matching(
+            corr_lists, cpar.num_cams, frm.num_targets, 10000.0, con, 4 * 16, tusage
+        )
 
         # print(f" matched = {matched}")
 
