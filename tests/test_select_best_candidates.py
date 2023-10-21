@@ -37,7 +37,7 @@ class TestTakeBestCandidates(unittest.TestCase):
         tusage = [[0] * max_targets for _ in range(num_cams)]
         tusage[0][1] = 1
 
-        dst = [None] * len(src)
+        dst = [n_tupel()] * len(src)
         taken = take_best_candidates(src, dst, num_cams, tusage)
 
         self.assertEqual(taken, 2)

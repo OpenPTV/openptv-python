@@ -471,12 +471,12 @@ def take_best_candidates(
 
 
 def py_correspondences(
-    img_pts: List[TargetArray],
-    flat_coords: List[Coord2d],
+    img_pts: List[List[TargetArray]],  # num_cams * num_targets[cam]
+    flat_coords: List[List[Coord2d]],
     calib: List[Calibration],
     vparam: VolumePar,
     cparam: ControlPar,
-) -> Tuple[list[np.ndarray], list[np.ndarray], int]:
+) -> Tuple[List[np.ndarray], List[np.ndarray], int]:
     """
     Get the correspondences for each clique size.
 
@@ -505,12 +505,12 @@ def py_correspondences(
     """
     num_cams = cparam.num_cams
     frm = Frame(num_cams, MAX_TARGETS)
-    corrected = [None] * num_cams
 
     # Special case of a single camera, follow the single_cam_correspondence docstring
     if num_cams == 1:
         sorted_pos, sorted_corresp, num_targs = single_cam_correspondences(
-            img_pts, flat_coords
+            img_pts[0],
+            flat_coords[0],
         )
         return sorted_pos, sorted_corresp, num_targs
 
@@ -541,15 +541,16 @@ def py_correspondences(
         # calib[cam] = (<Calibration>cals[cam])._calibration
         # frm.targets[cam] = (<TargetArray>img_pts[cam])._tarr
         frm.num_targets[cam] = len(img_pts[cam])
-        frm.targets[cam] = [Target() for _ in range(frm.num_targets[cam])]
-        corrected[cam] = flat_coords[cam].buf
+        frm.targets[cam] = img_pts[cam]
 
     # The biz:
-    corresp_buf = correspondences(frm, corrected, vparam, cparam, calib, match_counts)
+    corresp_buf = correspondences(frm, flat_coords, vparam, cparam, calib, match_counts)
 
     # Distribute data to return structures:
-    sorted_pos = [None] * (num_cams - 1)
-    sorted_corresp = [None] * (num_cams - 1)
+    # sorted_pos = [None] * (num_cams - 1)
+    # sorted_corresp = [None] * (num_cams - 1)
+    sorted_pos, sorted_corresp = [], []
+
     last_count = 0
 
     for clique_type in range(num_cams - 1):
@@ -565,7 +566,7 @@ def py_correspondences(
                 if geo_id < 0:
                     continue
 
-                p1 = corrected[cam][geo_id].pnr
+                p1 = flat_coords[cam][geo_id].pnr
                 clique_ids[cam, pt] = p1
 
                 if p1 > -1:
@@ -574,8 +575,10 @@ def py_correspondences(
                     clique_targs[cam, pt, 1] = targ.y
 
         last_count += num_points
-        sorted_pos[clique_type] = clique_targs
-        sorted_corresp[clique_type] = clique_ids
+        sorted_pos.append(clique_targs)
+        sorted_corresp.append(clique_ids)
+        # sorted_pos[clique_type] = clique_targs # type: ignore
+        # sorted_corresp[clique_type] = clique_ids # type: ignore
 
     # Clean up.
     num_targs = match_counts[num_cams - 1]
@@ -693,7 +696,7 @@ def correspondences(
 
 
 def single_cam_correspondences(
-    img_pts: List[TargetArray], corrected: List[Coord2d]
+    img_pts: List[Target], corrected: List[Coord2d]
 ) -> Tuple[List[np.ndarray], List[np.ndarray], int]:
     """
     Single camera correspondence is not a real correspondence, it will be only a projection.
@@ -725,7 +728,7 @@ def single_cam_correspondences(
     #     int pt, num_points
     #     coord_2d *corrected = <coord_2d *> malloc(sizeof(coord_2d *))
 
-    num_points = len(img_pts[0])
+    num_points = len(img_pts)
 
     clique_targs = np.full((1, num_points, 2), PT_UNUSED, dtype=np.float64)
     clique_ids = np.full((1, num_points), CORRES_NONE, dtype=np.int_)
@@ -739,7 +742,7 @@ def single_cam_correspondences(
         clique_ids[0, pt] = p1
 
         if p1 > -1:
-            targ = img_pts[0][p1]
+            targ = img_pts[p1]
             clique_targs[0, pt, 0] = targ.x
             clique_targs[0, pt, 1] = targ.y
             # we also update the tnr, see docstring of correspondences

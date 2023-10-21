@@ -711,7 +711,7 @@ def write_path_frame(
 def match_coords(
     targs: List[Target],
     cpar: ControlPar,
-    cal: Calibration(),
+    cal: Calibration,
     tol: float = 1e-5,
     reset_numbers: bool = False,
 ) -> List[Coord2d]:

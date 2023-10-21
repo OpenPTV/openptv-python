@@ -72,20 +72,8 @@ def correct_frame(
 
             row[part] = Coord2d(frm.targets[cam][part].pnr, x, y)
 
-            # print(
-            #     f"frm.targets:{cam},{part},{frm.targets[cam][part].x},{frm.targets[cam][part].y},{frm.targets[cam][part].pnr}"
-            # )
-            # print(
-            #     f"corrected: {row[part].x} {row[part].y} {row[part].pnr}"
-            # )
-
         # This is expected by find_candidate()
         row.sort(key=lambda Coord2d: Coord2d.x)
-
-        # for r in row:
-        #     print(r.pnr, r.x, r.y)
-
-    # corrected[cam] = row
 
     return corrected
 
@@ -189,53 +177,76 @@ class TestReadControlPar(unittest.TestCase):
             pnr, np.r_[6, 11, 10, 8, 1, 4, 7, 0, 2, 9, 5, 3, 12]
         )
 
-    # def test_full_corresp(self):
-    #     """Full scene correspondences."""
-    #     cpar = read_control_par("tests/testing_folder/corresp/control.par")
-    #     vpar = read_volume_par("tests/testing_folder/corresp/criteria.par")
+    def test_full_corresp(self):
+        """Full scene correspondences."""
+        # cpar = read_control_par("tests/testing_folder/corresp/control.par")
+        # vpar = read_volume_par("tests/testing_folder/corresp/criteria.par")
 
-    #     # Cameras are at so high angles that opposing cameras don't see each
-    #     # other in the normal air-glass-water setting.
-    #     cpar.mm.set_layers([1.0001], [1.0])
-    #     cpar.mm.n3 = 1.0001
+        # # Cameras are at so high angles that opposing cameras don't see each
+        # # other in the normal air-glass-water setting.
+        # cpar.mm.set_layers([1.0001], [1.0])
+        # cpar.mm.n3 = 1.0001
 
-    #     cals = []
-    #     img_pts = []
-    #     corrected = []
+        # cals = []
+        # img_pts = []
+        # corrected = []
 
-    #     for c in range(cpar.num_cams):
-    #         cal = Calibration()
-    #         cal.from_file(
-    #             f"tests/testing_folder/calibration/sym_cam{c+1:d}.tif.ori",
-    #             "tests/testing_folder/calibration/cam1.tif.addpar",
-    #         )
-    #         cals.append(cal)
+        # for c in range(cpar.num_cams):
+        #     cal = Calibration()
+        #     cal.from_file(
+        #         f"tests/testing_folder/calibration/sym_cam{c+1:d}.tif.ori",
+        #         "tests/testing_folder/calibration/cam1.tif.addpar",
+        #     )
+        #     cals.append(cal)
 
-    #         # Generate test targets.
-    #         ta = TargetArray(16)
+        #     # Generate test targets.
+        #     ta = TargetArray(16)
 
-    #         for row, col in np.ndindex(4, 4):
-    #             targ_ix = row * 4 + col
-    #             # Avoid symmetric case:
-    #             if c % 2:
-    #                 targ_ix = 15 - targ_ix
-    #             targ = ta[targ_ix]
+        #     for row, col in np.ndindex(4, 4):
+        #         targ_ix = row * 4 + col
+        #         # Avoid symmetric case:
+        #         if c % 2:
+        #             targ_ix = 15 - targ_ix
+        #         targ = ta[targ_ix]
 
-    #             pos3d = 10 * np.array([col, row, 0], dtype=np.float64)
-    #             x, y = img_coord(pos3d, cal, cpar.mm)
-    #             x, y = metric_to_pixel(x, y, cpar)
-    #             targ.set_pos((x, y))
+        #         pos3d = 10 * np.array([col, row, 0], dtype=np.float64)
+        #         x, y = img_coord(pos3d, cal, cpar.mm)
+        #         x, y = metric_to_pixel(x, y, cpar)
+        #         targ.set_pos((x, y))
 
-    #             targ.set_pnr(targ_ix)
-    #             targ.set_pixel_counts(25, 5, 5)
-    #             targ.set_sum_grey_value(10)
+        #         targ.set_pnr(targ_ix)
+        #         targ.set_pixel_counts(25, 5, 5)
+        #         targ.set_sum_grey_value(10)
 
-    #         img_pts.append(ta)
-    #         mc = match_coords(ta, cpar, cal)
-    #         corrected.append(mc)
+        #     img_pts.append(ta)
+        #     mc = match_coords(ta, cpar, cal)
+        #     corrected.append(mc)
 
-    #     _, _, num_targs = py_correspondences(img_pts, corrected, cals, vpar, cpar)
-    #     assert num_targs == 16
+        cpar = read_control_par("tests/testing_fodder/parameters/ptv.par")
+        vpar = read_volume_par("tests/testing_fodder/parameters/criteria.par")
+
+        # Cameras are at so high angles that opposing cameras don't see each other
+        # in the normal air-glass-water setting.
+        cpar.mm.n2[0] = 1.0001
+        cpar.mm.n3 = 1.0001
+
+        calib = read_all_calibration(cpar.num_cams)
+        frm = generate_test_set(calib, cpar)
+        corrected = correct_frame(frm, calib, cpar, 0.0001)
+        # con = correspondences(frm, corrected, vpar, cpar, calib, match_counts)
+        # print(f" con = {con[0]}")
+        # assert match_counts == [16, 0, 0, 16]
+
+        sorted_pos, sorted_corresp, num_targs = py_correspondences(
+            frm.targets, corrected, calib, vpar, cpar
+        )
+
+        # print(f" sorted_pos = {sorted_pos}")
+        # print(f" sorted_corresp = {sorted_corresp}")
+
+        # print(f" num_targs = {num_targs}")
+
+        assert num_targs == 16
 
     def test_single_cam_corresp(self):
         """Single camera correspondence."""
@@ -247,8 +258,8 @@ class TestReadControlPar(unittest.TestCase):
         # Cameras are at so high angles that opposing cameras don't see each
         # other in the normal air-glass-water setting.
         # These are default in MultimediaPar()
-        # cpar.mm.set_layers([1.0], [1.0])
-        # cpar.mm.n3 = 1.0
+        cpar.mm.set_layers([1.0001], [1.0])
+        cpar.mm.n3 = 1.0
 
         cals = []
         img_pts = []
@@ -276,8 +287,10 @@ class TestReadControlPar(unittest.TestCase):
             targ.set_sum_grey_value(10)
 
         img_pts.append(targs)
-        corrected = match_coords(targs, cpar, cal)
+        corrected.append(match_coords(targs, cpar, cal))
 
+        # Note that py_correspondences expects List[List(Coord2d)]
+        # so we send [img_pts] and [corrected]
         sorted_pos, sorted_corresp, num_targs = py_correspondences(
             img_pts, corrected, cals, vpar, cpar
         )
@@ -365,17 +378,13 @@ class TestReadControlPar(unittest.TestCase):
         cpar.mm.n2[0] = 1.0001
         cpar.mm.n3 = 1.0001
 
-        frm = Frame(cpar.num_cams)
         match_counts = [0] * cpar.num_cams
 
         calib = read_all_calibration(cpar.num_cams)
         frm = generate_test_set(calib, cpar)
         corrected = correct_frame(frm, calib, cpar, 0.0001)
-        correspondences(frm, corrected, vpar, cpar, calib, match_counts)
-        # print(len(list_tupels))
-        # print(f" match_counts = {match_counts}")
-
-        # The example set is built to have all 16 quadruplets.
+        con = correspondences(frm, corrected, vpar, cpar, calib, match_counts)
+        print(f" con = {con[0]}")
         assert match_counts == [16, 0, 0, 16]
 
     def test_pairwise_matching(self):
@@ -480,16 +489,7 @@ class TestReadControlPar(unittest.TestCase):
         corr_lists = safely_allocate_adjacency_lists(cpar.num_cams, frm.num_targets)
         match_pairs(corr_lists, corrected, frm, vpar, cpar, calib)
 
-        # Allocate the con and tusage arrays.
-        # continue to the consistent_pair matching test
         con = [n_tupel() for _ in range(4 * 16)]
-        # tusage = safely_allocate_target_usage_marks(cpar.num_cams)
-
-        # Perform four-camera matching.
-        # matched = three_camera_matching(
-        #     corr_lists, 4, frm.num_targets, 100000.0, con, 4 * 16, tusage
-        # )
-
         # there is a good question about this test, not sure I understand
         # why it has to stop at 16 candidates and not 64 ?
 
