@@ -106,6 +106,7 @@ def four_camera_matching(
 ) -> int:
     """Four-camera matching."""
     matched = 0
+    # print(" Four camera matching ")
 
     for i in range(base_target_count):
         p1 = corr_list[0][1][i].p1
@@ -118,16 +119,21 @@ def four_camera_matching(
 
                     for m in range(corr_list[1][2][p2].n):
                         p31 = corr_list[1][2][p2].p2[m]
+                        # print(f" p31 {p31} p3 {p3}")
+
                         if p3 != p31:
                             continue
 
                         for n in range(corr_list[1][3][p2].n):
                             p41 = corr_list[1][3][p2].p2[n]
+                            # print(f" p41 {p41} p4 {p4}")
                             if p4 != p41:
                                 continue
 
                             for o in range(corr_list[2][3][p3].n):
                                 p42 = corr_list[2][3][p3].p2[o]
+
+                                # print(f" p42 {p42} p4 {p4}")
                                 if p4 != p42:
                                     continue
 
@@ -147,6 +153,7 @@ def four_camera_matching(
                                     + corr_list[2][3][p3].dist[o]
                                 )
 
+                                # print(f" corr {corr}")
                                 if corr <= accept_corr:
                                     continue
 
@@ -158,6 +165,7 @@ def four_camera_matching(
                                 scratch[matched].corr = corr
 
                                 matched += 1
+                                # print(f" matched {matched} [{p1, p2, p3, p4}]")
                                 if matched == scratch_size:
                                     print("Overflow in correspondences.")
                                     return matched
@@ -236,7 +244,7 @@ def three_camera_matching(
                             scratch[matched].corr = corr
 
                             matched += 1
-                            print(f"matched: {matched} p: {p}")
+                            # print(f"matched: {matched} p: {p}")
 
                             if matched == scratch_size:
                                 print("Overflow in correspondences.\n")

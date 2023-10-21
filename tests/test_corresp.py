@@ -7,6 +7,8 @@ from openptv_python.calibration import Calibration, read_calibration
 from openptv_python.constants import MAXCAND
 from openptv_python.correspondences import (
     consistent_pair_matching,
+    correspondences,
+    four_camera_matching,
     match_pairs,
     py_correspondences,
     safely_allocate_adjacency_lists,
@@ -313,12 +315,6 @@ class TestReadControlPar(unittest.TestCase):
 
         corrected = correct_frame(frm, calib, cpar, 0.0001)
 
-        # print(f" Corrected ")
-        # for cam in range(cpar.num_cams):
-        #     print(f"{cam}")
-        #     for part in corrected[cam]:
-        #             print(part)
-
         corr_lists = safely_allocate_adjacency_lists(cpar.num_cams, frm.num_targets)
 
         match_pairs(corr_lists, corrected, frm, vpar, cpar, calib)
@@ -333,16 +329,8 @@ class TestReadControlPar(unittest.TestCase):
                         else 15 - corrected[cam][corr_lists[cam][subcam][part].p1].pnr
                     )
 
-                    # print(cam, subcam, part, correct_pnr)
-
                     found_correct_pnr = False
                     for cand in range(MAXCAND):
-                        # print(
-                        #     cand,
-                        #     corrected[subcam][
-                        #         corr_lists[cam][subcam][part].p2[cand]
-                        #     ].pnr,
-                        # )
                         if (
                             corrected[subcam][
                                 corr_lists[cam][subcam][part].p2[cand]
@@ -367,27 +355,28 @@ class TestReadControlPar(unittest.TestCase):
 
         assert matched == 16
 
-    # def test_correspondences(self):
-    #     """Test correspondences function."""
-    #     cpar = read_control_par("tests/testing_fodder/parameters/ptv.par")
-    #     vpar = read_volume_par("tests/testing_fodder/parameters/criteria.par")
+    def test_correspondences(self):
+        """Test correspondences function."""
+        cpar = read_control_par("tests/testing_fodder/parameters/ptv.par")
+        vpar = read_volume_par("tests/testing_fodder/parameters/criteria.par")
 
-    #     # Cameras are at so high angles that opposing cameras don't see each other
-    #     # in the normal air-glass-water setting.
-    #     cpar.mm.n2[0] = 1.0001
-    #     cpar.mm.n3 = 1.0001
+        # Cameras are at so high angles that opposing cameras don't see each other
+        # in the normal air-glass-water setting.
+        cpar.mm.n2[0] = 1.0001
+        cpar.mm.n3 = 1.0001
 
-    #     frm = Frame(cpar.num_cams)
-    #     match_counts = [0] * cpar.num_cams
+        frm = Frame(cpar.num_cams)
+        match_counts = [0] * cpar.num_cams
 
-    #     calib = read_all_calibration(cpar.num_cams)
-    #     frm = generate_test_set(calib, cpar)
-    #     corrected = correct_frame(frm, calib, cpar, 0.0001)
-    #     list_tupels = correspondences(frm, corrected, vpar, cpar, calib, match_counts)
-    #     print(len(list_tupels))
+        calib = read_all_calibration(cpar.num_cams)
+        frm = generate_test_set(calib, cpar)
+        corrected = correct_frame(frm, calib, cpar, 0.0001)
+        correspondences(frm, corrected, vpar, cpar, calib, match_counts)
+        # print(len(list_tupels))
+        # print(f" match_counts = {match_counts}")
 
-    #     # The example set is built to have all 16 quadruplets.
-    #     assert self.assertEqual(match_counts, [16, 0, 0, 16])
+        # The example set is built to have all 16 quadruplets.
+        assert match_counts == [16, 0, 0, 16]
 
     def test_pairwise_matching(self):
         """Test pairwise matching function."""
@@ -471,6 +460,40 @@ class TestReadControlPar(unittest.TestCase):
         matched = three_camera_matching(
             corr_lists, 4, frm.num_targets, 100000.0, con, 4 * 16, tusage
         )
+
+        # Assert that 16 triplets were matched.
+        self.assertEqual(matched, 16)
+
+    def test_four_camera_matching(self):
+        """Test four camera matching function."""
+        cpar = read_control_par("tests/testing_fodder/parameters/ptv.par")
+        vpar = read_volume_par("tests/testing_fodder/parameters/criteria.par")
+
+        cpar.mm.n2[0] = 1.0001
+        cpar.mm.n3 = 1.0001
+
+        calib = read_all_calibration(cpar.num_cams)
+        frm = generate_test_set(calib, cpar)
+
+        # Correct the frame and match pairs.
+        corrected = correct_frame(frm, calib, cpar, 0.0001)
+        corr_lists = safely_allocate_adjacency_lists(cpar.num_cams, frm.num_targets)
+        match_pairs(corr_lists, corrected, frm, vpar, cpar, calib)
+
+        # Allocate the con and tusage arrays.
+        # continue to the consistent_pair matching test
+        con = [n_tupel() for _ in range(4 * 16)]
+        # tusage = safely_allocate_target_usage_marks(cpar.num_cams)
+
+        # Perform four-camera matching.
+        # matched = three_camera_matching(
+        #     corr_lists, 4, frm.num_targets, 100000.0, con, 4 * 16, tusage
+        # )
+
+        # there is a good question about this test, not sure I understand
+        # why it has to stop at 16 candidates and not 64 ?
+
+        matched = four_camera_matching(corr_lists, 16, 1.0, con, 16)
 
         # Assert that 16 triplets were matched.
         self.assertEqual(matched, 16)
