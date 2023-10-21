@@ -185,10 +185,14 @@ def three_camera_matching(
                 if p1 > nmax or tusage[i1][p1] > 0:
                     continue
 
+                # print(f"p1 {p1} candidates {corr_list[i1][i2][i].n } ")
+
                 for j in range(corr_list[i1][i2][i].n):
                     p2 = corr_list[i1][i2][i].p2[j]
                     if p2 > nmax or tusage[i2][p2] > 0:
                         continue
+
+                    # print(f"p2 {p2}")
 
                     for i3 in range(i2 + 1, num_cams):
                         for k in range(corr_list[i1][i3][i].n):
@@ -196,11 +200,20 @@ def three_camera_matching(
                             if p3 > nmax or tusage[i3][p3] > 0:
                                 continue
 
-                            indices = np.where(corr_list[i2][i3][p2].p2 == p3)[0]
+                            # print(f"p3 {p3}")
+
+                            # corr_list[i2][i3][p2].p2 is a list
+                            # we want to find indices, we have to either
+                            # modify it to numpy array or use
+                            # indices
+                            p2array = np.atleast_1d(corr_list[i2][i3][p2].p2)
+                            indices = np.where(p2array == p3)[0]
                             if indices.size == 0:
                                 continue
 
-                            print(f"indices {indices}")
+                            # print(f"indices {indices}")
+                            # print(f"p3 equal to lists {p3} = {p2array[indices]}")
+
                             m = indices[0]
                             corr = (
                                 corr_list[i1][i2][i].corr[j]
@@ -211,6 +224,8 @@ def three_camera_matching(
                                 + corr_list[i1][i3][i].dist[k]
                                 + corr_list[i2][i3][p2].dist[m]
                             )
+
+                            # print(f"corr {corr}")
 
                             if corr <= accept_corr:
                                 continue
