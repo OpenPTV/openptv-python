@@ -1,5 +1,5 @@
 """Functions for the orientation of the camera."""
-from typing import List, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 import numpy as np
 
@@ -20,7 +20,7 @@ from .vec_utils import unit_vector, vec_norm, vec_set
 
 def skew_midpoint(
     vert1: np.ndarray, direct1: np.ndarray, vert2: np.ndarray, direct2: np.ndarray
-):
+) -> Tuple[float, np.ndarray]:
     """Find the midpoint of the line segment that is the shortest distance."""
     perp_both = np.cross(direct1, direct2)
     scale = np.dot(perp_both, perp_both)
@@ -36,7 +36,7 @@ def skew_midpoint(
     scale = np.linalg.norm(on1 - on2)
 
     res = (on1 + on2) * 0.5
-    return scale, res
+    return float(scale), res
 
 
 def point_position(
@@ -65,7 +65,7 @@ def point_position(
     """
     # loop counters
     num_used_pairs = 0
-    dtot = 0
+    dtot = 0.0
     point_tot = np.array([0.0, 0.0, 0.0])
 
     vertices = np.zeros((num_cams, 3))
@@ -96,14 +96,13 @@ def point_position(
             point_tot += point
 
     res = point_tot / num_used_pairs
+    dtot /= num_used_pairs
 
-    return dtot / num_used_pairs, res
+    return float(dtot), res.astype(float)
 
 
 def weighted_dumbbell_precision(
     targets: np.ndarray,
-    num_targs: int,
-    num_cams: int,
     multimed_pars: MultimediaPar,
     cals: List[Calibration],
     db_length: float,
@@ -111,8 +110,11 @@ def weighted_dumbbell_precision(
 ) -> float:
     """Calculate the weighted dumbbell precision of the current orientation."""
     res = [np.empty((3,)), np.empty((3,))]
-    dtot = 0
-    len_err_tot = 0
+    dtot = 0.0
+    len_err_tot = 0.0
+
+    num_targs = targets.shape[0]
+    num_cams = targets.shape[1]
 
     for pt in range(num_targs):
         tmp, res[pt % 2] = point_position(targets[pt], num_cams, multimed_pars, cals)
@@ -774,23 +776,14 @@ def dumbbell_target_func(
     db_length - distance between two dumbbell targets.
     db_weight - weight of relative dumbbell size error in target function.
     """
-    # cdef:
-    #     np.ndarray[ndim=2, dtype=pos_t] targ
-    #     vec2d **ctargets
-    #     calibration **calib = cal_list2arr(cals)
-    #     int cam, num_cams
-
-    num_cams = targets.shape[1]
-    num_pts = targets.shape[0]
-    # ctargets = <vec2d **>calloc(num_pts, sizeof(vec2d*))
-    ctargets = [np.empty((2,)) for _ in range(num_pts)]
-
-    for pt in range(num_pts):
-        targ = targets[pt]
-        ctargets[pt] = targ.data
-
     return weighted_dumbbell_precision(
-        ctargets, num_pts, num_cams, cparam.mm, cals, db_length, db_weight
+        targets,
+        targets.shape[0],
+        targets.shape[1],
+        cparam.mm,
+        cals,
+        db_length,
+        db_weight,
     )
 
 
@@ -844,7 +837,7 @@ def full_calibration(
     ref_pts: np.ndarray,
     img_pts: TargetArray,
     cparam: ControlPar,
-    flags: list = [],
+    flags: Optional[list] = None,
 ):
     """
     Perform a full calibration, affecting all calibration structs.
@@ -892,11 +885,11 @@ def full_calibration(
     #     orient_par *orip
     #     double *residuals
 
-    ref_pts = np.ascontiguousarray(ref_pts)
-    ref_coord = ref_pts.data
-
     # Load up the orientation parameters. Silly, but saves on defining
     # a whole new class for what is no more than a list.
+
+    if flags is None:
+        flags = []
 
     orip = OrientPar()
     orip.useflag = 0
@@ -913,9 +906,7 @@ def full_calibration(
     orip.interfflag = 0  # This also solves for the glass, I'm skipping it.
 
     err_est = np.empty((NPAR + 1), dtype=np.float64)
-    residuals = orient(
-        cal, cparam, len(ref_pts), ref_coord, img_pts, orip, err_est.data
-    )
+    residuals = orient(cal, cparam, len(ref_pts), ref_pts, img_pts, orip, err_est)
 
     # free(orip)
 
@@ -940,7 +931,7 @@ def match_detection_to_ref(
     img_pts: TargetArray,
     cparam: ControlPar,
     eps: int = 25,
-):
+) -> List[Target]:
     """
     Create a TargetArray where the targets are those for which a point in the.
 
@@ -975,14 +966,12 @@ def match_detection_to_ref(
     #     target *sorted_targs
     #     TargetArray t = TargetArray()
 
-    t = TargetArray(len(ref_pts))
-    ref_pts = np.ascontiguousarray(ref_pts)
-    ref_coord = ref_pts.data
+    # t = TargetArray(len(ref_pts))
 
-    sorted_targs = sortgrid(cal, cparam, len(ref_pts), ref_coord, eps, img_pts)
+    sorted_targs = sortgrid(cal, cparam, len(ref_pts), ref_pts, eps, img_pts)
 
-    t.set(sorted_targs)
-    return t
+    # t.set(sorted_targs)
+    return sorted_targs
 
 
 def point_positions(
@@ -1044,7 +1033,6 @@ def single_cam_point_positions(
     #     int cam, num_cams
 
     # So we can address targets.data directly instead of get_ptr stuff:
-    targets = np.ascontiguousarray(targets)
 
     num_targets = targets.shape[0]
     # num_cams = targets.shape[1]
@@ -1054,7 +1042,6 @@ def single_cam_point_positions(
     for pt in range(num_targets):
         targ = targets[pt]
         res[pt, :] = epi_mm_2D(targ[0][0], targ[0][1], cals[0], cparam.mm, vparam)
-        # <vec3d> np.PyArray_GETPTR2(res, pt, 0));
 
     return res, rcm
 
@@ -1088,7 +1075,6 @@ def multi_cam_point_positions(
     #     int cam, num_cams
 
     # So we can address targets.data directly instead of get_ptr stuff:
-    targets = np.ascontiguousarray(targets)
 
     num_targets = targets.shape[0]
     num_cams = targets.shape[1]
@@ -1096,7 +1082,6 @@ def multi_cam_point_positions(
     rcm = np.empty(num_targets)
 
     for pt in range(num_targets):
-        targ = targets[pt]
-        rcm[pt], res = point_position(targ.data, num_cams, cparam.mm, cals)
+        rcm[pt], res = point_position(targets[pt], num_cams, cparam.mm, cals)
 
     return res, rcm

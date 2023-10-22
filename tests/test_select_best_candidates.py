@@ -20,11 +20,19 @@ class TestTakeBestCandidates(unittest.TestCase):
         dst = [n_tupel()] * len(src)
         taken = take_best_candidates(src, dst, num_cams, tusage)
 
+        print(f" src = {src}")
+        print(f" dst = {dst}")
+
         self.assertEqual(taken, 2)
         self.assertEqual(dst[0].p, [1, 2, 3, 7])
         self.assertEqual(dst[1].p, [2, 1, -1, 5])
-        self.assertIsNone(dst[2].p)
-        self.assertIsNone(dst[3].p)
+
+        # Note that now the list of dst is same length as src with untaken values as zeros
+
+        self.assertEqual(dst[2].p, [0, 0, 0, 0])
+        self.assertEqual(dst[3].p, [0, 0, 0, 0])
+        # self.assertIsNone(dst[2].p)
+        # self.assertIsNone(dst[3].p)
 
     def test_no_candidates_selected(self):
         src = [
