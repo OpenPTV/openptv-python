@@ -9,7 +9,7 @@ from openptv_python.calibration import (
     Glass,
     Interior,
     ap_52,
-    mmlut,
+    mm_lut,
 )
 
 
@@ -61,7 +61,7 @@ class TestCalibrationClass(unittest.TestCase):
         assert isinstance(self.cal.int_par, Interior)
         assert isinstance(self.cal.glass_par, Glass)
         assert isinstance(self.cal.added_par, ap_52)
-        assert isinstance(self.cal.mmlut, mmlut)
+        assert isinstance(self.cal.mmlut, mm_lut)
 
     def test_exterior_initialization(self):
         """Test exterior parameters initialization."""

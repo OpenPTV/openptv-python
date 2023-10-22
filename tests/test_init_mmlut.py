@@ -1,7 +1,7 @@
 import unittest
 from pathlib import Path
 
-from openptv_python.calibration import mmlut, read_calibration
+from openptv_python.calibration import mm_lut, read_calibration
 from openptv_python.multimed import init_mmlut
 from openptv_python.parameters import read_control_par, read_volume_par
 
@@ -15,7 +15,7 @@ class TestInitMmLut(unittest.TestCase):
 
         self.assertTrue(Path(ori_file).exists, f"File {ori_file} does not exist")
         self.assertTrue(Path(add_file).exists, f"File {add_file} does not exist")
-        cal = read_calibration(ori_file, add_file, None)
+        cal = read_calibration(ori_file, add_file)
         self.assertIsNotNone(cal, "\n ORI or ADDPAR file reading failed \n")
 
         self.assertTrue(Path(vol_file).exists, f"File {vol_file} does not exist")
@@ -27,7 +27,7 @@ class TestInitMmLut(unittest.TestCase):
         self.assertIsNotNone(cpar, "\n control parameter file reading failed\n ")
 
         # test_mmlut = [mmlut() for _ in range(cpar.num_cams)]
-        correct_mmlut = mmlut(
+        correct_mmlut = mm_lut(
             origin=(0.0, 0.0, -250.00001105),
             nr=130,
             nz=177,

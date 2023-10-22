@@ -68,7 +68,7 @@ class Test_Calibration(unittest.TestCase):
         np.testing.assert_array_equal(affine, cal.get_affine())
         np.testing.assert_array_equal(glass, cal.get_glass_vec())
 
-    def test_Calibration_instantiation(self):
+    def test_calibration_instantiation(self):
         """Filling a calibration object by reading ori files."""
         output_ori_file_name = self.output_directory + "output_ori"
         output_add_file_name = self.output_directory + "output_add"
@@ -117,7 +117,7 @@ class Test_Calibration(unittest.TestCase):
     def test_set_angles(self):
         """Set angles correctly."""
         dmatrix_before = self.cal.get_rotation_matrix()  # dmatrix before setting angles
-        angles_np = [0.1111, 0.2222, 0.3333]
+        angles_np = np.array([0.1111, 0.2222, 0.3333])
         self.cal.set_angles(angles_np)
 
         dmatrix_after = self.cal.get_rotation_matrix()  # dmatrix after setting angles

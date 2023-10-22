@@ -110,7 +110,7 @@ class ap_52:
 
 
 @dataclass
-class mmlut:
+class mm_lut:
     origin: np.ndarray = np.r_[0.0, 0.0, 0.0]
     nr: int = 0
     nz: int = 0
@@ -126,8 +126,8 @@ class Calibration:
     int_par: Interior = field(default_factory=Interior)
     glass_par: Glass = field(default_factory=Glass)
     added_par: ap_52 = field(default_factory=ap_52)
-    mmlut: mmlut = field(
-        default_factory=lambda: mmlut(
+    mmlut: mm_lut = field(
+        default_factory=lambda: mm_lut(
             np.zeros(
                 3,
             ),
@@ -138,7 +138,9 @@ class Calibration:
         )
     )
 
-    def from_file(self, ori_file: str, add_file: str = None, add_fallback: str = None):
+    def from_file(
+        self, ori_file: str, add_file: str, add_fallback: Optional[str] = None
+    ) -> None:
         """
         Read exterior and interior orientation, and if available, parameters for distortion corrections.
 
@@ -157,15 +159,19 @@ class Calibration:
 
         with open(ori_file, "r", encoding="utf-8") as fp:
             # Exterior
-            self.set_pos([float(x) for x in fp.readline().split()])
-            self.set_angles([float(x) for x in fp.readline().split()])
+            # self.set_pos(np.array([float(x) for x in fp.readline().split()]))
+            # self.set_angles(np.array([float(x) for x in fp.readline().split()]))
+
+            self.set_pos(np.fromstring(fp.readline(), dtype=float, sep="\t"))
+            self.set_angles(np.fromstring(fp.readline(), dtype=float, sep="\t"))
 
             # Exterior rotation matrix
             # skip line
             fp.readline()
 
             # read 3 lines and set a rotation matrix
-            [[float(x) for x in fp.readline().split()] for _ in range(3)]
+            _ = [[float(x) for x in fp.readline().split()] for _ in range(3)]
+
             # I skip reading rotation matrix as it's set up by set_angles.
             # self.set_rotation_matrix(np.array(float_list).reshape(3, 3))
 
@@ -174,13 +180,15 @@ class Calibration:
             fp.readline()
             tmp = [float(x) for x in fp.readline().split()]  # xh,yh
             tmp += [float(x) for x in fp.readline().split()]  # cc
-            self.int_par.set_primary_point(tmp)
+            self.int_par.set_primary_point(np.array(tmp))
             # self.int_par.set_back_focal_distance(float(fp.readline()))
 
             # Glass
             # skip
             fp.readline()
-            self.glass_par.set_glass_vec([float(x) for x in fp.readline().split()])
+            self.glass_par.set_glass_vec(
+                np.array([float(x) for x in fp.readline().split()])
+            )
 
         # double-check that we have the correct rotation matrix
         # self.ext_par.rotation_matrix()
@@ -409,9 +417,7 @@ def write_ori(
     return success
 
 
-def read_ori(
-    ori_file: str, add_file: str = None, add_fallback: str = None
-) -> Calibration:
+def read_ori(ori_file: str, add_file: str, add_fallback: str) -> Calibration:
     """
     Read exterior and interior orientation, and if available, parameters for distortion corrections.
 
@@ -489,7 +495,7 @@ def compare_addpar(a1, a2):
 
 
 def read_calibration(
-    ori_file: str, addpar_file: str = None, fallback_file: str = None
+    ori_file: str, addpar_file: str, fallback_file: Optional[str] = None
 ) -> Calibration:
     """Read the orientation file including the added parameters."""
     ret = Calibration()

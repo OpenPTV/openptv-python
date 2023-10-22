@@ -2,7 +2,7 @@ import unittest
 from pathlib import Path
 
 # from ctypes import c_double
-from openptv_python.calibration import mmlut, read_calibration
+from openptv_python.calibration import mm_lut, read_calibration
 from openptv_python.multimed import get_mmf_from_mmlut, init_mmlut
 from openptv_python.parameters import read_control_par, read_volume_par
 from openptv_python.vec_utils import vec_set
@@ -14,11 +14,11 @@ class TestGetMmfMmLUT(unittest.TestCase):
         self.add_file = Path("tests/testing_fodder/cal/cam2.tif.addpar")
         self.vol_file = Path("tests/testing_fodder/parameters/criteria.par")
         self.ptv_file = Path("tests/testing_fodder/parameters/ptv.par")
-        self.cal = read_calibration(self.ori_file, self.add_file, None)
+        self.cal = read_calibration(self.ori_file, self.add_file)
         self.vpar = read_volume_par(self.vol_file)
         self.cpar = read_control_par(self.ptv_file)
         self.correct_mmlut = [
-            mmlut(origin=[0.0, 0.0, -250.00001105], nr=130, nz=177, rw=2)
+            mm_lut(origin=[0.0, 0.0, -250.00001105], nr=130, nz=177, rw=2)
             for _ in range(4)
         ]
 
