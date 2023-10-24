@@ -669,7 +669,7 @@ def raw_orient(
             XPXi = XPX
 
         # atl (double *u, double *a, double *l, int m, int n, int n_large)
-        XPy = atl(XPy, X, y, 6)
+        XPy = atl(XPy, X, y, 10, 6, 6)
         beta = XPXi @ XPy
 
         # ata ((double *) X, (double *) XPX, n, 6, 6);

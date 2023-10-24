@@ -61,16 +61,29 @@ class TestAta(unittest.TestCase):
     def test_ata(self):
         """Test the multiplication of a transposed matrix with a matrix."""
         a = np.array([[1, 0, 1], [2, 2, 4], [1, 2, 3], [2, 4, 3]])  # input
-        b = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])  # output storage
         expected = np.array(
             [[10, 14, 18], [14, 24, 26], [18, 26, 35]]
         )  # expected output
 
-        ata(a, b, 4, 3, 3)
+        # test for n = n_large
+        m = 4  # rows
+        n = 3  # columns
+        n_large = 3  # columns
 
-        for i in range(3):
-            for j in range(3):
-                self.assertAlmostEqual(b[i][j], expected[i][j], delta=1e-10)
+        b = np.zeros((n, n))
+        assert np.equal(b, np.zeros((n, n))).all()
+
+        ata(a, b, m, n, n_large)
+        assert np.equal(b, expected).all()
+
+        # test for n < n_large
+        n = 2
+        b = np.zeros((n, n))
+        ata(a, b, m, n, n_large)
+        assert np.equal(b, expected[:n, :n]).all()
+
+        # test numpy simle submatrix multiplication
+        assert np.equal(b, a[:, :n].T.dot(a[:, :n])).all()
 
 
 class TestATL(unittest.TestCase):

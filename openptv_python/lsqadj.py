@@ -1,54 +1,49 @@
 """Least squares adjustment of the camera parameters."""
 import numpy as np
 
-# def ata(a, n):
-#     """
-#     Multiply transpose of a matrix A by matrix A itself, creating symmetric matrix.
-
-#     Args:
-#     ----
-#     a - matrix of doubles of the size (m x n_large).
-#     n - number of rows and columns in the output ata - the size of the sub-matrix
-
-#     Returns:
-#     -------
-#     ata - matrix of the result multiply(a.T,a) of size (n x n)
-#     """
-#     # Transpose the input matrix a
-#     a_T = np.transpose(a)
-
-#     # Compute the product of a.T and a
-#     ata = np.dot(a_T, a)
-
-#     # Take only the upper-left square submatrix of size n x n
-#     ata = ata[:n, :n]
-
-#     return ata
-
 
 def ata(a: np.ndarray, ata: np.ndarray, m: int, n: int, n_large: int) -> None:
-    """Return the product of the transpose of a matrix.
-
-    and the matrix itself, creating symmetric matrix.
-    matrix a and result matrix ata = at a
-    a is m * n_large, ata is an output n * n.
     """
-    if a.shape != (m, n_large):
-        raise ValueError("a has wrong shape")
+    Multiply transpose of a matrix A by matrix A itself, creating a symmetric matrix inplace.
 
-    if ata.shape != (n, n):
-        raise ValueError("ata has wrong shape")
-
-    # a = a.flatten(order='C')
-    # ata = ata.flatten(order='C')
-
+    Args:
+    ----
+    a (list): List of doubles of size (m x n_large).
+    ata (list): List to store the result, size (n x n).
+    m (int): Number of rows in matrix a.
+    n (int): Number of rows and columns in the output ata.
+    n_large (int): Number of columns in matrix a.
+    """
     for i in range(n):
         for j in range(n):
-            ata.flat[i * n_large + j] = 0.0
+            ata.flat[i * n + j] = 0.0
             for k in range(m):
-                ata.flat[i * n_large + j] += (
-                    a.flat[k * n_large + i] * a.flat[k * n_large + j]
-                )
+                ata.flat[i * n + j] += a.flat[k * n_large + i] * a.flat[k * n_large + j]
+
+
+# def ata(a: np.ndarray, ata: np.ndarray, m: int, n: int, n_large: int) -> None:
+#     """Return the product of the transpose of a matrix.
+
+#     and the matrix itself, creating symmetric matrix.
+#     matrix a and result matrix ata = at a
+#     a is m * n_large, ata is an output n * n.
+#     """
+#     if a.shape != (m, n_large):
+#         raise ValueError("a has wrong shape")
+
+#     if ata.shape != (n, n):
+#         raise ValueError("ata has wrong shape")
+
+#     # a = a.flatten(order='C')
+#     # ata = ata.flatten(order='C')
+
+#     for i in range(n):
+#         for j in range(n):
+#             ata.flat[i * n_large + j] = 0.0
+#             for k in range(m):
+#                 ata.flat[i * n_large + j] += (
+#                     a.flat[k * n_large + i] * a.flat[k * n_large + j]
+#                 )
 
 
 def atl(u: np.ndarray, a: np.ndarray, b: np.ndarray, m: int, n: int, n_large: int):
