@@ -9,7 +9,7 @@ from .calibration import Calibration, rotation_matrix
 from .constants import IDT, NPAR, NUM_ITER, POS_INF
 from .epi import epi_mm_2D
 from .imgcoord import img_coord
-from .lsqadj import ata, atl
+from .lsqadj import ata, atl, matinv, matmul
 from .parameters import ControlPar, MultimediaPar, OrientPar, VolumePar
 from .ray_tracing import ray_tracing
 from .sortgrid import sortgrid
@@ -131,7 +131,7 @@ def weighted_dumbbell_precision(
 
 def num_deriv_exterior(
     cal: Calibration, cpar: ControlPar, dpos: float, dang: float, pos: np.ndarray
-):
+) -> Tuple[np.ndarray, np.ndarray]:
     """Calculate the partial numerical derivative of image coordinates of a.
 
     given 3D position, over each of the 6 exterior orientation parameters (3
@@ -627,16 +627,17 @@ def raw_orient(
     fix: List[np.ndarray],
     pix: List[Target],
 ) -> bool:
-    """Raw orientation of the camera."""
+    """Calculate orientation of the camera, updating its calibration."""
     X = np.zeros((10, 6))
-    y = np.zeros((10,))
+    y = np.zeros(10)
     XPX = np.zeros((6, 6))
-    XPy = np.zeros((6,))
-    beta = np.zeros((6,))
-    itnum = 0
-    stopflag = False
+    XPy = np.zeros(6)
+    beta = np.zeros(6)
     dm = 0.0001
     drad = 0.0001
+    xp, yp, xc, yc = 0, 0, 0, 0
+    pos = np.zeros(3)
+
     cal.added_par.k1 = 0
     cal.added_par.k2 = 0
     cal.added_par.k3 = 0
@@ -645,39 +646,31 @@ def raw_orient(
     cal.added_par.scx = 1
     cal.added_par.she = 0
 
-    while not stopflag and itnum < 20:
-        itnum += 1
+    itnum = 0
+    stopflag = 0
 
+    while stopflag == 0 and itnum < 20:
+        itnum += 1
         n = 0
         for i in range(nfix):
             xc, yc = pixel_to_metric(pix[i].x, pix[i].y, cpar)
-
-            pos = vec_set(fix[i][0], fix[i][1], fix[i][2])
-            cal.ext_par.update_rotation_matrix()
+            pos = fix[i]
+            rotation_matrix(cal.ext_par)
             xp, yp = img_coord(pos, cal, cpar.mm)
-
             X[n], X[n + 1] = num_deriv_exterior(cal, cpar, dm, drad, pos)
-            y[n], y[n + 1] = xc - xp, yc - yp
-
+            y[n] = xc - xp
+            y[n + 1] = yc - yp
             n += 2
 
-        # void ata (double *a, double *ata, int m, int n, int n_large )
         ata(X, XPX, n, 6, 6)
-        if np.any(XPX):
-            XPXi = np.linalg.inv(XPX)
-        else:
-            XPXi = XPX
+        matinv(XPX, 6, 6)
+        atl(XPy, X, y, n, 6, 6)
+        matmul(beta, XPX, XPy, 6, 6, 1, 6, 6)
 
-        # atl (double *u, double *a, double *l, int m, int n, int n_large)
-        XPy = atl(XPy, X, y, 10, 6, 6)
-        beta = XPXi @ XPy
-
-        # ata ((double *) X, (double *) XPX, n, 6, 6);
-        # matinv ((double *) XPX, 6, 6);
-        # atl ((double *) XPy, (double *) X, y, n, 6, 6);
-        # matmul ((double *) beta, (double *) XPX, (double *) XPy, 6,6,1,6,6);
-
-        stopflag = all(abs(beta) <= 0.1)
+        stopflag = 1
+        for i in range(6):
+            if abs(beta[i]) > 0.1:
+                stopflag = 0
 
         cal.ext_par.x0 += beta[0]
         cal.ext_par.y0 += beta[1]
@@ -687,8 +680,7 @@ def raw_orient(
         cal.ext_par.kappa += beta[5]
 
     if stopflag:
-        cal.ext_par.rotation_matrix()
-
+        rotation_matrix(cal.ext_par)
     return stopflag
 
 
