@@ -14,7 +14,6 @@ from openptv_python.calibration import (
     compare_addpar,
     compare_calibration,
     read_calibration,
-    rotation_matrix,
     write_calibration,
 )
 
@@ -121,7 +120,7 @@ class Test_Calibration(unittest.TestCase):
         angles_np = np.array([0.1111, 0.2222, 0.3333])
         self.cal.set_angles(angles_np)
         # rotate the dmatrix by the angles_np
-        rotation_matrix(self.cal.ext_par)
+        self.cal.ext_par.update_rotation_matrix()
 
         dmatrix_after = self.cal.get_rotation_matrix()  # dmatrix after setting angles
         np.testing.assert_array_equal(self.cal.get_angles(), angles_np)

@@ -5,7 +5,7 @@ import numpy as np
 
 from openptv_python.constants import COORD_UNUSED
 
-from .calibration import Calibration, rotation_matrix
+from .calibration import Calibration
 from .constants import IDT, NPAR, NUM_ITER, POS_INF
 from .epi import epi_mm_2D
 from .imgcoord import img_coord
@@ -159,7 +159,7 @@ def num_deriv_exterior(
     steps = [dpos, dpos, dpos, dang, dang, dang]
 
     # print(f"exterior = {cal.ext_par}")
-    rotation_matrix(cal.ext_par)
+    cal.ext_par.update_rotation_matrix()
     xs, ys = img_coord(pos, cal, cpar.mm)
     # print(f"  xs = {xs}, ys = {ys}")
 
@@ -179,7 +179,7 @@ def num_deriv_exterior(
         cal.ext_par.increment_attribute(var[pd], -steps[pd])
         # print(f"exterior = {cal.ext_par}")
 
-    rotation_matrix(cal.ext_par)
+    cal.ext_par.update_rotation_matrix()
 
     return (x_ders, y_ders)
 
@@ -369,7 +369,7 @@ def orient(
             xc, yc = correct_brown_affine(xc, yc, cal.added_par)
 
             # Projected 2D position on sensor of corresponding known point
-            rotation_matrix(cal.ext_par)
+            cal.ext_par.update_rotation_matrix()
             xp, yp = img_coord(fix[i], cal, cpar.mm)
 
             # derivatives of distortion parameters
@@ -416,7 +416,7 @@ def orient(
 
             # Num. deriv. of projection coords over sensor distance from PP
             cal.int_par.cc += dm
-            rotation_matrix(cal.ext_par)
+            cal.ext_par.update_rotation_matrix()
             xpd, ypd = img_coord(fix[i], cal, cpar.mm)
             X[n][6] = (xpd - xp) / dm
             X[n + 1][6] = ypd - yp
@@ -616,8 +616,7 @@ def orient(
     Xh = None
 
     if stopflag:
-        rotation_matrix(cal["ext_par"])
-        cal_in.update(cal)
+        cal.ext_par.update_rotation_matrix()
         return resi
     else:
         resi = None
@@ -659,7 +658,7 @@ def raw_orient(
         for i in range(nfix):
             xc, yc = pixel_to_metric(pix[i].x, pix[i].y, cpar)
             pos = fix[i]
-            rotation_matrix(cal.ext_par)
+            cal.ext_par.update_rotation_matrix()
             xp, yp = img_coord(pos, cal, cpar.mm)
             X[n], X[n + 1] = num_deriv_exterior(cal, cpar, dm, drad, pos)
             y[n] = xc - xp
@@ -695,7 +694,8 @@ def raw_orient(
         cal.ext_par.kappa += beta[5]
 
     if stopflag:
-        rotation_matrix(cal.ext_par)
+        cal.ext_par.update_rotation_matrix()
+
     return stopflag
 
 

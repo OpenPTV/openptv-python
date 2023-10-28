@@ -211,8 +211,8 @@ class Calibration:
 
         # Additional parameters
         try:
-            with open(add_file or add_fallback, "r", encoding="utf-8") as fp:
-                tmp = list(map(float, fp.readline().split()))
+            with open(add_file, "r", encoding="utf-8") as fp:
+                tmp = np.array(list(map(float, fp.readline().split())))
 
                 self.added_par.set_radial_distortion(tmp[:3])
                 self.added_par.set_decentering(tmp[3:5])
@@ -536,24 +536,24 @@ def write_calibration(cal, ori_file, add_file):
     )
 
 
-def rotation_matrix(Ex: Exterior) -> None:
-    """Calculate the necessary trigonometric functions to rotate the Dmatrix of Exterior Ex."""
-    cp = np.cos(Ex.phi)
-    sp = np.sin(Ex.phi)
-    co = np.cos(Ex.omega)
-    so = np.sin(Ex.omega)
-    ck = np.cos(Ex.kappa)
-    sk = np.sin(Ex.kappa)
+# def rotation_matrix(Ex: Exterior) -> None:
+#     """Calculate the necessary trigonometric functions to rotate the Dmatrix of Exterior Ex."""
+#     cp = np.cos(Ex.phi)
+#     sp = np.sin(Ex.phi)
+#     co = np.cos(Ex.omega)
+#     so = np.sin(Ex.omega)
+#     ck = np.cos(Ex.kappa)
+#     sk = np.sin(Ex.kappa)
 
-    # Modify the Exterior Ex with the new Dmatrix
-    Ex.dm[0][0] = cp * ck
-    Ex.dm[0][1] = -cp * sk
-    Ex.dm[0][2] = sp
-    Ex.dm[1][0] = co * sk + so * sp * ck
-    Ex.dm[1][1] = co * ck - so * sp * sk
-    Ex.dm[1][2] = -so * cp
-    Ex.dm[2][0] = so * sk - co * sp * ck
-    Ex.dm[2][1] = so * ck + co * sp * sk
-    Ex.dm[2][2] = co * cp
+#     # Modify the Exterior Ex with the new Dmatrix
+#     Ex.dm[0][0] = cp * ck
+#     Ex.dm[0][1] = -cp * sk
+#     Ex.dm[0][2] = sp
+#     Ex.dm[1][0] = co * sk + so * sp * ck
+#     Ex.dm[1][1] = co * ck - so * sp * sk
+#     Ex.dm[1][2] = -so * cp
+#     Ex.dm[2][0] = so * sk - co * sp * ck
+#     Ex.dm[2][1] = so * ck + co * sp * sk
+#     Ex.dm[2][2] = co * cp
 
-    # Ex.dm = np.round(Ex.dm, 6)
+#     # Ex.dm = np.round(Ex.dm, 6)
