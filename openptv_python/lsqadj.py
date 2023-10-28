@@ -76,44 +76,44 @@ def atl(u: np.ndarray, a: np.ndarray, b: np.ndarray, m: int, n: int, n_large: in
 # print(A_inv)
 
 
-def matinv(a: np.ndarray, n: int, n_large: int) -> np.ndarray:
-    """
-    Calculate inverse of a matrix A, with the option of working with the sub-vector only, when n < n_large.
+# def matinv(a: np.ndarray, n: int, n_large: int) -> np.ndarray:
+#     """
+#     Calculate inverse of a matrix A, with the option of working with the sub-vector only, when n < n_large.
 
-    Arguments:
-    ---------
-    a - matrix of doubles of the size (n_large x n_large).
-    n - size of the output - size of the sub-matrix, number of observations
-    n_large - number of rows and columns in matrix a
-    """
-    if a.shape != (n_large, n_large):
-        raise ValueError("a has wrong shape")
+#     Arguments:
+#     ---------
+#     a - matrix of doubles of the size (n_large x n_large).
+#     n - size of the output - size of the sub-matrix, number of observations
+#     n_large - number of rows and columns in matrix a
+#     """
+#     if a.shape != (n_large, n_large):
+#         raise ValueError("a has wrong shape")
 
-    # a = a.flatten(order="C")
+#     # a = a.flatten(order="C")
 
-    for ipiv in range(n):
-        pivot = a[ipiv * n_large + ipiv]
-        print(f"pivot = {pivot}")
-        if np.all(pivot == 0.0):
-            raise ValueError("pivot is zero")
+#     for ipiv in range(n):
+#         pivot = a[ipiv * n_large + ipiv]
+#         print(f"pivot = {pivot}")
+#         if np.all(pivot == 0.0):
+#             raise ValueError("pivot is zero")
 
-        pivot = 1.0 / pivot
-        npivot = -pivot
-        for irow in range(n):
-            for icol in range(n):
-                if irow != ipiv and icol != ipiv:
-                    a[irow * n_large + icol] -= (
-                        a[ipiv * n_large + icol] * a[irow * n_large + ipiv] * pivot
-                    )
-        for icol in range(n):
-            if ipiv != icol:
-                a[ipiv * n_large + icol] *= npivot
-        for irow in range(n):
-            if ipiv != irow:
-                a[irow * n_large + ipiv] *= pivot
-        a[ipiv * n_large + ipiv] = pivot
+#         pivot = 1.0 / pivot
+#         npivot = -pivot
+#         for irow in range(n):
+#             for icol in range(n):
+#                 if irow != ipiv and icol != ipiv:
+#                     a[irow * n_large + icol] -= (
+#                         a[ipiv * n_large + icol] * a[irow * n_large + ipiv] * pivot
+#                     )
+#         for icol in range(n):
+#             if ipiv != icol:
+#                 a[ipiv * n_large + icol] *= npivot
+#         for irow in range(n):
+#             if ipiv != irow:
+#                 a[irow * n_large + ipiv] *= pivot
+#         a[ipiv * n_large + ipiv] = pivot
 
-    return a.reshape(n, n)
+#     return a.reshape(n, n)
 
 
 # def matmul(b: np.ndarray, c: np.ndarray, m: int, n: int, k: int):

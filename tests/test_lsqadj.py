@@ -4,7 +4,7 @@ import unittest
 import numpy as np
 
 from openptv_python.calibration import Exterior
-from openptv_python.lsqadj import ata, atl, matinv, matmul
+from openptv_python.lsqadj import ata, atl, matmul
 
 EPS = 1e-6
 
@@ -103,30 +103,6 @@ class TestATL(unittest.TestCase):
         for i in range(3):
             msg = f"wrong item [{i}] {u[i]} instead of {expected[i]}"
             self.assertTrue(math.isclose(u[i], expected[i], rel_tol=EPS), msg)
-
-
-class TestMatinv(unittest.TestCase):
-    """test the inverse of a 3x3 matrix."""
-
-    def test_matinv(self):
-        """Test the inverse of a 3x3 matrix."""
-        c = np.array([[1, 2, 3], [0, 4, 5], [1, 0, 6]], float)
-        expected = np.array(
-            [
-                [1.090909, -0.545455, -0.090909],
-                [0.227273, 0.136364, -0.227273],
-                [-0.181818, 0.090909, 0.181818],
-            ]
-        )
-
-        print(c)
-        print(np.linalg.inv(c))
-        c = matinv(c, 3, 3)
-        print(c - expected)
-
-        for i in range(3):
-            for j in range(3):
-                self.assertTrue(math.isclose(c[i][j], expected[i][j], abs_tol=EPS))
 
 
 if __name__ == "__main__":
