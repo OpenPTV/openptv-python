@@ -9,6 +9,8 @@ import numpy as np
 
 @dataclass
 class Exterior:
+    """Exterior orientation data structure."""
+
     x0: float = 0.0
     y0: float = 0.0
     z0: float = 0.0
@@ -60,6 +62,17 @@ class Exterior:
 
         # adjust rotation matrix
         self.update_rotation_matrix()
+
+    def increment_attribute(self, attr_name, increment_value):
+        """Update the value of an attribute by increment_value."""
+        if hasattr(self, attr_name):
+            setattr(self, attr_name, getattr(self, attr_name) + increment_value)
+
+    def __repr__(self) -> str:
+        """Return a string representation of the Exterior object."""
+        output = f"Exterior: x0={self.x0}, y0={self.y0}, z0={self.z0}\n"
+        output += f"omega={self.omega}, phi={self.phi}, kappa={self.kappa}\n"
+        return output
 
 
 @dataclass
@@ -384,6 +397,15 @@ class Calibration:
 
         self.added_par = ap_52(*listpar.tolist())
 
+    def copy(self, new_copy):
+        """Copy the calibration data to a new object."""
+        new_copy = Calibration()
+        new_copy.ext_par = self.ext_par
+        new_copy.int_par = self.int_par
+        new_copy.glass_par = self.glass_par
+        new_copy.added_par = self.added_par
+        new_copy.mmlut = self.mmlut
+
 
 def write_ori(
     Ex: Exterior,
@@ -451,6 +473,7 @@ def compare_exterior(e1: Exterior, e2: Exterior) -> bool:
 
 
 def compare_interior(i1: Interior, i2: Interior) -> bool:
+    """Compare interior orientation parameters."""
     return i1.xh == i2.xh and i1.yh == i2.yh and i1.cc == i2.cc
 
 
@@ -474,6 +497,7 @@ def compare_glass(g1: Glass, g2: Glass):
 
 
 def compare_calibration(c1: Calibration, c2: Calibration) -> bool:
+    """Compare calibration parameters."""
     return (
         compare_exterior(c1.ext_par, c2.ext_par)
         and compare_interior(c1.int_par, c2.int_par)
@@ -506,12 +530,13 @@ def read_calibration(
 
 
 def write_calibration(cal, ori_file, add_file):
+    """Write the orientation file including the added parameters."""
     return write_ori(
         cal.ext_par, cal.int_par, cal.glass_par, cal.added_par, ori_file, add_file
     )
 
 
-def rotation_matrix(Ex: Exterior) -> Exterior:
+def rotation_matrix(Ex: Exterior) -> None:
     """Calculate the necessary trigonometric functions to rotate the Dmatrix of Exterior Ex."""
     cp = np.cos(Ex.phi)
     sp = np.sin(Ex.phi)
@@ -531,5 +556,4 @@ def rotation_matrix(Ex: Exterior) -> Exterior:
     Ex.dm[2][1] = so * ck + co * sp * sk
     Ex.dm[2][2] = co * cp
 
-    Ex.dm = np.round(Ex.dm, 6)
-    return Ex
+    # Ex.dm = np.round(Ex.dm, 6)

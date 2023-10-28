@@ -89,10 +89,15 @@ def matinv(a: np.ndarray, n: int, n_large: int) -> np.ndarray:
     if a.shape != (n_large, n_large):
         raise ValueError("a has wrong shape")
 
-    a = a.flatten(order="C")
+    # a = a.flatten(order="C")
 
     for ipiv in range(n):
-        pivot = 1.0 / a[ipiv * n_large + ipiv]
+        pivot = a[ipiv * n_large + ipiv]
+        print(f"pivot = {pivot}")
+        if np.all(pivot == 0.0):
+            raise ValueError("pivot is zero")
+
+        pivot = 1.0 / pivot
         npivot = -pivot
         for irow in range(n):
             for icol in range(n):

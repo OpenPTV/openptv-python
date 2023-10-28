@@ -119,10 +119,10 @@ class TestMatinv(unittest.TestCase):
             ]
         )
 
-        # print(c)
-        # print(np.linalg.inv(c))
+        print(c)
+        print(np.linalg.inv(c))
         c = matinv(c, 3, 3)
-        # print(c - expected)
+        print(c - expected)
 
         for i in range(3):
             for j in range(3):

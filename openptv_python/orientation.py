@@ -9,7 +9,8 @@ from .calibration import Calibration, rotation_matrix
 from .constants import IDT, NPAR, NUM_ITER, POS_INF
 from .epi import epi_mm_2D
 from .imgcoord import img_coord
-from .lsqadj import ata, atl, matinv, matmul
+
+# from .lsqadj import ata, atl, matinv, matmul
 from .parameters import ControlPar, MultimediaPar, OrientPar, VolumePar
 from .ray_tracing import ray_tracing
 from .sortgrid import sortgrid
@@ -150,34 +151,35 @@ def num_deriv_exterior(
     Tuple of two lists: (x_ders, y_ders) respectively the derivatives of the x and y
     image coordinates as function of each of the orientation parameters.
     """
-    var = [
-        cal.ext_par.x0,
-        cal.ext_par.y0,
-        cal.ext_par.z0,
-        cal.ext_par.omega,
-        cal.ext_par.phi,
-        cal.ext_par.kappa,
-    ]
-    x_ders = np.zeros(6)
-    y_ders = np.zeros(6)
+    var = ["x0", "y0", "z0", "omega", "phi", "kappa"]
 
-    cal.ext_par = rotation_matrix(cal.ext_par)
+    x_ders = np.zeros(len(var))
+    y_ders = np.zeros(len(var))
+
+    steps = [dpos, dpos, dpos, dang, dang, dang]
+
+    # print(f"exterior = {cal.ext_par}")
+    rotation_matrix(cal.ext_par)
     xs, ys = img_coord(pos, cal, cpar.mm)
+    # print(f"  xs = {xs}, ys = {ys}")
 
     for pd in range(6):
-        step = dang if pd > 2 else dpos
-        var[pd] += step
-
+        cal.ext_par.increment_attribute(var[pd], steps[pd])
+        # print(f"exterior = {cal.ext_par}")
         if pd > 2:
-            cal.ext_par = rotation_matrix(cal.ext_par)
+            cal.ext_par.update_rotation_matrix()
 
         xpd, ypd = img_coord(pos, cal, cpar.mm)
-        x_ders[pd] = (xpd - xs) / step
-        y_ders[pd] = (ypd - ys) / step
+        # print(f" xpd = {xpd}, ypd = {ypd}")
+        x_ders[pd] = (xpd - xs) / steps[pd]
+        y_ders[pd] = (ypd - ys) / steps[pd]
 
-        var[pd] -= step
+        # print(f"   x_ders[{pd}] = {x_ders[pd]}, y_ders[{pd}] = {y_ders[pd]}")
 
-    cal.ext_par = rotation_matrix(cal.ext_par)
+        cal.ext_par.increment_attribute(var[pd], -steps[pd])
+        # print(f"exterior = {cal.ext_par}")
+
+    rotation_matrix(cal.ext_par)
 
     return (x_ders, y_ders)
 
@@ -300,7 +302,9 @@ def orient(
     cal = Calibration()
     maxsize = nfix * 2 + IDT
 
-    sigmabeta = [0.0] * NPAR
+    sigmabeta = np.zeros(
+        NPAR,
+    )
 
     if flags.interfflag:
         numbers = 18
@@ -365,7 +369,7 @@ def orient(
             xc, yc = correct_brown_affine(xc, yc, cal.added_par)
 
             # Projected 2D position on sensor of corresponding known point
-            cal.ext_par = rotation_matrix(cal.ext_par)
+            rotation_matrix(cal.ext_par)
             xp, yp = img_coord(fix[i], cal, cpar.mm)
 
             # derivatives of distortion parameters
@@ -624,14 +628,14 @@ def raw_orient(
     cal: Calibration,
     cpar: ControlPar,
     nfix: int,
-    fix: List[np.ndarray],
+    fix: np.ndarray,
     pix: List[Target],
 ) -> bool:
     """Calculate orientation of the camera, updating its calibration."""
     X = np.zeros((10, 6))
     y = np.zeros(10)
-    XPX = np.zeros((6, 6))
-    XPy = np.zeros(6)
+    # XPX = np.zeros((6, 6))
+    # XPy = np.zeros(6)
     beta = np.zeros(6)
     dm = 0.0001
     drad = 0.0001
@@ -662,10 +666,21 @@ def raw_orient(
             y[n + 1] = yc - yp
             n += 2
 
-        ata(X, XPX, n, 6, 6)
-        matinv(XPX, 6, 6)
-        atl(XPy, X, y, n, 6, 6)
-        matmul(beta, XPX, XPy, 6, 6, 1, 6, 6)
+        # ChatGPT suggested to replace the following 4 lines
+        # that performs the Gauss-Markoff model with the following
+        # numpy based solution
+
+        # ata(X, XPX, n, 6, 6)
+        # matinv(XPX, 6, 6)
+        # atl(XPy, X, y, n, 6, 6)
+        # matmul(beta, XPX, XPy, 6, 6, 1, 6, 6)
+
+        # Solve the linear system
+        beta, residuals, rank, singular_values = np.linalg.lstsq(X, y, rcond=None)
+
+        # Interpret the results
+        print("Coefficients (beta):", beta)
+        print("Residuals:", residuals)
 
         stopflag = 1
         for i in range(6):
