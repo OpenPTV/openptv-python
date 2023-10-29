@@ -175,8 +175,8 @@ class Calibration:
             # self.set_pos(np.array([float(x) for x in fp.readline().split()]))
             # self.set_angles(np.array([float(x) for x in fp.readline().split()]))
 
-            self.set_pos(np.fromstring(fp.readline(), dtype=float, sep="\t"))
-            self.set_angles(np.fromstring(fp.readline(), dtype=float, sep="\t"))
+            self.ext_par.set_pos(np.fromstring(fp.readline(), dtype=float, sep="\t"))
+            self.ext_par.set_angles(np.fromstring(fp.readline(), dtype=float, sep="\t"))
 
             # Exterior rotation matrix
             # skip line
