@@ -6,7 +6,7 @@ PT_UNUSED = -999
 COORD_UNUSED = -1e10
 
 # These define the structure of the sigma array returned from orient()
-IDT = 10
+IDT = 20
 NPAR = 19
 
 

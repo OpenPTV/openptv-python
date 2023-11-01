@@ -185,7 +185,7 @@ def num_deriv_exterior(
 
 
 def orient(
-    cal_in: Calibration,
+    cal: Calibration,
     cpar: ControlPar,
     nfix: int,
     fix: List[np.ndarray],
@@ -247,7 +247,10 @@ def orient(
         distortion parameters, which are also part of the G-M model and
         described in it. On failure returns None.
     """
-    i, j, n, itnum, stopflag, n_obs, maxsize = 0, 0, 0, 0, 0, 0, 0
+    i, j, n, itnum, stopflag, n_obs = 0, 0, 0, 0, 0, 0
+
+    maxsize = nfix * 2 + IDT + 1
+
     dm: float = 0.00001
     drad: float = 0.0000001
 
@@ -299,8 +302,7 @@ def orient(
     X = np.zeros((maxsize, NPAR), dtype=float)
     Xh = np.zeros((maxsize, NPAR), dtype=float)
 
-    cal = Calibration()
-    maxsize = nfix * 2 + IDT
+    maxsize = nfix * 2 + IDT + 1
 
     sigmabeta = np.zeros(
         NPAR,
@@ -412,7 +414,7 @@ def orient(
 
             # numeric derivatives of projection coordinates over external parameters,
             # 3D position and the angles
-            X[n], X[n + 1] = num_deriv_exterior(cal, cpar, dm, drad, fix[i])
+            X[n][:6], X[n + 1][:6] = num_deriv_exterior(cal, cpar, dm, drad, fix[i])
 
             # Num. deriv. of projection coords over sensor distance from PP
             cal.int_par.cc += dm

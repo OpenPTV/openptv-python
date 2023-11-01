@@ -5,269 +5,278 @@ import numpy as np
 from openptv_python.calibration import (
     Calibration,
 )
-from openptv_python.imgcoord import image_coordinates
+from openptv_python.imgcoord import flat_image_coordinates, image_coordinates
 from openptv_python.orientation import (
     external_calibration,
+    full_calibration,
+    match_detection_to_ref,
+    point_positions,
+    weighted_dumbbell_precision,
 )
 from openptv_python.parameters import (
+    ControlPar,
+    VolumePar,
     read_control_par,
+    read_volume_par,
 )
+from openptv_python.tracking_frame_buf import TargetArray
 from openptv_python.trafo import arr_metric_to_pixel
 
-# class Test_Orientation(unittest.TestCase):
-#     """Test the orientation module."""
 
-#     def setUp(self):
-#         """Set up the test."""
-#         self.input_ori_file_name = "tests/testing_folder/calibration/cam1.tif.ori"
-#         self.input_add_file_name = "tests/testing_folder/calibration/cam2.tif.addpar"
-#         self.control_file_name = "tests/testing_folder/control_parameters/control.par"
-#         self.volume_file_name = "tests/testing_folder/corresp/criteria.par"
+class Test_Orientation(unittest.TestCase):
+    """Test the orientation module."""
 
-#         self.calibration = Calibration()
-#         self.calibration.from_file(self.input_ori_file_name, self.input_add_file_name)
-#         self.control = ControlPar(4)
-#         self.control = read_control_par(self.control_file_name)
-#         self.vpar = VolumePar()
-#         self.vpar = read_volume_par(self.volume_file_name)
+    def setUp(self):
+        """Set up the test."""
+        self.input_ori_file_name = "tests/testing_folder/calibration/cam1.tif.ori"
+        self.input_add_file_name = "tests/testing_folder/calibration/cam2.tif.addpar"
+        self.control_file_name = "tests/testing_folder/control_parameters/control.par"
+        self.volume_file_name = "tests/testing_folder/corresp/criteria.par"
 
-#     def test_match_detection_to_ref(self):
-#         """Match detection to reference (sortgrid)."""
-#         xyz_input = np.array(
-#             [
-#                 (10, 10, 10),
-#                 (200, 200, 200),
-#                 (600, 800, 100),
-#                 (20, 10, 2000),
-#                 (30, 30, 30),
-#             ],
-#             dtype=float,
-#         )
-#         coords_count = len(xyz_input)
+        self.calibration = Calibration()
+        self.calibration.from_file(self.input_ori_file_name, self.input_add_file_name)
+        self.control = ControlPar(4)
+        self.control = read_control_par(self.control_file_name)
+        self.vpar = VolumePar()
+        self.vpar = read_volume_par(self.volume_file_name)
 
-#         xy_img_pts_metric = image_coordinates(
-#             xyz_input, self.calibration, self.control.mm
-#         )
-#         xy_img_pts_pixel = arr_metric_to_pixel(xy_img_pts_metric, self.control)
+    def test_match_detection_to_ref(self):
+        """Match detection to reference (sortgrid)."""
+        xyz_input = np.array(
+            [
+                (10, 10, 10),
+                (200, 200, 200),
+                (600, 800, 100),
+                (20, 10, 2000),
+                (30, 30, 30),
+            ],
+            dtype=float,
+        )
+        coords_count = len(xyz_input)
 
-#         # convert to TargetArray object
-#         target_array = TargetArray(coords_count)
+        xy_img_pts_metric = image_coordinates(
+            xyz_input, self.calibration, self.control.mm
+        )
+        xy_img_pts_pixel = arr_metric_to_pixel(xy_img_pts_metric, self.control)
 
-#         for i in range(coords_count):
-#             target_array[i].set_pnr(i)
-#             target_array[i].set_pos((xy_img_pts_pixel[i][0], xy_img_pts_pixel[i][1]))
+        # convert to TargetArray object
+        target_array = TargetArray(coords_count)
 
-#         # create randomized target array
-#         indices = list(range(coords_count))
-#         shuffled_indices = list(range(coords_count))
+        for i in range(coords_count):
+            target_array[i].set_pnr(i)
+            target_array[i].set_pos((xy_img_pts_pixel[i][0], xy_img_pts_pixel[i][1]))
 
-#         while indices == shuffled_indices:
-#             np.random.shuffle(shuffled_indices)
+        # create randomized target array
+        indices = list(range(coords_count))
+        shuffled_indices = list(range(coords_count))
 
-#         rand_targ_array = TargetArray(coords_count)
-#         for i in range(coords_count):
-#             rand_targ_array[shuffled_indices[i]].set_pos(target_array[i].pos())
-#             rand_targ_array[shuffled_indices[i]].set_pnr(target_array[i].pnr)
+        while indices == shuffled_indices:
+            np.random.shuffle(shuffled_indices)
 
-#         # match detection to reference
-#         matched_target_array = match_detection_to_ref(
-#             cal=self.calibration,
-#             ref_pts=xyz_input,
-#             img_pts=rand_targ_array,
-#             cparam=self.control,
-#         )
+        rand_targ_array = TargetArray(coords_count)
+        for i in range(coords_count):
+            rand_targ_array[shuffled_indices[i]].set_pos(target_array[i].pos())
+            rand_targ_array[shuffled_indices[i]].set_pnr(target_array[i].pnr)
 
-#         # assert target array is as before
-#         for i in range(coords_count):
-#             if (
-#                 matched_target_array[i].pos() != target_array[i].pos()
-#                 or matched_target_array[i].pnr != target_array[i].pnr
-#             ):
-#                 self.fail()
+        # match detection to reference
+        matched_target_array = match_detection_to_ref(
+            cal=self.calibration,
+            ref_pts=xyz_input,
+            img_pts=rand_targ_array,
+            cparam=self.control,
+        )
 
-#         # pass ref_pts and img_pts with non-equal lengths
-#         # with self.assertRaises(ValueError):
-#         #     match_detection_to_ref(
-#         #         cal=self.calibration,
-#         #         ref_pts=xyz_input,
-#         #         img_pts=TargetArray(coords_count - 1),
-#         #         cparam=self.control,
-#         #     )
+        # assert target array is as before
+        for i in range(coords_count):
+            if (
+                matched_target_array[i].pos() != target_array[i].pos()
+                or matched_target_array[i].pnr != target_array[i].pnr
+            ):
+                self.fail()
 
-#     def test_point_positions(self):
-#         """Point positions."""
-#         # prepare MultimediaParams
-#         mult_params = self.control.mm
+        # pass ref_pts and img_pts with non-equal lengths
+        # with self.assertRaises(ValueError):
+        #     match_detection_to_ref(
+        #         cal=self.calibration,
+        #         ref_pts=xyz_input,
+        #         img_pts=TargetArray(coords_count - 1),
+        #         cparam=self.control,
+        #     )
 
-#         mult_params.set_n1(1.0)
-#         mult_params.set_layers([1.0], [1.0])
-#         mult_params.set_n3(1.0)
+    def test_point_positions(self):
+        """Point positions."""
+        # prepare MultimediaParams
+        mult_params = self.control.mm
 
-#         # 3d point
-#         points = np.array([[17, 42, 0], [17, 42, 0]], dtype=float)
+        mult_params.set_n1(1.0)
+        mult_params.set_layers([1.0], [1.0])
+        mult_params.set_n3(1.0)
 
-#         num_cams = 4
-#         ori_tmpl = "tests/testing_folder/calibration/sym_cam{cam_num}.tif.ori"
-#         add_file = "tests/testing_folder/calibration/cam1.tif.addpar"
-#         calibs = []
-#         targs_plain = []
-#         targs_jigged = []
+        # 3d point
+        points = np.array([[17, 42, 0], [17, 42, 0]], dtype=float)
 
-#         jigg_amp = 0.5
+        num_cams = 4
+        ori_tmpl = "tests/testing_folder/calibration/sym_cam{cam_num}.tif.ori"
+        add_file = "tests/testing_folder/calibration/cam1.tif.addpar"
+        calibs = []
+        targs_plain = []
+        targs_jigged = []
 
-#         # read calibration for each camera from files
-#         for cam in range(num_cams):
-#             ori_name = ori_tmpl.format(cam_num=cam + 1)
-#             new_cal = Calibration()
-#             new_cal.from_file(ori_file=ori_name, add_file=add_file)
-#             calibs.append(new_cal)
+        jigg_amp = 0.5
 
-#         for cam_num, cam_cal in enumerate(calibs):
-#             new_plain_targ = image_coordinates(points, cam_cal, mult_params)
-#             targs_plain.append(new_plain_targ)
+        # read calibration for each camera from files
+        for cam in range(num_cams):
+            ori_name = ori_tmpl.format(cam_num=cam + 1)
+            new_cal = Calibration()
+            new_cal.from_file(ori_file=ori_name, add_file=add_file)
+            calibs.append(new_cal)
 
-#             if (cam_num % 2) == 0:
-#                 jigged_points = points - np.r_[0, jigg_amp, 0]
-#             else:
-#                 jigged_points = points + np.r_[0, jigg_amp, 0]
+        for cam_num, cam_cal in enumerate(calibs):
+            new_plain_targ = image_coordinates(points, cam_cal, mult_params)
+            targs_plain.append(new_plain_targ)
 
-#             new_jigged_targs = image_coordinates(jigged_points, cam_cal, mult_params)
-#             targs_jigged.append(new_jigged_targs)
+            if (cam_num % 2) == 0:
+                jigged_points = points - np.r_[0, jigg_amp, 0]
+            else:
+                jigged_points = points + np.r_[0, jigg_amp, 0]
 
-#         targs_plain = np.array(targs_plain).transpose(1, 0, 2)
-#         targs_jigged = np.array(targs_jigged).transpose(1, 0, 2)
-#         skew_dist_plain = point_positions(targs_plain, self.control, calibs, self.vpar)
-#         skew_dist_jigged = point_positions(
-#             targs_jigged, self.control, calibs, self.vpar
-#         )
+            new_jigged_targs = image_coordinates(jigged_points, cam_cal, mult_params)
+            targs_jigged.append(new_jigged_targs)
 
-#         if np.any(skew_dist_plain[1] > 1e-10):
-#             self.fail(
-#                 ("skew distance of target#{targ_num} " + "is more than allowed").format(
-#                     targ_num=np.nonzero(skew_dist_plain[1] > 1e-10)[0][0]
-#                 )
-#             )
+        targs_plain = np.array(targs_plain).transpose(1, 0, 2)
+        targs_jigged = np.array(targs_jigged).transpose(1, 0, 2)
+        skew_dist_plain = point_positions(targs_plain, self.control, calibs, self.vpar)
+        skew_dist_jigged = point_positions(
+            targs_jigged, self.control, calibs, self.vpar
+        )
 
-#         if np.any(np.linalg.norm(points - skew_dist_plain[0], axis=1) > 1e-6):
-#             self.fail("Rays converge on wrong position.")
+        if np.any(skew_dist_plain[1] > 1e-10):
+            self.fail(
+                ("skew distance of target#{targ_num} " + "is more than allowed").format(
+                    targ_num=np.nonzero(skew_dist_plain[1] > 1e-10)[0][0]
+                )
+            )
 
-#         if np.any(skew_dist_jigged[1] > 0.7):
-#             self.fail(
-#                 ("skew distance of target#{targ_num} " + "is more than allowed").format(
-#                     targ_num=np.nonzero(skew_dist_jigged[1] > 1e-10)[0][0]
-#                 )
-#             )
-#         if np.any(np.linalg.norm(points - skew_dist_jigged[0], axis=1) > 0.1):
-#             self.fail("Rays converge on wrong position after jigging.")
+        if np.any(np.linalg.norm(points - skew_dist_plain[0], axis=1) > 1e-6):
+            self.fail("Rays converge on wrong position.")
 
-#     def test_single_camera_point_positions(self):
-#         """Point positions for a single camera case."""
-#         num_cams = 1
-#         # prepare MultimediaParams
-#         cpar_file = "tests/testing_folder/single_cam/parameters/ptv.par"
-#         vpar_file = "tests/testing_folder/single_cam/parameters/criteria.par"
-#         cpar = ControlPar(num_cams)
-#         cpar.from_file(cpar_file)
-#         # mm_params = cpar.get_multimedia_params()
+        if np.any(skew_dist_jigged[1] > 0.7):
+            self.fail(
+                ("skew distance of target#{targ_num} " + "is more than allowed").format(
+                    targ_num=np.nonzero(skew_dist_jigged[1] > 1e-10)[0][0]
+                )
+            )
+        if np.any(np.linalg.norm(points - skew_dist_jigged[0], axis=1) > 0.1):
+            self.fail("Rays converge on wrong position after jigging.")
 
-#         vpar = VolumePar()
-#         vpar.from_file(vpar_file)
+    def test_single_camera_point_positions(self):
+        """Point positions for a single camera case."""
+        num_cams = 1
+        # prepare MultimediaParams
+        cpar_file = "tests/testing_folder/single_cam/parameters/ptv.par"
+        vpar_file = "tests/testing_folder/single_cam/parameters/criteria.par"
+        cpar = ControlPar(num_cams)
+        cpar.from_file(cpar_file)
+        # mm_params = cpar.get_multimedia_params()
 
-#         ori_name = "tests/testing_folder/single_cam/calibration/cam_1.tif.ori"
-#         add_name = "tests/testing_folder/single_cam/calibration/cam_1.tif.addpar"
-#         calibs = []
+        vpar = VolumePar()
+        vpar.from_file(vpar_file)
 
-#         # read calibration for each camera from files
-#         new_cal = Calibration()
-#         new_cal.from_file(ori_file=ori_name, add_file=add_name)
-#         calibs.append(new_cal)
+        ori_name = "tests/testing_folder/single_cam/calibration/cam_1.tif.ori"
+        add_name = "tests/testing_folder/single_cam/calibration/cam_1.tif.addpar"
+        calibs = []
 
-#         # 3d point
-#         points = np.array([[1, 1, 0], [-1, -1, 0]], dtype=float)
+        # read calibration for each camera from files
+        new_cal = Calibration()
+        new_cal.from_file(ori_file=ori_name, add_file=add_name)
+        calibs.append(new_cal)
 
-#         targs_plain = []
-#         targs_jigged = []
+        # 3d point
+        points = np.array([[1, 1, 0], [-1, -1, 0]], dtype=float)
 
-#         jigg_amp = 0.4
+        targs_plain = []
+        targs_jigged = []
 
-#         new_plain_targ = image_coordinates(points, calibs[0], cpar.mm)
-#         targs_plain.append(new_plain_targ)
+        jigg_amp = 0.4
 
-#         # print(f"new_plain_targ: {new_plain_targ}")
+        new_plain_targ = image_coordinates(points, calibs[0], cpar.mm)
+        targs_plain.append(new_plain_targ)
 
-#         jigged_points = points - np.r_[0, jigg_amp, 0]
+        # print(f"new_plain_targ: {new_plain_targ}")
 
-#         new_jigged_targs = image_coordinates(jigged_points, calibs[0], cpar.mm)
-#         targs_jigged.append(new_jigged_targs)
+        jigged_points = points - np.r_[0, jigg_amp, 0]
 
-#         # print(f"new_jigged_targs: {new_jigged_targs}")
+        new_jigged_targs = image_coordinates(jigged_points, calibs[0], cpar.mm)
+        targs_jigged.append(new_jigged_targs)
 
-#         targs_plain = np.array(targs_plain).transpose(1, 0, 2)
-#         targs_jigged = np.array(targs_jigged).transpose(1, 0, 2)
+        # print(f"new_jigged_targs: {new_jigged_targs}")
 
-#         # print(f"targs_plain: {targs_plain}")
-#         # print(f"targs_jigged: {targs_jigged}")
+        targs_plain = np.array(targs_plain).transpose(1, 0, 2)
+        targs_jigged = np.array(targs_jigged).transpose(1, 0, 2)
 
-#         skew_dist_plain = point_positions(targs_plain, cpar, calibs, vpar)
-#         skew_dist_jigged = point_positions(targs_jigged, cpar, calibs, vpar)
+        # print(f"targs_plain: {targs_plain}")
+        # print(f"targs_jigged: {targs_jigged}")
 
-#         # print(f"skew_dist_plain: {skew_dist_plain}")
-#         # print(f"skew_dist_jigged: {skew_dist_jigged}")
+        skew_dist_plain = point_positions(targs_plain, cpar, calibs, vpar)
+        skew_dist_jigged = point_positions(targs_jigged, cpar, calibs, vpar)
 
-#         if np.sum(np.linalg.norm(points - skew_dist_plain[0], axis=1)) > 1e-6:
-#             self.fail("Rays converge on wrong position.")
+        # print(f"skew_dist_plain: {skew_dist_plain}")
+        # print(f"skew_dist_jigged: {skew_dist_jigged}")
 
-#         if np.sum(np.linalg.norm(jigged_points - skew_dist_jigged[0], axis=1)) > 1e-6:
-#             self.fail("Rays converge on wrong position after jigging.")
+        if np.sum(np.linalg.norm(points - skew_dist_plain[0], axis=1)) > 1e-6:
+            self.fail("Rays converge on wrong position.")
 
-#     def test_dumbbell(self):
-#         """Point positions for a dumbbell case."""
-#         # prepare MultimediaParams
-#         mult_params = self.control.get_multimedia_params()
-#         mult_params.set_n1(1.0)
-#         mult_params.set_layers([1.0], [1.0])
-#         mult_params.set_n3(1.0)
+        if np.sum(np.linalg.norm(jigged_points - skew_dist_jigged[0], axis=1)) > 1e-6:
+            self.fail("Rays converge on wrong position after jigging.")
 
-#         # 3d point
-#         points = np.array([[17.5, 42, 0], [-17.5, 42, 0]], dtype=float)
+    def test_dumbbell(self):
+        """Point positions for a dumbbell case."""
+        # prepare MultimediaParams
+        mult_params = self.control.get_multimedia_params()
+        mult_params.set_n1(1.0)
+        mult_params.set_layers([1.0], [1.0])
+        mult_params.set_n3(1.0)
 
-#         num_cams = 4
-#         ori_tmpl = "tests/testing_folder/dumbbell/cam{cam_num}.tif.ori"
-#         add_file = "tests/testing_folder/calibration/cam1.tif.addpar"
-#         calibs = []
-#         targs_plain = []
+        # 3d point
+        points = np.array([[17.5, 42, 0], [-17.5, 42, 0]], dtype=float)
 
-#         # read calibration for each camera from files
-#         for cam in range(num_cams):
-#             ori_name = ori_tmpl.format(cam_num=cam + 1)
-#             new_cal = Calibration()
-#             new_cal.from_file(ori_file=ori_name, add_file=add_file)
-#             calibs.append(new_cal)
+        num_cams = 4
+        ori_tmpl = "tests/testing_folder/dumbbell/cam{cam_num}.tif.ori"
+        add_file = "tests/testing_folder/calibration/cam1.tif.addpar"
+        calibs = []
+        targs_plain = []
 
-#         for cam_cal in calibs:
-#             new_plain_targ = flat_image_coordinates(points, cam_cal, mult_params)
-#             targs_plain.append(new_plain_targ)
+        # read calibration for each camera from files
+        for cam in range(num_cams):
+            ori_name = ori_tmpl.format(cam_num=cam + 1)
+            new_cal = Calibration()
+            new_cal.from_file(ori_file=ori_name, add_file=add_file)
+            calibs.append(new_cal)
 
-#         targs_plain = np.array(targs_plain).transpose(1, 0, 2)
+        for cam_cal in calibs:
+            new_plain_targ = flat_image_coordinates(points, cam_cal, mult_params)
+            targs_plain.append(new_plain_targ)
 
-#         # The cameras are not actually fully calibrated, so the result is not
-#         # an exact 0. The test is that changing the expected distance changes
-#         # the measure.
+        targs_plain = np.array(targs_plain).transpose(1, 0, 2)
 
-#         tf = weighted_dumbbell_precision(targs_plain, mult_params, calibs, 35.0, 0.0)
-#         self.assertAlmostEqual(tf, 0.0, 5)  # just a regression test
+        # The cameras are not actually fully calibrated, so the result is not
+        # an exact 0. The test is that changing the expected distance changes
+        # the measure.
 
-#         # As we check the db length, the measure increases...
-#         tf_len = weighted_dumbbell_precision(
-#             targs_plain, mult_params, calibs, 35.0, 1.0
-#         )
-#         self.assertTrue(tf_len > tf)
+        tf = weighted_dumbbell_precision(targs_plain, mult_params, calibs, 35.0, 0.0)
+        self.assertAlmostEqual(tf, 0.0, 5)  # just a regression test
 
-#         # ...but not as much as when giving the wrong length.
-#         tf_too_long = weighted_dumbbell_precision(
-#             targs_plain, mult_params, calibs, 25.0, 1.0
-#         )
-#         self.assertTrue(tf_too_long > tf_len > tf)
+        # As we check the db length, the measure increases...
+        tf_len = weighted_dumbbell_precision(
+            targs_plain, mult_params, calibs, 35.0, 1.0
+        )
+        self.assertTrue(tf_len > tf)
+
+        # ...but not as much as when giving the wrong length.
+        tf_too_long = weighted_dumbbell_precision(
+            targs_plain, mult_params, calibs, 25.0, 1.0
+        )
+        self.assertTrue(tf_too_long > tf_len > tf)
 
 
 class TestGradientDescent(unittest.TestCase):
@@ -317,39 +326,39 @@ class TestGradientDescent(unittest.TestCase):
             self.cal.get_pos(), self.orig_cal.get_pos(), decimal=3
         )
 
-    # def test_full_calibration(self):
-    #     """Full calibration using clicked points."""
-    #     ref_pts = np.array(
-    #         [
-    #             a.flatten()
-    #             for a in np.meshgrid(np.r_[-60:-30:4j], np.r_[0:15:4j], np.r_[0:15:4j])
-    #         ]
-    #     ).T
+    def test_full_calibration(self):
+        """Full calibration using clicked points."""
+        ref_pts = np.array(
+            [
+                a.flatten()
+                for a in np.meshgrid(np.r_[-60:-30:4j], np.r_[0:15:4j], np.r_[0:15:4j])
+            ]
+        ).T
 
-    #     # Fake the image points by back-projection
-    #     targets = arr_metric_to_pixel(
-    #         image_coordinates(ref_pts, self.cal, self.control.get_multimedia_params()),
-    #         self.control,
-    #     )
+        # Fake the image points by back-projection
+        targets = arr_metric_to_pixel(
+            image_coordinates(ref_pts, self.cal, self.control.get_multimedia_params()),
+            self.control,
+        )
 
-    #     # Full calibration works with TargetArray objects, not NumPy.
-    #     target_array = TargetArray(len(targets))
-    #     for i, trgt in enumerate(target_array):
-    #         trgt.set_pnr(i)
-    #         trgt.set_pos(targets[i])
+        # Full calibration works with TargetArray objects, not NumPy.
+        target_array = TargetArray(len(targets))
+        for i, trgt in enumerate(target_array):
+            trgt.set_pnr(i)
+            trgt.set_pos(targets[i])
 
-    #     # Perturb the calibration object, then compore result to original.
-    #     self.cal.set_pos(self.cal.get_pos() + np.r_[15.0, -15.0, 15.0])
-    #     self.cal.set_angles(self.cal.get_angles() + np.r_[-0.5, 0.5, -0.5])
+        # Perturb the calibration object, then compore result to original.
+        self.cal.set_pos(self.cal.get_pos() + np.r_[15.0, -15.0, 15.0])
+        self.cal.set_angles(self.cal.get_angles() + np.r_[-0.5, 0.5, -0.5])
 
-    #     _, _, _ = full_calibration(self.cal, ref_pts, target_array, self.control)
+        _, _, _ = full_calibration(self.cal, ref_pts, target_array, self.control)
 
-    #     np.testing.assert_array_almost_equal(
-    #         self.cal.get_angles(), self.orig_cal.get_angles(), decimal=4
-    #     )
-    #     np.testing.assert_array_almost_equal(
-    #         self.cal.get_pos(), self.orig_cal.get_pos(), decimal=3
-    #     )
+        np.testing.assert_array_almost_equal(
+            self.cal.get_angles(), self.orig_cal.get_angles(), decimal=4
+        )
+        np.testing.assert_array_almost_equal(
+            self.cal.get_pos(), self.orig_cal.get_pos(), decimal=3
+        )
 
 
 if __name__ == "__main__":
