@@ -6,7 +6,7 @@ import numpy as np
 from openptv_python.constants import COORD_UNUSED
 
 from .calibration import Calibration
-from .constants import IDT, NPAR, NUM_ITER, POS_INF
+from .constants import CONVERGENCE, IDT, NPAR, NUM_ITER, POS_INF
 from .epi import epi_mm_2D
 from .imgcoord import img_coord
 
@@ -192,7 +192,7 @@ def orient(
     pix: List[Target],
     flags: OrientPar,
     sigmabeta: np.ndarray,
-):
+) -> Optional[np.ndarray]:
     """Calculate orientation of the camera, updating its calibration.
 
     structure using the definitions and algorithms well described in [1].
@@ -247,66 +247,23 @@ def orient(
         distortion parameters, which are also part of the G-M model and
         described in it. On failure returns None.
     """
-    i, j, n, itnum, stopflag, n_obs = 0, 0, 0, 0, 0, 0
+    maxsize = nfix * 2 + IDT
 
-    maxsize = nfix * 2 + IDT + 1
-
-    dm: float = 0.00001
+    dm: float = 0.000001
     drad: float = 0.0000001
-
-    ident = np.zeros(IDT)
-    XPX = np.zeros((NPAR, NPAR))
-    XPy = np.zeros(NPAR)
-    beta = np.zeros(NPAR)
-    omega = 0.0
-
-    xp, yp, xpd, ypd, xc, yc, r, qq, p, sumP = (
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-    )
-
-    numbers = 0
-
-    (
-        al,
-        be,
-        ga,
-        nGl,
-        e1_x,
-        e1_y,
-        e1_z,
-        e2_x,
-        e2_y,
-        e2_z,
-        safety_x,
-        safety_y,
-        safety_z,
-    ) = (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
 
     # P, y, yh, Xbeta, resi are arrays of double
     P = np.ones(maxsize, dtype=float)
     y = np.zeros(maxsize, dtype=float)
     yh = np.zeros(maxsize, dtype=float)
-    Xbeta = np.zeros(maxsize, dtype=float)
-    resi = np.zeros(maxsize, dtype=float)
+    # Xbeta = np.zeros(maxsize, dtype=float)
+    # resi = np.zeros(maxsize, dtype=float)
 
-    # X and Xh are arrays of double arrays
+    # # X and Xh are arrays of double arrays
     X = np.zeros((maxsize, NPAR), dtype=float)
     Xh = np.zeros((maxsize, NPAR), dtype=float)
 
-    maxsize = nfix * 2 + IDT + 1
-
-    sigmabeta = np.zeros(
-        NPAR,
-    )
+    # sigmabeta = np.zeros(NPAR,)
 
     if flags.interfflag:
         numbers = 18
@@ -328,9 +285,9 @@ def orient(
     tmp_vec = vec_set(e2_x, e2_y, e2_z)
     e2 = unit_vector(tmp_vec)
 
-    al = 0
-    be = 0
-    ga = 0
+    # al = 0
+    # be = 0
+    # ga = 0
 
     # init identities
     ident = [
@@ -346,17 +303,19 @@ def orient(
         cal.added_par.she,
     ]
 
+    # backup for changing back and forth
     safety_x = cal.glass_par.vec_x
     safety_y = cal.glass_par.vec_y
     safety_z = cal.glass_par.vec_z
 
     itnum = 0
     stopflag = False
+    n = 0
     while not (stopflag or itnum >= NUM_ITER):
         itnum += 1
-
+        n = 0
         for i in range(nfix):
-            if pix[i].pnr != i:
+            if pix[i].pnr != i:  # we need to check this point here
                 continue
 
             if flags.useflag == 1 and i % 2 == 0:
@@ -432,38 +391,38 @@ def orient(
 
             cal.int_par.cc -= dm
 
-            al += dm
-            cal.glass_par.vec_x += e1[0] * nGl * al
-            cal.glass_par.vec_y += e1[1] * nGl * al
-            cal.glass_par.vec_z += e1[2] * nGl * al
+            # al += dm
+            cal.glass_par.vec_x += e1[0] * nGl * dm
+            cal.glass_par.vec_y += e1[1] * nGl * dm
+            cal.glass_par.vec_z += e1[2] * nGl * dm
             xpd, ypd = img_coord(fix[i], cal, cpar.mm)
             X[n][16] = (xpd - xp) / dm
             X[n + 1][16] = (ypd - yp) / dm
-            al -= dm
+            # al -= dm
             cal.glass_par.vec_x = safety_x
             cal.glass_par.vec_y = safety_y
             cal.glass_par.vec_z = safety_z
 
-            be += dm
-            cal.glass_par.vec_x += e2[0] * nGl * be
-            cal.glass_par.vec_y += e2[1] * nGl * be
-            cal.glass_par.vec_z += e2[2] * nGl * be
+            # be += dm
+            cal.glass_par.vec_x += e2[0] * nGl * dm
+            cal.glass_par.vec_y += e2[1] * nGl * dm
+            cal.glass_par.vec_z += e2[2] * nGl * dm
             xpd, ypd = img_coord(fix[i], cal, cpar.mm)
             X[n][17] = (xpd - xp) / dm
             X[n + 1][17] = (ypd - yp) / dm
-            be -= dm
+            # be -= dm
             cal.glass_par.vec_x = safety_x
             cal.glass_par.vec_y = safety_y
             cal.glass_par.vec_z = safety_z
 
-            ga += dm
-            cal.glass_par.vec_x += cal.glass_par.vec_x * nGl * ga
-            cal.glass_par.vec_y += cal.glass_par.vec_y * nGl * ga
-            cal.glass_par.vec_z += cal.glass_par.vec_z * nGl * ga
+            # ga += dm
+            cal.glass_par.vec_x += cal.glass_par.vec_x * nGl * dm
+            cal.glass_par.vec_y += cal.glass_par.vec_y * nGl * dm
+            cal.glass_par.vec_z += cal.glass_par.vec_z * nGl * dm
             xpd, ypd = img_coord(fix[i], cal, cpar.mm)
             X[n][18] = (xpd - xp) / dm
             X[n + 1][18] = (ypd - yp) / dm
-            ga -= dm
+            # ga -= dm
             cal.glass_par.vec_x = safety_x
             cal.glass_par.vec_y = safety_y
             cal.glass_par.vec_z = safety_z
@@ -474,154 +433,136 @@ def orient(
             n += 2
             # end of while loop
 
-    # outside of the loop
-    n_obs = n
-    # identities
-    for i in range(IDT):
-        X[n_obs + i][6 + i] = 1
+        # outside of the for loop
+        n_obs = n
+        # identities
+        for i in range(IDT):
+            X[n_obs + i][6 + i] = 1
 
-    y[n_obs + 0] = ident[0] - cal.int_par.cc
-    y[n_obs + 1] = ident[1] - cal.int_par.xh
-    y[n_obs + 2] = ident[2] - cal.int_par.yh
-    y[n_obs + 3] = ident[3] - cal.added_par.k1
-    y[n_obs + 4] = ident[4] - cal.added_par.k2
-    y[n_obs + 5] = ident[5] - cal.added_par.k3
-    y[n_obs + 6] = ident[6] - cal.added_par.p1
-    y[n_obs + 7] = ident[7] - cal.added_par.p2
-    y[n_obs + 8] = ident[8] - cal.added_par.scx
-    y[n_obs + 9] = ident[9] - cal.added_par.she
+        y[n_obs + 0] = ident[0] - cal.int_par.cc
+        y[n_obs + 1] = ident[1] - cal.int_par.xh
+        y[n_obs + 2] = ident[2] - cal.int_par.yh
+        y[n_obs + 3] = ident[3] - cal.added_par.k1
+        y[n_obs + 4] = ident[4] - cal.added_par.k2
+        y[n_obs + 5] = ident[5] - cal.added_par.k3
+        y[n_obs + 6] = ident[6] - cal.added_par.p1
+        y[n_obs + 7] = ident[7] - cal.added_par.p2
+        y[n_obs + 8] = ident[8] - cal.added_par.scx
+        y[n_obs + 9] = ident[9] - cal.added_par.she
 
-    # weights
-    for i in range(n_obs):
-        P[i] = 1
+        # weights
+        for i in range(n_obs):
+            P[i] = 1
 
-    P[n_obs + 0] = POS_INF if not flags.ccflag else 1
-    P[n_obs + 1] = POS_INF if not flags.xhflag else 1
-    P[n_obs + 2] = POS_INF if not flags.yhflag else 1
-    P[n_obs + 3] = POS_INF if not flags.k1flag else 1
-    P[n_obs + 4] = POS_INF if not flags.k2flag else 1
-    P[n_obs + 5] = POS_INF if not flags.k3flag else 1
-    P[n_obs + 6] = POS_INF if not flags.p1flag else 1
-    P[n_obs + 7] = POS_INF if not flags.p2flag else 1
-    P[n_obs + 8] = POS_INF if not flags.scxflag else 1
-    P[n_obs + 9] = POS_INF if not flags.sheflag else 1
+        P[n_obs + 0] = POS_INF if not flags.ccflag else 1
+        P[n_obs + 1] = POS_INF if not flags.xhflag else 1
+        P[n_obs + 2] = POS_INF if not flags.yhflag else 1
+        P[n_obs + 3] = POS_INF if not flags.k1flag else 1
+        P[n_obs + 4] = POS_INF if not flags.k2flag else 1
+        P[n_obs + 5] = POS_INF if not flags.k3flag else 1
+        P[n_obs + 6] = POS_INF if not flags.p1flag else 1
+        P[n_obs + 7] = POS_INF if not flags.p2flag else 1
+        P[n_obs + 8] = POS_INF if not flags.scxflag else 1
+        P[n_obs + 9] = POS_INF if not flags.sheflag else 1
 
-    n_obs += IDT
-    sumP = 0
-    for i in range(n_obs):  # homogenize
-        p = np.sqrt(P[i])
-        for j in range(NPAR):
-            Xh[i][j] = p * X[i][j]
+        n_obs += IDT
+        sumP = 0
+        for i in range(n_obs):  # homogenize
+            p = np.sqrt(P[i])
+            for j in range(NPAR):
+                Xh[i][j] = p * X[i][j]
 
-        yh[i] = p * y[i]
-        sumP += P[i]
+            yh[i] = p * y[i]
+            sumP += P[i]
 
-    # Gauss Markoff Model - least square adjustment of redundant information
-    # contained both in the spatial intersection and the resection
-    # see [1], eq. 23
+        # Gauss Markoff Model - least square adjustment of redundant information
+        # contained both in the spatial intersection and the resection
+        # see [1], eq. 23
 
-    # ata
-    Xh = np.array(Xh)
-    XPX = np.array(XPX)
-    n_obs = int(n_obs)
-    numbers = int(numbers)
-    ata = np.dot(Xh.T, Xh)
-    for i in range(numbers):
-        for j in range(numbers):
-            XPX[i][j] = ata[i][j]
-    matinv = np.linalg.inv(XPX)
+        beta, residuals, rank, singular_values = np.linalg.lstsq(
+            Xh[:, :numbers], yh, rcond=None
+        )
 
-    # atl
-    yh = np.array(yh)
-    XPy = np.dot(Xh.T, yh)
+        # Interpret the results
+        # print(f"Coefficients (beta): {beta} Residuals: {residuals}")
 
-    # matmul
-    beta = np.dot(matinv, XPy)
+        # stopflag
+        stopflag = True
+        for i in range(numbers):
+            if abs(beta[i]) > CONVERGENCE:
+                stopflag = False
 
-    # stopflag
-    CONVERGENCE = 0.001
-    stopflag = True
-    for i in range(numbers):
-        if abs(beta[i]) > CONVERGENCE:
-            stopflag = False
+        # check flags and update values
+        if not flags.ccflag:
+            beta[6] = 0.0
+        if not flags.xhflag:
+            beta[7] = 0.0
+        if not flags.yhflag:
+            beta[8] = 0.0
+        if not flags.k1flag:
+            beta[9] = 0.0
+        if not flags.k2flag:
+            beta[10] = 0.0
+        if not flags.k3flag:
+            beta[11] = 0.0
+        if not flags.p1flag:
+            beta[12] = 0.0
+        if not flags.p2flag:
+            beta[13] = 0.0
+        if not flags.scxflag:
+            beta[14] = 0.0
+        if not flags.sheflag:
+            beta[15] = 0.0
 
-    # check flags and update values
-    if not flags.ccflag:
-        beta[6] = 0.0
-    if not flags.xhflag:
-        beta[7] = 0.0
-    if not flags.yhflag:
-        beta[8] = 0.0
-    if not flags.k1flag:
-        beta[9] = 0.0
-    if not flags.k2flag:
-        beta[10] = 0.0
-    if not flags.k3flag:
-        beta[11] = 0.0
-    if not flags.p1flag:
-        beta[12] = 0.0
-    if not flags.p2flag:
-        beta[13] = 0.0
-    if not flags.scxflag:
-        beta[14] = 0.0
-    if not flags.sheflag:
-        beta[15] = 0.0
+        cal.ext_par.x0 += beta[0]
+        cal.ext_par.y0 += beta[1]
+        cal.ext_par.z0 += beta[2]
+        cal.ext_par.omega += beta[3]
+        cal.ext_par.phi += beta[4]
+        cal.ext_par.kappa += beta[5]
+        cal.int_par.cc += beta[6]
+        cal.int_par.xh += beta[7]
+        cal.int_par.yh += beta[8]
+        cal.added_par.k1 += beta[9]
+        cal.added_par.k2 += beta[10]
+        cal.added_par.k3 += beta[11]
+        cal.added_par.p1 += beta[12]
+        cal.added_par.p2 += beta[13]
+        cal.added_par.scx += beta[14]
+        cal.added_par.she += beta[15]
 
-    cal.ext_par.x0 += beta[0]
-    cal.ext_par.y0 += beta[1]
-    cal.ext_par.z0 += beta[2]
-    cal.ext_par.omega += beta[3]
-    cal.ext_par.phi += beta[4]
-    cal.ext_par.kappa += beta[5]
-    cal.int_par.cc += beta[6]
-    cal.int_par.xh += beta[7]
-    cal.int_par.yh += beta[8]
-    cal.added_par.k1 += beta[9]
-    cal.added_par.k2 += beta[10]
-    cal.added_par.k3 += beta[11]
-    cal.added_par.p1 += beta[12]
-    cal.added_par.p2 += beta[13]
-    cal.added_par.scx += beta[14]
-    cal.added_par.she += beta[15]
-
-    if flags.interfflag:
-        cal.glass_par.vec_x += e1[0] * nGl * beta[16]
-        cal.glass_par.vec_y += e1[1] * nGl * beta[16]
-        cal.glass_par.vec_z += e1[2] * nGl * beta[16]
-        cal.glass_par.vec_x += e2[0] * nGl * beta[17]
-        cal.glass_par.vec_y += e2[1] * nGl * beta[17]
-        cal.glass_par.vec_z += e2[2] * nGl * beta[17]
+        if flags.interfflag:
+            cal.glass_par.vec_x += e1[0] * nGl * beta[16]
+            cal.glass_par.vec_y += e1[1] * nGl * beta[16]
+            cal.glass_par.vec_z += e1[2] * nGl * beta[16]
+            cal.glass_par.vec_x += e2[0] * nGl * beta[17]
+            cal.glass_par.vec_y += e2[1] * nGl * beta[17]
+            cal.glass_par.vec_z += e2[2] * nGl * beta[17]
 
     # def compute_residuals(X, y, beta, n_obs, numbers, NPAR, XPX, P, cal, cal_in, stopflag):
-    Xbeta = np.zeros((n_obs, 1))
-    resi = np.zeros((n_obs, 1))
-    sigmabeta = np.zeros((NPAR + 1, 1))
-    omega = 0
+    # Xbeta = np.zeros((n_obs, 1))
+    # resi = np.zeros((n_obs, 1))
+    # sigmabeta = np.zeros((NPAR + 1, 1))
+    # omega = 0
 
-    # Matrix multiplication
-    Xbeta = np.dot(Xbeta, beta).reshape(-1, 1)
-    Xbeta = np.dot(X, Xbeta)
+    # # Matrix multiplication
+    # Xbeta = np.dot(X, beta)
 
-    for i in range(n_obs):
-        resi[i] = Xbeta[i] - y[i]
-        omega += resi[i] * P[i] * resi[i]
+    Xbeta = np.dot(X[:, :numbers], beta)
 
+    resi = Xbeta - y
+    omega = np.sum(resi * P * resi)
     sigmabeta[NPAR] = np.sqrt(omega / (n_obs - numbers))
+
+    XPX = np.linalg.inv(np.dot(X[:, :numbers].T, X[:, :numbers]))
 
     for i in range(numbers):
         sigmabeta[i] = sigmabeta[NPAR] * np.sqrt(XPX[i][i])
-
-    X = None
-    P = None
-    y = None
-    Xbeta = None
-    Xh = None
 
     if stopflag:
         cal.ext_par.update_rotation_matrix()
         return resi
     else:
-        resi = None
         return None
 
 
@@ -652,7 +593,7 @@ def raw_orient(
     cal.added_par.she = 0
 
     itnum = 0
-    stopflag = 0
+    stopflag = False
 
     while stopflag == 0 and itnum < 20:
         itnum += 1
@@ -683,10 +624,10 @@ def raw_orient(
         print("Coefficients (beta):", beta)
         print("Residuals:", residuals)
 
-        stopflag = 1
+        stopflag = True
         for i in range(6):
             if abs(beta[i]) > 0.1:
-                stopflag = 0
+                stopflag = False
 
         cal.ext_par.x0 += beta[0]
         cal.ext_par.y0 += beta[1]
