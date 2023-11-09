@@ -11,10 +11,21 @@ Created on Mon Apr 24 10:57:01 2017
 import unittest
 from math import isclose
 
+import numpy as np
+
 from openptv_python.parameters import (
+    ControlPar,
     TrackPar,
 )
-from openptv_python.track import pos3d_in_bounds, predict, search_volume_center_moving
+from openptv_python.track import (
+    angle_acc,
+    candsearch_in_pix,
+    pos3d_in_bounds,
+    predict,
+    search_volume_center_moving,
+)
+from openptv_python.tracking_frame_buf import Target
+from openptv_python.vec_utils import vec_scalar_mul
 
 
 class TestPredict(unittest.TestCase):
@@ -81,6 +92,96 @@ class TestPos3dInBounds(unittest.TestCase):
         result = pos3d_in_bounds(outside, bounds)
 
         self.assertEqual(result, 0, "Expected False but found %s" % result)
+
+
+class TestAngleAcc(unittest.TestCase):
+    def test_angle_acc(self):
+        start = np.array([0.0, 0.0, 0.0])
+        pred = np.array([1.0, 1.0, 1.0])
+        cand = np.array([1.1, 1.0, 1.0])
+        EPS = 1e-7  # You can adjust this epsilon value as needed
+
+        angle = 0.0
+        acc = 0.0
+
+        angle, acc = angle_acc(start, pred, cand)
+        self.assertTrue(
+            isclose(angle, 2.902234, rel_tol=EPS),
+            f"Expected 2.902234 but found {angle}",
+        )
+        self.assertTrue(isclose(acc, 0.1, rel_tol=EPS), f"Expected 0.1 but found {acc}")
+
+        angle = 0.0
+        acc = 0.0
+
+        angle, acc = angle_acc(start, pred, pred)
+        self.assertTrue(
+            isclose(angle, 0.0, rel_tol=EPS), f"Expected 0.0 but found {angle}"
+        )
+        self.assertTrue(isclose(acc, 0.0, rel_tol=EPS), f"Expected 0.0 but found {acc}")
+
+        cand = vec_scalar_mul(pred, -1)
+
+        angle, acc = angle_acc(start, pred, cand)
+        self.assertTrue(
+            isclose(angle, 200.0, rel_tol=EPS), f"Expected 200.0 but found {angle}"
+        )
+
+
+class TestCandSearchInPix(unittest.TestCase):
+    def test_candsearch_in_pix(self):
+        test_targets = [
+            Target(0, 0.0, -0.2, 5, 1, 2, 10, -999),
+            Target(6, 0.2, 0.2, 10, 8, 1, 20, -999),
+            Target(3, 0.2, 0.3, 10, 3, 3, 30, -999),
+            Target(4, 0.2, 1.0, 10, 3, 3, 40, -999),
+            Target(1, -0.7, 1.2, 10, 3, 3, 50, -999),
+            Target(7, 1.2, 1.3, 10, 3, 3, 60, -999),
+            Target(5, 10.4, 2.1, 10, 3, 3, 70, -999),
+        ]
+        num_targets = len(test_targets)
+
+        cent_x = 0.2
+        cent_y = 0.2
+        dl = dr = du = dd = 0.1
+
+        p = [0] * num_targets  # Initialize p with zeros
+
+        test_cpar = ControlPar(num_cams=4)
+        img_format = "cam{}"
+        cal_format = "cal/cam{}.tif"
+
+        for cam in range(4):
+            test_cpar.img_base_name[cam] = img_format.format(cam + 1)
+            test_cpar.cal_img_base_name[cam] = cal_format.format(cam + 1)
+
+        test_cpar.hp_flag = 1
+        test_cpar.allCam_flag = 0
+        test_cpar.tiff_flag = 1
+        test_cpar.imx = 1280
+        test_cpar.imy = 1024
+        test_cpar.pix_x = 0.02
+        #  20 micron pixel size
+        test_cpar.pix_y = 0.02
+        test_cpar.chfield = 0
+        test_cpar.mm.n1 = 1
+        test_cpar.mm.n2[0] = 1.49
+        test_cpar.mm.n3 = 1.33
+        test_cpar.mm.d[0] = 5
+
+        counter = candsearch_in_pix(
+            test_targets, num_targets, cent_x, cent_y, dl, dr, du, dd, p, test_cpar
+        )
+        self.assertEqual(counter, 2)
+
+        cent_x = 0.5
+        cent_y = 0.3
+        dl = dr = du = dd = 10.2
+
+        counter = candsearch_in_pix(
+            test_targets, num_targets, cent_x, cent_y, dl, dr, du, dd, p, test_cpar
+        )
+        self.assertEqual(counter, 4)
 
 
 if __name__ == "__main__":

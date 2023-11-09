@@ -1,7 +1,7 @@
 """Tracking frame buffer."""
 from collections import deque
 from dataclasses import dataclass, field
-from typing import Any, List, Tuple
+from typing import Any, List, Optional, Tuple
 
 import numpy as np
 
@@ -480,12 +480,11 @@ class FrameBufBase:
 @dataclass
 class FrameBuf(FrameBufBase):
     buf_len: int
-    num_cams: int
     max_targets: int
-    corres_file_base: str = None
-    linkage_file_base: str = None
-    prio_file_base: str = None
-    target_file_base: str = None
+    corres_file_base: Optional[str] = None
+    linkage_file_base: Optional[str] = None
+    prio_file_base: Optional[str] = None
+    target_file_base: Optional[str] = None
 
     def write_frame_from_start(self):
         """Write a frame to disk and advance the buffer."""

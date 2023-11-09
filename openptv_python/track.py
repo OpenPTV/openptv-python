@@ -1,7 +1,7 @@
 """Tracking algorithm."""
 import math
 from dataclasses import dataclass, field
-from typing import List
+from typing import List, Tuple
 
 import numpy as np
 
@@ -22,7 +22,7 @@ from .constants import (
 from .imgcoord import img_coord
 from .orientation import point_position
 from .parameters import ControlPar, SequencePar, TrackPar, VolumePar
-from .tracking_frame_buf import FrameBuf
+from .tracking_frame_buf import FrameBuf, Target
 from .trafo import dist_to_flat, metric_to_pixel, pixel_to_metric
 from .vec_utils import vec_copy, vec_diff_norm, vec_subt
 
@@ -58,6 +58,20 @@ class TrackingRun:
     lmax: float
     npart: int
     nlinks: int
+
+    def __init__(self):
+        self.fb: FrameBuf = None  # Replace with appropriate default value
+        self.seq_par: SequencePar = None  # Replace with appropriate default value
+        self.tpar: TrackPar = None  # Replace with appropriate default value
+        self.vpar: VolumePar = None  # Replace with appropriate default value
+        self.cpar: ControlPar = None  # Replace with appropriate default value
+        self.cal: List[Calibration] = []  # Initialize as an empty list
+        self.flatten_tol: float = 0.0  # Replace with appropriate default value
+        self.ymin: float = 0.0  # Replace with appropriate default value
+        self.ymax: float = 0.0  # Replace with appropriate default value
+        self.lmax: float = 0.0  # Replace with appropriate default value
+        self.npart: int = 0  # Replace with appropriate default value
+        self.nlinks: int = 0  # Replace with appropriate default value
 
 
 def tr_new_legacy(
@@ -274,7 +288,9 @@ def pos3d_in_bounds(pos, bounds):
     )
 
 
-def angle_acc(start, pred, cand):
+def angle_acc(
+    start: np.ndarray, pred: np.ndarray, cand: np.ndarray
+) -> Tuple[float, float]:
     """Calculate the angle between the (1st order) numerical velocity vectors.
 
     to the predicted next position and to the candidate actual position. The
@@ -292,15 +308,16 @@ def angle_acc(start, pred, cand):
     angle -- float, the angle between the two velocity vectors, [gon]
     acc -- float, the 1st-order numerical acceleration embodied in the deviation from prediction.
     """
-    v0 = [pred[i] - start[i] for i in range(3)]
-    v1 = [cand[i] - start[i] for i in range(3)]
+    v0 = pred - start
+    v1 = cand - start
 
     acc = math.dist(v0, v1)
+    # acc = np.linalg.norm(v0 - v1)
 
-    if (v0[0] == -v1[0]) and (v0[1] == -v1[1]) and (v0[2] == -v1[2]):
+    if np.all(v0 == -v1):
         angle = 200
-    elif (v0[0] == v1[0]) and (v0[1] == v1[1]) and (v0[2] == v1[2]):
-        angle = 0  # otherwise it returns NaN
+    elif np.all(v0 == v1):
+        angle = 0
     else:
         angle = (200.0 / math.pi) * math.acos(
             sum([v0[i] * v1[i] for i in range(3)])
@@ -310,7 +327,19 @@ def angle_acc(start, pred, cand):
     return angle, acc
 
 
-def candsearch_in_pix(next, num_targets, cent_x, cent_y, dl, dr, du, dd, cpar):
+def candsearch_in_pix(
+    next: List[Target],
+    num_targets: int,
+    cent_x: float,
+    cent_y: float,
+    dl: float,
+    dr: float,
+    du: float,
+    dd: float,
+    p: List[int],
+    cpar: ControlPar,
+) -> int:
+    """Search for a nearest candidate in unmatched target list."""
     p = [-1] * 4
     counter = 0
     dmin = 1e20
