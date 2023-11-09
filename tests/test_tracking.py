@@ -20,6 +20,7 @@ from openptv_python.parameters import (
 from openptv_python.track import (
     angle_acc,
     candsearch_in_pix,
+    candsearch_in_pix_rest,
     pos3d_in_bounds,
     predict,
     search_volume_center_moving,
@@ -176,7 +177,7 @@ class TestCandSearchInPix(unittest.TestCase):
         counter = candsearch_in_pix(
             test_targets, num_targets, cent_x, cent_y, dl, dr, du, dd, p, test_cpar
         )
-        print(f"p = {p}, counter = {counter}")
+        # print(f"p = {p}, counter = {counter}")
 
         self.assertEqual(counter, 2)
 
@@ -188,8 +189,34 @@ class TestCandSearchInPix(unittest.TestCase):
         counter = candsearch_in_pix(
             test_targets, num_targets, cent_x, cent_y, dl, dr, du, dd, p, test_cpar
         )
-        print(f"p = {p}, counter = {counter}")
+        # print(f"p = {p}, counter = {counter}")
         self.assertEqual(counter, 4)
+
+        test_targets = [
+            Target(0, 0.0, -0.2, 5, 1, 2, 10, 0),
+            Target(6, 100.0, 100.0, 10, 8, 1, 20, -1),
+            Target(3, 102.0, 102.0, 10, 3, 3, 30, -1),
+            Target(4, 103.0, 103.0, 10, 3, 3, 40, 2),
+            Target(1, -0.7, 1.2, 10, 3, 3, 50, 5),
+            Target(7, 1.2, 1.3, 10, 3, 3, 60, 7),
+            Target(5, 1200, 201.1, 10, 3, 3, 70, 11),
+        ]
+        num_targets = len(test_targets)
+
+        cent_x = cent_y = 98.9
+        dl = dr = du = dd = 3
+        p = [-1] * num_cams  # Initialize p
+
+        counter = candsearch_in_pix_rest(
+            test_targets, num_targets, cent_x, cent_y, dl, dr, du, dd, p, test_cpar
+        )
+
+        # print(f"p = {p}, counter = {counter}")
+        self.assertEqual(counter, 1)
+        self.assertTrue(
+            isclose(test_targets[p[0]].x, 100.0, rel_tol=1e-9),
+            f"Expected 100.0 but found {test_targets[p[0]].x}",
+        )
 
 
 if __name__ == "__main__":

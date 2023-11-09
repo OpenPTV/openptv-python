@@ -13,6 +13,7 @@ from .constants import (
     MAX_CANDS,
     MAX_TARGETS,
     NEXT_NONE,
+    POS_INF,
     PREV_NONE,
     PT_UNUSED,
     TR_BUFSPACE,
@@ -401,7 +402,7 @@ def candsearch_in_pix(
         p[2] = p3
         p[3] = p4
 
-        print("from inside p = ", p)
+        # print("from inside p = ", p)
 
         for j in range(4):
             if p[j] != -1:
@@ -410,13 +411,25 @@ def candsearch_in_pix(
     return counter
 
 
-def candsearch_in_pix_rest(next_frame, cent_x, cent_y, dl, dr, du, dd, cpar):
+def candsearch_in_pix_rest(
+    next_frame: List[Target],
+    num_targets: int,
+    cent_x: float,
+    cent_y: float,
+    dl: float,
+    dr: float,
+    du: float,
+    dd: float,
+    p: List[int],
+    cpar: ControlPar,
+) -> int:
     """Search for a nearest candidate in unmatched target list.
 
     Arguments:
     ---------
     next_frame - 2D numpy array of targets (pointer, x,y, n, nx,ny, sumg, track ID),
         assumed to be y sorted.
+    num_targets - number of targets in the next_frame
     cent_x, cent_y - image coordinates of the position of a particle [pixel]
     dl, dr, du, dd - respectively the left, right, up, down distance
         to the search area borders from its center, [pixel]
@@ -427,7 +440,7 @@ def candsearch_in_pix_rest(next_frame, cent_x, cent_y, dl, dr, du, dd, cpar):
     int - the number of candidates found, between 0 - 1
     """
     counter = 0
-    dmin = 1e20
+    dmin = POS_INF
     xmin, xmax, ymin, ymax = cent_x - dl, cent_x + dr, cent_y - du, cent_y + dd
 
     xmin = max(xmin, 0.0)
@@ -435,24 +448,22 @@ def candsearch_in_pix_rest(next_frame, cent_x, cent_y, dl, dr, du, dd, cpar):
     ymin = max(ymin, 0.0)
     ymax = min(ymax, cpar.imy)
 
-    p = np.array([-1], dtype=np.int32)
-
     if 0 <= cent_x <= cpar.imx and 0 <= cent_y <= cpar.imy:
         # binarized search for start point of candidate search
-        j0, dj = next_frame.shape[0] // 2, next_frame.shape[0] // 4
+        j0, dj = num_targets // 2, num_targets // 4
         while dj > 1:
             j0 += dj if next_frame[j0, 1] < ymin else -dj
             dj //= 2
 
         j0 -= 12 if j0 >= 12 else j0  # due to trunc
-        for j in range(j0, next_frame.shape[0]):
-            if next_frame[j, 3] == -1:  # tnr == TR_UNUSED
-                if next_frame[j, 1] > ymax:
+        for j in range(j0, num_targets):
+            if next_frame[j].tnr == -1:  # tnr == TR_UNUSED
+                if next_frame[j].y > ymax:
                     break  # finish search
-                if xmin < next_frame[j, 0] < xmax and ymin < next_frame[j, 1] < ymax:
+                if xmin < next_frame[j].x < xmax and ymin < next_frame[j].y < ymax:
                     d = np.sqrt(
-                        (cent_x - next_frame[j, 0]) ** 2
-                        + (cent_y - next_frame[j, 1]) ** 2
+                        (cent_x - next_frame[j].x) ** 2
+                        + (cent_y - next_frame[j].y) ** 2
                     )
                     if d < dmin:
                         dmin = d
@@ -461,7 +472,7 @@ def candsearch_in_pix_rest(next_frame, cent_x, cent_y, dl, dr, du, dd, cpar):
         if p[0] != -1:
             counter += 1
 
-    return counter, p
+    return counter
 
 
 def searchquader(point, tpar, cpar, cal):
