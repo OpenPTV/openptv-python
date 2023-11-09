@@ -129,7 +129,7 @@ def tr_free(tr: TrackingRun) -> None:
 # definition because the fb created here should be local, not used outside
 # this file.
 
-# MAX_CANDS is the max number of candidates sought in search volume for next
+# MAX_CANDS is the max number of candidates sought in search volume for next_frame
 # link.
 
 
@@ -143,7 +143,7 @@ def track_forward_start(tr: TrackingRun):
     # Prime the buffer with first frames
     for step in range(tr.seq_par.first, tr.seq_par.first + TR_BUFSPACE - 1):
         tr.fb.read_frame_at_end(step, 0)
-        tr.fb.next()
+        tr.fb.next_frame()
 
     tr.fb.prev()
 
@@ -247,7 +247,7 @@ def search_volume_center_moving(prev_pos, curr_pos, output):
 
 
 def predict(prev_pos, curr_pos, output):
-    """Predicts the position of a particle in the next frame, using the.
+    """Predicts the position of a particle in the next_frame frame, using the.
 
     previous and current positions.
 
@@ -255,13 +255,13 @@ def predict(prev_pos, curr_pos, output):
     ----
         prev_pos (vec2d): 2D position at previous frame.
         curr_pos (vec2d): 2D position at current frame.
-        output (vec2d): Output of the 2D positions of the particle in the next frame.
+        output (vec2d): Output of the 2D positions of the particle in the next_frame frame.
 
     Returns:
     -------
         None
     """
-    # Calculate the position of the particle in the next frame using the current and previous positions
+    # Calculate the position of the particle in the next_frame frame using the current and previous positions
     output[0] = 2 * curr_pos[0] - prev_pos[0]
     output[1] = 2 * curr_pos[1] - prev_pos[1]
 
@@ -293,7 +293,7 @@ def angle_acc(
 ) -> Tuple[float, float]:
     """Calculate the angle between the (1st order) numerical velocity vectors.
 
-    to the predicted next position and to the candidate actual position. The
+    to the predicted next_frame position and to the candidate actual position. The
     angle is calculated in [gon], see [1]. The predicted position is the
     position if the particle continued at current velocity.
 
@@ -328,7 +328,7 @@ def angle_acc(
 
 
 def candsearch_in_pix(
-    next: List[Target],
+    next_frame: List[Target],
     num_targets: int,
     cent_x: float,
     cent_y: float,
@@ -340,7 +340,6 @@ def candsearch_in_pix(
     cpar: ControlPar,
 ) -> int:
     """Search for a nearest candidate in unmatched target list."""
-    p = [-1] * 4
     counter = 0
     dmin = 1e20
     p1 = p2 = p3 = p4 = -1
@@ -361,7 +360,7 @@ def candsearch_in_pix(
         j0 = num_targets // 2
         dj = num_targets // 4
         while dj > 1:
-            if next[j0].y < ymin:
+            if next_frame[j0].y < ymin:
                 j0 += dj
             else:
                 j0 -= dj
@@ -372,11 +371,14 @@ def candsearch_in_pix(
             j0 = 0
 
         for j in range(j0, num_targets):
-            if next[j].tnr != -1:
-                if next[j].y > ymax:
+            if next_frame[j].tnr != -1:
+                if next_frame[j].y > ymax:
                     break
-                if xmin < next[j].x < xmax and ymin < next[j].y < ymax:
-                    d = np.sqrt((cent_x - next[j].x) ** 2 + (cent_y - next[j].y) ** 2)
+                if xmin < next_frame[j].x < xmax and ymin < next_frame[j].y < ymax:
+                    d = np.sqrt(
+                        (cent_x - next_frame[j].x) ** 2
+                        + (cent_y - next_frame[j].y) ** 2
+                    )
 
                     if d < dmin:
                         dmin = d
@@ -399,6 +401,8 @@ def candsearch_in_pix(
         p[2] = p3
         p[3] = p4
 
+        print("from inside p = ", p)
+
         for j in range(4):
             if p[j] != -1:
                 counter += 1
@@ -406,12 +410,12 @@ def candsearch_in_pix(
     return counter
 
 
-def candsearch_in_pix_rest(next, cent_x, cent_y, dl, dr, du, dd, cpar):
+def candsearch_in_pix_rest(next_frame, cent_x, cent_y, dl, dr, du, dd, cpar):
     """Search for a nearest candidate in unmatched target list.
 
     Arguments:
     ---------
-    next - 2D numpy array of targets (pointer, x,y, n, nx,ny, sumg, track ID),
+    next_frame - 2D numpy array of targets (pointer, x,y, n, nx,ny, sumg, track ID),
         assumed to be y sorted.
     cent_x, cent_y - image coordinates of the position of a particle [pixel]
     dl, dr, du, dd - respectively the left, right, up, down distance
@@ -435,18 +439,21 @@ def candsearch_in_pix_rest(next, cent_x, cent_y, dl, dr, du, dd, cpar):
 
     if 0 <= cent_x <= cpar.imx and 0 <= cent_y <= cpar.imy:
         # binarized search for start point of candidate search
-        j0, dj = next.shape[0] // 2, next.shape[0] // 4
+        j0, dj = next_frame.shape[0] // 2, next_frame.shape[0] // 4
         while dj > 1:
-            j0 += dj if next[j0, 1] < ymin else -dj
+            j0 += dj if next_frame[j0, 1] < ymin else -dj
             dj //= 2
 
         j0 -= 12 if j0 >= 12 else j0  # due to trunc
-        for j in range(j0, next.shape[0]):
-            if next[j, 3] == -1:  # tnr == TR_UNUSED
-                if next[j, 1] > ymax:
+        for j in range(j0, next_frame.shape[0]):
+            if next_frame[j, 3] == -1:  # tnr == TR_UNUSED
+                if next_frame[j, 1] > ymax:
                     break  # finish search
-                if xmin < next[j, 0] < xmax and ymin < next[j, 1] < ymax:
-                    d = np.sqrt((cent_x - next[j, 0]) ** 2 + (cent_y - next[j, 1]) ** 2)
+                if xmin < next_frame[j, 0] < xmax and ymin < next_frame[j, 1] < ymax:
+                    d = np.sqrt(
+                        (cent_x - next_frame[j, 0]) ** 2
+                        + (cent_y - next_frame[j, 1]) ** 2
+                    )
                     if d < dmin:
                         dmin = d
                         p[0] = j
@@ -636,7 +643,7 @@ def sorted_candidates_in_volume(center, center_proj, frm, run):
     # Search limits in image space
     searchquader(center, right, left, down, up, run.tpar, run.cpar, run.cal)
 
-    # search in pix for candidates in the next time step
+    # search in pix for candidates in the next_frame time step
     for cam in range(num_cams):
         register_closest_neighbs(
             frm.targets[cam],
@@ -842,7 +849,7 @@ def trackcorr_c_loop(run_info, step):
         count2 += 1
         mm = 0
         while w[mm].ftnr != TR_UNUSED:  # counter1-loop
-            # search for found corr of current the corr in next with predicted location
+            # search for found corr of current the corr in next_frame with predicted location
 
             # found 3D-position
             ref_path_inf = fb.buf[2].path_info[w[mm].ftnr]
@@ -899,7 +906,7 @@ def trackcorr_c_loop(run_info, step):
         # creating new particle position,
         # reset img coord because of num_cams < 4
         # fix distance of 3 pixels to define xl,xr,yu,yd instead of searchquader
-        # and search for unused candidates in next time step
+        # and search for unused candidates in next_frame time step
 
         quali = assess_new_position(X[5], v2, philf, fb.buf[3], run_info)
 
@@ -1007,37 +1014,37 @@ def trackcorr_c_loop(run_info, step):
         if curr_path_inf.inlist > 0:
             sort(curr_path_inf.inlist, curr_path_inf.decis, curr_path_inf.linkdecis)
             curr_path_inf.finaldecis = curr_path_inf.decis[0]
-            curr_path_inf.next = curr_path_inf.linkdecis[0]
+            curr_path_inf.next_frame = curr_path_inf.linkdecis[0]
 
     # create links with decision check
     for h in range(fb.buf[1].num_parts):
         curr_path_inf = fb.buf[1].path_info[h]
 
         if curr_path_inf.inlist > 0:
-            ref_path_inf = fb.buf[2].path_info[curr_path_inf.next]
+            ref_path_inf = fb.buf[2].path_info[curr_path_inf.next_frame]
 
             if ref_path_inf.prev == PREV_NONE:
                 # best choice wasn't used yet, so link is created
                 ref_path_inf.prev = h
             else:
-                # best choice was already used by mega[2][mega[1][h].next].prev
+                # best choice was already used by mega[2][mega[1][h].next_frame].prev
                 # check which is the better choice
                 if (
                     fb.buf[1].path_info[ref_path_inf.prev].finaldecis
                     > curr_path_inf.finaldecis
                 ):
                     # remove link with prev
-                    fb.buf[1].path_info[ref_path_inf.prev].next = NEXT_NONE
+                    fb.buf[1].path_info[ref_path_inf.prev].next_frame = NEXT_NONE
                     ref_path_inf.prev = h
                 else:
-                    curr_path_inf.next = NEXT_NONE
+                    curr_path_inf.next_frame = NEXT_NONE
 
-        if curr_path_inf.next != NEXT_NONE:
+        if curr_path_inf.next_frame != NEXT_NONE:
             count1 += 1
 
     # end of creation of links with decision check
     print(
-        f"step: {step}, curr: {fb.buf[1].num_parts}, next: {fb.buf[2].num_parts}, \
+        f"step: {step}, curr: {fb.buf[1].num_parts}, next_frame: {fb.buf[2].num_parts}, \
             links: {count1}, lost: {fb.buf[1].num_parts - count1}, add: {num_added}"
     )
 
@@ -1045,7 +1052,7 @@ def trackcorr_c_loop(run_info, step):
     run_info.npart = run_info.npart + fb.buf[1].num_parts
     run_info.nlinks = run_info.nlinks + count1
 
-    fb.next()
+    fb.next_frame()
     fb.write_frame_from_start(step)
 
     if step < run_info.seq_par.last - 2:
@@ -1060,7 +1067,7 @@ def trackcorr_c_finish(run_info, step):
         f"Average over sequence, particles: {npart:.1f}, links: {nlinks:.1f}, lost: {npart - nlinks:.1f}"
     )
 
-    run_info.fb.next()
+    run_info.fb.next_frame()
     run_info.fb.write_frame_from_start(step)
 
 
@@ -1083,7 +1090,7 @@ def trackback_c(run_info: TrackingRun):
     # Prime the buffer with first frames
     for step in range(seq_par.last, seq_par.last - 4, -1):
         fb.read_frame_at_end(step, 1)
-        fb.next()
+        fb.next_frame()
 
     fb.prev()
 
@@ -1093,7 +1100,7 @@ def trackback_c(run_info: TrackingRun):
             curr_path_inf = fb.buf[1].path_info[h]
 
             # We try to find link only if the forward search failed to.
-            if curr_path_inf.next < 0 or curr_path_inf.prev != -1:
+            if curr_path_inf.next_frame < 0 or curr_path_inf.prev != -1:
                 continue
 
             for j in range(6):
@@ -1106,7 +1113,7 @@ def trackback_c(run_info: TrackingRun):
 
             # use information from previous to locate new search position
             # and to calculate values for search area
-            ref_path_inf = fb.buf[0].path_info[curr_path_inf.next]
+            ref_path_inf = fb.buf[0].path_info[curr_path_inf.next_frame]
             X[0].copy(ref_path_inf.x)
             search_volume_center_moving(ref_path_inf.x, curr_path_inf.x, X[2])
 
@@ -1214,19 +1221,20 @@ def trackback_c(run_info: TrackingRun):
 
                 if (
                     ref_path_inf["prev"] == PREV_NONE
-                    and ref_path_inf["next"] == NEXT_NONE
+                    and ref_path_inf["next_frame"] == NEXT_NONE
                 ):
                     curr_path_inf["finaldecis"] = curr_path_inf["decis"][0]
                     curr_path_inf["prev"] = curr_path_inf["linkdecis"][0]
-                    fb["buf"][2]["path_info"][curr_path_inf["prev"]]["next"] = h
+                    fb["buf"][2]["path_info"][curr_path_inf["prev"]]["next_frame"] = h
                     num_added += 1
 
                 if (
                     ref_path_inf["prev"] != PREV_NONE
-                    and ref_path_inf["next"] == NEXT_NONE
+                    and ref_path_inf["next_frame"] == NEXT_NONE
                 ):
                     vec_copy(
-                        X[0], fb["buf"][0]["path_info"][curr_path_inf["next"]]["x"]
+                        X[0],
+                        fb["buf"][0]["path_info"][curr_path_inf["next_frame"]]["x"],
                     )
                     vec_copy(X[1], curr_path_inf["x"])
                     vec_copy(X[3], ref_path_inf["x"])
@@ -1242,7 +1250,9 @@ def trackback_c(run_info: TrackingRun):
                     ):
                         curr_path_inf["finaldecis"] = curr_path_inf["decis"][0]
                         curr_path_inf["prev"] = curr_path_inf["linkdecis"][0]
-                        fb["buf"][2]["path_info"][curr_path_inf["prev"]]["next"] = h
+                        fb["buf"][2]["path_info"][curr_path_inf["prev"]][
+                            "next_frame"
+                        ] = h
                         num_added += 1
 
             if curr_path_inf["prev"] != PREV_NONE:
@@ -1251,14 +1261,14 @@ def trackback_c(run_info: TrackingRun):
         npart += fb["buf"][1]["num_parts"]
         nlinks += count1
 
-        fb.next()
+        fb.next_frame()
         fb.write_frame_from_start(step)
 
         if step > seq_par["first"] + 2:
             fb.read_frame_at_end(step - 3, 1)
 
         print(
-            "step: {}, curr: {}, next: {}, links: {}, lost: {}, add: {}".format(
+            "step: {}, curr: {}, next_frame: {}, links: {}, lost: {}, add: {}".format(
                 step,
                 fb["buf"][1]["num_parts"],
                 fb["buf"][2]["num_parts"],
@@ -1277,7 +1287,7 @@ def trackback_c(run_info: TrackingRun):
         )
     )
 
-    fb.next()
+    fb.next_frame()
     fb.write_frame_from_start(step)
 
     return nlinks

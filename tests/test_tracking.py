@@ -145,13 +145,17 @@ class TestCandSearchInPix(unittest.TestCase):
         cent_y = 0.2
         dl = dr = du = dd = 0.1
 
-        p = [0] * num_targets  # Initialize p with zeros
+        num_cams = 4
+        p = [-1] * num_cams  # Initialize p with zeros
 
-        test_cpar = ControlPar(num_cams=4)
+        test_cpar = ControlPar(num_cams=num_cams)
         img_format = "cam{}"
         cal_format = "cal/cam{}.tif"
 
-        for cam in range(4):
+        test_cpar.img_base_name = [""] * num_cams
+        test_cpar.cal_img_base_name = [""] * num_cams
+
+        for cam in range(num_cams):
             test_cpar.img_base_name[cam] = img_format.format(cam + 1)
             test_cpar.cal_img_base_name[cam] = cal_format.format(cam + 1)
 
@@ -172,15 +176,19 @@ class TestCandSearchInPix(unittest.TestCase):
         counter = candsearch_in_pix(
             test_targets, num_targets, cent_x, cent_y, dl, dr, du, dd, p, test_cpar
         )
+        print(f"p = {p}, counter = {counter}")
+
         self.assertEqual(counter, 2)
 
         cent_x = 0.5
         cent_y = 0.3
         dl = dr = du = dd = 10.2
+        p = [-1] * num_cams  # Initialize p with zeros
 
         counter = candsearch_in_pix(
             test_targets, num_targets, cent_x, cent_y, dl, dr, du, dd, p, test_cpar
         )
+        print(f"p = {p}, counter = {counter}")
         self.assertEqual(counter, 4)
 
 
