@@ -52,12 +52,12 @@ class TrackingRun:
     vpar: VolumePar
     cpar: ControlPar
     cal: List[Calibration]
-    flatten_tol: float = None
-    ymin: float = None
-    ymax: float = None
-    lmax: float = None
-    npart: int = None
-    nlinks: int = None
+    flatten_tol: float
+    ymin: float
+    ymax: float
+    lmax: float
+    npart: int
+    nlinks: int
 
 
 def tr_new_legacy(
@@ -74,17 +74,17 @@ def tr_new_legacy(
 
 
 def tr_new(
-    seq_par: SequencePar = None,
-    tpar: TrackPar = None,
-    vpar: VolumePar = None,
-    cpar: ControlPar = None,
-    buf_len: int = None,
-    max_targets: int = None,
-    corres_file_base: str = None,
-    linkage_file_base: str = None,
-    prio_file_base: str = None,
-    cal: List[Calibration] = None,
-    flatten_tol: float = None,
+    seq_par: SequencePar,
+    tpar: TrackPar,
+    vpar: VolumePar,
+    cpar: ControlPar,
+    buf_len: int,
+    max_targets: int,
+    corres_file_base: str,
+    linkage_file_base: str,
+    prio_file_base: str,
+    cal: List[Calibration],
+    flatten_tol: float,
 ) -> TrackingRun:
     tr = TrackingRun()
     tr.fb = FrameBuf(
@@ -1297,10 +1297,10 @@ class Tracker:
         self._keepalive = (cpar, vpar, tpar, spar, cals)
 
         self.run_info = tr_new(
-            spar._sequence_par,
-            tpar._track_par,
-            vpar._volume_par,
-            cpar._control_par,
+            spar,
+            tpar,
+            vpar,
+            cpar,
             TR_BUFSPACE,
             MAX_TARGETS,
             naming["corres"],
@@ -1309,6 +1309,7 @@ class Tracker:
             cals,
             flatten_tol,
         )
+        self.step = self.run_info.seq_par.first
 
     def restart(self):
         """

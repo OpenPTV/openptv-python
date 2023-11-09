@@ -1,14 +1,14 @@
 # Values taken from the parameters used in the C test for adding a particle.
 
 cameras:
-- ori_file: testing_folder/track/cal/sym_cam1.tif.ori
-  addpar_file: testing_folder/track/cal/cam1.tif.addpar
+- ori_file: tests/testing_folder/track/cal/sym_cam1.tif.ori
+  addpar_file: tests/testing_folder/track/cal/cam1.tif.addpar
 
-- ori_file: testing_folder/track/cal/sym_cam2.tif.ori
-  addpar_file: testing_folder/track/cal/cam1.tif.addpar
+- ori_file: tests/testing_folder/track/cal/sym_cam2.tif.ori
+  addpar_file: tests/testing_folder/track/cal/cam1.tif.addpar
 
-- ori_file: testing_folder/track/cal/sym_cam3.tif.ori
-  addpar_file: testing_folder/track/cal/cam1.tif.addpar
+- ori_file: tests/testing_folder/track/cal/sym_cam3.tif.ori
+  addpar_file: tests/testing_folder/track/cal/cam1.tif.addpar
 
 scene:
   flags: hp, headers
@@ -36,7 +36,7 @@ correspondences:
   epipolar_band: 0.15     # mm on sensor plane.
 
 sequence:
-  targets_template: testing_folder/track/newpart/cam{cam:1d}.
+  targets_template: tests/testing_folder/track/newpart/cam{cam:1d}.
   first: 10001
   last: 10005
 

@@ -42,9 +42,7 @@ class TestTracker(unittest.TestCase):
         for cix, cam_spec in enumerate(yaml_conf["cameras"]):
             cam_spec.setdefault(b"addpar_file", None)
             cal = Calibration()
-            cal.from_file(
-                cam_spec["ori_file"].encode(), cam_spec["addpar_file"].encode()
-            )
+            cal.from_file(cam_spec["ori_file"], cam_spec["addpar_file"])
             cals.append(cal)
             img_base.append(seq_cfg["targets_template"].format(cam=cix + 1))
 
@@ -59,7 +57,9 @@ class TestTracker(unittest.TestCase):
 
     def test_forward(self):
         """Manually running a full forward tracking run."""
-        shutil.copytree("testing_folder/track/res_orig/", "testing_folder/track/res/")
+        shutil.copytree(
+            "tests/testing_folder/track/res_orig/", "tests/testing_folder/track/res/"
+        )
 
         self.tracker.restart()
         last_step = 10001
@@ -67,7 +67,7 @@ class TestTracker(unittest.TestCase):
             # print(f"step is {self.tracker.current_step()}\n")
             # print(self.tracker.current_step() > last_step)
             self.assertTrue(self.tracker.current_step() > last_step)
-            with open("testing_folder/track/res/linkage.%d" % last_step) as f:
+            with open(f"testing_folder/track/res/linkage.{last_step:d}") as f:
                 lines = f.readlines()
                 # print(last_step,lines[0])
                 if last_step == 10003:
