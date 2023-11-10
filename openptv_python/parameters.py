@@ -147,8 +147,8 @@ class TrackPar:
     dvxmin: float = 0.0
     dvymax: float = 0.0
     dvymin: float = 0.0
-    dvz_max: float = 0.0
-    dvz_min: float = 0.0
+    dvzmax: float = 0.0
+    dvzmin: float = 0.0
     dsumg: float = 0.0
     dn: float = 0.0
     dnx: float = 0.0
@@ -171,8 +171,8 @@ class TrackPar:
                 self.dvxmax = float(fpp.readline().rstrip())
                 self.dvymin = float(fpp.readline().rstrip())
                 self.dvymax = float(fpp.readline().rstrip())
-                self.dvz_min = float(fpp.readline().rstrip())
-                self.dvz_max = float(fpp.readline().rstrip())
+                self.dvzmin = float(fpp.readline().rstrip())
+                self.dvzmax = float(fpp.readline().rstrip())
                 self.add = int(fpp.readline().rstrip())
         except IOError as exc:
             raise (f"Error reading tracking parameters from {filename}") from exc
@@ -195,11 +195,11 @@ class TrackPar:
 
     def get_dvz_min(self):
         """Return the minimum velocity in z direction."""
-        return self.dvz_min
+        return self.dvzmin
 
     def get_dvz_max(self):
         """Return the minimum velocity in z direction."""
-        return self.dvz_max
+        return self.dvzmax
 
     def get_dangle(self):
         """Return the maximum angle."""

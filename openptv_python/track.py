@@ -149,7 +149,7 @@ def track_forward_start(tr: TrackingRun):
     tr.fb.prev()
 
 
-def reset_foundpix_array(arr, arr_len, num_cams):
+def reset_foundpix_array(arr: List[Foundpix], arr_len: int, num_cams: int) -> None:
     """Set default values for foundpix objects in an array.
 
     Arguments:
@@ -168,7 +168,9 @@ def reset_foundpix_array(arr, arr_len, num_cams):
             arr[i].whichcam[cam] = 0
 
 
-def copy_foundpix_array(dest, src, arr_len, num_cams):
+def copy_foundpix_array(
+    dest: List[Foundpix], src: List[Foundpix], arr_len: int, num_cams: int
+) -> None:
     """copy_foundpix_array() copies foundpix objects from one array to another.
 
     Arguments:
@@ -285,7 +287,7 @@ def pos3d_in_bounds(pos, bounds):
     return (
         bounds.dvxmin < pos[0] < bounds.dvxmax
         and bounds.dvymin < pos[1] < bounds.dvymax
-        and bounds.dvz_min < pos[2] < bounds.dvz_max
+        and bounds.dvzmin < pos[2] < bounds.dvzmax
     )
 
 
@@ -475,39 +477,28 @@ def candsearch_in_pix_rest(
     return counter
 
 
-def searchquader(point, tpar, cpar, cal):
-    def vec_set(vec, x, y, z):
-        vec[0], vec[1], vec[2] = x, y, z
+def searchquader(
+    point: np.ndarray, tpar: TrackPar, cpar: ControlPar, cal: List[Calibration]
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Calculate the search volume in image space."""
+    mins = np.array([tpar.dvxmin, tpar.dvymin, tpar.dvzmin])
+    maxes = np.array([tpar.dvxmax, tpar.dvymax, tpar.dvzmax])
 
-    def vec_copy(dest, src):
-        dest[0], dest[1], dest[2] = src[0], src[1], src[2]
-
-    def point_to_pixel(pixel, point, cal, cpar):
-        pixel[0] = cal.camplane_u(cpar, point)
-        pixel[1] = cal.camplane_v(cpar, point)
-
-    def project_to_pixel(corners, point, mins, maxes, cal, cpar):
-        for pt in range(8):
-            vec_copy(corners[pt], point)
-            for dim in range(3):
-                if pt & 1 << dim:
-                    corners[pt][dim] += maxes[dim]
-                else:
-                    corners[pt][dim] += mins[dim]
-
-            point_to_pixel(corners[pt], corners[pt], cal, cpar)
-
-    xr, xl, yd, yu = np.zeros(4), np.zeros(4), np.zeros(4), np.zeros(4)
-    mins, maxes = np.zeros(3), np.zeros(3)
     quader = np.zeros((8, 3))
-    center = np.zeros(2)
-    corner = np.zeros(2)
+    xr = np.zeros(cpar.num_cams)
+    xl = np.zeros(cpar.num_cams)
+    yd = np.zeros(cpar.num_cams)
+    yu = np.zeros(cpar.num_cams)
 
-    vec_set(mins, tpar.dvxmin, tpar.dvymin, tpar.dvz_min)
-    vec_set(maxes, tpar.dvxmax, tpar.dvymax, tpar.dvz_max)
-
-    # 3D positions of search volume - eight corners of a box
-    project_to_pixel(quader, point, mins, maxes, cal[0], cpar)
+    for pt in range(8):
+        quader[pt] = point.copy()
+        # print(f" pt {pt} {quader[pt]}")
+        for dim in range(3):
+            if pt & (1 << dim):
+                quader[pt][dim] += maxes[dim]
+            else:
+                quader[pt][dim] += mins[dim]
+        # print(f" pt {pt} {quader[pt]}")
 
     # calculation of search area in each camera
     for i in range(cpar.num_cams):
@@ -518,11 +509,13 @@ def searchquader(point, tpar, cpar, cal):
         yu[i] = cpar.imy
 
         # pixel position of a search center
-        point_to_pixel(center, point, cal[i], cpar)
+        center = point_to_pixel(point, cal[i], cpar)
+        # print(" center", center[0], center[1])
 
         # mark 4 corners of the search region in pixels
         for pt in range(8):
-            point_to_pixel(corner, quader[pt], cal[i], cpar)
+            corner = point_to_pixel(quader[pt], cal[i], cpar)
+            # print(" corner", corner[0], corner[1])
 
             if corner[0] < xl[i]:
                 xl[i] = corner[0]
@@ -542,22 +535,23 @@ def searchquader(point, tpar, cpar, cal):
         if yd[i] > cpar.imy:
             yd[i] = cpar.imy
 
-        # eventually xr,xl,yd,yu are pixel distances relative to the point
+        # print(" xl", xl[i], " xr", xr[i], " yu", yu[i], " yd", yd[i])
+
+        # eventually xr, xl, yd, yu are pixel distances relative to the point
         xr[i] = xr[i] - center[0]
         xl[i] = center[0] - xl[i]
         yd[i] = yd[i] - center[1]
         yu[i] = center[1] - yu[i]
 
+        # print(" xl", xl[i], " xr", xr[i], " yu", yu[i], " yd", yd[i])
 
-def sort_candidates_by_freq(item, num_cams):
-    class FoundPix:
-        def __init__(self, ftnr=0, whichcam=[0] * 4, freq=0):
-            self.ftnr = ftnr
-            self.whichcam = whichcam
-            self.freq = freq
+    return xr, xl, yd, yu
 
+
+def sort_candidates_by_freq(item: Foundpix, num_cams: int):
+    """Sort candidates by frequency."""
     MAX_CANDS = 1000
-    foundpix = [FoundPix() for i in range(num_cams * MAX_CANDS)]
+    foundpix = [Foundpix() for i in range(num_cams * MAX_CANDS)]
     foundpix[: len(item)] = item
 
     different = 0
@@ -601,8 +595,8 @@ def sort_candidates_by_freq(item, num_cams):
     return different
 
 
-def sort(a, b):
-    """Sorts a float array 'a' and an integer array 'b' both of length n.
+def sort(a: np.ndarray, b: np.ndarray) -> None:
+    """In-place sorts a float array 'a' and an integer array 'b' equal lengths.
 
     Arguments:
     ---------
@@ -613,11 +607,10 @@ def sort(a, b):
     -------
     Sorted arrays a and b.
     """
-    len(a)
     idx = np.argsort(a)
-    a = a[idx]
-    b = b[idx]
-    return a, b
+    a[...] = a[idx]
+    b[...] = b[idx]
+    # return a, b
 
 
 def point_to_pixel(point: np.ndarray, cal: Calibration, cpar: ControlPar) -> np.ndarray:
@@ -633,8 +626,14 @@ def point_to_pixel(point: np.ndarray, cal: Calibration, cpar: ControlPar) -> np.
     -------
     vec2d with pixel positions (x,y) in the camera.
     """
+    # print(f"point {point}")
+    # print(f"cal {cal}")
+    # print(f"cpar.mm {cpar.mm}")
+
     x, y = img_coord(point, cal, cpar.mm)
+    # print("img coord x, y", x, y)
     x, y = metric_to_pixel(x, y, cpar)
+    # print("metric to pixel x, y", x, y)
     return np.array([x, y])
 
 

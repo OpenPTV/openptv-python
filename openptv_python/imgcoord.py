@@ -37,15 +37,25 @@ def flat_image_coord(
         cal.ext_par, mm, cal.glass_par, orig_pos, cal_t.ext_par
     )
 
+    # print(f"pos_t {pos_t}")
+    # print(f"cross_p {cross_p}")
+    # print(f"cros_c {cross_c}")
+
     x_t, y_t = multimed_nlay(cal_t, mm, pos_t)
+    # print(f"x_t {x_t}, y_t {y_t}")
+
     pos_t = vec_set(x_t, y_t, pos_t[2])
     pos = back_trans_point(pos_t, mm, cal.glass_par, cross_p, cross_c)
+
+    # print(f"pos {pos}")
 
     deno = (
         cal.ext_par.dm[0][2] * (pos[0] - cal.ext_par.x0)
         + cal.ext_par.dm[1][2] * (pos[1] - cal.ext_par.y0)
         + cal.ext_par.dm[2][2] * (pos[2] - cal.ext_par.z0)
     )
+
+    # print(f"deno {deno}")
 
     if deno == 0:
         deno = 1
@@ -69,6 +79,8 @@ def flat_image_coord(
         )
         / deno
     )
+
+    # print(f"x {x}, y {y}")
 
     return x, y
 
@@ -95,6 +107,8 @@ def img_coord(
 
     # Distort the metric coordinates using the Brown distortion model
     x, y = flat_to_dist(x, y, cal)
+
+    # print("f flat_to_dist: x = {x}, y = {y}")
 
     return x, y
 

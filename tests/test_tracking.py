@@ -13,20 +13,41 @@ from math import isclose
 
 import numpy as np
 
+from openptv_python.calibration import Calibration, read_calibration
 from openptv_python.parameters import (
     ControlPar,
     TrackPar,
 )
 from openptv_python.track import (
+    Foundpix,
     angle_acc,
     candsearch_in_pix,
     candsearch_in_pix_rest,
+    copy_foundpix_array,
     pos3d_in_bounds,
     predict,
+    reset_foundpix_array,
     search_volume_center_moving,
+    searchquader,
+    sort,
 )
 from openptv_python.tracking_frame_buf import Target
 from openptv_python.vec_utils import vec_scalar_mul
+
+
+def read_all_calibration(num_cams: int = 4) -> list[Calibration]:
+    """Read all calibration files."""
+    ori_tmpl = "tests/testing_fodder/track/cal/cam%d.tif.ori"
+    added_tmpl = "tests/testing_fodder/track/cal/cam%d.tif.addpar"
+
+    calib = []
+
+    for cam in range(num_cams):
+        ori_name = ori_tmpl % (cam + 1)
+        added_name = added_tmpl % (cam + 1)
+        calib.append(read_calibration(ori_name, added_name))
+
+    return calib
 
 
 class TestPredict(unittest.TestCase):
@@ -216,6 +237,131 @@ class TestCandSearchInPix(unittest.TestCase):
         self.assertTrue(
             isclose(test_targets[p[0]].x, 100.0, rel_tol=1e-9),
             f"Expected 100.0 but found {test_targets[p[0]].x}",
+        )
+
+
+class TestSort(unittest.TestCase):
+    def test_sort(self):
+        test_array = np.array([1.0, 2200.2, 0.3, -0.8, 100.0], dtype=float)
+        ix_array = np.array([0, 5, 13, 2, 124], dtype=int)
+        len_array = 5
+
+        sort(test_array, ix_array)
+
+        self.assertTrue(
+            isclose(test_array[0], -0.8, rel_tol=1e-9),
+            f"Expected -0.8 but found { test_array[0] } ",
+        )
+        self.assertNotEqual(
+            ix_array[len_array - 1],
+            1,
+            f"Expected not to be 1 but found { ix_array[len_array - 1] }",
+        )
+
+    def test_copy_foundpix_array(self):
+        """Test the copy_foundpix_array function."""
+        src = [Foundpix(1, 1, [1, 0]), Foundpix(2, 5, [1, 1])]
+        arr_len = 2
+        num_cams = 2
+
+        dest = [Foundpix(0, 0, [0] * num_cams) for _ in range(arr_len)]
+
+        reset_foundpix_array(dest, len(dest), num_cams)
+
+        self.assertEqual(
+            dest[1].ftnr, -1, f"Expected dest[1].ftnr == -1 but found {dest[1].ftnr}"
+        )
+        self.assertEqual(
+            dest[0].freq, 0, f"Expected dest[0].freq == 0 but found {dest[0].freq}"
+        )
+        self.assertEqual(
+            dest[1].whichcam[0], 0, f"Expected 0 but found {dest[1].whichcam[0]}"
+        )
+
+        copy_foundpix_array(dest, src, arr_len, num_cams)
+
+        self.assertEqual(
+            dest[1].ftnr, 2, f"Expected dest[1].ftnr == 2 but found {dest[1].ftnr}"
+        )
+
+        # print("Destination foundpix array:")
+        # for i in range(arr_len):
+        #     print(f"ftnr = {dest[i].ftnr} freq = {dest[i].freq} whichcam = {dest[i].whichcam}")
+
+
+class TestSearchQuader(unittest.TestCase):
+    def setUp(self):
+        self.cpar = ControlPar()
+        self.cpar.from_file("tests/testing_fodder/track/parameters/ptv.par")
+        self.cpar.mm.n2[0] = 1.0
+        self.cpar.mm.n3 = 1.0
+
+        # self.calib = [None] * self.cpar.num_cams
+        self.calib = read_all_calibration(self.cpar.num_cams)
+
+    def test_searchquader(self):
+        """Test the searchquader function."""
+        point = np.array([185.5, 3.2, 203.9])
+
+        #  print(f"cpar = {self.cpar}")
+
+        tpar = TrackPar(
+            0.4, 120, 0.2, -0.2, 0.1, -0.1, 0.1, -0.1, 0.0, 0.0, 0.0, 0.0, 1
+        )
+        xr, xl, yd, yu = searchquader(point, tpar, self.cpar, self.calib)
+
+        # print(f"xr = {xr}, xl = {xl}, yd = {yd}, yu = {yu}")
+
+        self.assertTrue(
+            isclose(xr[0], 0.560048, rel_tol=1e-6),
+            f"Expected 0.560048 but found {xr[0]}",
+        )
+        self.assertTrue(
+            isclose(yu[1], 0.437303, rel_tol=1e-6),
+            f"Expected 0.437303 but found {yu[1]}",
+        )
+
+        # Let's test with just one camera to check borders
+        self.cpar.num_cams = 1
+        tpar1 = TrackPar(
+            0.4, 120, 0.0, -0.0, 0.0, -0.0, 0.0, -0.0, 0.0, 0.0, 0.0, 0.0, 1
+        )
+        xr, xl, yd, yu = searchquader(point, tpar1, self.cpar, self.calib)
+
+        # print(f"xr = {xr}, xl = {xl}, yd = {yd}, yu = {yu}")
+
+        self.assertTrue(
+            isclose(xr[0], 0.0, rel_tol=1e-9), f"Expected 0.0 but found {xr[0]}"
+        )
+
+        # Test with infinitely large values of tpar that should return about half the image size
+        tpar2 = TrackPar(
+            0.4,
+            120,
+            1000.0,
+            -1000.0,
+            1000.0,
+            -1000.0,
+            1000.0,
+            -1000.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1,
+        )
+
+        xr, xl, yd, yu = searchquader(point, tpar2, self.cpar, self.calib)
+
+        # print(f"xr = {xr}, xl = {xl}, yd = {yd}, yu = {yu}")
+
+        self.assertTrue(
+            isclose(xr[0] + xl[0], self.cpar.imx, rel_tol=1e-9),
+            f"Expected image size but found {xr[0] + xl[0]}",
+        )
+        self.assertTrue(
+            isclose(yd[0] + yu[0], self.cpar.imy, rel_tol=1e-9),
+            f"Expected {self.cpar.imy} but found {yd[0] + yu[0]}",
         )
 
 

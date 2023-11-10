@@ -1,4 +1,5 @@
 """Module for coordinate transformations."""
+from math import cos, sin, sqrt
 from typing import Tuple
 
 import numpy as np
@@ -80,14 +81,14 @@ def arr_metric_to_pixel(metric: np.ndarray, parameters: ControlPar) -> np.ndarra
     return pixel
 
 
-def distort_brown_affine(
-    x: np.float64, y: np.float64, ap: ap_52
-) -> Tuple[float, float]:
+def distort_brown_affine(x: float, y: float, ap: ap_52) -> Tuple[float, float]:
     """Distort a point using the Brown affine model."""
     if x == 0 and y == 0:
         return 0, 0
 
-    r = np.sqrt(x**2 + y**2)
+    # print(f"x {x}, y {y}")
+
+    r = sqrt(x**2 + y**2)
 
     x += (
         x * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
@@ -99,8 +100,14 @@ def distort_brown_affine(
         + ap.p2 * (r**2 + 2 * y**2)
         + 2 * ap.p1 * x * y
     )
-    x1 = ap.scx * x - np.sin(ap.she) * y
-    y1 = np.cos(ap.she) * y
+
+    # print(f"x {x}, y {y}")
+    # print(f"ap.she {ap.she} ap.scx {ap.scx}")
+
+    x1 = ap.scx * x - sin(ap.she) * y
+    y1 = cos(ap.she) * y
+
+    # print(f"x1 {x1}, y1 {y1}")
 
     return x1, y1
 
@@ -219,10 +226,16 @@ def flat_to_dist(flat_x: float, flat_y: float, cal: Calibration) -> Tuple[float,
     Make coordinates relative to sensor center rather than primary point
     image coordinates, because distortion formula assumes it, [1] p.180.
     """
+    # print(f"flat_x {flat_x}, flat_y {flat_y}")
+    # print(f"cal.int {cal.int_par.xh}, {cal.int_par.yh}")
     flat_x += cal.int_par.xh
     flat_y += cal.int_par.yh
 
+    # print(f"flat_x {flat_x}, flat_y {flat_y}")
+
     dist_x, dist_y = distort_brown_affine(flat_x, flat_y, cal.added_par)
+    # print(f"dist_x {dist_x}, dist_y {dist_y}")
+
     return dist_x, dist_y
 
 

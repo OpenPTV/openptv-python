@@ -116,7 +116,7 @@ class Test_TrackingParams(unittest.TestCase):
         typedef struct
     {
         double  dacc, dangle, dvxmax, dvxmin;
-        double dvymax, dvymin, dvz_max, dvz_min;
+        double dvymax, dvymin, dvzmax, dvzmin;
         int dsumg, dn, dnx, dny, add;
     } track
 
@@ -138,8 +138,8 @@ class Test_TrackingParams(unittest.TestCase):
             dvxmax=4.4,
             dvymin=5.5,
             dvymax=6.6,
-            dvz_min=7.7,
-            dvz_max=8.8,
+            dvzmin=7.7,
+            dvzmax=8.8,
         )
 
     # Testing getters according to the values passed in setUp
@@ -152,8 +152,8 @@ class Test_TrackingParams(unittest.TestCase):
         self.assertTrue(self.track_obj1.dvxmax == 4.4)
         self.assertTrue(self.track_obj1.dvymin == 5.5)
         self.assertTrue(self.track_obj1.dvymax == 6.6)
-        self.assertTrue(self.track_obj1.dvz_min == 7.7)
-        self.assertTrue(self.track_obj1.dvz_max == 8.8)
+        self.assertTrue(self.track_obj1.dvzmin == 7.7)
+        self.assertTrue(self.track_obj1.dvzmax == 8.8)
         self.assertTrue(self.track_obj1.add == 1)
 
     def test_TrackingParams_read_from_file(self):
