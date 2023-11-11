@@ -38,7 +38,7 @@ default_naming = {
 class Foundpix:
     """A Foundpix object holds the parameters for a found pixel."""
 
-    ftnr: int = 0
+    ftnr: int = TR_UNUSED
     freq: int = 0
     whichcam: List[int] = field(default_factory=list)
 
@@ -60,19 +60,19 @@ class TrackingRun:
     npart: int
     nlinks: int
 
-    def __init__(self):
-        self.fb: FrameBuf = None  # Replace with appropriate default value
-        self.seq_par: SequencePar = None  # Replace with appropriate default value
-        self.tpar: TrackPar = None  # Replace with appropriate default value
-        self.vpar: VolumePar = None  # Replace with appropriate default value
-        self.cpar: ControlPar = None  # Replace with appropriate default value
-        self.cal: List[Calibration] = []  # Initialize as an empty list
-        self.flatten_tol: float = 0.0  # Replace with appropriate default value
-        self.ymin: float = 0.0  # Replace with appropriate default value
-        self.ymax: float = 0.0  # Replace with appropriate default value
-        self.lmax: float = 0.0  # Replace with appropriate default value
-        self.npart: int = 0  # Replace with appropriate default value
-        self.nlinks: int = 0  # Replace with appropriate default value
+    # def __init__(self):
+    #     self.fb: FrameBuf  # Replace with appropriate default value
+    #     self.seq_par: SequencePar  # Replace with appropriate default value
+    #     self.tpar: TrackPar  # Replace with appropriate default value
+    #     self.vpar: VolumePar  # Replace with appropriate default value
+    #     self.cpar: ControlPar  # Replace with appropriate default value
+    #     self.cal: List[Calibration]  # Initialize as an empty list
+    #     self.flatten_tol: float # Replace with appropriate default value
+    #     self.ymin: float  # Replace with appropriate default value
+    #     self.ymax: float  # Replace with appropriate default value
+    #     self.lmax: float  # Replace with appropriate default value
+    #     self.npart: int  # Replace with appropriate default value
+    #     self.nlinks: int  # Replace with appropriate default value
 
 
 def tr_new_legacy(
@@ -149,6 +149,14 @@ def track_forward_start(tr: TrackingRun):
     tr.fb.prev()
 
 
+# def track_forward_start(tr):
+#     # Prime the buffer with first frames
+#     for step in range(tr.seq_par.first, tr.seq_par.first + TR_BUFSPACE - 1):
+#         fb_read_frame_at_end(tr.fb, step, 0)
+#         fb_next(tr.fb)
+#     fb_prev(tr.fb)
+
+
 def reset_foundpix_array(arr: List[Foundpix], arr_len: int, num_cams: int) -> None:
     """Set default values for foundpix objects in an array.
 
@@ -166,6 +174,8 @@ def reset_foundpix_array(arr: List[Foundpix], arr_len: int, num_cams: int) -> No
         # Set default values for each whichcam member of the foundpix object
         for cam in range(num_cams):
             arr[i].whichcam[cam] = 0
+
+    return None
 
 
 def copy_foundpix_array(
@@ -548,12 +558,8 @@ def searchquader(
     return xr, xl, yd, yu
 
 
-def sort_candidates_by_freq(item: Foundpix, num_cams: int):
+def sort_candidates_by_freq(foundpix: List[Foundpix], num_cams: int) -> int:
     """Sort candidates by frequency."""
-    MAX_CANDS = 1000
-    foundpix = [Foundpix() for i in range(num_cams * MAX_CANDS)]
-    foundpix[: len(item)] = item
-
     different = 0
 
     # where what was found
@@ -929,8 +935,8 @@ def trackcorr_c_loop(run_info, step):
 
             # volume check
             if (
-                vpar.X_lay[0] < X[4][0]
-                and X[4][0] < vpar.X_lay[1]
+                vpar.x_lay[0] < X[4][0]
+                and X[4][0] < vpar.x_lay[1]
                 and run_info.ymin < X[4][1]
                 and X[4][1] < run_info.ymax
                 and vpar.z_min_lay[0] < X[4][2]
@@ -985,7 +991,7 @@ def trackcorr_c_loop(run_info, step):
 
                     # in volume check
                     if (
-                        vpar.X_lay[0] < X[3][0] < vpar.X_lay[1]
+                        vpar.x_lay[0] < X[3][0] < vpar.x_lay[1]
                         and run_info.ymin < X[3][1] < run_info.ymax
                         and vpar.z_min_lay[0] < X[3][2] < vpar.z_max_lay[1]
                     ):
@@ -1178,7 +1184,7 @@ def trackback_c(run_info: TrackingRun):
 
                         # volume check
                         if (
-                            vpar.X_lay[0] < X[3][0] < vpar.X_lay[1]
+                            vpar.x_lay[0] < X[3][0] < vpar.x_lay[1]
                             and Ymin < X[3][1] < Ymax
                             and vpar.z_min_lay[0] < X[3][2] < vpar.z_max_lay[1]
                         ):

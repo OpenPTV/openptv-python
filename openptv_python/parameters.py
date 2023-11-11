@@ -75,7 +75,7 @@ def compare_mm_np(mm_np1: MultimediaPar, mm_np2: MultimediaPar) -> bool:
 class SequencePar:
     """Sequence parameters."""
 
-    num_cams: int = 0
+    num_cams: int = 1
     img_base_name: List[str] | None = None
     first: int | None = None
     last: int | None = None
@@ -85,7 +85,7 @@ class SequencePar:
         if icam > self.num_cams:
             raise ValueError("Length of names must be equal to num_cams.")
         if self.img_base_name is None:
-            self.img_base_name = [None] * self.num_cams
+            self.img_base_name = [""] * self.num_cams
 
         self.img_base_name[icam] = new_name
 
@@ -141,6 +141,8 @@ def compare_sequence_par(sp1: SequencePar, sp2: SequencePar) -> bool:
 
 @dataclass
 class TrackPar:
+    """Tracking parameters."""
+
     dacc: float = 0.0
     dangle: float = 0.0
     dvxmax: float = 0.0
@@ -175,7 +177,7 @@ class TrackPar:
                 self.dvzmax = float(fpp.readline().rstrip())
                 self.add = int(fpp.readline().rstrip())
         except IOError as exc:
-            raise (f"Error reading tracking parameters from {filename}") from exc
+            raise (f"Error reading tracking parameters from {filename}") from exc  # type: ignore
 
     def get_dvxmin(self):
         """Return the minimum velocity in x direction."""
@@ -248,7 +250,9 @@ class TrackPar:
 
 def read_track_par(filename: str) -> TrackPar:
     """Read tracking parameters from file and return TrackPar object."""
-    return TrackPar().from_file(filename)
+    tpar = TrackPar()
+    tpar.from_file(filename)
+    return tpar
 
 
 def compare_track_par(t1: TrackPar, t2: TrackPar) -> bool:
@@ -262,10 +266,10 @@ class VolumePar:
 
     /* Volume parameters */
     fpp = fopen(filename, "r");
-    if(fscanf(fpp, &(ret->X_lay[0])) == 0) goto handle_error;
+    if(fscanf(fpp, &(ret->x_lay[0])) == 0) goto handle_error;
     if(fscanf(fpp, &(ret->z_min_lay[0])) == 0) goto handle_error;
     if(fscanf(fpp, &(ret->z_max_lay[0])) == 0) goto handle_error;
-    if(fscanf(fpp, &(ret->X_lay[1])) == 0) goto handle_error;
+    if(fscanf(fpp, &(ret->x_lay[1])) == 0) goto handle_error;
     if(fscanf(fpp, &(ret->z_min_lay[1])) == 0) goto handle_error;
     if(fscanf(fpp, &(ret->z_max_lay[1])) == 0) goto handle_error;
 
@@ -280,7 +284,7 @@ class VolumePar:
 
     """
 
-    X_lay: List[float] = field(default_factory=list)
+    x_lay: List[float] = field(default_factory=list)
     z_min_lay: List[float] = field(default_factory=list)
     z_max_lay: List[float] = field(default_factory=list)
     # minimal criteria for number of pixels
@@ -330,10 +334,10 @@ class VolumePar:
 
         """
         with open(filename, "r", encoding="utf-8") as f:
-            self.X_lay.append(float(f.readline()))
+            self.x_lay.append(float(f.readline()))
             self.z_min_lay.append(float(f.readline()))
             self.z_max_lay.append(float(f.readline()))
-            self.X_lay.append(float(f.readline()))
+            self.x_lay.append(float(f.readline()))
             self.z_min_lay.append(float(f.readline()))
             self.z_max_lay.append(float(f.readline()))
             self.cnx, self.cny, self.cn, self.csumg, self.corrmin, self.eps0 = [

@@ -98,13 +98,13 @@ def epi_mm(xl, yl, cal1, cal2, mmp, vpar) -> tuple[float, float, float, float]:
     pos, v = ray_tracing(xl, yl, cal1, mmp)
 
     # calculate min and max depth for position (valid only for one setup)
-    z_min = vpar.z_min_lay[0] + (pos[0] - vpar.X_lay[0]) * (
+    z_min = vpar.z_min_lay[0] + (pos[0] - vpar.x_lay[0]) * (
         vpar.z_min_lay[1] - vpar.z_min_lay[0]
-    ) / (vpar.X_lay[1] - vpar.X_lay[0])
+    ) / (vpar.x_lay[1] - vpar.x_lay[0])
 
-    z_max = vpar.z_max_lay[0] + (pos[0] - vpar.X_lay[0]) * (
+    z_max = vpar.z_max_lay[0] + (pos[0] - vpar.x_lay[0]) * (
         vpar.z_max_lay[1] - vpar.z_max_lay[0]
-    ) / (vpar.X_lay[1] - vpar.X_lay[0])
+    ) / (vpar.x_lay[1] - vpar.x_lay[0])
 
     X = move_along_ray(z_min, pos, v)
     xmin, ymin = flat_image_coord(X, cal2, mmp)
@@ -152,12 +152,12 @@ def epi_mm_2D(
     """
     pos, v = ray_tracing(xl, yl, cal1, mmp)
 
-    z_min = vpar.z_min_lay[0] + (pos[0] - vpar.X_lay[0]) * (
+    z_min = vpar.z_min_lay[0] + (pos[0] - vpar.x_lay[0]) * (
         vpar.z_min_lay[1] - vpar.z_min_lay[0]
-    ) / (vpar.X_lay[1] - vpar.X_lay[0])
-    z_max = vpar.z_max_lay[0] + (pos[0] - vpar.X_lay[0]) * (
+    ) / (vpar.x_lay[1] - vpar.x_lay[0])
+    z_max = vpar.z_max_lay[0] + (pos[0] - vpar.x_lay[0]) * (
         vpar.z_max_lay[1] - vpar.z_max_lay[0]
-    ) / (vpar.X_lay[1] - vpar.X_lay[0])
+    ) / (vpar.x_lay[1] - vpar.x_lay[0])
 
     out = move_along_ray(0.5 * (z_min + z_max), pos, v)
     return out

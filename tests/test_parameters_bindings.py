@@ -287,7 +287,7 @@ class Test_VolumeParams(unittest.TestCase):
 
         # check that all parameters are equal to the contents of test file
         numpy.testing.assert_array_equal(
-            numpy.array([111.111, 222.222]), self.vol_obj.X_lay
+            numpy.array([111.111, 222.222]), self.vol_obj.x_lay
         )
         numpy.testing.assert_array_equal(
             numpy.array([333.333, 444.444]), self.vol_obj.z_min_lay
@@ -306,8 +306,8 @@ class Test_VolumeParams(unittest.TestCase):
     def test_setters(self):
         """Test setting volume parameters."""
         xlay = numpy.array([111.1, 222.2])
-        self.vol_obj.X_lay = xlay
-        numpy.testing.assert_array_equal(xlay, self.vol_obj.X_lay)
+        self.vol_obj.x_lay = xlay
+        numpy.testing.assert_array_equal(xlay, self.vol_obj.x_lay)
 
         z_min = numpy.array([333.3, 444.4])
         self.vol_obj.set_z_min_lay(z_min)
@@ -342,7 +342,7 @@ class Test_VolumeParams(unittest.TestCase):
         z_min, z_max = list(zip(*zlay))
 
         vol_obj = VolumePar(
-            X_lay=xlay,
+            x_lay=xlay,
             z_min_lay=z_min,
             z_max_lay=z_max,
             cn=1,
@@ -353,7 +353,7 @@ class Test_VolumeParams(unittest.TestCase):
             corrmin=6,
         )
 
-        numpy.testing.assert_array_equal(xlay, vol_obj.X_lay)
+        numpy.testing.assert_array_equal(xlay, vol_obj.x_lay)
         numpy.testing.assert_array_equal(z_min, vol_obj.z_min_lay)
         numpy.testing.assert_array_equal(z_max, vol_obj.z_max_lay)
 

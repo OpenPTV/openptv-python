@@ -8,12 +8,15 @@ Created on Mon Apr 24 10:57:01 2017
 @author: yosef
 """
 
+import shutil
 import unittest
 from math import isclose
+from pathlib import Path
 
 import numpy as np
 
 from openptv_python.calibration import Calibration, read_calibration
+from openptv_python.constants import MAX_CANDS, TR_UNUSED
 from openptv_python.parameters import (
     ControlPar,
     TrackPar,
@@ -30,9 +33,26 @@ from openptv_python.track import (
     search_volume_center_moving,
     searchquader,
     sort,
+    sort_candidates_by_freq,
 )
 from openptv_python.tracking_frame_buf import Target
 from openptv_python.vec_utils import vec_scalar_mul
+
+
+def copy_directory(source_path, destination_path):
+    """Copy the contents of the source directory to the destination directory."""
+    source_path = Path(source_path)
+    destination_path = Path(destination_path)
+
+    # Create the destination directory if it doesn't exist
+    destination_path.mkdir(parents=True, exist_ok=True)
+
+    # Copy the contents from the source to the destination
+    for item in source_path.iterdir():
+        if item.is_dir():
+            shutil.copytree(item, destination_path / item.name, dirs_exist_ok=True)
+        else:
+            shutil.copy2(item, destination_path / item.name)
 
 
 def read_all_calibration(num_cams: int = 4) -> list[Calibration]:
@@ -264,9 +284,11 @@ class TestSort(unittest.TestCase):
         arr_len = 2
         num_cams = 2
 
-        dest = [Foundpix(0, 0, [0] * num_cams) for _ in range(arr_len)]
+        dest = [
+            Foundpix(TR_UNUSED, 0, [0] * num_cams) for _ in range(num_cams * MAX_CANDS)
+        ]
 
-        reset_foundpix_array(dest, len(dest), num_cams)
+        reset_foundpix_array(dest, num_cams * MAX_CANDS, num_cams)
 
         self.assertEqual(
             dest[1].ftnr, -1, f"Expected dest[1].ftnr == -1 but found {dest[1].ftnr}"
@@ -363,6 +385,35 @@ class TestSearchQuader(unittest.TestCase):
             isclose(yd[0] + yu[0], self.cpar.imy, rel_tol=1e-9),
             f"Expected {self.cpar.imy} but found {yd[0] + yu[0]}",
         )
+
+
+class TestSortCandidatesByFreq(unittest.TestCase):
+    """Test the sort_candidates_by_freq function."""
+
+    def test_sort_candidates_by_freq(self):
+        """Test the sort_candidates_by_freq function."""
+        src = [Foundpix(1, 0, [1, 0]), Foundpix(2, 0, [1, 1])]
+        num_cams = 2
+
+        # allocate
+        dest = [
+            Foundpix(TR_UNUSED, 0, [0] * num_cams) for _ in range(num_cams * MAX_CANDS)
+        ]
+
+        # sortwhatfound freaks out if the array is not reset before
+        reset_foundpix_array(dest, 2, 2)
+        copy_foundpix_array(dest, src, 2, 2)
+        # print(f"src = {src}")
+        # print(f"dest = {dest}")
+
+        # test simple sort of a small foundpix array
+        sort_candidates_by_freq(dest, num_cams)
+
+        # print(f"num_parts = {num_parts}")
+        # self.assertEqual(num_parts, 1)
+        self.assertEqual(dest[0].ftnr, 2)
+        self.assertEqual(dest[0].freq, 2)
+        self.assertEqual(dest[1].freq, 0)
 
 
 if __name__ == "__main__":

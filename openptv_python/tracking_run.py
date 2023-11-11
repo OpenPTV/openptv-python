@@ -1,38 +1,142 @@
+from dataclasses import dataclass
+from typing import List, Optional
+
 import numpy as np
+
+from openptv_python.calibration import Calibration
+from openptv_python.tracking_frame_buf import FrameBuf, FrameBufBase
 
 from .multimed import volumedimension
 from .parameters import (
+    ControlPar,
+    SequencePar,
+    TrackPar,
+    VolumePar,
     read_control_par,
     read_sequence_par,
     read_track_par,
     read_volume_par,
 )
-from .tracking_frame_buf import fb_init, framebuf_base
 
 
+@dataclass
 class TrackingRun:
-    def __init__(self):
-        self.fb = None  # type: framebuf_base
-        self.seq_par = None  # type: sequence_par
-        self.tpar = None  # type: track_par
-        self.vpar = None  # type: volume_par
-        self.cpar = None  # type: control_par
-        self.cal = None  # type: List[Calibration]
-        self.flatten_tol = 0.0  # type: float
-        self.ymin = 0.0  # type: float
-        self.ymax = 0.0  # type: float
-        self.lmax = 0.0  # type: float
-        self.npart = 0  # type: int
-        self.nlinks = 0  # type: int
+    """A tracking run."""
+
+    fb: Optional[FrameBufBase] = None
+    seq_par: Optional[SequencePar] = None
+    tpar: Optional[TrackPar] = None
+    vpar: Optional[VolumePar] = None
+    cpar: Optional[ControlPar] = None
+    cal: Optional[List[Calibration]] = None
+    flatten_tol: float = 0.0
+    ymin: float = 0.0
+    ymax: float = 0.0
+    lmax: float = 0.0
+    npart: int = 0
+    nlinks: int = 0
+
+    def __init__(
+        self,
+        seq_par: SequencePar,
+        tpar: TrackPar,
+        vpar: VolumePar,
+        cpar: ControlPar,
+        buf_len: int,
+        max_targets: int,
+        corres_file_base: str,
+        linkage_file_base: str,
+        prio_file_base: str,
+        cal: List[Calibration],
+        flatten_tol: float,
+    ):
+        self.tpar = tpar
+        self.vpar = vpar
+        self.cpar = cpar
+        self.seq_par = seq_par
+        self.cal = cal
+        self.flatten_tol = flatten_tol
+
+        self.fb = FrameBuf(
+            buf_len,
+            cpar.num_cams,
+            max_targets,
+            corres_file_base,
+            linkage_file_base,
+            prio_file_base,
+            cpar.img_base_name,
+        )
+
+        self.lmax = np.linalg.norm(
+            (tpar.dvxmin - tpar.dvxmax),
+            (tpar.dvymin - tpar.dvymax),
+            (tpar.dvzmin - tpar.dvzmax),
+        )
+
+        volumedimension(
+            vpar.x_lay[1],
+            vpar.x_lay[0],
+            self.ymax,
+            self.ymin,
+            vpar.z_max_lay[1],
+            vpar.z_min_lay[0],
+            vpar,
+            cpar,
+            cal,
+        )
+
+        self.npart = 0
+        self.nlinks = 0
 
 
-def tr_new_legacy(seq_par_fname, tpar_fname, vpar_fname, cpar_fname, cal):
+def tr_new(
+    seq_par: SequencePar,
+    tpar: TrackPar,
+    vpar: VolumePar,
+    cpar: ControlPar,
+    buf_len: int,
+    max_targets: int,
+    corres_file_base: str,
+    linkage_file_base: str,
+    prio_file_base: str,
+    cal: List[Calibration],
+    flatten_tol: float,
+) -> TrackingRun:
+    """Create a new tracking run."""
+    tr = TrackingRun(
+        seq_par,
+        tpar,
+        vpar,
+        cpar,
+        buf_len,
+        max_targets,
+        corres_file_base,
+        linkage_file_base,
+        prio_file_base,
+        cal,
+        flatten_tol,
+    )
+
+    return tr
+
+
+def tr_new_legacy(
+    seq_par_fname: str,
+    tpar_fname: str,
+    vpar_fname: str,
+    cpar_fname: str,
+    cal: List[Calibration],
+) -> TrackingRun:
+    """Create a new tracking run from legacy files."""
     cpar = read_control_par(cpar_fname)
     seq_par = read_sequence_par(seq_par_fname, cpar.num_cams)
-    return tr_new(
+    tpar = read_track_par(tpar_fname)
+    vpar = read_volume_par(vpar_fname)
+
+    tr = tr_new(
         seq_par,
-        read_track_par(tpar_fname),
-        read_volume_par(vpar_fname),
+        tpar,
+        vpar,
         cpar,
         4,
         20000,
@@ -43,67 +147,19 @@ def tr_new_legacy(seq_par_fname, tpar_fname, vpar_fname, cpar_fname, cal):
         10000,
     )
 
-
-def tr_new(
-    seq_par,
-    tpar,
-    vpar,
-    cpar,
-    buf_len,
-    max_targets,
-    corres_file_base,
-    linkage_file_base,
-    prio_file_base,
-    cal,
-    flatten_tol,
-):
-    tr = TrackingRun()
-    tr.tpar = tpar
-    tr.vpar = vpar
-    tr.cpar = cpar
-    tr.seq_par = seq_par
-    tr.cal = cal
-    tr.flatten_tol = flatten_tol
-
-    tr.fb = framebuf_base()
-    fb_init(
-        tr.fb,
-        buf_len,
-        cpar.num_cams,
-        max_targets,
-        corres_file_base,
-        linkage_file_base,
-        prio_file_base,
-        seq_par.img_base_name,
-    )
-
-    tr.lmax = np.norm(
-        tpar.dvxmin - tpar.dvxmax,
-        tpar.dvymin - tpar.dvymax,
-        tpar.dvzmin - tpar.dvzmax,
-    )
-    volumedimension(
-        vpar.X_lay[1],
-        vpar.X_lay[0],
-        tr.ymax,
-        tr.ymin,
-        vpar.z_max_lay[1],
-        vpar.z_min_lay[0],
-        vpar,
-        cpar,
-        cal,
-    )
-
-    tr.npart = 0
-    tr.nlinks = 0
-
     return tr
 
 
-# def tr_free(tr):
-#     free(tr.fb)
-#     free(tr.seq_par.img_base_name)
-#     free(tr.seq_par)
-#     free(tr.tpar)
-#     free(tr.vpar)
-#     free_control_par(tr.cpar)
+def track_forward_start(tr: TrackingRun):
+    """Not implemented."""
+    pass
+
+
+def trackcorr_c_finish(tr: TrackingRun):
+    """Not implemented."""
+    pass
+
+
+def trackcorr_c_loop(tr: TrackingRun):
+    """Not implemented."""
+    pass

@@ -1,5 +1,4 @@
 """Tracking frame buffer."""
-from collections import deque
 from dataclasses import dataclass, field
 from typing import Any, List, Optional, Tuple
 
@@ -53,8 +52,8 @@ def quicksort_n_tupel(n_tupel_list: List[n_tupel]) -> List[n_tupel]:
 class Corres:
     """Correspondence data structure."""
 
-    nr: int = field(default_factory=int)
-    p: List[int] = field(default_factory=list)
+    nr: Optional[int] = None
+    p: Optional[List[int]] = None
 
     def __eq__(self, other):
         return self.nr == other.nr and np.all(self.p == other.p)
@@ -146,22 +145,6 @@ class TargetArray(list):
         return len(self)
 
 
-# @dataclass
-# class TargetArray:
-#     """A list of targets and the number of targets in the list."""
-
-#     num_targs: int = field(default_factory=int)
-#     targs: List[Target] = field(default_factory=list)
-
-#     def __post_init__(self):
-#         self.targs = [Target() for _ in range(self.num_targs)]
-
-#     def set(self, targs: List[Target]):
-#         """Set targets."""
-#         self.targs = targs
-#         self.num_targs = len(targs)
-
-
 def read_targets(file_base: str, frame_num: int) -> List[Target]:
     """Read targets from a file."""
     buffer = []
@@ -242,7 +225,7 @@ class Pathinfo:
     prio: int = PRIO_DEFAULT
     decis: List[float] = field(default_factory=lambda: [0.0] * POSI)
     finaldecis: float = 0.0
-    linkdecis: List[int] = field(default_factory=lambda: [0.0] * POSI)
+    linkdecis: List[int] = field(default_factory=lambda: [0] * POSI)
     inlist: int = 0
 
     def __eq__(self, other):
@@ -253,9 +236,9 @@ class Pathinfo:
             and self.prev == other.prev
             and self.next == other.next
             and self.prio == other.prio
-            and (self.decis == other.decis).all()
+            and (self.decis == other.decis)
             and self.finaldecis == other.finaldecis
-            and (self.linkdecis == other.linkdecis).all()
+            and (self.linkdecis == other.linkdecis)
             and self.inlist == other.inlist
         )
 
@@ -279,17 +262,6 @@ def compare_path_info(path_info1: Pathinfo, path_info2: Pathinfo) -> bool:
 
 class Frame:
     """Frame structure for tracking."""
-
-    # num_cams: int = field(default_factory=int)
-    # max_targets: int = field(default_factory=int)
-    # path_info: List[Pathinfo] = field(default_factory=list)
-    # correspond: List[Corres] = field(default_factory=list)
-    # targets: List[List[Target]] = field(default_factory=list)
-    # # number of 3D particles in correspondence buffer
-    # num_parts: int = field(default_factory=int)
-    # num_targets: List[int] = field(
-    #     default_factory=list
-    # )  # list of 2d particle counts per image
 
     def __init__(self, num_cams: int, max_targets: int = MAX_TARGETS):
         """
@@ -418,73 +390,119 @@ class Frame:
         return f"<Frame num_parts={self.num_parts} num_cams={self.num_cams} max_targets={self.max_targets}>"
 
 
-class FrameBufBase:
-    """Base class for frame buffers."""
+# class RingVector:
+#     def __init__(self, capacity):
+#         self.capacity = capacity
+#         self.data = [None] * capacity
+#         self.size = 0
+#         self.head = 0
 
-    def __init__(self, buf_len, num_cams, max_targets):
+#     def push(self, item):
+#         if self.size < self.capacity:
+#             self.data[(self.head + self.size) % self.capacity] = item
+#             self.size += 1
+#         else:
+#             # Handle the case where the ring is full (optional)
+#             print("Ring is full, cannot push item.")
+
+#     def pop(self):
+#         if self.size > 0:
+#             item = self.data[self.head]
+#             self.head = (self.head + 1) % self.capacity
+#             self.size -= 1
+#             return item
+#         else:
+#             # Handle the case where the ring is empty (optional)
+#             print("Ring is empty, cannot pop item.")
+
+# # Example usage:
+# ring = RingVector(5)
+# ring.push(1)
+# ring.push(2)
+# ring.push(3)
+# ring.push(4)
+# ring.push(5)
+
+# print("Initial Ring:", ring.data)
+
+# ring.push(6)  # This will print "Ring is full, cannot push item."
+
+# popped_item = ring.pop()
+# print("Popped item:", popped_item)
+# print("Updated Ring:", ring.data)
+
+
+class FrameBufBase:
+    """Frame buffer class."""
+
+    def __init__(
+        self,
+        buf: List[Frame],
+        _ring_vec: List[Frame],
+        buf_len: int = 4,
+        num_cams: int = 1,
+    ):
+        self.buf: List[Frame] = buf
+        self._ring_vec: List[Frame] = _ring_vec
         self.buf_len = buf_len
         self.num_cams = num_cams
-        self.buf = deque(maxlen=buf_len)
-        for _ in range(buf_len):
-            self.buf.append(Frame(num_cams, max_targets))
-        self.start = 0
-        self.frame_num = 0
+        self.size = 0
+        self.head = 0
 
-    def __del__(self):
-        for frame in self.buf:
-            del frame
+    def push(self, item: Frame):
+        """Push an item onto the buffer."""
+        if self.size < self.buf_len:
+            self.buf[(self.head + self.size) % self.buf_len] = item
+            self.size += 1
+        else:
+            # Handle the case where the ring is full (optional)
+            print("Ring is full, cannot push item.")
 
-    def read_frame_at_end(self, frame):
-        self.buf.append(frame)
-
-    def write_frame_from_start(self):
-        pass
-        # pickled_frame = pickle.dumps(frame)
-        # self._advance_buffer_start()
-        # return pickled_frame
-
-    def _advance_buffer_start(self):
-        self.start += 1
-        if self.start >= self.buf_len:
-            self.start = 0
-
-    def fb_next(self):
-        self.buf.rotate(-1)
-        self._advance_buffer_start()
-
-    def fb_prev(self):
-        self.buf.rotate(1)
-        self.start -= 1
-        if self.start < 0:
-            self.start = self.buf_len - 1
-
-
-# def free_frame(frame):
-#     # Free memory for the frame
-#     frame = None
-
-
-# class Frame:
-#     def __init__(self, num_cams, max_targets):
-#         self.num_cams = num_cams
-#         self.max_targets = max_targets
-
-
-# def frame_init(frame, num_cams, max_targets):
-#     # Initialize the frame
-#     frame.num_cams = num_cams
-#     frame.max_targets = max_targets
-#     return frame
+    def pop(self):
+        """Pop an item from the buffer."""
+        if self.size > 0:
+            item = self.buf[self.head]
+            self.head = (self.head + 1) % self.buf_len
+            self.size -= 1
+            return item
+        else:
+            # Handle the case where the ring is empty (optional)
+            print("Ring is empty, cannot pop item.")
 
 
 @dataclass
 class FrameBuf(FrameBufBase):
-    buf_len: int
-    max_targets: int
+    """Frame buffer class."""
+
     corres_file_base: Optional[str] = None
     linkage_file_base: Optional[str] = None
     prio_file_base: Optional[str] = None
-    target_file_base: Optional[str] = None
+    target_file_base: Optional[List[str]] = None
+
+    def __init__(
+        self,
+        buf_len: int,
+        num_cams: int,
+        max_targets: int,
+        corres_file_base: str,
+        linkage_file_base: str,
+        prio_file_base: str,
+        target_file_base: List[str],
+    ):
+        super().__init__(
+            buf=[Frame(num_cams, max_targets) for _ in range(buf_len)],
+            _ring_vec=[Frame(num_cams, max_targets) for _ in range(buf_len)],
+            buf_len=buf_len,
+            num_cams=num_cams,
+        )
+
+        self.size = 0
+        self.head = 0
+
+        self.corres_file_base = corres_file_base
+        self.linkage_file_base = linkage_file_base
+        self.prio_file_base = prio_file_base
+        self.target_file_base = target_file_base
 
     def write_frame_from_start(self):
         """Write a frame to disk and advance the buffer."""
@@ -599,12 +617,12 @@ def read_path_frame(
 
         path_buf[targets].inlist = 0
         path_buf[targets].finaldecis = 1000000.0
-        path_buf[targets].decis = np.zeros(POSI)
-        path_buf[targets].linkdecis = np.zeros(POSI) - 999
+        path_buf[targets].decis = [0] * POSI  # type: ignore
+        path_buf[targets].linkdecis = [-999] * POSI
 
         vals = np.fromstring(line, dtype=float, sep=" ")
         cor_buf[targets].nr = targets + 1
-        cor_buf[targets].p = vals[-4:].astype(int)
+        cor_buf[targets].p = vals[-4:].astype(int).tolist()
         path_buf[targets].x = vals[1:-4]
 
         targets += 1
@@ -619,7 +637,7 @@ def read_path_frame(
 
 
 def write_path_frame(
-    cor_buf: List[Target],
+    cor_buf: FrameBuf,
     path_buf: List[Pathinfo],
     num_parts: int,
     corres_file_base: str,
@@ -741,67 +759,6 @@ def match_coords(
 
     matched_coords.sort(key=lambda mc: mc.x)
     return matched_coords
-
-
-# class MatchedCoords:
-#     """Keep a block of 2D flat coordinates, each with a point number.
-
-#     the same as the number on one ``target`` from the block to which this block is kept
-#     matched. This block is x-sorted.
-
-#     NB: the data is not meant to be directly manipulated at this point. The
-#     coord_2d arrays are most useful as intermediate objects created and
-#     manipulated only by other liboptv functions. Although one can imagine a
-#     use case for direct manipulation in Python, it is rare and supporting it
-#     is a low priority.
-#     """
-
-#     buf: List[Coord2d]
-#     _num_pts: int
-
-#     def __init__(
-#         self,
-#         targs: List[Target],
-#         cpar: ControlPar,
-#         cal: Calibration,
-#         tol: float = 0.00001,
-#         reset_numbers=False,
-#     ):
-#         """
-#         Allocate and initialize the memory, including coordinate conversion.
-
-#         and sorting.
-
-#         Arguments:
-#         ---------
-#         TargetArray targs - the TargetArray to be converted and matched.
-#         ControlPar cpar - parameters of image size etc. for conversion.
-#         Calibration cal - representation of the camera parameters to use in
-#             the flat/distorted transforms.
-#         double tol - optional tolerance for the lens distortion correction
-#             phase, see ``optv.transforms``.
-#         reset_numbers - if True (default) numbers the targets too, in their
-#             current order. This shouldn't be necessary since all TargetArray
-#             creators number the targets, but this gets around cases where they
-#             don't.
-#         """
-#         # cdef:
-#         #     target *targ
-
-#         self._num_pts = len(targs)
-#         self.buf = [Coord2d() for _ in range(self._num_pts)]
-
-#         for tnum in range(self._num_pts):
-#             targ = targs[tnum]
-#             if reset_numbers:
-#                 targ.pnr = tnum
-
-#             x, y = pixel_to_metric(targ.x, targ.y, cpar)
-#             self.buf[tnum].x, self.buf[tnum].y = dist_to_flat(x, y, cal, tol)
-#             self.buf[tnum].pnr = targ.pnr
-
-#         # self.buf = quicksort_coord2d_x(self.buf, self._num_pts)
-#         self.buf = sort_coord2d_x(self.buf)
 
 
 def matched_coords_as_arrays(

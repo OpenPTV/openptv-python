@@ -348,3 +348,5 @@ tags
 *.code-workspace
 
 # End of https://www.toptal.com/developers/gitignore/api/python,jupyternotebooks,vim,visualstudiocode,pycharm
+tests/testing_fodder/track/img/*
+tests/testing_fodder/track/res/*
