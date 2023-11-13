@@ -29,6 +29,7 @@ EPS = 1e-9
 
 
 def remove_directory(directory_path):
+    """Remove a directory and its contents."""
     # Convert the input to a Path object
     path = Path(directory_path)
 

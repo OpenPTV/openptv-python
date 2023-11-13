@@ -686,7 +686,7 @@ def track_forward_start(tr: TrackingRun):
 
 
 def trackcorr_c_loop(run_info, step):
-    # sequence loop
+    """Sequence loop."""
     j, h, mm, kk, in_volume = 0, 0, 0, 0, 0
     philf = [[0 for _ in range(MAX_CANDS)] for _ in range(4)]
     count1, count2, count3, num_added = 0, 0, 0, 0
@@ -971,7 +971,7 @@ def trackcorr_c_loop(run_info, step):
     run_info.npart = run_info.npart + fb.buf[1].num_parts
     run_info.nlinks = run_info.nlinks + count1
 
-    fb.next_frame()
+    fb.fb_next()
     fb.write_frame_from_start(step)
 
     if step < run_info.seq_par.last - 2:
@@ -979,13 +979,15 @@ def trackcorr_c_loop(run_info, step):
     # end of sequence loop
 
 
-def trackcorr_c_finish(run_info, step):
-    npart, nlinks = run_info.npart / range, run_info.nlinks / range
+def trackcorr_c_finish(run_info, step: int):
+    """Close the links and write the last frame."""
+    track_range = run_info.seq_par.last - run_info.seq_par.first
+    npart, nlinks = run_info.npart / track_range, run_info.nlinks / track_range
     print(
         f"Average over sequence, particles: {npart:.1f}, links: {nlinks:.1f}, lost: {npart - nlinks:.1f}"
     )
 
-    run_info.fb.next_frame()
+    run_info.fb.fb_next()
     run_info.fb.write_frame_from_start(step)
 
 
