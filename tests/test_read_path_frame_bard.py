@@ -30,8 +30,8 @@ class TestReadPathFrame(unittest.TestCase):
         # Correct values for particle 3.
         path_correct = P(
             x=np.array([45.219, -20.269, 25.946]),
-            prev=-1,
-            next=-2,
+            prev_frame=-1,
+            next_frame=-2,
             prio=4,
             finaldecis=1000000.0,
             inlist=0,
@@ -54,9 +54,7 @@ class TestReadPathFrame(unittest.TestCase):
         # Test unlinked frame:
 
         # Read the path frame.
-        targets_read = read_path_frame(
-            cor_buf, path_buf, file_base, None, None, frame_num
-        )
+        targets_read = read_path_frame(cor_buf, path_buf, file_base, "", "", frame_num)
 
         # Check that the correct number of targets were read.
         self.assertEqual(targets_read, POSI)
@@ -68,8 +66,8 @@ class TestReadPathFrame(unittest.TestCase):
         # .assertEqual(path_buf[2], path_correct)
 
         # Test frame with links:
-        path_correct.prev = 0
-        path_correct.next = 0
+        path_correct.prev_frame = 0
+        path_correct.next_frame = 0
         path_correct.prio = 0
 
         # Create a buffer for the path info structures.
@@ -97,17 +95,18 @@ class TestReadPathFrame(unittest.TestCase):
         self.assertEqual(path_buf[2], path_correct)
 
     def test_read_path_frame_chatgpt(self):
+        """Tests the read_path_frame() function."""
         cor_buf = [Corres() for _ in range(POSI)]
         path_buf = [P() for _ in range(POSI)]
 
         # Correct values for particle 3
         path_correct = P(
-            x=[45.219, -20.269, 25.946],
-            prev=-1,
-            next=-2,
+            x=np.array([45.219, -20.269, 25.946]),
+            prev_frame=-1,
+            next_frame=-2,
             prio=4,
             finaldecis=1000000.0,
-            inlist=0.0,
+            inlist=0,
         )
         path_correct.decis = [0.0] * POSI
         path_correct.linkdecis = [-999] * POSI
@@ -118,9 +117,7 @@ class TestReadPathFrame(unittest.TestCase):
         targets_read = 0
 
         # Test unlinked frame
-        targets_read = read_path_frame(
-            cor_buf, path_buf, file_base, None, None, frame_num
-        )
+        targets_read = read_path_frame(cor_buf, path_buf, file_base, "", "", frame_num)
         self.assertEqual(targets_read, POSI)
 
         self.assertTrue(
@@ -137,8 +134,8 @@ class TestReadPathFrame(unittest.TestCase):
         self.assertTrue(compare_path_info(path_buf[2], path_correct))
 
         # Test frame with links
-        path_correct.prev = 0
-        path_correct.next = 0
+        path_correct.prev_frame = 0
+        path_correct.next_frame = 0
         path_correct.prio = 0
         linkage_base = "tests/testing_fodder/ptv_is"
         prio_base = "tests/testing_fodder/added"

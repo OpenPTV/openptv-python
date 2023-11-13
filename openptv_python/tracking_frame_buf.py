@@ -1,6 +1,7 @@
 """Tracking frame buffer."""
+from collections import deque
 from dataclasses import dataclass, field
-from typing import Any, List, Optional, Tuple
+from typing import Any, Deque, List, Optional, Tuple
 
 import numpy as np
 
@@ -20,7 +21,7 @@ from .parameters import ControlPar
 from .trafo import dist_to_flat, pixel_to_metric
 
 
-class n_tupel:
+class n_tupel:  # pylint: disable=invalid-name
     """n_tupel data structure."""
 
     def __init__(self, p=None, corr=None):
@@ -48,12 +49,12 @@ def quicksort_n_tupel(n_tupel_list: List[n_tupel]) -> List[n_tupel]:
     return sorted(n_tupel_list, key=lambda x: x.corr)
 
 
-@dataclass
 class Corres:
     """Correspondence data structure."""
 
-    nr: Optional[int] = None
-    p: Optional[List[int]] = None
+    def __init__(self, nr: int = 0, p: Optional[List[int]] = None):
+        self.nr = nr
+        self.p = [-1, -1, -1, -1] if p is None else p
 
     def __eq__(self, other):
         return self.nr == other.nr and np.all(self.p == other.p)
@@ -65,14 +66,14 @@ def compare_corres(c1: Corres, c2: Corres) -> bool:
 
     Args:
     ----
-      c1: A Corres instance.
-      c2: A Corres instance.
+        c1: A Corres instance.
+        c2: A Corres instance.
 
     Returns:
     -------
-      True if the Corres instances are equal, False otherwise.
+        True if the Corres instances are equal, False otherwise.
     """
-    return c1 == c2
+    return c1 == c2  # type: ignore
 
 
 @dataclass
@@ -121,6 +122,8 @@ class Target:
 
 
 class TargetArray(list):
+    """Target array class."""
+
     def __init__(self, num_targets: int = 0):
         super().__init__(Target() for item in range(num_targets))
 
@@ -220,8 +223,8 @@ class Pathinfo:
     """Pathinfo structure for tracking."""
 
     x: np.ndarray = np.zeros(3, dtype=np.float64)
-    prev: int = PREV_NONE
-    next: int = NEXT_NONE
+    prev_frame: int = PREV_NONE
+    next_frame: int = NEXT_NONE
     prio: int = PRIO_DEFAULT
     decis: List[float] = field(default_factory=lambda: [0.0] * POSI)
     finaldecis: float = 0.0
@@ -233,8 +236,8 @@ class Pathinfo:
             return False
         return (
             (self.x == other.x).all()
-            and self.prev == other.prev
-            and self.next == other.next
+            and self.prev_frame == other.prev_frame
+            and self.next_frame == other.next_frame
             and self.prio == other.prio
             and (self.decis == other.decis)
             and self.finaldecis == other.finaldecis
@@ -250,8 +253,8 @@ class Pathinfo:
 
     def reset_links(self) -> None:
         """Reset links."""
-        self.prev = PREV_NONE
-        self.next = NEXT_NONE
+        self.prev_frame = PREV_NONE
+        self.next_frame = NEXT_NONE
         self.prio = PRIO_DEFAULT
 
 
@@ -284,7 +287,7 @@ class Frame:
         self.max_targets = max_targets
         self.num_parts = 0
 
-    def from_file(
+    def read(
         self,
         corres_file_base: Any,
         linkage_file_base: Any,
@@ -314,7 +317,7 @@ class Frame:
 
         return True
 
-    def write_frame(
+    def write(
         self,
         corres_file_base: Any,
         linkage_file_base: Any,
@@ -389,6 +392,15 @@ class Frame:
     def __repr__(self):
         return f"<Frame num_parts={self.num_parts} num_cams={self.num_cams} max_targets={self.max_targets}>"
 
+    # def frame_init(num_cams: int, max_targets: int):
+    # """Initialize a frame structure."""
+    # frame = Frame(max_targets=max_targets, num_cams=num_cams)
+    # for cam in range(num_cams):
+    #     frame.targets[cam] = [Target() for _ in range(max_targets)]
+    #     frame.num_targets[cam] = 0
+
+    # return frame
+
 
 # class RingVector:
 #     def __init__(self, capacity):
@@ -437,13 +449,13 @@ class FrameBufBase:
 
     def __init__(
         self,
-        buf: List[Frame],
-        _ring_vec: List[Frame],
+        buf: Deque[Frame],
+        # _ring_vec: Deque[Frame],
         buf_len: int = 4,
         num_cams: int = 1,
     ):
-        self.buf: List[Frame] = buf
-        self._ring_vec: List[Frame] = _ring_vec
+        self.buf: Deque[Frame] = buf
+        # self._ring_vec: Deque[Frame] = _ring_vec
         self.buf_len = buf_len
         self.num_cams = num_cams
         self.size = 0
@@ -469,15 +481,41 @@ class FrameBufBase:
             # Handle the case where the ring is empty (optional)
             print("Ring is empty, cannot pop item.")
 
+    def fb_next(self):
+        """Advances the start pointer of the frame buffer and.
 
-@dataclass
+        resetting it to the beginning after exceeding the buffer length.
+
+        Arguments:
+        ---------
+        self - the framebuf to advance.
+        """
+        # self.head += 1
+
+        # if self.head >= self.buf_len: # reset, but this is not necessary for the deque
+        #     self.buf = self._ring_vec
+
+        # seems that this is just deque.rotate(1)
+        self.buf.rotate(-1)  # [0,1,2,3] -> [1,2,3,0] -> will be [1,2,3,4]
+
+    def fb_prev(self):
+        """Back the start pointer of the frame buffer and.
+
+        setting it to the end after exceeding the buffer start.
+
+        Arguments:
+        ---------
+        self - the framebuf to advance.
+        """
+        # self.buf -= 1
+        # if self.buf < self._ring_vec:
+        #     self.buf = self._ring_vec + self.buf_len - 1
+
+        self.buf.rotate(1)  # [0,1,2,3] -> [3, 0, 1, 2] -> [-1, 0, 1, 2]
+
+
 class FrameBuf(FrameBufBase):
     """Frame buffer class."""
-
-    corres_file_base: Optional[str] = None
-    linkage_file_base: Optional[str] = None
-    prio_file_base: Optional[str] = None
-    target_file_base: Optional[List[str]] = None
 
     def __init__(
         self,
@@ -490,8 +528,12 @@ class FrameBuf(FrameBufBase):
         target_file_base: List[str],
     ):
         super().__init__(
-            buf=[Frame(num_cams, max_targets) for _ in range(buf_len)],
-            _ring_vec=[Frame(num_cams, max_targets) for _ in range(buf_len)],
+            buf=deque(
+                [Frame(num_cams, max_targets) for _ in range(buf_len)], maxlen=buf_len
+            ),
+            # _ring_vec=deque(
+            #     [Frame(num_cams, max_targets) for _ in range(buf_len)], maxlen=buf_len
+            # ),
             buf_len=buf_len,
             num_cams=num_cams,
         )
@@ -504,64 +546,128 @@ class FrameBuf(FrameBufBase):
         self.prio_file_base = prio_file_base
         self.target_file_base = target_file_base
 
-    def write_frame_from_start(self):
+    def write_frame_from_start(self, frame_num):
         """Write a frame to disk and advance the buffer."""
         # Write the frame to disk
+        frame = self.buf[0]  # first frame
+        cor_buf = frame.correspond
+        path_buf = frame.path_info
+        num_parts = frame.num_parts
+
         write_path_frame(
-            self.buf[0],
+            cor_buf,
+            path_buf,
+            num_parts,
             self.corres_file_base,
-            len(self.buf),
             self.linkage_file_base,
             self.prio_file_base,
-            self.target_file_base,
-            self.frame_num,
+            frame_num,
         )
 
         # Advance the buffer
-        self.buf.appendleft(Frame(self.num_cams, self.max_targets))
+        self.buf.appendleft(Frame(self.num_cams, MAX_TARGETS))
 
-    def fb_disk_read_frame_at_end(self, read_links):
+    def read_frame_at_end(self, read_links: bool = False, frame_num: int = 0):
+        """Read a frame from the disk and add it to the end of the buffer."""
+        frame = self.buf[-1]  # last frame
+        cor_buf = frame.correspond
+        path_buf = frame.path_info
+
         if read_links:
             return read_path_frame(
-                self.buf[-1],
+                cor_buf,
+                path_buf,
+                self.corres_file_base,
+                self.linkage_file_base,
+                self.prio_file_base,
+                frame_num,
+            )
+        else:
+            return read_path_frame(
+                cor_buf, path_buf, self.corres_file_base, "", "", frame_num
+            )
+
+    def disk_read_frame_at_end(self, frame_num: int, read_links: bool):
+        """Read a frame to the last position in the ring.
+
+        Arguments:
+        ---------
+        self_base - the framebuf object doing the reading.
+        frame_num - number of the frame to read in the sequence of frames.
+        read_links - whether or not to read data in the linkage/prio files.
+
+        Returns:
+        -------
+        True on success, false on failure.
+        """
+        frame = self.buf[-1]  # always the last one on the right
+        if read_links:
+            return frame.read(
                 self.corres_file_base,
                 self.linkage_file_base,
                 self.prio_file_base,
                 self.target_file_base,
-                self.frame_num,
+                frame_num,
             )
         else:
-            return read_path_frame(
-                self.buf[-1],
+            return frame.read(
                 self.corres_file_base,
                 None,
                 None,
                 self.target_file_base,
-                self.frame_num,
+                frame_num,
             )
 
+    def disk_write_frame_from_start(self, frame_num: int):
+        """Write the frame to the first position in the ring.
 
-def frame_init(num_cams: int, max_targets: int):
-    """Initialize a frame structure."""
-    self = Frame(max_targets=max_targets, num_cams=num_cams)
-    for cam in range(num_cams):
-        self.targets[cam] = [Target() for _ in range(max_targets)]
-        self.num_targets[cam] = 0
+        Arguments:
+        ---------
+        self_base - the framebuf object doing the reading.
+        frame_num - number of the frame to write in the sequence of frames.
 
-    return self
+        Returns:
+        -------
+        True on success, false on failure.
+        """
+        frame = self.buf[0]  # always the first one on the left
+        return frame.write(
+            self.corres_file_base,
+            self.linkage_file_base,
+            self.prio_file_base,
+            self.target_file_base,
+            frame_num,
+        )
 
 
 def read_path_frame(
     cor_buf: List[Corres],
     path_buf: List[Pathinfo],
-    corres_file_base,
-    linkage_file_base,
-    prio_file_base,
-    frame_num,
+    corres_file_base: str,
+    linkage_file_base: str,
+    prio_file_base: str,
+    frame_num: int,
 ) -> int:
-    """Read a frame from the disk.
+    """Read a rt_is frames from the disk.
 
-    cor_buf = array of correspondences, pnr, 4 x cam_pnr
+        /* Reads rt_is files. these files contain both the path info and the
+        * information on correspondence between targets on the different images.
+        * Sets fields not in file to default values.
+        *
+        * Arguments:
+        * corres *cor_buf - a buffer of corres structs to fill in from the file.
+        * P *path_buf - same for path info structures.
+        * char* corres_file_base, *linkage_file_base - base names of the output
+        *   correspondence and likage files respectively, to which a frame number
+        *   is added. Without separator.
+        * char *prio_file_base - for the linkage file with added 'prio' column.
+        * int frame_num - number of frame to add to file_base. A value of 0 or less
+        *   means that no frame number should be added. The '.' separator is added
+        * between the name and the frame number.
+        *
+        * Returns:
+        * The number of points read for this frame. -1 on failure.
+    */
 
     """
     filein, linkagein, prioin = None, None, None
@@ -575,7 +681,7 @@ def read_path_frame(
 
     filein.readline()
 
-    if linkage_file_base is not None:
+    if linkage_file_base != "":
         fname = f"{linkage_file_base}.{frame_num}"
         try:
             linkagein = open(fname, "r", encoding="utf-8")
@@ -585,7 +691,7 @@ def read_path_frame(
 
         linkagein.readline()
 
-    if prio_file_base is not None:
+    if prio_file_base != "":
         fname = f"{prio_file_base}.{frame_num}"
         try:
             prioin = open(fname, "r", encoding="utf-8")
@@ -604,8 +710,8 @@ def read_path_frame(
         if linkagein is not None:
             linkage_line = linkagein.readline()
             linkage_vals = np.fromstring(linkage_line, dtype=float, sep=" ")
-            path_buf[targets].prev = linkage_vals[0].astype(int)
-            path_buf[targets].next = linkage_vals[1].astype(int)
+            path_buf[targets].prev_frame = linkage_vals[0].astype(int)
+            path_buf[targets].next_frame = linkage_vals[1].astype(int)
             # path_buf[targets].x = linkage_vals[2:]
 
         if prioin is not None:
@@ -637,7 +743,7 @@ def read_path_frame(
 
 
 def write_path_frame(
-    cor_buf: FrameBuf,
+    cor_buf: List[Corres],
     path_buf: List[Pathinfo],
     num_parts: int,
     corres_file_base: str,
@@ -692,8 +798,8 @@ def write_path_frame(
             linkage_fname,
             [
                 [
-                    path_buf[pix].prev,
-                    path_buf[pix].next,
+                    path_buf[pix].prev_frame,
+                    path_buf[pix].next_frame,
                     path_buf[pix].x[0],
                     path_buf[pix].x[1],
                     path_buf[pix].x[2],
@@ -707,8 +813,8 @@ def write_path_frame(
                 prio_fname,
                 [
                     [
-                        path_buf[pix].prev,
-                        path_buf[pix].next,
+                        path_buf[pix].prev_frame,
+                        path_buf[pix].next_frame,
                         path_buf[pix].x[0],
                         path_buf[pix].x[1],
                         path_buf[pix].x[2],
@@ -736,8 +842,8 @@ def match_coords(
 
     replaces MatchedCoords class in Cython
 
-    The output is the same as the number on one ``target`` from the block to which this block is kept
-    matched. This block is x-sorted.
+    The output is the same as the number on one ``target`` from the block
+    to which this block is kept matched. This block is x-sorted.
 
     NB: the data is not meant to be directly manipulated at this point. The
     coord_2d arrays are most useful as intermediate objects created and
@@ -748,8 +854,8 @@ def match_coords(
     """
     matched_coords = [Coord2d() for _ in range(len(targs))]
 
-    for tnum in range(len(targs)):
-        targ = targs[tnum]
+    for tnum, targ in enumerate(targs):
+        # targ = targs[tnum]
         if reset_numbers:
             targ.pnr = tnum
 

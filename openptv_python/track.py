@@ -23,7 +23,8 @@ from .constants import (
 from .imgcoord import img_coord
 from .orientation import point_position
 from .parameters import ControlPar, SequencePar, TrackPar, VolumePar
-from .tracking_frame_buf import FrameBuf, Target
+from .tracking_frame_buf import Target
+from .tracking_run import TrackingRun, tr_new
 from .trafo import dist_to_flat, metric_to_pixel, pixel_to_metric
 from .vec_utils import vec_copy, vec_diff_norm, vec_subt
 
@@ -41,120 +42,6 @@ class Foundpix:
     ftnr: int = TR_UNUSED
     freq: int = 0
     whichcam: List[int] = field(default_factory=list)
-
-
-@dataclass
-class TrackingRun:
-    """A TrackingRun object holds the parameters for a tracking run."""
-
-    fb: FrameBuf
-    seq_par: SequencePar
-    tpar: TrackPar
-    vpar: VolumePar
-    cpar: ControlPar
-    cal: List[Calibration]
-    flatten_tol: float
-    ymin: float
-    ymax: float
-    lmax: float
-    npart: int
-    nlinks: int
-
-    # def __init__(self):
-    #     self.fb: FrameBuf  # Replace with appropriate default value
-    #     self.seq_par: SequencePar  # Replace with appropriate default value
-    #     self.tpar: TrackPar  # Replace with appropriate default value
-    #     self.vpar: VolumePar  # Replace with appropriate default value
-    #     self.cpar: ControlPar  # Replace with appropriate default value
-    #     self.cal: List[Calibration]  # Initialize as an empty list
-    #     self.flatten_tol: float # Replace with appropriate default value
-    #     self.ymin: float  # Replace with appropriate default value
-    #     self.ymax: float  # Replace with appropriate default value
-    #     self.lmax: float  # Replace with appropriate default value
-    #     self.npart: int  # Replace with appropriate default value
-    #     self.nlinks: int  # Replace with appropriate default value
-
-
-def tr_new_legacy(
-    seq_par_fname: str,
-    tpar_fname: str,
-    vpar_fname: str,
-    cpar_fnamei: str,
-    cal: List[Calibration],
-) -> TrackingRun:
-    """Create a TrackingRun object from legacy parameters."""
-    tr = TrackingRun()
-
-    return tr
-
-
-def tr_new(
-    seq_par: SequencePar,
-    tpar: TrackPar,
-    vpar: VolumePar,
-    cpar: ControlPar,
-    buf_len: int,
-    max_targets: int,
-    corres_file_base: str,
-    linkage_file_base: str,
-    prio_file_base: str,
-    cal: List[Calibration],
-    flatten_tol: float,
-) -> TrackingRun:
-    tr = TrackingRun()
-    tr.fb = FrameBuf(
-        buf_len, max_targets, corres_file_base, linkage_file_base, prio_file_base
-    )
-    tr.seq_par = seq_par
-    tr.tpar = tpar
-    tr.vpar = vpar
-    tr.cpar = cpar
-    tr.cal = cal
-    tr.flatten_tol = flatten_tol
-    return tr
-
-
-def tr_free(tr: TrackingRun) -> None:
-    tr.fb.free()
-    del tr.seq_par
-    del tr.tpar
-    del tr.vpar
-    del tr.cpar
-    del tr.cal
-    del tr
-
-
-# The buffer space required for this algorithm:
-
-# Note that MAX_TARGETS is taken from the global M, but I want a separate
-# definition because the fb created here should be local, not used outside
-# this file.
-
-# MAX_CANDS is the max number of candidates sought in search volume for next_frame
-# link.
-
-
-def track_forward_start(tr: TrackingRun):
-    """Initialize the tracking frame buffer with the first frames.
-
-    Arguments:
-    ---------
-    tr (TrackingRun): An object holding the per-run tracking parameters and a frame buffer with 4 positions.
-    """
-    # Prime the buffer with first frames
-    for step in range(tr.seq_par.first, tr.seq_par.first + TR_BUFSPACE - 1):
-        tr.fb.read_frame_at_end(step, 0)
-        tr.fb.next_frame()
-
-    tr.fb.prev()
-
-
-# def track_forward_start(tr):
-#     # Prime the buffer with first frames
-#     for step in range(tr.seq_par.first, tr.seq_par.first + TR_BUFSPACE - 1):
-#         fb_read_frame_at_end(tr.fb, step, 0)
-#         fb_next(tr.fb)
-#     fb_prev(tr.fb)
 
 
 def reset_foundpix_array(arr: List[Foundpix], arr_len: int, num_cams: int) -> None:
@@ -644,6 +531,7 @@ def point_to_pixel(point: np.ndarray, cal: Calibration, cpar: ControlPar) -> np.
 
 
 def sorted_candidates_in_volume(center, center_proj, frm, run):
+    """Find candidates for continuing a particle's path in the search volume."""
     points = []
     right, left, down, up = (
         [0] * TR_MAX_CAMS,
@@ -657,7 +545,7 @@ def sorted_candidates_in_volume(center, center_proj, frm, run):
     reset_foundpix_array(points, num_cams * MAX_CANDS, num_cams)
 
     # Search limits in image space
-    searchquader(center, right, left, down, up, run.tpar, run.cpar, run.cal)
+    right, left, down, up = searchquader(center, run.tpar, run.cpar, run.cal)
 
     # search in pix for candidates in the next_frame time step
     for cam in range(num_cams):
@@ -716,7 +604,7 @@ def assess_new_position(pos, targ_pos, cand_inds, frm, run):
     # Loop through cameras to find the nearest target
     for cam in range(run.cpar.num_cams):
         # Convert 3D point to 2D pixel coordinates
-        point_to_pixel(pixel, pos, run.cal[cam], run.cpar)
+        pixel = point_to_pixel(pos, run.cal[cam], run.cpar)
 
         # Search for nearest target in pixel coordinates
         num_cands = candsearch_in_pix_rest(
@@ -741,19 +629,15 @@ def assess_new_position(pos, targ_pos, cand_inds, frm, run):
     # target positions in metric coordinates
     for cam in range(run.cpar.num_cams):
         if targ_pos[cam][0] != COORD_UNUSED and targ_pos[cam][1] != COORD_UNUSED:
-            pixel_to_metric(
-                targ_pos[cam],
-                targ_pos[cam],
+            x, y = pixel_to_metric(
                 targ_pos[cam][0],
                 targ_pos[cam][1],
                 run.cpar,
             )
-            dist_to_flat(
-                targ_pos[cam][0],
-                targ_pos[cam][1],
+            targ_pos[cam][0], targ_pos[cam][1] = dist_to_flat(
+                x,
+                y,
                 run.cal[cam],
-                targ_pos[cam],
-                targ_pos[cam] + 1,
                 run.flatten_tol,
             )
             valid_cams += 1
@@ -780,6 +664,25 @@ def add_particle(frm, pos, cand_inds):
             ref_corres.nr = num_parts
 
     frm.num_parts += 1
+
+
+def track_forward_start(tr: TrackingRun):
+    """Initialize the tracking frame buffer with the first frames.
+
+    Arguments:
+    ---------
+    tr - an object holding the per-run tracking parameters, and
+         a frame buffer with 4 positions.
+    """
+    step = tr.seq_par.first
+
+    # Prime the buffer with first frames
+    while step < (tr.seq_par.first + TR_BUFSPACE - 1):
+        tr.fb.read_frame_at_end(False, step)
+        tr.fb.fb_next()
+        step += 1
+
+    tr.fb.fb_prev()
 
 
 def trackcorr_c_loop(run_info, step):
@@ -839,18 +742,18 @@ def trackcorr_c_loop(run_info, step):
 
         # use information from previous to locate new search position
         # and to calculate values for search area
-        if curr_path_inf.prev >= 0:
-            ref_path_inf = fb.buf[0].path_info[curr_path_inf.prev]
+        if curr_path_inf.prev_frame >= 0:
+            ref_path_inf = fb.buf[0].path_info[curr_path_inf.prev_frame]
             X[0] = vec_copy(ref_path_inf.x)
             search_volume_center_moving(ref_path_inf.x, curr_path_inf.x, X[2])
 
             for j in range(fb.num_cams):
-                point_to_pixel(v1[j], X[2], cal[j], cpar)
+                v1[j] = point_to_pixel(X[2], cal[j], cpar)
         else:
-            vec_copy(X[2], X[1])
+            X[2] = vec_copy(X[1])
             for j in range(fb.num_cams):
                 if curr_corres.p[j] == CORRES_NONE:
-                    point_to_pixel(v1[j], X[2], cal[j], cpar)
+                    v1[j] = point_to_pixel(X[2], cal[j], cpar)
                 else:
                     _ix = curr_corres.p[j]
                     v1[j][0] = curr_targets[j][_ix].x
@@ -869,16 +772,16 @@ def trackcorr_c_loop(run_info, step):
 
             # found 3D-position
             ref_path_inf = fb.buf[2].path_info[w[mm].ftnr]
-            vec_copy(X[3], ref_path_inf.x)
+            X[3] = vec_copy(ref_path_inf.x)
 
-            if curr_path_inf.prev >= 0:
+            if curr_path_inf.prev_frame >= 0:
                 for j in range(3):
                     X[5][j] = 0.5 * (5.0 * X[3][j] - 4.0 * X[1][j] + X[0][j])
             else:
                 search_volume_center_moving(X[1], X[3], X[5])
 
             for j in range(fb.num_cams):
-                point_to_pixel(v1[j], X[5], cal[j], cpar)
+                v1[j] = point_to_pixel(X[5], cal[j], cpar)
 
             # end of search in pix
             wn = sorted_candidates_in_volume(X[5], v1, fb.buf[3], run_info)
@@ -887,12 +790,12 @@ def trackcorr_c_loop(run_info, step):
                 kk = 0
                 while wn[kk].ftnr != TR_UNUSED:
                     ref_path_inf = fb.buf[3].path_info[wn[kk].ftnr]
-                    vec_copy(X[4], ref_path_inf.x)
+                    X[4] = vec_copy(ref_path_inf.x)
 
-                    vec_subt(X[4], X[3], diff_pos)
+                    diff_pos = vec_subt(X[4], X[3])
                     if pos3d_in_bounds(diff_pos, tpar):
                         angle1, acc1 = angle_acc(X[3], X[4], X[5])
-                        if curr_path_inf.prev >= 0:
+                        if curr_path_inf.prev_frame >= 0:
                             angle0, acc0 = angle_acc(X[1], X[2], X[3])
                         else:
                             acc0 = acc1
@@ -966,7 +869,7 @@ def trackcorr_c_loop(run_info, step):
         # ***************************************************************
 
         # try to link if kk is not found/good enough and prev exist
-        if curr_path_inf.inlist == 0 and curr_path_inf.prev >= 0:
+        if curr_path_inf.inlist == 0 and curr_path_inf.prev_frame >= 0:
             diff_pos = vec_subt(X[3], X[1])
             if pos3d_in_bounds(diff_pos, tpar):
                 angle, acc = angle_acc(X[1], X[2], X[3])
@@ -982,12 +885,12 @@ def trackcorr_c_loop(run_info, step):
 
         # begin of inlist still zero
         if tpar.add:
-            if curr_path_inf.inlist == 0 and curr_path_inf.prev >= 0:
+            if curr_path_inf.inlist == 0 and curr_path_inf.prev_frame >= 0:
                 quali = assess_new_position(X[2], v2, philf, fb.buf[2], run_info)
                 if quali >= 2:
                     X[3] = vec_copy(X[2])
                     in_volume = 0
-                    dl = point_position(v2, fb.num_cams, cpar.mm, cal, X[3])
+                    dl, X[3] = point_position(v2, fb.num_cams, cpar.mm, cal)
 
                     # in volume check
                     if (
@@ -1028,7 +931,7 @@ def trackcorr_c_loop(run_info, step):
         curr_path_inf = fb.buf[1].path_info[h]
 
         if curr_path_inf.inlist > 0:
-            sort(curr_path_inf.inlist, curr_path_inf.decis, curr_path_inf.linkdecis)
+            sort(curr_path_inf.decis, curr_path_inf.linkdecis)
             curr_path_inf.finaldecis = curr_path_inf.decis[0]
             curr_path_inf.next_frame = curr_path_inf.linkdecis[0]
 
@@ -1039,19 +942,19 @@ def trackcorr_c_loop(run_info, step):
         if curr_path_inf.inlist > 0:
             ref_path_inf = fb.buf[2].path_info[curr_path_inf.next_frame]
 
-            if ref_path_inf.prev == PREV_NONE:
+            if ref_path_inf.prev_frame == PREV_NONE:
                 # best choice wasn't used yet, so link is created
-                ref_path_inf.prev = h
+                ref_path_inf.prev_frame = h
             else:
-                # best choice was already used by mega[2][mega[1][h].next_frame].prev
+                # best choice was already used by mega[2][mega[1][h].next_frame].prev_frame
                 # check which is the better choice
                 if (
-                    fb.buf[1].path_info[ref_path_inf.prev].finaldecis
+                    fb.buf[1].path_info[ref_path_inf.prev_frame].finaldecis
                     > curr_path_inf.finaldecis
                 ):
                     # remove link with prev
-                    fb.buf[1].path_info[ref_path_inf.prev].next_frame = NEXT_NONE
-                    ref_path_inf.prev = h
+                    fb.buf[1].path_info[ref_path_inf.prev_frame].next_frame = NEXT_NONE
+                    ref_path_inf.prev_frame = h
                 else:
                     curr_path_inf.next_frame = NEXT_NONE
 
@@ -1077,7 +980,6 @@ def trackcorr_c_loop(run_info, step):
 
 
 def trackcorr_c_finish(run_info, step):
-    range = run_info.seq_par.last - run_info.seq_par.first
     npart, nlinks = run_info.npart / range, run_info.nlinks / range
     print(
         f"Average over sequence, particles: {npart:.1f}, links: {nlinks:.1f}, lost: {npart - nlinks:.1f}"
@@ -1103,12 +1005,14 @@ def trackback_c(run_info: TrackingRun):
     cpar = run_info.cpar
     cal = run_info.cal
 
+    step = 0
+
     # Prime the buffer with first frames
     for step in range(seq_par.last, seq_par.last - 4, -1):
-        fb.read_frame_at_end(step, 1)
-        fb.next_frame()
+        fb.read_frame_at_end(True, step)
+        fb.fb_next()
 
-    fb.prev()
+    fb.fb_prev()
 
     # sequence loop
     for step in range(seq_par.last - 1, seq_par.first, -1):
@@ -1116,25 +1020,27 @@ def trackback_c(run_info: TrackingRun):
             curr_path_inf = fb.buf[1].path_info[h]
 
             # We try to find link only if the forward search failed to.
-            if curr_path_inf.next_frame < 0 or curr_path_inf.prev != -1:
+            if curr_path_inf.next_frame < 0 or curr_path_inf.prev_frame != -1:
                 continue
 
             for j in range(6):
-                X[j].init()
+                X[j] = np.zeros(
+                    3,
+                )  # check it out
 
             curr_path_inf.inlist = 0
 
             # 3D-position of current particle
-            X[1].copy(curr_path_inf.x)
+            X[1] = vec_copy(curr_path_inf.x)
 
             # use information from previous to locate new search position
             # and to calculate values for search area
             ref_path_inf = fb.buf[0].path_info[curr_path_inf.next_frame]
-            X[0].copy(ref_path_inf.x)
+            X[0] = vec_copy(ref_path_inf.x)
             search_volume_center_moving(ref_path_inf.x, curr_path_inf.x, X[2])
 
             for j in range(fb.num_cams):
-                point_to_pixel(n[j], X[2], cal[j], cpar)
+                n[j] = point_to_pixel(X[2], cal[j], cpar)
 
             # calculate searchquader and reprojection in image space
             w = sorted_candidates_in_volume(X[2], n, fb.buf[2], run_info)
@@ -1145,7 +1051,7 @@ def trackback_c(run_info: TrackingRun):
                 i = 0
                 while w[i].ftnr != TR_UNUSED:
                     ref_path_inf = fb.buf[2].path_info[w[i].ftnr]
-                    X[3].copy(ref_path_inf.x)
+                    X[3] = vec_copy(ref_path_inf.x)
 
                     diff_pos = vec_subt(X[1], X[3])
                     if pos3d_in_bounds(diff_pos, tpar):
@@ -1163,7 +1069,7 @@ def trackback_c(run_info: TrackingRun):
                             quali = w[i].freq
                             rr = (
                                 dl / run_info.lmax
-                                + acc / tpar.daccve
+                                + acc / tpar.dacc
                                 + angle / tpar.dangle
                             ) / quali
                             curr_path_inf.register_link_candidate(rr, w[i].ftnr)
@@ -1180,7 +1086,7 @@ def trackback_c(run_info: TrackingRun):
                         # vec_copy(X[3], X[2])
                         in_volume = 0
 
-                        point_position(v2, fb.num_cams, cpar.mm, cal, X[3])
+                        _, X[3] = point_position(v2, fb.num_cams, cpar.mm, cal)
 
                         # volume check
                         if (
@@ -1221,89 +1127,82 @@ def trackback_c(run_info: TrackingRun):
             curr_path_inf = fb.buf[1].path_info[h]
 
             if curr_path_inf.inlist > 0:
-                curr_path_inf.linkdecis = sorted(
-                    curr_path_inf.decis[: curr_path_inf.inlist]
-                )
+                sort(np.array(curr_path_inf.decis), np.array(curr_path_inf.linkdecis))
 
         # create links with decision check
         count1 = 0
         num_added = 0
 
-        for h in range(fb["buf"][1]["num_parts"]):
-            curr_path_inf = fb["buf"][1]["path_info"][h]
+        for h in range(fb.buf[1].num_parts):
+            curr_path_inf = fb.buf[1].path_info[h]
 
-            if curr_path_inf["inlist"] > 0:
-                ref_path_inf = fb["buf"][2]["path_info"][curr_path_inf["linkdecis"][0]]
+            if curr_path_inf.inlist > 0:
+                ref_path_inf = fb.buf[2].path_info[curr_path_inf.linkdecis[0]]
 
                 if (
-                    ref_path_inf["prev"] == PREV_NONE
-                    and ref_path_inf["next_frame"] == NEXT_NONE
+                    ref_path_inf.prev_frame == PREV_NONE
+                    and ref_path_inf.next_frame == NEXT_NONE
                 ):
-                    curr_path_inf["finaldecis"] = curr_path_inf["decis"][0]
-                    curr_path_inf["prev"] = curr_path_inf["linkdecis"][0]
-                    fb["buf"][2]["path_info"][curr_path_inf["prev"]]["next_frame"] = h
+                    curr_path_inf.finaldecis = curr_path_inf.decis[0]
+                    curr_path_inf.prev_frame = curr_path_inf.linkdecis[0]
+                    fb.buf[2].path_info[curr_path_inf.prev_frame].next_frame = h
                     num_added += 1
 
                 if (
-                    ref_path_inf["prev"] != PREV_NONE
-                    and ref_path_inf["next_frame"] == NEXT_NONE
+                    ref_path_inf.prev_frame != PREV_NONE
+                    and ref_path_inf.next_frame == NEXT_NONE
                 ):
-                    vec_copy(
-                        X[0],
-                        fb["buf"][0]["path_info"][curr_path_inf["next_frame"]]["x"],
+                    X[0] = vec_copy(
+                        fb.buf[0].path_info[curr_path_inf.next_frame].x,
                     )
-                    vec_copy(X[1], curr_path_inf["x"])
-                    vec_copy(X[3], ref_path_inf["x"])
-                    vec_copy(X[4], fb["buf"][3]["path_info"][ref_path_inf["prev"]]["x"])
+                    X[1] = vec_copy(curr_path_inf.x)
+                    X[3] = vec_copy(ref_path_inf.x)
+                    X[4] = vec_copy(fb.buf[3].path_info[ref_path_inf.prev_frame].x)
 
                     for j in range(3):
                         X[5][j] = 0.5 * (5.0 * X[3][j] - 4.0 * X[1][j] + X[0][j])
 
                     angle, acc = angle_acc(X[3], X[4], X[5])
 
-                    if (acc < tpar["dacc"] and angle < tpar["dangle"]) or (
-                        acc < tpar["dacc"] / 10
+                    if (acc < tpar.dacc and angle < tpar.dangle) or (
+                        acc < tpar.dacc / 10
                     ):
-                        curr_path_inf["finaldecis"] = curr_path_inf["decis"][0]
-                        curr_path_inf["prev"] = curr_path_inf["linkdecis"][0]
-                        fb["buf"][2]["path_info"][curr_path_inf["prev"]][
-                            "next_frame"
-                        ] = h
+                        curr_path_inf.finaldecis = curr_path_inf.decis[0]
+                        curr_path_inf.prev_frame = curr_path_inf.linkdecis[0]
+                        fb.buf[2].path_info[curr_path_inf.prev_frame].next_frame = h
                         num_added += 1
 
-            if curr_path_inf["prev"] != PREV_NONE:
+            if curr_path_inf.prev_frame != PREV_NONE:
                 count1 += 1
 
-        npart += fb["buf"][1]["num_parts"]
+        npart += fb.buf[1].num_parts
         nlinks += count1
 
-        fb.next_frame()
+        fb.fb_next()
         fb.write_frame_from_start(step)
 
-        if step > seq_par["first"] + 2:
-            fb.read_frame_at_end(step - 3, 1)
+        if step > seq_par.first + 2:
+            fb.read_frame_at_end(True, step - 3)
 
         print(
             "step: {}, curr: {}, next_frame: {}, links: {}, lost: {}, add: {}".format(
                 step,
-                fb["buf"][1]["num_parts"],
-                fb["buf"][2]["num_parts"],
+                fb.buf[1].num_parts,
+                fb.buf[2].num_parts,
                 count1,
-                fb["buf"][1]["num_parts"] - count1,
+                fb.buf[1].num_parts - count1,
                 num_added,
             )
         )
 
-    npart /= seq_par["last"] - seq_par["first"] - 1
-    nlinks /= seq_par["last"] - seq_par["first"] - 1
+    npart /= seq_par.last - seq_par.first - 1
+    nlinks /= seq_par.last - seq_par.first - 1
 
     print(
-        "Average over sequence, particles: {:.1f}, links: {:.1f}, lost: {:.1f}".format(
-            npart, nlinks, npart - nlinks
-        )
+        f"Average over sequence, particles: {npart:.1f}, links: {nlinks:.1f}, lost: {npart-nlinks:.1f}"
     )
 
-    fb.next_frame()
+    fb.fb_next()
     fb.write_frame_from_start(step)
 
     return nlinks
@@ -1404,11 +1303,3 @@ class Tracker:
 
     def current_step(self):
         return self.step
-
-    # def __dealloc__(self):
-    # Don't call tr_free, just free the memory that belongs to us.
-    # fb_free(self.run_info.fb)
-    # free(self.run_info.cal)  # allocated by cal_list2arr, leafs belong to
-    # owner of the Tracker.
-    # free(self.run_info)  # not using tr_free() which assumes ownership of
-    # parameter structs.

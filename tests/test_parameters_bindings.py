@@ -78,13 +78,13 @@ class Test_SequenceParams(unittest.TestCase):
         assert compare_sequence_par(sp3, sp4) is False
 
 
-class Test_MultimediaParams(unittest.TestCase):
+class TestMultimediaParams(unittest.TestCase):
     """Test MultimediaPar class."""
 
     def test_mm_np_instantiation(self):
         """Test that MultimediaPar can be instantiated with numpy arrays."""
-        n2_np = numpy.array([11, 22, 33], dtype=float)
-        d_np = numpy.array([55, 66, 77])
+        n2_np = [11.0, 22.0, 33.0]
+        d_np = [55.0, 66.0, 77.0]
 
         # Initialize MultimediaPar object (uses all setters of MultimediaPar)
         m = MultimediaPar(n1=2, n2=n2_np, d=d_np, n3=4)
@@ -97,7 +97,7 @@ class Test_MultimediaParams(unittest.TestCase):
         numpy.testing.assert_array_equal(m.get_n2(), n2_np)
 
         # pass two arrays with different number of elements
-        new_arr = numpy.array([1, 2, 3, 4])
+        new_arr = [1.0, 2, 3, 4]
         with self.assertRaises(ValueError):
             m.set_layers(new_arr, d_np)
         new_arr = numpy.array([1, 2, 3])

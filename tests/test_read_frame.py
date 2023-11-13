@@ -31,7 +31,7 @@ class TestFrame(unittest.TestCase):
         """
         targ_files = [f"tests/testing_folder/frame/cam{c:d}." for c in range(1, 5)]
         frm = Frame(num_cams=4)
-        frm.from_file(
+        frm.read(
             corres_file_base="tests/testing_folder/frame/rt_is",
             linkage_file_base="tests/testing_folder/frame/ptv_is",
             prio_file_base="tests/testing_folder/frame/added",

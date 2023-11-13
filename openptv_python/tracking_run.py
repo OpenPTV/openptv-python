@@ -1,10 +1,10 @@
+"""Tracking run module."""
+import math
 from dataclasses import dataclass
-from typing import List, Optional
-
-import numpy as np
+from typing import List
 
 from openptv_python.calibration import Calibration
-from openptv_python.tracking_frame_buf import FrameBuf, FrameBufBase
+from openptv_python.tracking_frame_buf import FrameBuf
 
 from .multimed import volumedimension
 from .parameters import (
@@ -23,12 +23,12 @@ from .parameters import (
 class TrackingRun:
     """A tracking run."""
 
-    fb: Optional[FrameBufBase] = None
-    seq_par: Optional[SequencePar] = None
-    tpar: Optional[TrackPar] = None
-    vpar: Optional[VolumePar] = None
-    cpar: Optional[ControlPar] = None
-    cal: Optional[List[Calibration]] = None
+    fb: FrameBuf
+    seq_par: SequencePar
+    tpar: TrackPar
+    vpar: VolumePar
+    cpar: ControlPar
+    cal: List[Calibration]
     flatten_tol: float = 0.0
     ymin: float = 0.0
     ymax: float = 0.0
@@ -67,10 +67,10 @@ class TrackingRun:
             cpar.img_base_name,
         )
 
-        self.lmax = np.linalg.norm(
-            (tpar.dvxmin - tpar.dvxmax),
-            (tpar.dvymin - tpar.dvymax),
-            (tpar.dvzmin - tpar.dvzmax),
+        self.lmax = math.sqrt(
+            (tpar.dvxmin - tpar.dvxmax) ** 2
+            + (tpar.dvymin - tpar.dvymax) ** 2
+            + (tpar.dvzmin - tpar.dvzmax) ** 2
         )
 
         volumedimension(
@@ -148,18 +148,3 @@ def tr_new_legacy(
     )
 
     return tr
-
-
-def track_forward_start(tr: TrackingRun):
-    """Not implemented."""
-    pass
-
-
-def trackcorr_c_finish(tr: TrackingRun):
-    """Not implemented."""
-    pass
-
-
-def trackcorr_c_loop(tr: TrackingRun):
-    """Not implemented."""
-    pass

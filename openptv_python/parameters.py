@@ -75,12 +75,16 @@ def compare_mm_np(mm_np1: MultimediaPar, mm_np2: MultimediaPar) -> bool:
 class SequencePar:
     """Sequence parameters."""
 
-    num_cams: int = 1
-    img_base_name: List[str] | None = None
-    first: int | None = None
-    last: int | None = None
+    num_cams: int = 0
+    img_base_name: List[str] = field(default_factory=list)  # empty list
+    first: int = 0
+    last: int = 0
 
-    def set_img_base_name(self, icam, new_name):
+    def __post_init__(self):
+        if len(self.img_base_name) == 0:
+            self.img_base_name = [""] * self.num_cams
+
+    def set_img_base_name(self, icam: int, new_name: str | None = None):
         """Set the image base name for each camera."""
         if icam > self.num_cams:
             raise ValueError("Length of names must be equal to num_cams.")

@@ -16,12 +16,16 @@ from openptv_python.calibration import Calibration, read_calibration
 from openptv_python.parameters import (
     read_control_par,
 )
-from openptv_python.tracking_run import (
-    tr_new_legacy,
+from openptv_python.track import (
     track_forward_start,
     trackcorr_c_finish,
     trackcorr_c_loop,
 )
+from openptv_python.tracking_run import (
+    tr_new_legacy,
+)
+
+EPS = 1e-9
 
 
 def remove_directory(directory_path):
@@ -73,8 +77,9 @@ def read_all_calibration(num_cams: int = 4) -> list[Calibration]:
 
 
 class TestTrackCorrNoAdd(unittest.TestCase):
+    """Test tracking without adding particles."""
+
     def test_trackcorr_no_add(self):
-        EPS = 1e-9
         """Test tracking without adding particles."""
         copy_directory(
             "tests/testing_fodder/track/res_orig/", "tests/testing_fodder/track/res/"

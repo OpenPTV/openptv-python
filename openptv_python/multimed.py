@@ -345,29 +345,26 @@ def volumedimension(
     cpar: ControlPar,
     cal: List[Calibration],
 ) -> Tuple[float, float, float, float, float, float]:
-    xc = [0.0, cpar["imx"]]
-    yc = [0.0, cpar["imy"]]
+    xc = [0.0, cpar.imx]
+    yc = [0.0, cpar.imy]
 
-    z_min = vpar["z_min_lay"][0]
-    z_max = vpar["z_max_lay"][0]
+    z_min = vpar.z_min_lay[0]
+    z_max = vpar.z_max_lay[0]
 
-    if vpar["z_min_lay"][1] < z_min:
-        z_min = vpar["z_min_lay"][1]
-    if vpar["z_max_lay"][1] > z_max:
-        z_max = vpar["z_max_lay"][1]
+    if vpar.z_min_lay[1] < z_min:
+        z_min = vpar.z_min_lay[1]
+    if vpar.z_max_lay[1] > z_max:
+        z_max = vpar.z_max_lay[1]
 
-    z_min = z_min
-    z_max = z_max
-
-    for i_cam in range(cpar["num_cams"]):
+    for i_cam in range(cpar.num_cams):
         for i in range(2):
             for j in range(2):
                 x, y = pixel_to_metric(xc[i], yc[j], cpar)
 
-                x -= cal[i_cam]["int_par"]["xh"]
-                y -= cal[i_cam]["int_par"]["yh"]
+                x -= cal[i_cam].int_par.xh
+                y -= cal[i_cam].int_par.yh
 
-                x, y = correct_brown_affine(x, y, cal[i_cam]["added_par"])
+                x, y = correct_brown_affine(x, y, cal[i_cam].added_par)
 
                 pos, a = ray_tracing(x, y, cal[i_cam], cpar.mm)
 
