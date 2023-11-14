@@ -120,6 +120,18 @@ class Target:
         """Return number of pixels."""
         return (self.n, self.nx, self.ny)
 
+    def __eq__(self, __value) -> bool:
+        return (
+            self.pnr == __value.pnr  # type: ignore
+            and self.x == __value.x  # type: ignore
+            and self.y == __value.y  # type: ignore
+            and self.n == __value.n  # type: ignore
+            and self.nx == __value.nx  # type: ignore
+            and self.ny == __value.ny  # type: ignore
+            and self.sumg == __value.sumg  # type: ignore
+            and self.tnr == __value.tnr  # type: ignore
+        )
+
 
 class TargetArray(list):
     """Target array class."""
@@ -216,6 +228,20 @@ def write_targets(
         print(f"Can't open ascii file: {file_name}")
 
     return success
+
+
+def compare_targets(t1: Target, t2: Target):
+    """Check that target t1 is equal to target t2, i.e., all their fields are equal.
+
+    Arguments:
+    ---------
+    t1, t2 (tuple): the target structures to compare.
+
+    Returns:
+    -------
+    bool: True if all fields are equal, False otherwise.
+    """
+    return t1 == t2
 
 
 @dataclass
@@ -496,7 +522,7 @@ class FrameBufBase:
         #     self.buf = self._ring_vec
 
         # seems that this is just deque.rotate(1)
-        self.buf.rotate(-1)  # [0,1,2,3] -> [1,2,3,0] -> will be [1,2,3,4]
+        self.buf.rotate(1)  # [0,1,2,3] -> [3, 0, 1, 2] -> [-1, 0, 1, 2]
 
     def fb_prev(self):
         """Back the start pointer of the frame buffer and.
@@ -511,7 +537,7 @@ class FrameBufBase:
         # if self.buf < self._ring_vec:
         #     self.buf = self._ring_vec + self.buf_len - 1
 
-        self.buf.rotate(1)  # [0,1,2,3] -> [3, 0, 1, 2] -> [-1, 0, 1, 2]
+        self.buf.rotate(-1)  # [0,1,2,3] -> [1,2,3,0] -> will be [1,2,3,4]
 
 
 class FrameBuf(FrameBufBase):
@@ -538,7 +564,7 @@ class FrameBuf(FrameBufBase):
             num_cams=num_cams,
         )
 
-        self.size = 0
+        self.size = buf_len
         self.head = 0
 
         self.corres_file_base = corres_file_base
@@ -670,15 +696,15 @@ def read_path_frame(
     */
 
     """
-    filein, linkagein, prioin = None, None, None
-
     fname = f"{corres_file_base}.{frame_num}"
+
     try:
         filein = open(fname, "r", encoding="utf-8")
     except IOError:
         print(f"Can't open ascii file: {fname}")
         return -1
 
+    # we do not need number of particles, reading till EOF
     filein.readline()
 
     if linkage_file_base != "":
@@ -690,6 +716,8 @@ def read_path_frame(
             return -1
 
         linkagein.readline()
+    else:
+        linkagein = None
 
     if prio_file_base != "":
         fname = f"{prio_file_base}.{frame_num}"
@@ -700,6 +728,8 @@ def read_path_frame(
             return -1
 
         prioin.readline()
+    else:
+        prioin = None
 
     targets = 0
     while True:

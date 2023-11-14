@@ -368,6 +368,7 @@ def volumedimension(
 
                 pos, a = ray_tracing(x, y, cal[i_cam], cpar.mm)
 
+                # TODO: seems that it should be + pos[2] instead of - pos[2]
                 X = pos[0] + (z_min - pos[2]) * a[0] / a[2]
                 Y = pos[1] + (z_min - pos[2]) * a[1] / a[2]
 
