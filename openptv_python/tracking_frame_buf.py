@@ -322,14 +322,17 @@ class Frame:
         frame_num: int,
     ) -> bool:
         """Read a frame from the disk."""
-        self.num_parts = read_path_frame(
-            self.correspond,
-            self.path_info,
+        cor_buf, path_buf = read_path_frame(
+            # self.correspond, self.path_info = read_path_frame(
             corres_file_base,
             linkage_file_base,
             prio_file_base,
             frame_num,
         )
+
+        self.correspond = cor_buf
+        self.path_info = path_buf
+        self.num_parts = len(self.correspond)
 
         if self.num_parts == -1:
             return False
@@ -593,24 +596,20 @@ class FrameBuf(FrameBufBase):
         # Advance the buffer
         self.buf.appendleft(Frame(self.num_cams, MAX_TARGETS))
 
-    def read_frame_at_end(self, read_links: bool = False, frame_num: int = 0):
+    def read_frame_at_end(self, read_links: bool = False, frame_num: int = 0) -> None:
         """Read a frame from the disk and add it to the end of the buffer."""
         frame = self.buf[-1]  # last frame
-        cor_buf = frame.correspond
-        path_buf = frame.path_info
 
         if read_links:
-            return read_path_frame(
-                cor_buf,
-                path_buf,
+            frame.correspond, frame.path_info = read_path_frame(
                 self.corres_file_base,
                 self.linkage_file_base,
                 self.prio_file_base,
                 frame_num,
             )
         else:
-            return read_path_frame(
-                cor_buf, path_buf, self.corres_file_base, "", "", frame_num
+            frame.correspond, frame.path_info = read_path_frame(
+                self.corres_file_base, "", "", frame_num
             )
 
     def disk_read_frame_at_end(self, frame_num: int, read_links: bool):
@@ -667,13 +666,11 @@ class FrameBuf(FrameBufBase):
 
 
 def read_path_frame(
-    cor_buf: List[Corres],
-    path_buf: List[Pathinfo],
     corres_file_base: str,
     linkage_file_base: str,
     prio_file_base: str,
     frame_num: int,
-) -> int:
+) -> Tuple[List[Corres], List[Pathinfo]]:
     """Read a rt_is frames from the disk.
 
         /* Reads rt_is files. these files contain both the path info and the
@@ -702,10 +699,12 @@ def read_path_frame(
         filein = open(fname, "r", encoding="utf-8")
     except IOError:
         print(f"Can't open ascii file: {fname}")
-        return -1
+        return [], []
 
     # we do not need number of particles, reading till EOF
-    filein.readline()
+    n_particles = int(filein.readline())
+    cor_buf = [Corres() for _ in range(n_particles)]
+    path_buf = [Pathinfo() for _ in range(n_particles)]
 
     if linkage_file_base != "":
         fname = f"{linkage_file_base}.{frame_num}"
@@ -713,7 +712,7 @@ def read_path_frame(
             linkagein = open(fname, "r", encoding="utf-8")
         except IOError:
             print(f"Can't open linkage file: {fname}")
-            return -1
+            return [], []
 
         linkagein.readline()
     else:
@@ -725,7 +724,7 @@ def read_path_frame(
             prioin = open(fname, "r", encoding="utf-8")
         except IOError:
             print(f"Can't open prio file: {fname}")
-            return -1
+            return [], []
 
         prioin.readline()
     else:
@@ -761,6 +760,8 @@ def read_path_frame(
         cor_buf[targets].p = vals[-4:].astype(int).tolist()
         path_buf[targets].x = vals[1:-4]
 
+        # print(cor_buf[targets].nr, cor_buf[targets].p, path_buf[targets].x)
+
         targets += 1
 
     filein.close()
@@ -769,7 +770,7 @@ def read_path_frame(
     if prioin is not None:
         prioin.close()
 
-    return targets
+    return cor_buf, path_buf
 
 
 def write_path_frame(

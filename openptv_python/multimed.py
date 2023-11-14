@@ -31,7 +31,7 @@ def multimed_nlay(
 def multimed_r_nlay(cal: Calibration, mm: MultimediaPar, pos: np.ndarray) -> float:
     """Calculate the radial shift for the multimedia model."""
     n_iter = 40
-    beta2 = [0] * mm.nlay
+    beta2 = [0.0] * mm.nlay
     rdiff = 0.1
 
     # 1-medium case
@@ -200,7 +200,7 @@ def move_along_ray(glob_z: float, vertex: np.ndarray, direct: np.ndarray) -> np.
 
 def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibration:
     """Initialize the multilayer lookup table."""
-    rw = 2.0
+    rw = 2
     Rmax = 0.0
 
     # image corners
@@ -289,7 +289,7 @@ def get_mmf_from_mmlut(cal: Calibration, pos: np.ndarray) -> float:
     """Get the refractive index of the medium at a given position."""
     rw = cal.mmlut.rw
     origin = cal.mmlut.origin
-    data = cal.mmlut.data.flat
+    data = cal.mmlut.data.flat  # type: ignore
     nz = cal.mmlut.nz
     nr = cal.mmlut.nr
 
@@ -369,8 +369,8 @@ def volumedimension(
                 pos, a = ray_tracing(x, y, cal[i_cam], cpar.mm)
 
                 # TODO: seems that it should be + pos[2] instead of - pos[2]
-                X = pos[0] + (z_min - pos[2]) * a[0] / a[2]
-                Y = pos[1] + (z_min - pos[2]) * a[1] / a[2]
+                X = pos[0] + (z_min + pos[2]) * a[0] / a[2]
+                Y = pos[1] + (z_min + pos[2]) * a[1] / a[2]
 
                 if X > xmax:
                     xmax = X

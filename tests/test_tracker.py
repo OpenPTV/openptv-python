@@ -31,6 +31,8 @@ framebuf_naming = {
 
 
 class TestTracker(unittest.TestCase):
+    """Test the Tracker class."""
+
     def setUp(self):
         with open("tests/testing_folder/track/conf.yaml", "r", encoding="utf-8") as f:
             yaml_conf = yaml.load(f, Loader=yaml.FullLoader)
@@ -67,7 +69,9 @@ class TestTracker(unittest.TestCase):
             # print(f"step is {self.tracker.current_step()}\n")
             # print(self.tracker.current_step() > last_step)
             self.assertTrue(self.tracker.current_step() > last_step)
-            with open(f"testing_folder/track/res/linkage.{last_step:d}") as f:
+            with open(
+                f"testing_folder/track/res/linkage.{last_step:d}", "r", encoding="utf8"
+            ) as f:
                 lines = f.readlines()
                 # print(last_step,lines[0])
                 if last_step == 10003:

@@ -1,5 +1,7 @@
 import unittest
 
+import numpy as np
+
 from openptv_python.calibration import read_calibration
 from openptv_python.multimed import init_mmlut, multimed_nlay, multimed_r_nlay
 from openptv_python.parameters import read_control_par, read_volume_par
@@ -9,7 +11,7 @@ class TestMultimedRnlay(unittest.TestCase):
     def setUp(self):
         ori_file = "tests/testing_fodder/cal/cam1.tif.ori"
         add_file = "tests/testing_fodder/cal/cam1.tif.addpar"
-        self.cal = read_calibration(ori_file, add_file, None)
+        self.cal = read_calibration(ori_file, add_file)
         self.assertIsNotNone(self.cal, "ORI or ADDPAR file reading failed")
 
         vol_file = "tests/testing_fodder/parameters/criteria.par"
@@ -24,8 +26,9 @@ class TestMultimedRnlay(unittest.TestCase):
 
     def test_multimed_r_nlay(self):
         """Test the non-recursive version of multimed_r_nlay."""
-        pos = [self.cal.ext_par.x0, self.cal.ext_par.y0, 0.0]
-        self.assertAlmostEqual(multimed_r_nlay(self.cal, self.cpar.mm, pos), 1.0)
+        pos = np.array([self.cal.ext_par.x0, self.cal.ext_par.y0, 0.0])
+        tmp = multimed_r_nlay(self.cal, self.cpar.mm, pos)
+        self.assertAlmostEqual(tmp, 1.0)
 
         self.cal = init_mmlut(self.vpar, self.cpar, self.cal)
 
@@ -33,7 +36,7 @@ class TestMultimedRnlay(unittest.TestCase):
         # print(self.cal.mmlut.nr, self.cal.mmlut.nz, self.cal.mmlut.rw)
 
         # Set up input position and expected output values
-        pos = [1.23, 1.23, 1.23]
+        pos = np.array([1.23, 1.23, 1.23])
 
         correct_Xq = 0.74811917
         correct_Yq = 0.75977975
@@ -55,7 +58,7 @@ class TestMultimedRnlay(unittest.TestCase):
     def test_multimed_r_nlay_2(self):
         """Test the non-recursive version of multimed_r_nlay."""
         # Set up input position and expected output values
-        pos = [1.23, 1.23, 1.23]
+        pos = np.array([1.23, 1.23, 1.23])
 
         radial_shift = multimed_r_nlay(self.cal, self.cpar.mm, pos)
         # print(f"radial_shift = {radial_shift}")

@@ -23,7 +23,7 @@ from .constants import (
 from .imgcoord import img_coord
 from .orientation import point_position
 from .parameters import ControlPar, SequencePar, TrackPar, VolumePar
-from .tracking_frame_buf import Target
+from .tracking_frame_buf import Frame, Target
 from .tracking_run import TrackingRun, tr_new
 from .trafo import dist_to_flat, metric_to_pixel, pixel_to_metric
 from .vec_utils import vec_copy, vec_diff_norm, vec_subt
@@ -572,7 +572,13 @@ def sorted_candidates_in_volume(center, center_proj, frm, run):
         return None
 
 
-def assess_new_position(pos, targ_pos, cand_inds, frm, run):
+def assess_new_position(
+    pos: np.ndarray,
+    targ_pos: List[np.ndarray],
+    cand_inds: np.ndarray,
+    frm: Frame,
+    run: TrackingRun,
+) -> int:
     """Determine the nearest target on each camera around a search position.
 
     and prepares the data structures accordingly with the determined target
@@ -645,7 +651,8 @@ def assess_new_position(pos, targ_pos, cand_inds, frm, run):
     return valid_cams
 
 
-def add_particle(frm, pos, cand_inds):
+def add_particle(frm: Frame, pos: np.ndarray, cand_inds: np.ndarray) -> None:
+    """Add a new particle to the frame buffer."""
     num_parts = frm.num_parts
     ref_path_inf = frm.path_info[num_parts]
     ref_path_inf.x = vec_copy(pos)
@@ -678,7 +685,7 @@ def track_forward_start(tr: TrackingRun):
 
     # Prime the buffer with first frames
     while step < (tr.seq_par.first + TR_BUFSPACE - 1):
-        tr.fb.read_frame_at_end(False, step)
+        tr.fb.read_frame_at_end(read_links=False, frame_num=step)
         tr.fb.fb_next()
         step += 1
 
@@ -688,7 +695,8 @@ def track_forward_start(tr: TrackingRun):
 def trackcorr_c_loop(run_info, step):
     """Sequence loop."""
     j, h, mm, kk, in_volume = 0, 0, 0, 0, 0
-    philf = [[0 for _ in range(MAX_CANDS)] for _ in range(4)]
+    # philf = [[0 for _ in range(MAX_CANDS)] for _ in range(4)]
+    philf = np.zeros((4, MAX_CANDS))
     count1, count2, count3, num_added = 0, 0, 0, 0
     quali = 0
     diff_pos, X = (
@@ -697,8 +705,15 @@ def trackcorr_c_loop(run_info, step):
     )  # 7 reference points used in the algorithm, TODO: check if can reuse some
     angle, acc, angle0, acc0, dl = 0.0, 0.0, 0.0, 0.0, 0.0
     angle1, acc1 = 0.0, 0.0
-    v1, v2 = [np.empty((2,))] * 4, [
-        np.empty((2,))
+    v1 = [
+        np.zeros(
+            2,
+        )
+    ] * 4
+    v2 = [
+        np.zeros(
+            2,
+        )
     ] * 4  # volume center projection on cameras
     rr = 0.0
 
@@ -1233,7 +1248,7 @@ class Tracker:
         tpar: TrackPar,
         spar: SequencePar,
         cals: List[Calibration],
-        naming: dict = default_naming,
+        naming: dict,
         flatten_tol: float = 0.0001,
     ):
         """

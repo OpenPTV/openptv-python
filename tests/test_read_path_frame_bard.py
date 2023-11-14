@@ -49,15 +49,14 @@ class TestReadPathFrame(unittest.TestCase):
         frame_num = 818
 
         # The number of targets read.
-        targets_read = 0
 
         # Test unlinked frame:
 
         # Read the path frame.
-        targets_read = read_path_frame(cor_buf, path_buf, file_base, "", "", frame_num)
+        cor_buf, path_buf = read_path_frame(file_base, "", "", frame_num)
 
         # Check that the correct number of targets were read.
-        self.assertEqual(targets_read, POSI)
+        self.assertEqual(len(cor_buf), POSI)
 
         # Check that the corres structure at index 2 is correct.
         self.assertEqual(cor_buf[2], corres_correct)
@@ -81,12 +80,12 @@ class TestReadPathFrame(unittest.TestCase):
         prio_base = "tests/testing_fodder/added"
 
         # Read the path frame.
-        targets_read = read_path_frame(
-            cor_buf, path_buf, file_base, linkage_base, prio_base, frame_num
+        cor_buf, path_buf = read_path_frame(
+            file_base, linkage_base, prio_base, frame_num
         )
 
         # Check that the correct number of targets were read.
-        self.assertEqual(targets_read, POSI)
+        self.assertEqual(len(cor_buf), POSI)
 
         # Check that the corres structure at index 2 is correct.
         self.assertEqual(cor_buf[2], corres_correct)
@@ -114,11 +113,10 @@ class TestReadPathFrame(unittest.TestCase):
 
         file_base = "tests/testing_fodder/rt_is"
         frame_num = 818
-        targets_read = 0
 
         # Test unlinked frame
-        targets_read = read_path_frame(cor_buf, path_buf, file_base, "", "", frame_num)
-        self.assertEqual(targets_read, POSI)
+        cor_buf, path_buf = read_path_frame(file_base, "", "", frame_num)
+        self.assertEqual(len(cor_buf), POSI)
 
         self.assertTrue(
             compare_corres(cor_buf[2], c_correct),
@@ -140,10 +138,11 @@ class TestReadPathFrame(unittest.TestCase):
         linkage_base = "tests/testing_fodder/ptv_is"
         prio_base = "tests/testing_fodder/added"
 
-        targets_read = read_path_frame(
-            cor_buf, path_buf, file_base, linkage_base, prio_base, frame_num
+        cor_buf, path_buf = read_path_frame(
+            file_base, linkage_base, prio_base, frame_num
         )
-        self.assertEqual(targets_read, POSI)
+
+        self.assertEqual(len(cor_buf), POSI)
         self.assertTrue(
             compare_corres(cor_buf[2], c_correct),
             "Got corres: %d, [%d %d %d %d]"

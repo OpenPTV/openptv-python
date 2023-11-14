@@ -64,7 +64,7 @@ class TestDistFlatRoundTrip(unittest.TestCase):
             cal.added_par.k3,
             cal.added_par.p1,
             cal.added_par.p2,
-            cal.added_par.csx,
+            cal.added_par.scx,
             cal.added_par.she,
         ) = (1e-5, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
 
@@ -221,11 +221,11 @@ class TestDistFlatRoundTrip(unittest.TestCase):
         y_metric_expected = (float(parameters.imy) / 2.0 - y_pixel) * parameters.pix_y
 
         # call the function to get actual output metric coordinates
-        metric = arr_pixel_to_metric([x_pixel, y_pixel], parameters)
+        metric = arr_pixel_to_metric(np.array([x_pixel, y_pixel]), parameters)
 
         # check if the actual output matches the expected output
-        self.assertAlmostEqual(metric[:, 0], x_metric_expected)
-        self.assertAlmostEqual(metric[:, 1], y_metric_expected)
+        assert metric[:, 0] == x_metric_expected
+        assert metric[:, 1] == y_metric_expected
 
 
 class Test_transforms(unittest.TestCase):
@@ -244,7 +244,7 @@ class Test_transforms(unittest.TestCase):
 
         self.calibration = Calibration()
         self.calibration = read_calibration(
-            self.input_ori_file_name, self.input_add_file_name, "addpar.dat"
+            self.input_ori_file_name, self.input_add_file_name
         )
 
     def test_transforms_regress(self):

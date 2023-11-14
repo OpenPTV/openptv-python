@@ -101,6 +101,8 @@ class Glass:
 
 @dataclass
 class ap_52:
+    """Additional parameters for distortion correction."""
+
     k1: float = 0.0
     k2: float = 0.0
     k3: float = 0.0
@@ -124,6 +126,8 @@ class ap_52:
 
 @dataclass
 class mm_lut:
+    """Multimedia lookup table data structure."""
+
     origin: np.ndarray = np.r_[0.0, 0.0, 0.0]
     nr: int = 0
     nz: int = 0
@@ -151,9 +155,7 @@ class Calibration:
         )
     )
 
-    def from_file(
-        self, ori_file: str, add_file: str, add_fallback: Optional[str] = None
-    ) -> None:
+    def from_file(self, ori_file: str, add_file: str) -> None:
         """
         Read exterior and interior orientation, and if available, parameters for distortion corrections.
 
@@ -411,7 +413,7 @@ def write_ori(
     Ex: Exterior,
     In: Interior,
     G: Glass,
-    added_par: Optional[ap_52],
+    added_par: ap_52,
     filename: str,
     add_file: Optional[str],
 ) -> bool:
@@ -439,7 +441,7 @@ def write_ori(
     return success
 
 
-def read_ori(ori_file: str, add_file: str, add_fallback: str) -> Calibration:
+def read_ori(ori_file: str, add_file: str) -> Calibration:
     """
     Read exterior and interior orientation, and if available, parameters for distortion corrections.
 
@@ -454,7 +456,7 @@ def read_ori(ori_file: str, add_file: str, add_fallback: str) -> Calibration:
     - Ex, In, G, addp: Calibration object parts without multimedia lookup table.
     """
     ret = Calibration()
-    ret.from_file(ori_file, add_file, add_fallback)
+    ret.from_file(ori_file, add_file)
 
     return ret
 
@@ -518,12 +520,10 @@ def compare_addpar(a1, a2):
     )
 
 
-def read_calibration(
-    ori_file: str, addpar_file: str, fallback_file: Optional[str] = None
-) -> Calibration:
+def read_calibration(ori_file: str, addpar_file: str) -> Calibration:
     """Read the orientation file including the added parameters."""
     ret = Calibration()
-    ret.from_file(ori_file, addpar_file, fallback_file)
+    ret.from_file(ori_file, addpar_file)
     # read_ori(ori_file, addpar_file, fallback_file)
 
     return ret
