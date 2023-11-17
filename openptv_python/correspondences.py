@@ -80,7 +80,7 @@ def safely_allocate_adjacency_lists(
     for c1 in range(num_cams - 1):
         for c2 in range(c1 + 1, num_cams):
             if error == 0:
-                lists[c1][c2] = [Correspond() for _ in range(target_counts[c1])]
+                lists[c1][c2] = [Correspond() for _ in range(target_counts[c1])]  # type: ignore
                 if lists[c1][c2] is None:
                     error = 1
                     lists[c1][c2] = None

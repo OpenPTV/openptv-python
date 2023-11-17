@@ -2,27 +2,28 @@ from dataclasses import dataclass, field
 from typing import List
 
 import numpy as np
+from scipy.ndimage import center_of_mass, gaussian_filter, label, maximum_filter
 
-from .constants import CORRES_NONE, NMAX
+from .constants import CORRES_NONE
 from .parameters import ControlPar, TargetPar
-from .tracking_frame_buf import Target, TargetArray
+from .tracking_frame_buf import Target
 
 
 @dataclass
 class Peak:
     """Peak dataclass."""
 
-    pos: int | None = None
-    status: int | None = None
-    xmin: int | None = None
-    xmax: int | None = None
-    ymin: int | None = None
-    ymax: int | None = None
-    n: int | None = None
-    sumg: int | None = None
-    x: float | None = None
-    y: float | None = None
-    unr: int | None = None
+    pos: int = 0
+    status: int = 0
+    xmin: int = 0
+    xmax: int = 0
+    ymin: int = 0
+    ymax: int = 0
+    n: int = 0
+    sumg: int = 0
+    x: float = 0.0
+    y: float = 0.0
+    unr: int = 0
     touch: list[int] = field(default_factory=list, repr=False)
     n_touch: int = 0
 
@@ -36,7 +37,7 @@ def targ_rec(
     ymax: int,
     cpar: ControlPar,
     num_cam,
-) -> TargetArray:
+) -> List[Target]:
     """Target recognition function."""
     n = 0
     n_wait = 0
@@ -141,6 +142,7 @@ def targ_rec(
                                 and (gvref + disco >= img[yn, xn - 1])
                                 and (gvref + disco >= img[yn, xn + 1])
                             ):
+                                print(f"gv = {gv} sumg = {sumg}")
                                 sumg += gv
                                 img0[yn, xn] = 0
                                 if xn < xa:
@@ -188,11 +190,7 @@ def targ_rec(
                         and ny <= targ_par.nymax
                         and sumg > targ_par.sumg_min
                     ):
-                        pix.append(Target())
-                        pix[n_targets].n = numpix
-                        pix[n_targets].nx = nx
-                        pix[n_targets].ny = ny
-                        pix[n_targets].sumg = sumg
+                        pix.append(Target(n=numpix, nx=nx, ny=ny, sumg=sumg))
                         sumg -= numpix * thres
                         # finish the grey-value weighting:
                         x /= sumg
@@ -222,17 +220,15 @@ def peak_fit(
     ymax: int,
     cpar: ControlPar,
     num_cam: int,
-) -> TargetArray:
+) -> List[Target]:
     """Fit the peaks in the image to a gaussian."""
     imx, imy = cpar.imx, cpar.imy
     n_peaks = 0
     n_wait = 0
     x8, y8 = [0, 1, 0, -1], [1, 0, -1, 0]
     p2 = 0
-    thres = targ_par.gvthres[num_cam]
+    thres = targ_par.gvthresh[num_cam]
     disco = targ_par.discont
-    pnr, sumg, xn, yn = 0, 0, 0, 0
-    n_target = 0
     intx1, inty1 = 0, 0
     unify = 0
     unified = 0
@@ -241,12 +237,10 @@ def peak_fit(
     gv1, gv2 = 0, 0
     x1, x2, y1, y2, s12 = 0.0, 0.0, 0.0, 0.0, 0.0
     label_img = [0] * (imx * imy)
-    # nmax = 1024
-    nmax = NMAX
-    peaks = [0] * (4 * nmax)
-    ptr_peak = Peak()
+    peaks = []
     waitlist = [[]]
     pix = []
+    n_target = 0
 
     for i in range(ymin, ymax - 1):
         for j in range(xmin, xmax):
@@ -275,21 +269,7 @@ def peak_fit(
                 # label peak in label_img, initialize peak
                 n_peaks += 1
                 label_img[n] = n_peaks
-                ptr_peak.pos = n
-                ptr_peak.status = 1
-                ptr_peak.xmin = j
-                ptr_peak.xmax = j
-                ptr_peak.ymin = i
-                ptr_peak.ymax = i
-                ptr_peak.unr = 0
-                ptr_peak.n = 0
-                ptr_peak.sumg = 0
-                ptr_peak.x = 0
-                ptr_peak.y = 0
-                ptr_peak.n_touch = 0
-                for k in range(4):
-                    ptr_peak.touch[k] = 0
-                ptr_peak += 1
+                peaks.append(Peak(pos=n, status=1, xmin=j, xmax=i, ymin=i, ymax=i))
 
                 waitlist[0][0] = j
                 waitlist[0][1] = i
@@ -498,10 +478,10 @@ def peak_fit(
             pix[n_target].pnr = n_target
             n_target += 1
 
-    t = TargetArray()
-    t.num_targs = n_target
-    t.targs = pix
-    return t
+    # t = TargetArray(num_targets=n_target)
+    # t.num_targs = n_target
+    # t.append(pix)
+    return pix
 
 
 def check_touch(tpeak, p1, p2):
@@ -544,12 +524,10 @@ def peak_fit_new(
     -------
         List[Peak]: A list of Peak objects representing the detected peaks.
     """
-    from scipy.ndimage import center_of_mass, gaussian_filter, label, maximum_filter
-
     smoothed = gaussian_filter(image, sigma)
-    mask = smoothed > threshold * np.max(smoothed)
+    mask = smoothed > threshold * np.max(smoothed)  # type: ignore
     maxima = maximum_filter(smoothed, footprint=np.ones((3, 3))) == smoothed
-    labeled, num_objects = label(maxima)
+    labeled, num_objects = label(maxima)  # type: ignore
     peaks = []
     for i in range(num_objects):
         indices = np.argwhere(labeled == i + 1)
@@ -560,24 +538,6 @@ def peak_fit_new(
     return peaks
 
 
-def test_peak_fit_new():
-    import matplotlib.pyplot as plt
-
-    # Generate test image
-    x, y = np.meshgrid(np.linspace(-5, 5, 100), np.linspace(-5, 5, 100))
-    z = np.sin(np.sqrt(x**2 + y**2))
-
-    # Find peaks
-    peaks = peak_fit(z)
-
-    # Plot image and detected peaks
-    fig, ax = plt.subplots()
-    ax.imshow(z, cmap="viridis")
-    for peak in peaks:
-        ax.scatter(peak.y, peak.x, marker="x", c="r", s=100)
-    plt.show()
-
-
 def target_recognition(
     img: np.ndarray,
     tpar: TargetPar,
@@ -585,7 +545,7 @@ def target_recognition(
     cparam: ControlPar,
     subrange_x=None,
     subrange_y=None,
-) -> TargetArray:
+) -> List[Target]:
     """
     Detect targets (contiguous bright blobs) in an image.
 

@@ -4,6 +4,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Tuple
 
+from openptv_python.constants import TR_MAX_CAMS
+
 
 @dataclass
 class MultimediaPar:
@@ -546,16 +548,16 @@ def read_target_par(filename: str) -> TargetPar | None:
     ret = TargetPar()
     try:
         with open(filename, "r", encoding="utf-8") as file:
-            for i in range(4):  # todo - make it no. cameras
+            for _ in range(TR_MAX_CAMS):  # todo - make it no. cameras
                 ret.gvthresh.append(int(file.readline()))
 
             ret.discont = int(file.readline())
-            ret.nnmin = float(file.readline())
-            ret.nnmax = float(file.readline())
-            ret.nxmin = float(file.readline())
-            ret.nxmax = float(file.readline())
-            ret.nymin = float(file.readline())
-            ret.nymax = float(file.readline())
+            ret.nnmin = int(file.readline())
+            ret.nnmax = int(file.readline())
+            ret.nxmin = int(file.readline())
+            ret.nxmax = int(file.readline())
+            ret.nymin = int(file.readline())
+            ret.nymax = int(file.readline())
             ret.sumg_min = int(file.readline())
             ret.cr_sz = int(file.readline())
         return ret

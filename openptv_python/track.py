@@ -90,8 +90,18 @@ def copy_foundpix_array(
 
 
 def register_closest_neighbs(
-    targets, num_targets, cam, cent_x, cent_y, dl, dr, du, dd, reg, cpar
-):
+    targets: List[Target],
+    num_targets: int,
+    cam: int,
+    cent_x: float,
+    cent_y: float,
+    dl: float,
+    dr: float,
+    du: float,
+    dd: float,
+    reg: List[Foundpix],
+    cpar: ControlPar,
+) -> List[int]:
     """Register_closest_neighbs() finds candidates for continuing a particle's.
 
     path in the search volume, and registers their data in a foundpix array
@@ -111,20 +121,22 @@ def register_closest_neighbs(
     reg -- an array of foundpix objects, one for each possible neighbour. Output array.
     cpar -- control parameter object
     """
-    all_cands = [-999] * MAX_CANDS  # Initialize all candidate indexes to -999
+    # all_cands = [-999] * MAX_CANDS  # Initialize all candidate indexes to -999
 
-    candsearch_in_pix(
-        targets, num_targets, cent_x, cent_y, dl, dr, du, dd, all_cands, cpar
+    all_cands = candsearch_in_pix(
+        targets, num_targets, cent_x, cent_y, dl, dr, du, dd, cpar
     )
 
     for cand_idx in range(MAX_CANDS):
         # Set default value for unused foundpix objects
-        if all_cands[cand_idx] == -999:
+        if all_cands[cand_idx] == TR_UNUSED:
             reg[cand_idx].ftnr = TR_UNUSED
         else:
             # Register candidate data in the foundpix object
             reg[cand_idx].whichcam[cam] = 1
             reg[cand_idx].ftnr = targets[all_cands[cand_idx]].tnr
+
+    return all_cands
 
 
 def search_volume_center_moving(prev_pos, curr_pos, output):
@@ -238,13 +250,13 @@ def candsearch_in_pix(
     dr: float,
     du: float,
     dd: float,
-    p: List[int],
     cpar: ControlPar,
-) -> int:
+) -> List[int]:
     """Search for a nearest candidate in unmatched target list."""
     counter = 0
     dmin = 1e20
-    p1 = p2 = p3 = p4 = -1
+    p1 = p2 = p3 = p4 = TR_UNUSED
+    p = [-1] * MAX_CANDS
     d1 = d2 = d3 = d4 = dmin
 
     xmin, xmax, ymin, ymax = cent_x - dl, cent_x + dr, cent_y - du, cent_y + dd
@@ -305,11 +317,12 @@ def candsearch_in_pix(
 
         # print("from inside p = ", p)
 
+        # TODO: check why we need counter
         for j in range(4):
             if p[j] != -1:
                 counter += 1
 
-    return counter
+    return p
 
 
 def candsearch_in_pix_rest(
@@ -561,7 +574,7 @@ def sorted_candidates_in_volume(center, center_proj, frm, run):
             right[cam],
             up[cam],
             down[cam],
-            points[cam * MAX_CANDS],
+            points,
             run.cpar,
         )
 

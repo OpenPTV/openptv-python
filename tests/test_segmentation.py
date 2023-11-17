@@ -122,6 +122,24 @@ class TestTargRec(unittest.TestCase):
         self.assertEqual(len(target_array), 1)
         self.assertEqual(target_array[0].count_pixels(), (4, 3, 2))
 
+    # def test_peak_fit_new():
+    #     """ Test the peak_fit function."""
+    #     import matplotlib.pyplot as plt
+
+    #     # Generate test image
+    #     x, y = np.meshgrid(np.linspace(-5, 5, 100), np.linspace(-5, 5, 100))
+    #     z = np.sin(np.sqrt(x**2 + y**2))
+
+    #     # Find peaks
+    #     peaks = peak_fit(z)
+
+    #     # Plot image and detected peaks
+    #     _, ax = plt.subplots()
+    #     ax.imshow(z, cmap="viridis")
+    #     for peak in peaks:
+    #         ax.scatter(peak.y, peak.x, marker="x", c="r", s=100)
+    #     plt.show()
+
 
 if __name__ == "__main__":
     unittest.main()

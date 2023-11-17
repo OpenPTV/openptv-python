@@ -168,7 +168,7 @@ def read_targets(file_base: str, frame_num: int) -> List[Target]:
     # file_base = file_base.split(".")[0]
 
     if frame_num > 0:
-        filename = f"{file_base}{frame_num}_targets"
+        filename = f"{file_base}{frame_num:04d}_targets"
     else:
         filename = f"{file_base}_targets"
 
@@ -816,35 +816,41 @@ def write_path_frame(
     success = False
 
     try:
-        with open(corres_fname, "w", encoding="utf8") as corres_file:
-            corres_file.write(f"{num_parts}\n")
-            with open(linkage_fname, "w", encoding="utf8") as linkage_file:
-                linkage_file.write(f"{num_parts}\n")
+        corres_file = open(corres_fname, "w", encoding="utf8")
+        corres_file.write(f"{num_parts}\n")
+
+        linkage_file = open(linkage_fname, "w", encoding="utf8")
+        linkage_file.write(f"{num_parts}\n")
+
+        if prio_file_base is not None:
+            prio_file = open(prio_fname, "w", encoding="utf8")  # type: ignore
+            prio_file.write(f"{num_parts}\n")
+
+        for pix in range(num_parts):
+            linkage_file.write(
+                f"{path_buf[pix].prev_frame} {path_buf[pix].next_frame} "
+                f"{path_buf[pix].x[0]:.3f} {path_buf[pix].x[1]:.3f} "
+                f"{path_buf[pix].x[2]:.3f}\n"
+            )
+
+            corres_file.write(
+                f"{pix + 1} {path_buf[pix].x[0]:.3f} "
+                f"{path_buf[pix].x[1]:.3f} {path_buf[pix].x[2]:.3f} "
+                f"{cor_buf[pix].p[0]} {cor_buf[pix].p[1]} "
+                f"{cor_buf[pix].p[2]} {cor_buf[pix].p[3]}\n"
+            )
 
             if prio_file_base is not None:
-                with open(prio_fname, "w", encoding="utf8") as prio_file:  # type: ignore
-                    prio_file.write(f"{num_parts}\n")
-
-            for pix in range(num_parts):
-                linkage_file.write(
+                prio_file.write(
                     f"{path_buf[pix].prev_frame} {path_buf[pix].next_frame} "
                     f"{path_buf[pix].x[0]:.3f} {path_buf[pix].x[1]:.3f} "
-                    f"{path_buf[pix].x[2]:.3f}\n"
+                    f"{path_buf[pix].x[2]:.3f} {path_buf[pix].prio}\n"
                 )
 
-                corres_file.write(
-                    f"{pix + 1} {path_buf[pix].x[0]:.3f} "
-                    f"{path_buf[pix].x[1]:.3f} {path_buf[pix].x[2]:.3f} "
-                    f"{cor_buf[pix].p[0]} {cor_buf[pix].p[1]} "
-                    f"{cor_buf[pix].p[2]} {cor_buf[pix].p[3]}\n"
-                )
-
-                if prio_file_base:
-                    prio_file.write(
-                        f"{path_buf[pix].prev_frame} {path_buf[pix].next_frame} "
-                        f"{path_buf[pix].x[0]:.3f} {path_buf[pix].x[1]:.3f} "
-                        f"{path_buf[pix].x[2]:.3f} {path_buf[pix].prio}\n"
-                    )
+        corres_file.close()
+        linkage_file.close()
+        if prio_file_base is not None:
+            prio_file.close()
 
         success = True
 

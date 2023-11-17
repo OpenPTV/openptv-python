@@ -64,7 +64,7 @@ class TrackingRun:
             corres_file_base,
             linkage_file_base,
             prio_file_base,
-            cpar.img_base_name,
+            seq_par.img_base_name,
         )
 
         self.lmax = math.sqrt(

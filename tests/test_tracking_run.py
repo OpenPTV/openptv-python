@@ -8,6 +8,7 @@ Created on Mon Apr 24 10:57:01 2017
 @author: yosef
 """
 
+import os
 import shutil
 import unittest
 from pathlib import Path
@@ -82,17 +83,18 @@ class TestTrackCorrNoAdd(unittest.TestCase):
 
     def test_trackcorr_no_add(self):
         """Test tracking without adding particles."""
-        import os
+        # import os
 
-        current_directory = os.getcwd()
-        directory = "tests/testing_fodder/track"
+        # current_directory = Path.cwd()
+        # print(f"working from {current_directory}")
+        # directory = Path("tests/testing_fodder/track")
 
-        os.chdir(directory)
+        # os.chdir(directory)
 
         print(os.path.abspath(os.curdir))
 
-        copy_directory("res_orig", "res")
-        copy_directory("img_orig", "img")
+        copy_directory("res_orig/", "res/")
+        copy_directory("img_orig/", "img/")
 
         print("----------------------------")
         print("Test tracking multiple files 2 cameras, 1 particle")
@@ -101,7 +103,7 @@ class TestTrackCorrNoAdd(unittest.TestCase):
         calib = read_all_calibration(cpar.num_cams)
 
         run = tr_new(
-            "/parameters/sequence.par",
+            "parameters/sequence.par",
             "parameters/track.par",
             "parameters/criteria.par",
             "parameters/ptv.par",
@@ -121,7 +123,10 @@ class TestTrackCorrNoAdd(unittest.TestCase):
         trackcorr_c_loop(run, run.seq_par.first)
 
         for step in range(run.seq_par.first + 1, run.seq_par.last):
+            print(f"step = {step}")
             trackcorr_c_loop(run, step)
+            print(f"run.npart = {run.npart}")
+
         trackcorr_c_finish(run, run.seq_par.last)
 
         remove_directory("res/")
@@ -134,8 +139,15 @@ class TestTrackCorrNoAdd(unittest.TestCase):
         self.assertAlmostEqual(npart, 0.8, delta=EPS)
         self.assertAlmostEqual(nlinks, 0.8, delta=EPS)
 
-        os.chdir(current_directory)
+        # os.chdir(current_directory)
 
 
 if __name__ == "__main__":
+    current_directory = Path.cwd()
+    print(f"working from {current_directory}")
+    directory = Path("tests/testing_fodder/track")
+
+    os.chdir(directory)
     unittest.main()
+
+    os.chdir(current_directory)

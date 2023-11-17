@@ -129,15 +129,18 @@ class TestPos3dInBounds(unittest.TestCase):
 
         result = pos3d_in_bounds(inside, bounds)
 
-        self.assertEqual(result, 1, "Expected True but found %s" % result)
+        self.assertEqual(result, 1, f"Expected True but found {result}")
 
         result = pos3d_in_bounds(outside, bounds)
 
-        self.assertEqual(result, 0, "Expected False but found %s" % result)
+        self.assertEqual(result, 0, f"Expected False but found {result}")
 
 
 class TestAngleAcc(unittest.TestCase):
+    """Test the angle_acc function."""
+
     def test_angle_acc(self):
+        """Test the angle_acc function."""
         start = np.array([0.0, 0.0, 0.0])
         pred = np.array([1.0, 1.0, 1.0])
         cand = np.array([1.1, 1.0, 1.0])
@@ -215,10 +218,12 @@ class TestCandSearchInPix(unittest.TestCase):
         test_cpar.mm.n3 = 1.33
         test_cpar.mm.d[0] = 5
 
-        counter = candsearch_in_pix(
-            test_targets, num_targets, cent_x, cent_y, dl, dr, du, dd, p, test_cpar
+        p = candsearch_in_pix(
+            test_targets, num_targets, cent_x, cent_y, dl, dr, du, dd, test_cpar
         )
-        # print(f"p = {p}, counter = {counter}")
+        counter = len(p) - p.count(-1)
+
+        print(f"p = {p}, counter = {counter}")
 
         self.assertEqual(counter, 2)
 
@@ -227,10 +232,12 @@ class TestCandSearchInPix(unittest.TestCase):
         dl = dr = du = dd = 10.2
         p = [-1] * num_cams  # Initialize p with zeros
 
-        counter = candsearch_in_pix(
-            test_targets, num_targets, cent_x, cent_y, dl, dr, du, dd, p, test_cpar
+        p = candsearch_in_pix(
+            test_targets, num_targets, cent_x, cent_y, dl, dr, du, dd, test_cpar
         )
-        # print(f"p = {p}, counter = {counter}")
+        counter = len(p) - p.count(-1)
+        print(f"p = {p}, counter = {counter}")
+
         self.assertEqual(counter, 4)
 
         test_targets = [
