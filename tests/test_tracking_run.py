@@ -22,7 +22,7 @@ from openptv_python.track import (
     trackcorr_c_loop,
 )
 from openptv_python.tracking_run import (
-    tr_new_legacy,
+    tr_new,
 )
 
 EPS = 1e-9
@@ -64,8 +64,8 @@ def copy_directory(source_path, destination_path):
 
 def read_all_calibration(num_cams: int = 4) -> list[Calibration]:
     """Read all calibration files."""
-    ori_tmpl = "tests/testing_fodder/track/cal/cam%d.tif.ori"
-    added_tmpl = "tests/testing_fodder/track/cal/cam%d.tif.addpar"
+    ori_tmpl = "cal/cam%d.tif.ori"
+    added_tmpl = "cal/cam%d.tif.addpar"
 
     calib = []
 
@@ -82,25 +82,36 @@ class TestTrackCorrNoAdd(unittest.TestCase):
 
     def test_trackcorr_no_add(self):
         """Test tracking without adding particles."""
-        copy_directory(
-            "tests/testing_fodder/track/res_orig/", "tests/testing_fodder/track/res/"
-        )
-        copy_directory(
-            "tests/testing_fodder/track/img_orig/", "tests/testing_fodder/track/img/"
-        )
+        import os
+
+        current_directory = os.getcwd()
+        directory = "tests/testing_fodder/track"
+
+        os.chdir(directory)
+
+        print(os.path.abspath(os.curdir))
+
+        copy_directory("res_orig", "res")
+        copy_directory("img_orig", "img")
 
         print("----------------------------")
         print("Test tracking multiple files 2 cameras, 1 particle")
-        cpar = read_control_par("tests/testing_fodder/track/parameters/ptv.par")
+        cpar = read_control_par("parameters/ptv.par")
 
         calib = read_all_calibration(cpar.num_cams)
 
-        run = tr_new_legacy(
-            "tests/testing_fodder/track/parameters/sequence.par",
-            "tests/testing_fodder/track/parameters/track.par",
-            "tests/testing_fodder/track/parameters/criteria.par",
-            "tests/testing_fodder/track/parameters/ptv.par",
+        run = tr_new(
+            "/parameters/sequence.par",
+            "parameters/track.par",
+            "parameters/criteria.par",
+            "parameters/ptv.par",
+            4,
+            20000,
+            "res/rt_is",
+            "res/ptv_is",
+            "res/added",
             calib,
+            10000.0,
         )
         run.tpar.add = 0
 
@@ -113,8 +124,8 @@ class TestTrackCorrNoAdd(unittest.TestCase):
             trackcorr_c_loop(run, step)
         trackcorr_c_finish(run, run.seq_par.last)
 
-        remove_directory("tests/testing_fodder/track/res/")
-        remove_directory("tests/testing_fodder/track/img/")
+        remove_directory("res/")
+        remove_directory("img/")
 
         range_val = run.seq_par.last - run.seq_par.first
         npart = run.npart / range_val
@@ -122,6 +133,8 @@ class TestTrackCorrNoAdd(unittest.TestCase):
 
         self.assertAlmostEqual(npart, 0.8, delta=EPS)
         self.assertAlmostEqual(nlinks, 0.8, delta=EPS)
+
+        os.chdir(current_directory)
 
 
 if __name__ == "__main__":

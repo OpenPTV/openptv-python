@@ -30,10 +30,10 @@ class Peak:
 def targ_rec(
     img: np.ndarray,
     targ_par: TargetPar,
-    xmin: float,
-    xmax: float,
-    ymin: float,
-    ymax: float,
+    xmin: int,
+    xmax: int,
+    ymin: int,
+    ymax: int,
     cpar: ControlPar,
     num_cam,
 ) -> TargetArray:

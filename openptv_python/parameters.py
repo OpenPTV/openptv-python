@@ -84,7 +84,7 @@ class SequencePar:
         if len(self.img_base_name) == 0:
             self.img_base_name = [""] * self.num_cams
 
-    def set_img_base_name(self, icam: int, new_name: str | None = None):
+    def set_img_base_name(self, icam: int, new_name: str):
         """Set the image base name for each camera."""
         if icam > self.num_cams:
             raise ValueError("Length of names must be equal to num_cams.")

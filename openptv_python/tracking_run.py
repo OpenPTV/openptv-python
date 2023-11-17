@@ -73,7 +73,14 @@ class TrackingRun:
             + (tpar.dvzmin - tpar.dvzmax) ** 2
         )
 
-        volumedimension(
+        (
+            vpar.x_lay[1],
+            vpar.x_lay[0],
+            self.ymax,
+            self.ymin,
+            vpar.z_max_lay[1],
+            vpar.z_min_lay[0],
+        ) = volumedimension(
             vpar.x_lay[1],
             vpar.x_lay[0],
             self.ymax,
@@ -90,10 +97,10 @@ class TrackingRun:
 
 
 def tr_new(
-    seq_par: SequencePar,
-    tpar: TrackPar,
-    vpar: VolumePar,
-    cpar: ControlPar,
+    seq_par_fname: str,
+    tpar_fname: str,
+    vpar_fname: str,
+    cpar_fname: str,
     buf_len: int,
     max_targets: int,
     corres_file_base: str,
@@ -102,7 +109,16 @@ def tr_new(
     cal: List[Calibration],
     flatten_tol: float,
 ) -> TrackingRun:
-    """Create a new tracking run."""
+    """Create a new tracking run from legacy files."""
+    cpar = read_control_par(cpar_fname)
+    seq_par = read_sequence_par(seq_par_fname, cpar.num_cams)
+    tpar = read_track_par(tpar_fname)
+    vpar = read_volume_par(vpar_fname)
+
+    buf_len = 4
+    flatten_tol = 10000
+    max_targets = 20000
+
     tr = TrackingRun(
         seq_par,
         tpar,
@@ -115,36 +131,6 @@ def tr_new(
         prio_file_base,
         cal,
         flatten_tol,
-    )
-
-    return tr
-
-
-def tr_new_legacy(
-    seq_par_fname: str,
-    tpar_fname: str,
-    vpar_fname: str,
-    cpar_fname: str,
-    cal: List[Calibration],
-) -> TrackingRun:
-    """Create a new tracking run from legacy files."""
-    cpar = read_control_par(cpar_fname)
-    seq_par = read_sequence_par(seq_par_fname, cpar.num_cams)
-    tpar = read_track_par(tpar_fname)
-    vpar = read_volume_par(vpar_fname)
-
-    tr = tr_new(
-        seq_par,
-        tpar,
-        vpar,
-        cpar,
-        4,
-        20000,
-        "res/rt_is",
-        "res/ptv_is",
-        "res/added",
-        cal,
-        10000,
     )
 
     return tr

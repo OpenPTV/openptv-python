@@ -164,8 +164,11 @@ def read_targets(file_base: str, frame_num: int) -> List[Target]:
     """Read targets from a file."""
     buffer = []
 
+    # # if file_base has an extension, remove it
+    # file_base = file_base.split(".")[0]
+
     if frame_num > 0:
-        filename = f"{file_base}{frame_num:04}_targets"
+        filename = f"{file_base}{frame_num}_targets"
     else:
         filename = f"{file_base}_targets"
 
@@ -601,16 +604,20 @@ class FrameBuf(FrameBufBase):
         frame = self.buf[-1]  # last frame
 
         if read_links:
-            frame.correspond, frame.path_info = read_path_frame(
+            success = frame.read(
                 self.corres_file_base,
                 self.linkage_file_base,
                 self.prio_file_base,
+                self.target_file_base,
                 frame_num,
             )
         else:
-            frame.correspond, frame.path_info = read_path_frame(
-                self.corres_file_base, "", "", frame_num
+            success = frame.read(
+                self.corres_file_base, "", "", self.target_file_base, frame_num
             )
+
+        if not success:
+            raise IOError("Could not read frame from disk")
 
     def disk_read_frame_at_end(self, frame_num: int, read_links: bool):
         """Read a frame to the last position in the ring.
@@ -805,61 +812,46 @@ def write_path_frame(
     """
     corres_fname = f"{corres_file_base}.{frame_num}"
     linkage_fname = f"{linkage_file_base}.{frame_num}"
-    prio_fname = f"{prio_file_base}.{frame_num}" if prio_file_base else None
+    prio_fname = f"{prio_file_base}.{frame_num}" if prio_file_base != "" else None
+    success = False
 
     try:
-        np.savetxt(
-            corres_fname,
-            [
-                [
-                    pix + 1,
-                    path_buf[pix].x[0],
-                    path_buf[pix].x[1],
-                    path_buf[pix].x[2],
-                    cor_buf[pix].p[0],
-                    cor_buf[pix].p[1],
-                    cor_buf[pix].p[2],
-                    cor_buf[pix].p[3],
-                ]
-                for pix in range(num_parts)
-            ],
-            fmt="%4d %9.3f %9.3f %9.3f %4d %4d %4d %4d",
-        )
-        np.savetxt(
-            linkage_fname,
-            [
-                [
-                    path_buf[pix].prev_frame,
-                    path_buf[pix].next_frame,
-                    path_buf[pix].x[0],
-                    path_buf[pix].x[1],
-                    path_buf[pix].x[2],
-                ]
-                for pix in range(num_parts)
-            ],
-            fmt="%4d %4d %10.3f %10.3f %10.3f",
-        )
-        if prio_fname:
-            np.savetxt(
-                prio_fname,
-                [
-                    [
-                        path_buf[pix].prev_frame,
-                        path_buf[pix].next_frame,
-                        path_buf[pix].x[0],
-                        path_buf[pix].x[1],
-                        path_buf[pix].x[2],
-                        path_buf[pix].prio,
-                    ]
-                    for pix in range(num_parts)
-                ],
-                fmt="%4d %4d %10.3f %10.3f %10.3f %f",
-            )
-    except IOError as exc:
-        print(f"Error writing file: {exc}")
-        return False
+        with open(corres_fname, "w", encoding="utf8") as corres_file:
+            corres_file.write(f"{num_parts}\n")
+            with open(linkage_fname, "w", encoding="utf8") as linkage_file:
+                linkage_file.write(f"{num_parts}\n")
 
-    return True
+            if prio_file_base is not None:
+                with open(prio_fname, "w", encoding="utf8") as prio_file:  # type: ignore
+                    prio_file.write(f"{num_parts}\n")
+
+            for pix in range(num_parts):
+                linkage_file.write(
+                    f"{path_buf[pix].prev_frame} {path_buf[pix].next_frame} "
+                    f"{path_buf[pix].x[0]:.3f} {path_buf[pix].x[1]:.3f} "
+                    f"{path_buf[pix].x[2]:.3f}\n"
+                )
+
+                corres_file.write(
+                    f"{pix + 1} {path_buf[pix].x[0]:.3f} "
+                    f"{path_buf[pix].x[1]:.3f} {path_buf[pix].x[2]:.3f} "
+                    f"{cor_buf[pix].p[0]} {cor_buf[pix].p[1]} "
+                    f"{cor_buf[pix].p[2]} {cor_buf[pix].p[3]}\n"
+                )
+
+                if prio_file_base:
+                    prio_file.write(
+                        f"{path_buf[pix].prev_frame} {path_buf[pix].next_frame} "
+                        f"{path_buf[pix].x[0]:.3f} {path_buf[pix].x[1]:.3f} "
+                        f"{path_buf[pix].x[2]:.3f} {path_buf[pix].prio}\n"
+                    )
+
+        success = True
+
+    except IOError as e:
+        print(f"Can't open file {e.filename} for writing")
+
+    return success
 
 
 def match_coords(
