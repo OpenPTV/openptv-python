@@ -7,7 +7,6 @@ import numpy as np
 
 from .calibration import Calibration
 from .constants import (
-    ADD_PART,
     COORD_UNUSED,
     CORRES_NONE,
     MAX_CANDS,
@@ -41,6 +40,9 @@ class Foundpix:
     ftnr: int = TR_UNUSED
     freq: int = 0
     whichcam: List[int] = field(default_factory=list)
+
+    def __post_init__(self):
+        self.whichcam = [0] * TR_MAX_CAMS
 
 
 def reset_foundpix_array(arr: List[Foundpix], arr_len: int, num_cams: int) -> None:
@@ -503,8 +505,8 @@ def sort_candidates_by_freq(foundpix: List[Foundpix], num_cams: int) -> int:
     return different
 
 
-def sort(a: np.ndarray, b: np.ndarray) -> None:
-    """In-place sorts a float array 'a' and an integer array 'b' equal lengths.
+def sort(n: int, a: List[float], b: List[int]) -> Tuple[List[float], List[int]]:
+    """In-place sorts a float list 'a' and an integer list 'b' equal lengths, sort up to n.
 
     Arguments:
     ---------
@@ -515,10 +517,15 @@ def sort(a: np.ndarray, b: np.ndarray) -> None:
     -------
     Sorted arrays a and b.
     """
-    idx = np.argsort(a)
-    a[...] = a[idx]
-    b[...] = b[idx]
+    # idx = np.argsort(a)
+    # a[...] = a[idx]
+    # b[...] = b[idx]
+
     # return a, b
+
+    sorted_pairs = sorted(zip(a[:n], b[:n]))
+    a[:n], b[:n] = zip(*sorted_pairs)
+    return a, b
 
 
 def point_to_pixel(point: np.ndarray, cal: Calibration, cpar: ControlPar) -> np.ndarray:
@@ -545,25 +552,18 @@ def point_to_pixel(point: np.ndarray, cal: Calibration, cpar: ControlPar) -> np.
     return np.array([x, y])
 
 
-def sorted_candidates_in_volume(center, center_proj, frm, run):
+def sorted_candidates_in_volume(
+    center: np.ndarray, center_proj: np.ndarray, frm: Frame, run: TrackingRun
+) -> List[Foundpix]:
     """Find candidates for continuing a particle's path in the search volume."""
-    points = []
-    right, left, down, up = (
-        [0] * TR_MAX_CAMS,
-        [0] * TR_MAX_CAMS,
-        [0] * TR_MAX_CAMS,
-        [0] * TR_MAX_CAMS,
-    )
-    num_cams = frm.num_cams
-
-    points = [Foundpix() for _ in range(num_cams * MAX_CANDS)]
-    reset_foundpix_array(points, num_cams * MAX_CANDS, num_cams)
+    points = [Foundpix() for _ in range(frm.num_cams * MAX_CANDS)]
+    # reset_foundpix_array(points, frm.num_cams * MAX_CANDS, frm.num_cams)
 
     # Search limits in image space
     right, left, down, up = searchquader(center, run.tpar, run.cpar, run.cal)
 
     # search in pix for candidates in the next_frame time step
-    for cam in range(num_cams):
+    for cam in range(frm.num_cams):
         register_closest_neighbs(
             frm.targets[cam],
             frm.num_targets[cam],
@@ -579,55 +579,138 @@ def sorted_candidates_in_volume(center, center_proj, frm, run):
         )
 
     # fill and sort candidate struct
-    num_cands = sort_candidates_by_freq(points, num_cams)
+    num_cands = sort_candidates_by_freq(points, frm.num_cams)
     if num_cands > 0:
         points = points[:num_cands] + [Foundpix(ftnr=TR_UNUSED)]
-        return points
     else:
-        return None
+        points = []
+
+    return points
+
+
+# def assess_new_position(
+#     pos: np.ndarray,
+#     targ_pos: np.ndarray,
+#     cand_inds: np.ndarray,
+#     frm: Frame,
+#     run: TrackingRun,
+# ) -> int:
+#     """Determine the nearest target on each camera around a search position.
+
+#     and prepares the data structures accordingly with the determined target
+#     info or the unused flag value.
+
+#     Arguments:
+#     ---------
+#     pos - vec3d, the position around which to search.
+#     targ_pos - vec2d, the determined targets' respective positions.
+#     cand_inds - 2D array of integers, output buffer, the determined targets'
+#         index in the respective camera's target list.
+#     frm - frame object, holdin target data for the search position.
+#     run - TrackingRun object, scene information struct.
+
+#     Returns:
+#     -------
+#     Integer, the number of cameras where a suitable target was found.
+#     """
+#     # Initialize variables
+#     num_cands = 0
+#     valid_cams = 0
+#     _ix = 0
+#     pixel = [0, 0]
+#     left = right = up = down = ADD_PART
+
+#     for cam in range(TR_MAX_CAMS):
+#         targ_pos[cam][0] = targ_pos[cam][1] = COORD_UNUSED
+
+#     # Loop through cameras to find the nearest target
+#     for cam in range(run.cpar.num_cams):
+#         # Convert 3D point to 2D pixel coordinates
+#         pixel = point_to_pixel(pos, run.cal[cam], run.cpar)
+
+#         # Search for nearest target in pixel coordinates
+#         num_cands = candsearch_in_pix_rest(
+#             frm.targets[cam],
+#             frm.num_targets[cam],
+#             pixel[0],
+#             pixel[1],
+#             left,
+#             right,
+#             up,
+#             down,
+#             cand_inds[cam],
+#             run.cpar,
+#         )
+
+#         if num_cands > 0:
+#             _ix = cand_inds[cam][0]  # first nearest neighbour
+#             targ_pos[cam][0] = frm.targets[cam][_ix].x
+#             targ_pos[cam][1] = frm.targets[cam][_ix].y
+
+#     # Loop through cameras to check if the target was found and calculate
+#     # target positions in metric coordinates
+#     for cam in range(run.cpar.num_cams):
+#         if targ_pos[cam][0] != COORD_UNUSED and targ_pos[cam][1] != COORD_UNUSED:
+#             x, y = pixel_to_metric(
+#                 targ_pos[cam][0],
+#                 targ_pos[cam][1],
+#                 run.cpar,
+#             )
+#             targ_pos[cam][0], targ_pos[cam][1] = dist_to_flat(
+#                 x,
+#                 y,
+#                 run.cal[cam],
+#                 run.flatten_tol,
+#             )
+#             valid_cams += 1
+
+#     return valid_cams
 
 
 def assess_new_position(
-    pos: np.ndarray,
-    targ_pos: List[np.ndarray],
-    cand_inds: np.ndarray,
-    frm: Frame,
-    run: TrackingRun,
-) -> int:
+    pos: np.ndarray, frm: Frame, run: TrackingRun
+) -> Tuple[int, np.ndarray, np.ndarray]:
     """Determine the nearest target on each camera around a search position.
 
-    and prepares the data structures accordingly with the determined target
-    info or the unused flag value.
+    #     and prepares the data structures accordingly with the determined target
+    #     info or the unused flag value.
 
-    Arguments:
-    ---------
-    pos - vec3d, the position around which to search.
-    targ_pos - vec2d, the determined targets' respective positions.
-    cand_inds - 2D array of integers, output buffer, the determined targets'
-        index in the respective camera's target list.
-    frm - frame object, holdin target data for the search position.
-    run - TrackingRun object, scene information struct.
+    #     Arguments:
+    #     ---------
+    #     pos - vec3d, the position around which to search.
+    #     targ_pos - vec2d, the determined targets' respective positions.
+    #     cand_inds - 2D array of integers, output buffer, the determined targets'
+    #         index in the respective camera's target list.
+    #     frm - frame object, holdin target data for the search position.
+    #     run - TrackingRun object, scene information struct.
 
-    Returns:
-    -------
-    Integer, the number of cameras where a suitable target was found.
+    #     Returns:
+    #     -------
+    #     Integer, the number of cameras where a suitable target was found.
+
     """
-    # Initialize variables
-    num_cands = 0
-    valid_cams = 0
-    _ix = 0
-    pixel = [0, 0]
+    # Constants
+    ADD_PART = 1.0  # Replace with the actual constant value
+
+    # Output variables
+    targ_pos = np.array(
+        [[COORD_UNUSED, COORD_UNUSED] for _ in range(run.cpar.num_cams)]
+    )
+    cand_inds = np.array([[0] * MAX_CANDS for _ in range(run.cpar.num_cams)])
+
+    # Search rectangle limits
     left = right = up = down = ADD_PART
 
-    for cam in range(TR_MAX_CAMS):
-        targ_pos[cam][0] = targ_pos[cam][1] = COORD_UNUSED
+    valid_cams = 0
 
-    # Loop through cameras to find the nearest target
+    # for cam in range(run.cpar.num_cams):
+    #     targ_pos[cam] = [COORD_UNUSED, COORD_UNUSED]
+
     for cam in range(run.cpar.num_cams):
-        # Convert 3D point to 2D pixel coordinates
+        # Convert 3D search position to 2D pixel coordinates
         pixel = point_to_pixel(pos, run.cal[cam], run.cpar)
 
-        # Search for nearest target in pixel coordinates
+        # Nearest neighbor search
         num_cands = candsearch_in_pix_rest(
             frm.targets[cam],
             frm.num_targets[cam],
@@ -646,44 +729,36 @@ def assess_new_position(
             targ_pos[cam][0] = frm.targets[cam][_ix].x
             targ_pos[cam][1] = frm.targets[cam][_ix].y
 
-    # Loop through cameras to check if the target was found and calculate
-    # target positions in metric coordinates
     for cam in range(run.cpar.num_cams):
-        if targ_pos[cam][0] != COORD_UNUSED and targ_pos[cam][1] != COORD_UNUSED:
-            x, y = pixel_to_metric(
-                targ_pos[cam][0],
-                targ_pos[cam][1],
-                run.cpar,
-            )
+        if (targ_pos[cam][0] != COORD_UNUSED) and (targ_pos[cam][1] != COORD_UNUSED):
+            # Convert pixel coordinates to metric coordinates
+            x, y = pixel_to_metric(targ_pos[cam][0], targ_pos[cam][1], run.cpar)
+
+            # Apply additional transformations
             targ_pos[cam][0], targ_pos[cam][1] = dist_to_flat(
-                x,
-                y,
-                run.cal[cam],
-                run.flatten_tol,
+                x, y, run.cal[cam], run.flatten_tol
             )
+
             valid_cams += 1
 
-    return valid_cams
+    return valid_cams, targ_pos, cand_inds
 
 
 def add_particle(frm: Frame, pos: np.ndarray, cand_inds: np.ndarray) -> None:
     """Add a new particle to the frame buffer."""
     num_parts = frm.num_parts
-    ref_path_inf = frm.path_info[num_parts]
-    ref_path_inf.x = vec_copy(pos)
+    frm.path_info[num_parts].x = vec_copy(pos)
     # reset_links(ref_path_inf)
 
-    ref_corres = frm.correspond[num_parts]
-    ref_targets = frm.targets
     for cam in range(frm.num_cams):
-        ref_corres.p[cam] = CORRES_NONE
+        frm.correspond[num_parts].p[cam] = CORRES_NONE
 
         # We always take the 1st candidate, apparently. Why did we fetch 4?
         if cand_inds[cam][0] != PT_UNUSED:
             _ix = cand_inds[cam][0]
-            ref_targets[cam][_ix].tnr = num_parts
-            ref_corres.p[cam] = _ix
-            ref_corres.nr = num_parts
+            frm.targets[cam][_ix].tnr = num_parts
+            frm.targets.p[cam] = _ix
+            frm.targets.nr = num_parts
 
     frm.num_parts += 1
 
@@ -696,45 +771,36 @@ def track_forward_start(tr: TrackingRun):
     tr - an object holding the per-run tracking parameters, and
          a frame buffer with 4 positions.
     """
-    step = tr.seq_par.first
+    # step = tr.seq_par.first
 
     # Prime the buffer with first frames
-    while step < (tr.seq_par.first + TR_BUFSPACE - 1):
-        tr.fb.read_frame_at_end(read_links=False, frame_num=step)
+    for step in range(tr.seq_par.first, tr.seq_par.first + TR_BUFSPACE):
+        tr.fb.read_frame_at_end(step)
         tr.fb.fb_next()
-        step += 1
 
     tr.fb.fb_prev()
 
 
 def trackcorr_c_loop(run_info, step):
     """Sequence loop."""
-    j, h, mm, kk, in_volume = 0, 0, 0, 0, 0
+    # Initialize variables
     # philf = [[0 for _ in range(MAX_CANDS)] for _ in range(4)]
     philf = np.zeros((4, MAX_CANDS))
-    count1, count2, count3, num_added = 0, 0, 0, 0
     quali = 0
-    diff_pos, X = (
-        np.empty((3,)),
-        [np.empty((3,))] * 6,
-    )  # 7 reference points used in the algorithm, TODO: check if can reuse some
+    diff_pos = np.empty((3,))
+
+    # 7 reference points used in the algorithm, TODO: check if can reuse some
     angle, acc, angle0, acc0, dl = 0.0, 0.0, 0.0, 0.0, 0.0
     angle1, acc1 = 0.0, 0.0
-    v1 = [
-        np.zeros(
-            2,
-        )
-    ] * 4
-    v2 = [
-        np.zeros(
-            2,
-        )
-    ] * 4  # volume center projection on cameras
+
     rr = 0.0
 
     _ix = 0  # For use in any of the complex index expressions below
     orig_parts = 0  # avoid infinite loop with particle addition set
-    count1, num_added = 0, 0
+    num_added = 0
+    count1 = 0
+    count2 = 0
+    count3 = 0
 
     fb = run_info.fb
     cal = run_info.cal
@@ -743,11 +809,13 @@ def trackcorr_c_loop(run_info, step):
     cpar = run_info.cpar
     curr_targets = fb.buf[1].targets
 
+    v1 = np.zeros((cpar.num_cams, 2))  # volume center projection on cameras
+    v2 = np.zeros((cpar.num_cams, 2))  # volume center projection on cameras
+
     # try to track correspondences from previous 0 - corp, variable h
     orig_parts = fb.buf[1].num_parts
     for h in range(orig_parts):
-        for j in range(6):
-            X[j] = np.empty((3,))
+        X = np.empty((6, 3))
 
         curr_path_inf = fb.buf[1].path_info[h]
         curr_corres = fb.buf[1].correspond[h]
@@ -773,12 +841,12 @@ def trackcorr_c_loop(run_info, step):
                     v1[j] = point_to_pixel(X[2], cal[j], cpar)
                 else:
                     _ix = curr_corres.p[j]
-                    v1[j][0] = curr_targets[j][_ix].x
-                    v1[j][1] = curr_targets[j][_ix].y
+                    v1[j] = np.r_[curr_targets[j][_ix].x, curr_targets[j][_ix].y]
+                    # print(f"v1[{j}], {v1[j]}")
 
         # calculate search cuboid and reproject it to the image space
         w = sorted_candidates_in_volume(X[2], v1, fb.buf[2], run_info)
-        if w is None:
+        if not w:  # empty
             continue
 
         # Continue to find candidates for the candidates.
@@ -792,8 +860,9 @@ def trackcorr_c_loop(run_info, step):
             X[3] = vec_copy(ref_path_inf.x)
 
             if curr_path_inf.prev_frame >= 0:
-                for j in range(3):
-                    X[5][j] = 0.5 * (5.0 * X[3][j] - 4.0 * X[1][j] + X[0][j])
+                # for j in range(3):
+                #     X[5][j] = 0.5 * (5.0 * X[3][j] - 4.0 * X[1][j] + X[0][j])
+                X[5] = 0.5 * (5 * X[3] - 4 * X[1] + X[0])
             else:
                 search_volume_center_moving(X[1], X[3], X[5])
 
@@ -802,10 +871,11 @@ def trackcorr_c_loop(run_info, step):
 
             # end of search in pix
             wn = sorted_candidates_in_volume(X[5], v1, fb.buf[3], run_info)
-            if wn is not None:
+            if len(wn) > 0:  # not empty
                 count3 += 1
                 kk = 0
                 while wn[kk].ftnr != TR_UNUSED:
+                    # print(f" inside wn[{kk}].ftnr {wn[kk].ftnr}")
                     ref_path_inf = fb.buf[3].path_info[wn[kk].ftnr]
                     X[4] = vec_copy(ref_path_inf.x)
 
@@ -838,72 +908,83 @@ def trackcorr_c_loop(run_info, step):
                             curr_path_inf.register_link_candidate(rr, w[mm].ftnr)
 
                     kk += 1  # End of searching 2nd-frame candidates.
+                    # print(f"kk is {kk}")
 
-        # creating new particle position,
-        # reset img coord because of num_cams < 4
-        # fix distance of 3 pixels to define xl,xr,yu,yd instead of searchquader
-        # and search for unused candidates in next_frame time step
+            # creating new particle position,
+            # reset img coord because of num_cams < 4
+            # fix distance of 3 pixels to define xl,xr,yu,yd instead of searchquader
+            # and search for unused candidates in next_frame time step
 
-        quali = assess_new_position(X[5], v2, philf, fb.buf[3], run_info)
+            quali, v2, philf = assess_new_position(X[5], fb.buf[3], run_info)
+            print(f"quali {quali}, v2 {v2}, philf {philf}")
 
-        # quali >=2 means at least in two cameras
-        # we found a candidate
-        if quali >= 2:
-            in_volume = 0  # inside volume
+            # quali >=2 means at least in two cameras
+            # we found a candidate
+            if quali >= 2:
+                in_volume = 0  # inside volume
 
-            dl, X[4] = point_position(v2, cpar.num_cams, cpar.mm, cal)
+                dl, X[4] = point_position(v2, cpar.num_cams, cpar.mm, cal)
 
-            # volume check
-            if (
-                vpar.x_lay[0] < X[4][0]
-                and X[4][0] < vpar.x_lay[1]
-                and run_info.ymin < X[4][1]
-                and X[4][1] < run_info.ymax
-                and vpar.z_min_lay[0] < X[4][2]
-                and X[4][2] < vpar.z_max_lay[1]
-            ):
-                in_volume = 1
+                # volume check
+                if (
+                    vpar.x_lay[0] < X[4][0]
+                    and X[4][0] < vpar.x_lay[1]
+                    and run_info.ymin < X[4][1]
+                    and X[4][1] < run_info.ymax
+                    and vpar.z_min_lay[0] < X[4][2]
+                    and X[4][2] < vpar.z_max_lay[1]
+                ):
+                    in_volume = 1
 
-            diff_pos = vec_subt(X[3], X[4])
-            if in_volume == 1 and pos3d_in_bounds(diff_pos, tpar):
-                angle, acc = angle_acc(X[3], X[4], X[5])
+                diff_pos = vec_subt(X[3], X[4])
+                print(f"diff_pos {diff_pos}")
+                if in_volume == 1 and pos3d_in_bounds(diff_pos, tpar):
+                    angle, acc = angle_acc(X[3], X[4], X[5])
+                    print(f"angle {angle}, acc {acc}")
 
-                if acc < tpar.dacc and angle < tpar.dangle or acc < tpar.dacc / 10:
-                    dl = (vec_diff_norm(X[1], X[3]) + vec_diff_norm(X[4], X[3])) / 2
-                    rr = (
-                        dl / run_info.lmax + acc / tpar.dacc + angle / tpar.dangle
-                    ) / (quali + w[mm].freq)
-                    curr_path_inf.register_link_candidate(rr, w[mm].ftnr)
+                    if acc < tpar.dacc and angle < tpar.dangle or acc < tpar.dacc / 10:
+                        dl = (vec_diff_norm(X[1], X[3]) + vec_diff_norm(X[4], X[3])) / 2
+                        print(f" dl {dl} ")
+                        rr = (
+                            dl / run_info.lmax + acc / tpar.dacc + angle / tpar.dangle
+                        ) / (quali + w[mm].freq)
+                        print(f"rr {rr}, w[mm].ftnr {w[mm].ftnr}")
+                        curr_path_inf.register_link_candidate(rr, w[mm].ftnr)
 
-                    if tpar.add:
-                        add_particle(fb.buf[3], X[4], philf)
-                        num_added += 1
+                        if tpar.add:
+                            add_particle(fb.buf[3], X[4], philf)
+                            num_added += 1
 
-            in_volume = 0
-        quali = 0
+                in_volume = 0
 
-        # end of creating new particle position
-        # ***************************************************************
+            quali = 0
 
-        # try to link if kk is not found/good enough and prev exist
-        if curr_path_inf.inlist == 0 and curr_path_inf.prev_frame >= 0:
-            diff_pos = vec_subt(X[3], X[1])
-            if pos3d_in_bounds(diff_pos, tpar):
-                angle, acc = angle_acc(X[1], X[2], X[3])
-                if (acc < tpar.dacc and angle < tpar.dangle) or (acc < tpar.dacc / 10):
-                    quali = w[mm].freq
-                    dl = (vec_diff_norm(X[1], X[3]) + vec_diff_norm(X[0], X[1])) / 2
-                    rr = (
-                        dl / run_info.lmax + acc / tpar.dacc + angle / tpar.dangle
-                    ) / quali
-                    curr_path_inf.register_link_candidate(rr, w[mm].ftnr)
+            # end of creating new particle position
+            # ***************************************************************
 
+            # try to link if kk is not found/good enough and prev exist
+            if curr_path_inf.inlist == 0 and curr_path_inf.prev_frame >= 0:
+                diff_pos = vec_subt(X[3], X[1])
+                if pos3d_in_bounds(diff_pos, tpar):
+                    angle, acc = angle_acc(X[1], X[2], X[3])
+                    if (acc < tpar.dacc and angle < tpar.dangle) or (
+                        acc < tpar.dacc / 10
+                    ):
+                        quali = w[mm].freq
+                        dl = (vec_diff_norm(X[1], X[3]) + vec_diff_norm(X[0], X[1])) / 2
+                        rr = (
+                            dl / run_info.lmax + acc / tpar.dacc + angle / tpar.dangle
+                        ) / quali
+                        print(f"rr {rr}, w[mm].ftnr {w[mm].ftnr}")
+                        curr_path_inf.register_link_candidate(rr, w[mm].ftnr)
+
+            del wn
             mm += 1  # increment mm
 
         # begin of inlist still zero
         if tpar.add:
             if curr_path_inf.inlist == 0 and curr_path_inf.prev_frame >= 0:
-                quali = assess_new_position(X[2], v2, philf, fb.buf[2], run_info)
+                quali, v2, philf = assess_new_position(X[2], fb.buf[2], run_info)
                 if quali >= 2:
                     X[3] = vec_copy(X[2])
                     in_volume = 0
@@ -948,7 +1029,9 @@ def trackcorr_c_loop(run_info, step):
         curr_path_inf = fb.buf[1].path_info[h]
 
         if curr_path_inf.inlist > 0:
-            sort(curr_path_inf.decis, curr_path_inf.linkdecis)
+            curr_path_inf.decis, curr_path_inf.linkdecis = sort(
+                curr_path_inf.inlist, curr_path_inf.decis, curr_path_inf.linkdecis
+            )
             curr_path_inf.finaldecis = curr_path_inf.decis[0]
             curr_path_inf.next_frame = curr_path_inf.linkdecis[0]
 
@@ -992,7 +1075,7 @@ def trackcorr_c_loop(run_info, step):
     fb.write_frame_from_start(step)
 
     if step < run_info.seq_par.last - 2:
-        fb.read_frame_at_end(False, step + 3)
+        fb.read_frame_at_end(step + 3)
     # end of sequence loop
 
 
@@ -1028,7 +1111,7 @@ def trackback_c(run_info: TrackingRun):
 
     # Prime the buffer with first frames
     for step in range(seq_par.last, seq_par.last - 4, -1):
-        fb.read_frame_at_end(True, step)
+        fb.read_frame_at_end(step, read_links=True)
         fb.fb_next()
 
     fb.fb_prev()
@@ -1146,7 +1229,9 @@ def trackback_c(run_info: TrackingRun):
             curr_path_inf = fb.buf[1].path_info[h]
 
             if curr_path_inf.inlist > 0:
-                sort(np.array(curr_path_inf.decis), np.array(curr_path_inf.linkdecis))
+                curr_path_inf.decis, curr_path_inf.linkdecis = sort(
+                    curr_path_inf.decis, curr_path_inf.linkdecis
+                )
 
         # create links with decision check
         count1 = 0
@@ -1201,7 +1286,7 @@ def trackback_c(run_info: TrackingRun):
         fb.write_frame_from_start(step)
 
         if step > seq_par.first + 2:
-            fb.read_frame_at_end(True, step - 3)
+            fb.read_frame_at_end(step - 3, read_links=True)
 
         print(
             "step: {}, curr: {}, next_frame: {}, links: {}, lost: {}, add: {}".format(

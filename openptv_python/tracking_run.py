@@ -115,10 +115,6 @@ def tr_new(
     tpar = read_track_par(tpar_fname)
     vpar = read_volume_par(vpar_fname)
 
-    buf_len = 4
-    flatten_tol = 10000
-    max_targets = 20000
-
     tr = TrackingRun(
         seq_par,
         tpar,

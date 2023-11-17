@@ -41,7 +41,7 @@ def skew_midpoint(
 
 
 def point_position(
-    targets: List[np.ndarray],
+    targets: np.ndarray,
     num_cams: int,
     multimed_pars: MultimediaPar,
     cals: List[Calibration],
@@ -262,6 +262,8 @@ def orient(
     # # X and Xh are arrays of double arrays
     X = np.zeros((maxsize, NPAR), dtype=float)
     Xh = np.zeros((maxsize, NPAR), dtype=float)
+    beta = np.zeros(NPAR, dtype=float)
+    n_obs = 0
 
     # sigmabeta = np.zeros(NPAR,)
 
@@ -728,8 +730,6 @@ def dumbbell_target_func(
     """
     return weighted_dumbbell_precision(
         targets,
-        targets.shape[0],
-        targets.shape[1],
         cparam.mm,
         cals,
         db_length,

@@ -7,7 +7,7 @@ Created on Mon Apr 24 10:57:01 2017
 
 @author: yosef
 """
-
+import copy  # noqa: F401
 import shutil
 import unittest
 from math import isclose
@@ -120,11 +120,23 @@ class TestPos3dInBounds(unittest.TestCase):
 
     def test_pos3d_in_bounds(self):
         """Test the pos3d_in_bounds function."""
-        inside = [1.0, -1.0, 0.0]
-        outside = [2.0, -0.8, 2.1]
+        inside = np.array([1.0, -1.0, 0.0])
+        outside = np.array([2.0, -0.8, 2.1])
 
         bounds = TrackPar(
-            0.4, 120, 2.0, -2.0, 2.0, -2.0, 2.0, -2.0, 0.0, 0.0, 0.0, 0.0, 1
+            2.0,
+            -2.0,
+            2.0,
+            -2.0,
+            2.0,
+            -2.0,
+            120,
+            0.4,
+            1,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
         )
 
         result = pos3d_in_bounds(inside, bounds)
@@ -223,7 +235,7 @@ class TestCandSearchInPix(unittest.TestCase):
         )
         counter = len(p) - p.count(-1)
 
-        print(f"p = {p}, counter = {counter}")
+        # print(f"p = {p}, counter = {counter}")
 
         self.assertEqual(counter, 2)
 
@@ -236,7 +248,7 @@ class TestCandSearchInPix(unittest.TestCase):
             test_targets, num_targets, cent_x, cent_y, dl, dr, du, dd, test_cpar
         )
         counter = len(p) - p.count(-1)
-        print(f"p = {p}, counter = {counter}")
+        # print(f"p = {p}, counter = {counter}")
 
         self.assertEqual(counter, 4)
 
@@ -268,12 +280,15 @@ class TestCandSearchInPix(unittest.TestCase):
 
 
 class TestSort(unittest.TestCase):
+    """Test the sort function."""
+
     def test_sort(self):
-        test_array = np.array([1.0, 2200.2, 0.3, -0.8, 100.0], dtype=float)
-        ix_array = np.array([0, 5, 13, 2, 124], dtype=int)
+        """Test the sort function."""
+        test_array = [1.0, 2200.2, 0.3, -0.8, 100.0]
+        ix_array = [0, 5, 13, 2, 124]
         len_array = 5
 
-        sort(test_array, ix_array)
+        test_array, ix_array = sort(len_array, test_array, ix_array)
 
         self.assertTrue(
             isclose(test_array[0], -0.8, rel_tol=1e-9),
@@ -283,6 +298,20 @@ class TestSort(unittest.TestCase):
             ix_array[len_array - 1],
             1,
             f"Expected not to be 1 but found { ix_array[len_array - 1] }",
+        )
+
+        # sort an array longer than the number of elements
+        test_array = [1.0, 2200.2, 0.3, -0.8, 100.0, 0.0, 0.0]
+        ix_array = [0, 5, 13, 2, 124, 3, 5]
+        len_array = 3
+
+        test_array, ix_array = sort(len_array, test_array, ix_array)
+        # print(test_array)
+        # print(ix_array)
+
+        self.assertTrue(
+            isclose(test_array[0], 0.3, rel_tol=1e-9),
+            f"Expected 0.3 but found { test_array[0] } ",
         )
 
     def test_copy_foundpix_array(self):
@@ -335,7 +364,7 @@ class TestSearchQuader(unittest.TestCase):
         #  print(f"cpar = {self.cpar}")
 
         tpar = TrackPar(
-            0.4, 120, 0.2, -0.2, 0.1, -0.1, 0.1, -0.1, 0.0, 0.0, 0.0, 0.0, 1
+            0.2, -0.2, 0.1, -0.1, 0.1, -0.1, 120, 0.4, 1, 0.0, 0.0, 0.0, 0.0
         )
         xr, xl, yd, yu = searchquader(point, tpar, self.cpar, self.calib)
 
@@ -353,7 +382,7 @@ class TestSearchQuader(unittest.TestCase):
         # Let's test with just one camera to check borders
         self.cpar.num_cams = 1
         tpar1 = TrackPar(
-            0.4, 120, 0.0, -0.0, 0.0, -0.0, 0.0, -0.0, 0.0, 0.0, 0.0, 0.0, 1
+            0.0, -0.0, 0.0, -0.0, 0.0, -0.0, 120, 0.4, 1, 0.0, 0.0, 0.0, 0.0
         )
         xr, xl, yd, yu = searchquader(point, tpar1, self.cpar, self.calib)
 
@@ -365,19 +394,19 @@ class TestSearchQuader(unittest.TestCase):
 
         # Test with infinitely large values of tpar that should return about half the image size
         tpar2 = TrackPar(
-            0.4,
+            1000.0,
+            -1000.0,
+            1000.0,
+            -1000.0,
+            1000.0,
+            -1000.0,
             120,
-            1000.0,
-            -1000.0,
-            1000.0,
-            -1000.0,
-            1000.0,
-            -1000.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
+            0.4,
             1,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
         )
 
         xr, xl, yd, yu = searchquader(point, tpar2, self.cpar, self.calib)
@@ -410,6 +439,7 @@ class TestSortCandidatesByFreq(unittest.TestCase):
         # sortwhatfound freaks out if the array is not reset before
         reset_foundpix_array(dest, 2, 2)
         copy_foundpix_array(dest, src, 2, 2)
+
         # print(f"src = {src}")
         # print(f"dest = {dest}")
 
@@ -418,8 +448,8 @@ class TestSortCandidatesByFreq(unittest.TestCase):
 
         # print(f"num_parts = {num_parts}")
         # self.assertEqual(num_parts, 1)
-        self.assertEqual(dest[0].ftnr, 2)
-        self.assertEqual(dest[0].freq, 2)
+        self.assertEqual(dest[0].ftnr, 1)
+        self.assertEqual(dest[0].freq, 1)
         self.assertEqual(dest[1].freq, 0)
 
 

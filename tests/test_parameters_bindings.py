@@ -166,10 +166,6 @@ class Test_TrackingParams(unittest.TestCase):
         with open(
             self.input_tracking_par_file_name, "r", encoding="utf-8"
         ) as track_file:
-            self.assertTrue(self.track_obj1.get_dacc() == float(track_file.readline()))
-            self.assertTrue(
-                self.track_obj1.get_dangle() == float(track_file.readline())
-            )
             self.assertTrue(
                 self.track_obj1.get_dvxmin() == float(track_file.readline())
             )
@@ -190,6 +186,12 @@ class Test_TrackingParams(unittest.TestCase):
             self.assertTrue(
                 self.track_obj1.get_dvz_max() == float(track_file.readline())
             )
+
+            self.assertTrue(
+                self.track_obj1.get_dangle() == float(track_file.readline())
+            )
+            self.assertTrue(self.track_obj1.get_dacc() == float(track_file.readline()))
+
             self.assertTrue(self.track_obj1.get_add() == int(track_file.readline()))
 
             self.assertTrue(self.track_obj1.get_dsumg() == 0)

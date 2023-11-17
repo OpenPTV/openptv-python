@@ -117,15 +117,16 @@ class TestTrackCorrNoAdd(unittest.TestCase):
         )
         run.tpar.add = 0
 
-        print(f"run.tpar = {run.tpar}")
+        # print(f"run.tpar = {run.tpar}")
 
         track_forward_start(run)
         trackcorr_c_loop(run, run.seq_par.first)
 
         for step in range(run.seq_par.first + 1, run.seq_par.last):
-            print(f"step = {step}")
+            # print(f"step = {step}")
             trackcorr_c_loop(run, step)
             print(f"run.npart = {run.npart}")
+            print(f"run.nlinks = {run.nlinks}")
 
         trackcorr_c_finish(run, run.seq_par.last)
 
@@ -136,7 +137,7 @@ class TestTrackCorrNoAdd(unittest.TestCase):
         npart = run.npart / range_val
         nlinks = run.nlinks / range_val
 
-        self.assertAlmostEqual(npart, 0.8, delta=EPS)
+        self.assertAlmostEqual(npart, 1.0, delta=EPS)
         self.assertAlmostEqual(nlinks, 0.8, delta=EPS)
 
         os.chdir(current_directory)

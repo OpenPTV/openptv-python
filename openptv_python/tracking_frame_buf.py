@@ -87,7 +87,7 @@ class Target:
     nx: int = 0  # in x
     ny: int = 0  # in y
     sumg: int = 0  # sum of grey values
-    tnr: int = 0  # used in tracking
+    tnr: int = -1  # used in tracking
 
     def set_pos(self, pos: Tuple[float, float]) -> None:
         """Set target position."""
@@ -528,7 +528,7 @@ class FrameBufBase:
         #     self.buf = self._ring_vec
 
         # seems that this is just deque.rotate(1)
-        self.buf.rotate(1)  # [0,1,2,3] -> [3, 0, 1, 2] -> [-1, 0, 1, 2]
+        self.buf.rotate(-1)  # [0,1,2,3] -> [1,2,3,0] -> will be [1,2,3,4]
 
     def fb_prev(self):
         """Back the start pointer of the frame buffer and.
@@ -543,7 +543,7 @@ class FrameBufBase:
         # if self.buf < self._ring_vec:
         #     self.buf = self._ring_vec + self.buf_len - 1
 
-        self.buf.rotate(-1)  # [0,1,2,3] -> [1,2,3,0] -> will be [1,2,3,4]
+        self.buf.rotate(1)  # [0,1,2,3] -> [3, 0, 1, 2] -> [-1, 0, 1, 2]
 
 
 class FrameBuf(FrameBufBase):
@@ -599,7 +599,7 @@ class FrameBuf(FrameBufBase):
         # Advance the buffer
         self.buf.appendleft(Frame(self.num_cams, MAX_TARGETS))
 
-    def read_frame_at_end(self, read_links: bool = False, frame_num: int = 0) -> None:
+    def read_frame_at_end(self, frame_num: int, read_links: bool = False) -> None:
         """Read a frame from the disk and add it to the end of the buffer."""
         frame = self.buf[-1]  # last frame
 
