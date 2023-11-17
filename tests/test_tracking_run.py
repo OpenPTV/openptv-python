@@ -85,11 +85,11 @@ class TestTrackCorrNoAdd(unittest.TestCase):
         """Test tracking without adding particles."""
         # import os
 
-        # current_directory = Path.cwd()
-        # print(f"working from {current_directory}")
-        # directory = Path("tests/testing_fodder/track")
+        current_directory = Path.cwd()
+        print(f"working from {current_directory}")
+        directory = Path("tests/testing_fodder/track")
 
-        # os.chdir(directory)
+        os.chdir(directory)
 
         print(os.path.abspath(os.curdir))
 
@@ -139,15 +139,8 @@ class TestTrackCorrNoAdd(unittest.TestCase):
         self.assertAlmostEqual(npart, 0.8, delta=EPS)
         self.assertAlmostEqual(nlinks, 0.8, delta=EPS)
 
-        # os.chdir(current_directory)
+        os.chdir(current_directory)
 
 
 if __name__ == "__main__":
-    current_directory = Path.cwd()
-    print(f"working from {current_directory}")
-    directory = Path("tests/testing_fodder/track")
-
-    os.chdir(directory)
     unittest.main()
-
-    os.chdir(current_directory)

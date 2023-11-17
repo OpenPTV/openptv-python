@@ -94,7 +94,7 @@ def targ_rec(
                     yn = i
                     xn = j
 
-                    sumg = gv
+                    sumg = int(gv)
                     img0[i, j] = 0
 
                     xa = xn
@@ -142,8 +142,9 @@ def targ_rec(
                                 and (gvref + disco >= img[yn, xn - 1])
                                 and (gvref + disco >= img[yn, xn + 1])
                             ):
-                                print(f"gv = {gv} sumg = {sumg}")
+                                # print(f"gv = {gv} sumg = {sumg}")
                                 sumg += gv
+                                # print(f"gv = {gv} sumg = {sumg}")
                                 img0[yn, xn] = 0
                                 if xn < xa:
                                     xa = xn
