@@ -241,7 +241,7 @@ def angle_acc(
         angle = 0
     else:
         angle = (200.0 / math.pi) * math.acos(
-            sum([v0[i] * v1[i] for i in range(3)])
+            math.fsum([v0[i] * v1[i] for i in range(3)])
             / (math.dist(start, pred) * math.dist(start, cand))
         )
 
@@ -373,7 +373,7 @@ def candsearch_in_pix_rest(
         # binarized search for start point of candidate search
         j0, dj = num_targets // 2, num_targets // 4
         while dj > 1:
-            j0 += dj if next_frame[j0, 1] < ymin else -dj
+            j0 += dj if next_frame[j0].y < ymin else -dj
             dj //= 2
 
         j0 -= 12 if j0 >= 12 else j0  # due to trunc

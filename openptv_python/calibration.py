@@ -169,7 +169,7 @@ class Calibration:
         -------
         - Ex, In, G, addp: Calibration object parts without multimedia lookup table.
         """
-        if not pathlib.Path(ori_file).exists:
+        if not pathlib.Path(ori_file).exists():
             raise IOError(f"File {ori_file} does not exist")
 
         with open(ori_file, "r", encoding="utf-8") as fp:
