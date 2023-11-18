@@ -172,6 +172,8 @@ def read_targets(file_base: str, frame_num: int) -> List[Target]:
     else:
         filename = f"{file_base}_targets"
 
+    # print(f" filename: {filename}")
+
     try:
         with open(filename, "r", encoding="utf-8") as file:
             num_targets = int(file.readline().strip())
@@ -199,6 +201,7 @@ def read_targets(file_base: str, frame_num: int) -> List[Target]:
         print(f"Can't open ascii file: {filename}")
         raise err
 
+    # print(f" read {len(buffer)} targets from {filename}")
     return buffer
 
 
@@ -578,26 +581,26 @@ class FrameBuf(FrameBufBase):
         self.prio_file_base = prio_file_base
         self.target_file_base = target_file_base
 
-    def write_frame_from_start(self, frame_num):
-        """Write a frame to disk and advance the buffer."""
-        # Write the frame to disk
-        frame = self.buf[0]  # first frame
-        cor_buf = frame.correspond
-        path_buf = frame.path_info
-        num_parts = frame.num_parts
+    # def write_frame_from_start(self, frame_num):
+    #     """Write a frame to disk and advance the buffer."""
+    #     # Write the frame to disk
+    #     frame = self.buf[0]  # first frame
+    #     cor_buf = frame.correspond
+    #     path_buf = frame.path_info
+    #     num_parts = frame.num_parts
 
-        write_path_frame(
-            cor_buf,
-            path_buf,
-            num_parts,
-            self.corres_file_base,
-            self.linkage_file_base,
-            self.prio_file_base,
-            frame_num,
-        )
+    #     write_path_frame(
+    #         cor_buf,
+    #         path_buf,
+    #         num_parts,
+    #         self.corres_file_base,
+    #         self.linkage_file_base,
+    #         self.prio_file_base,
+    #         frame_num,
+    #     )
 
-        # Advance the buffer
-        self.buf.appendleft(Frame(self.num_cams, MAX_TARGETS))
+    #     # Advance the buffer
+    #     # self.buf.appendleft(Frame(self.num_cams, MAX_TARGETS))
 
     def read_frame_at_end(self, frame_num: int, read_links: bool = False) -> None:
         """Read a frame from the disk and add it to the end of the buffer."""
@@ -650,7 +653,7 @@ class FrameBuf(FrameBufBase):
                 frame_num,
             )
 
-    def disk_write_frame_from_start(self, frame_num: int):
+    def write_frame_from_start(self, frame_num: int):
         """Write the frame to the first position in the ring.
 
         Arguments:
@@ -663,6 +666,7 @@ class FrameBuf(FrameBufBase):
         True on success, false on failure.
         """
         frame = self.buf[0]  # always the first one on the left
+
         return frame.write(
             self.corres_file_base,
             self.linkage_file_base,
@@ -701,7 +705,7 @@ def read_path_frame(
 
     """
     fname = f"{corres_file_base}.{frame_num}"
-    print(fname)
+    # print(fname)
 
     try:
         filein = open(fname, "r", encoding="utf-8")

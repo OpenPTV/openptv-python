@@ -39,7 +39,7 @@ class TestTransformFunctions(unittest.TestCase):
         # test_cal = Calibration(test_Ex, test_I, test_G, test_addp)
 
         #
-        test_mm = MultimediaPar(1, 1.0, (1.49, 0.0, 0.0), (5.0, 0.0, 0.0), 1.33)
+        test_mm = MultimediaPar(1, 1.0, [1.49, 0.0, 0.0], [5.0, 0.0, 0.0], 1.33)
 
         Ex_t = Exterior()
 
@@ -81,7 +81,7 @@ class TestTransformFunctions(unittest.TestCase):
         # ap_52 test_addp = {0., 0., 0., 0., 0., 1., 0.};
         # Calibration test_cal = {test_Ex, test_I, test_G, test_addp};
 
-        test_mm = MultimediaPar(1, 1.0, (1.49, 0.0, 0.0), (5.0, 0.0, 0.0), 1.33)
+        test_mm = MultimediaPar(1, 1.0, [1.49, 0.0, 0.0], [5.0, 0.0, 0.0], 1.33)
 
         Ex_t = Exterior()
         pos_t, cross_p, cross_c = trans_cam_point(test_Ex, test_mm, test_G, pos, Ex_t)

@@ -85,7 +85,7 @@ def test_vec_cmp():
     vec1 = np.array([1.0, 2.0, 3.0])
     vec2 = np.array([1.0, 2.0, 3.0])
     assert vec_cmp(vec1, vec2, 1e-4)
-    vec3 = [4.0, 5.0, 6.0]
+    vec3 = np.array([4.0, 5.0, 6.0])
     assert not vec_cmp(vec1, vec3, 1e-4)
 
 

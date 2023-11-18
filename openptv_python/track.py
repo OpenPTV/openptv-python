@@ -670,8 +670,8 @@ def assess_new_position(
     for cam in range(run.cpar.num_cams):
         # Convert 3D search position to 2D pixel coordinates
         pixel = point_to_pixel(pos, run.cal[cam], run.cpar)
-        print(f"pos {pos}")
-        print(f"pixel {pixel}")
+        # print(f"pos {pos}")
+        # print(f"pixel {pixel}")
 
         # Nearest neighbor search
         num_cands = candsearch_in_pix_rest(
@@ -792,6 +792,7 @@ def trackcorr_c_loop(run_info, step):
 
         # 3D-position
         X[1] = vec_copy(curr_path_inf.x)
+        # print(f"X[1] {X[1]}")
 
         # use information from previous to locate new search position
         # and to calculate values for search area
@@ -853,7 +854,7 @@ def trackcorr_c_loop(run_info, step):
                     #  print(f"X[4] {X[4]}")
 
                     diff_pos = vec_subt(X[4], X[3])
-                    #  print(f"inside kk loop {kk}")
+                    # print(f"inside kk loop {kk}")
                     # print(f"diff_pos {diff_pos}")
 
                     if pos3d_in_bounds(diff_pos, tpar):
