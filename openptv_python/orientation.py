@@ -2,6 +2,7 @@
 from typing import List, Optional, Tuple, Union
 
 import numpy as np
+import scipy
 
 from openptv_python.constants import COORD_UNUSED
 
@@ -188,7 +189,7 @@ def orient(
     cal: Calibration,
     cpar: ControlPar,
     nfix: int,
-    fix: List[np.ndarray],
+    fix: np.ndarray,
     pix: List[Target],
     flags: OrientPar,
     sigmabeta: np.ndarray,
@@ -486,7 +487,13 @@ def orient(
         )
 
         # Interpret the results
-        # print(f"Coefficients (beta): {beta} Residuals: {residuals}")
+        print(
+            f"Coefficients (beta): {beta} \
+                Residuals: {residuals} \
+                singular_values: {singular_values} \
+                rank: {rank} \
+            "
+        )
 
         # stopflag
         stopflag = True
@@ -620,11 +627,15 @@ def raw_orient(
         # matmul(beta, XPX, XPy, 6, 6, 1, 6, 6)
 
         # Solve the linear system
-        beta, residuals, rank, singular_values = np.linalg.lstsq(X, y, rcond=None)
+        beta, residuals, rank, singular_values = scipy.linalg.lstsq(
+            X, y
+        )  # , rcond=None)
 
         # Interpret the results
         print("Coefficients (beta):", beta)
         print("Residuals:", residuals)
+        print("rank:", rank)
+        print("singular_values:", singular_values)
 
         stopflag = True
         for i in range(6):

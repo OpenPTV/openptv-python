@@ -3,7 +3,7 @@ import copy
 
 import numpy as np
 from scipy import ndimage
-from scipy.ndimage import map_coordinates, uniform_filter
+from scipy.ndimage import uniform_filter
 
 from .parameters import ControlPar
 
@@ -41,20 +41,20 @@ def fast_box_blur(filt_span: int, src: np.ndarray, cpar: ControlPar) -> np.ndarr
     return row_accum
 
 
-def split(img: np.ndarray, half_selector: int, cpar: ControlPar) -> np.ndarray:
-    """Split image into two halves."""
-    cond_offs = cpar.imx if half_selector % 2 else 0
+# def split(img: np.ndarray, half_selector: int, cpar: ControlPar) -> np.ndarray:
+#     """Split image into two halves."""
+#     cond_offs = cpar.imx if half_selector % 2 else 0
 
-    if half_selector == 0:
-        return
+#     if half_selector == 0:
+#         return
 
-    coords_x, coords_y = np.meshgrid(np.arange(cpar.imx), np.arange(cpar.imy // 2))
+#     coords_x, coords_y = np.meshgrid(np.arange(cpar.imx), np.arange(cpar.imy // 2))
 
-    coords_x = coords_x.flatten()
-    coords_y = coords_y.flatten() * 2 + cond_offs
+#     coords_x = coords_x.flatten()
+#     coords_y = coords_y.flatten() * 2 + cond_offs
 
-    new_img = map_coordinates(img, [coords_y, coords_x], mode="constant", cval=0)
-    return new_img
+#     new_img = map_coordinates(img, [coords_y, coords_x], mode="constant", cval=0)
+#     return new_img
 
 
 def subtract_img(img1: np.ndarray, img2: np.ndarray, img_new: np.ndarray) -> None:
@@ -86,7 +86,7 @@ def prepare_image(
     cpar: ControlPar,
     dim_lp: int = 1,
     filter_hp: int = 1,
-    filter_file: str | None = None,
+    filter_file: str = "",
 ):
     """Prepare an image for particle detection: an averaging (smoothing).
 
@@ -99,7 +99,7 @@ def prepare_image(
     img = img.reshape((cpar.imy, cpar.imx))  # Reshape to 2D image
     img_lp = ndimage.uniform_filter(
         img,
-        size=(dim_lp * 2 + 1, dim_lp * 2 + 1),
+        size=dim_lp * 2 + 1,
         mode="constant",
         cval=0.0,
     )
@@ -111,7 +111,7 @@ def prepare_image(
     if filter_hp == 1:
         img_hp = ndimage.uniform_filter(
             img_hp.reshape((cpar.imy, cpar.imx)),
-            size=(3, 3),
+            size=3,
             mode="constant",
             cval=0.0,
         ).flatten()

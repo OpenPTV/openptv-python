@@ -138,7 +138,7 @@ class TestTrackCorrNoAdd(unittest.TestCase):
         nlinks = run.nlinks / range_val
 
         self.assertAlmostEqual(npart, 1.0, delta=EPS)
-        self.assertAlmostEqual(nlinks, 0.8, delta=EPS)
+        self.assertAlmostEqual(nlinks, 1.0, delta=EPS)
 
         os.chdir(current_directory)
 

@@ -16,7 +16,7 @@ import numpy as np
 
 def norm(x: float, y: float, z: float) -> float:
     """Return the norm of a 3D vector given by 3 float components."""
-    return np.linalg.norm(vec_set(x, y, z))
+    return float(np.linalg.norm(vec_set(x, y, z)))
 
 
 def vec_set(x: float, y: float, z: float) -> np.ndarray:
@@ -46,12 +46,12 @@ def vec_scalar_mul(vec: np.ndarray, scalar: float) -> np.ndarray:
 
 def vec_diff_norm(vec1: np.ndarray, vec2: np.ndarray) -> float:
     """vec_diff_norm() gives the norm of the difference between two vectors."""
-    return np.linalg.norm(vec1 - vec2)
+    return float(np.linalg.norm(vec1 - vec2))
 
 
 def vec_norm(vec: np.ndarray) -> float:
     """vec_norm() gives the norm of a vector."""
-    return np.linalg.norm(vec)
+    return float(np.linalg.norm(vec))
 
 
 def vec_dot(vec1: np.ndarray, vec2: np.ndarray) -> np.ndarray:

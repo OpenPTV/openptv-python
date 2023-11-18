@@ -8,7 +8,7 @@ from .constants import CORRES_NONE, MAX_TARGETS, MAXCAND, NMAX, PT_UNUSED
 from .epi import Coord2d, epi_mm
 from .find_candidate import find_candidate
 from .parameters import ControlPar, VolumePar
-from .tracking_frame_buf import Frame, Target, TargetArray, n_tupel
+from .tracking_frame_buf import Frame, Target, n_tupel
 
 # @dataclass
 # class Correspond:
@@ -53,7 +53,7 @@ def safely_allocate_target_usage_marks(
     # Check if any of the allocations failed.
     for cam in range(num_cams):
         if tusage[cam] is None:
-            return None
+            return []  # was None
 
     return tusage
 
@@ -74,27 +74,27 @@ def safely_allocate_adjacency_lists(
     num_cams: int, target_counts: List[int]
 ) -> List[List[List[Correspond]]]:
     """Allocate adjacency lists."""
-    lists = [[None for _ in range(num_cams)] for _ in range(num_cams)]
+    lists = [[[] for _ in range(num_cams)] for _ in range(num_cams)]
     error = 0
 
     for c1 in range(num_cams - 1):
         for c2 in range(c1 + 1, num_cams):
             if error == 0:
                 lists[c1][c2] = [Correspond() for _ in range(target_counts[c1])]  # type: ignore
-                if lists[c1][c2] is None:
+                if not lists[c1][c2]:
                     error = 1
-                    lists[c1][c2] = None
+                    lists[c1][c2] = []
 
                 for edge in range(target_counts[c1]):
                     lists[c1][c2][edge].n = 0
                     lists[c1][c2][edge].p1 = 0
             else:
-                lists[c1][c2] = None
+                lists[c1][c2] = []
 
     if error == 0:
         return lists
 
-    return False
+    return []
 
 
 def four_camera_matching(
@@ -471,7 +471,7 @@ def take_best_candidates(
 
 
 def py_correspondences(
-    img_pts: List[List[TargetArray]],  # num_cams * num_targets[cam]
+    img_pts: List[List[Target]],  # num_cams * num_targets[cam]
     flat_coords: List[List[Coord2d]],
     calib: List[Calibration],
     vparam: VolumePar,

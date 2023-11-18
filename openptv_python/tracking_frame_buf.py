@@ -308,8 +308,8 @@ class Frame:
         self.path_info = [Pathinfo() for _ in range(max_targets)]
         self.correspond = [Corres() for _ in range(max_targets)]
 
-        # self.targets = [[Target() for _ in range(max_targets)] for _ in range(num_cams)]
-        self.targets = [[] for _ in range(num_cams)]
+        self.targets = [[Target() for _ in range(max_targets)] for _ in range(num_cams)]
+        # self.targets = [[] for _ in range(num_cams)]
         self.num_targets = [0] * num_cams
 
         self.num_cams = num_cams
@@ -701,6 +701,7 @@ def read_path_frame(
 
     """
     fname = f"{corres_file_base}.{frame_num}"
+    print(fname)
 
     try:
         filein = open(fname, "r", encoding="utf-8")

@@ -46,7 +46,7 @@ class TestSafelyAllocateAdjacencyLists(unittest.TestCase):
 
         for i, row in enumerate(lists):
             for col in row:
-                if col is not None:
+                if col:
                     for item in range(target_counts[i]):
                         self.assertEqual(col[item].n, 0)
                         self.assertEqual(col[item].p1, 0)

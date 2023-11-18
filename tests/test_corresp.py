@@ -198,8 +198,8 @@ class TestReadControlPar(unittest.TestCase):
             frm.targets, corrected, calib, vpar, cpar
         )
 
-        # print(f" sorted_pos = {sorted_pos}")
-        # print(f" sorted_corresp = {sorted_corresp}")
+        print(f" sorted_pos = {sorted_pos}")
+        print(f" sorted_corresp = {sorted_corresp}")
 
         # print(f" num_targs = {num_targs}")
 

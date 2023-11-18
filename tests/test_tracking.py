@@ -96,13 +96,12 @@ class TestSearchVolumeCenterMoving(unittest.TestCase):
 
     def test_search_volume_center_moving(self):
         """Test the search_volume_center_moving function."""
-        prev_pos = [1.1, 0.6, 0.1]
-        curr_pos = [2.0, -0.8, 0.2]
-        result = [2.9, -2.2, 0.3]
+        prev_pos = np.array([1.1, 0.6, 0.1])
+        curr_pos = np.array([2.0, -0.8, 0.2])
+        result = np.array([2.9, -2.2, 0.3])
         EPS = 1e-9  # You can adjust this epsilon value as needed
 
-        c = [0.0, 0.0, 0.0]
-        search_volume_center_moving(prev_pos, curr_pos, c)
+        c = search_volume_center_moving(prev_pos, curr_pos)
 
         self.assertTrue(
             isclose(c[0], result[0], rel_tol=EPS), f"Expected 2.9 but found {c[0]}"
