@@ -23,7 +23,7 @@ def flat_image_coord(
         cal (_type_): _description_
         mm (_type_): _description_
 
-    Returns:
+    Returns
     -------
         _type_: _description_
     """

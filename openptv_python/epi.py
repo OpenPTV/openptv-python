@@ -88,7 +88,7 @@ def epi_mm(xl, yl, cal1, cal2, mmp, vpar) -> tuple[float, float, float, float]:
         mmp (_type_): _description_
         vpar (_type_): _description_
 
-    Returns:
+    Returns
     -------
         _type_: _description_
     """
@@ -361,7 +361,7 @@ def epipolar_curve(
     ControlParams cparam - an object holding general control parameters.
     VolumeParams vparam - an object holding observed volume size parameters.
 
-    Returns:
+    Returns
     -------
     line_points - (num_points,2) array with projection camera image coordinates
         of points lying on the ray stretching from the minimal Z coordinate of

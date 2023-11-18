@@ -50,7 +50,7 @@ def find_candidate(
         cpar: A `control_par` object.
         cal: A `Calibration` object.
 
-    Returns:
+    Returns
     -------
         cand: list of candidates, or empty list if nothing is found
     """
@@ -165,7 +165,7 @@ def find_start_point(crd: List[Coord2d], num: int, xa: float, vpar: VolumePar) -
         xa: The x-coordinate of the start point of the epipolar line.
         vpar: A `volume_par` object.
 
-    Returns:
+    Returns
     -------
         The start point of the candidate search.
     """

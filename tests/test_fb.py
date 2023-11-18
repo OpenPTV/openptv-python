@@ -50,7 +50,7 @@ class TestZeroTargets(unittest.TestCase):
         ---------
         None
 
-        Returns:
+        Returns
         -------
         None
         """
@@ -72,7 +72,7 @@ class TestWriteTargets(unittest.TestCase):
         ---------
         None
 
-        Returns:
+        Returns
         -------
         None
         """
@@ -103,19 +103,10 @@ class TestWriteTargets(unittest.TestCase):
 
 class TestReadPathFrame(unittest.TestCase):
     def test_read_path_frame(self):
-        """
-        Test reading path frame with and without links.
+        """Test reading path frame with and without links.
 
         Reads a path frame without links and checks the correctness of corres and path information.
         Then, reads a path frame with links and checks again.
-
-        Arguments:
-        ---------
-        None
-
-        Returns:
-        -------
-        None
         """
         cor_buf = [Corres()] * 80
         path_buf = [Pathinfo()] * 80

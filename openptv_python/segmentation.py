@@ -521,7 +521,7 @@ def peak_fit_new(
         threshold (float): The minimum intensity value for a peak to be considered.
         sigma (float): The standard deviation of the Gaussian filter.
 
-    Returns:
+    Returns
     -------
         List[Peak]: A list of Peak objects representing the detected peaks.
     """
@@ -565,7 +565,7 @@ def target_recognition(
     subrange_y - optional, tuple of min and max pixel coordinates to search
         between. Default is to search entire image height.
 
-    Returns:
+    Returns
     -------
     Number of  object holding the targets found.
     """

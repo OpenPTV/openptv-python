@@ -154,7 +154,7 @@ def search_volume_center_moving(
         curr_pos (vec3d): Current position of the particle.
         output (vec3d): Output variable for the calculated position.
 
-    Returns:
+    Returns
     -------
         None
     """
@@ -177,7 +177,7 @@ def predict(prev_pos, curr_pos, output):
         curr_pos (vec2d): 2D position at current frame.
         output (vec2d): Output of the 2D positions of the particle in the next_frame frame.
 
-    Returns:
+    Returns
     -------
         None
     """
@@ -196,7 +196,7 @@ def pos3d_in_bounds(pos, bounds):
         pos (vec3d): The 3-component array to check.
         bounds (track_par): The struct containing the bounds specification.
 
-    Returns:
+    Returns
     -------
         True if all components are in bounds, False otherwise.
     """
@@ -262,7 +262,7 @@ def angle_acc(
     pred -- vec3d, predicted position
     cand -- vec3d, possible actual position
 
-    Returns:
+    Returns
     -------
     angle -- float, the angle between the two velocity vectors, [gon]
     acc -- float, the 1st-order numerical acceleration embodied in the deviation from prediction.
@@ -396,7 +396,7 @@ def candsearch_in_pix_rest(
         to the search area borders from its center, [pixel]
     cpar - control_par object with attributes imx and imy.
 
-    Returns:
+    Returns
     -------
     int - the number of candidates found, between 0 - 1
     """
@@ -558,7 +558,7 @@ def sort(n: int, a: List[float], b: List[int]) -> Tuple[List[float], List[int]]:
     a -- float array (returned sorted in ascending order)
     b -- integer array (returned sorted according to float array a)
 
-    Returns:
+    Returns
     -------
     Sorted arrays a and b.
     """
@@ -582,7 +582,7 @@ def point_to_pixel(point: np.ndarray, cal: Calibration, cpar: ControlPar) -> np.
     cal -- Calibration parameters
     cpar -- Control parameters (num cams, multimedia parameters, cpar->mm, etc.)
 
-    Returns:
+    Returns
     -------
     vec2d with pixel positions (x,y) in the camera.
     """

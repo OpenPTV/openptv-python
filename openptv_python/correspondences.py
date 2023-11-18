@@ -42,7 +42,7 @@ def safely_allocate_target_usage_marks(
     ----
         num_cams: The number of cameras.
 
-    Returns:
+    Returns
     -------
         A list of lists of integers, or `None` if an allocation failed.
     """
@@ -425,7 +425,7 @@ def take_best_candidates(
     num_cams (int): The number of cameras in the scene.
     tusage (list): Record of currently used/unused targets in each camera.
 
-    Returns:
+    Returns
     -------
     int: The number of candidates taken from the source list.
 
@@ -447,7 +447,7 @@ def take_best_candidates(
             Targets that are already marked used (e.g. by quadruplets) will not be
             taken.
 
-    Returns:
+    Returns
     -------
         the number of cliques taken from the candidate list.
     */
@@ -508,7 +508,7 @@ def py_correspondences(
     VolumeParams vparam - an object holding observed volume size parameters.
     ControlParams cparam - an object holding general control parameters.
 
-    Returns:
+    Returns
     -------
     sorted_pos - a tuple of (c,?,2) arrays, each with the positions in each of
         c image planes of points belonging to quadruplets, triplets, pairs
@@ -633,7 +633,7 @@ def correspondences(
             stores the number of matches for each clique size, in descending
             clique size order. The last element stores the total.
 
-    Returns:
+    Returns
     -------
         n_tupel con - the sorted list of correspondences in descending quality
             order.
@@ -729,7 +729,7 @@ def single_cam_correspondences(
         the x-sorted flat-coordinates conversion of the respective image
         targets.
 
-    Returns:
+    Returns
     -------
     sorted_pos - a tuple of (c,?,2) arrays, each with the positions in each of
         c image planes of points belonging to quadruplets, triplets, pairs

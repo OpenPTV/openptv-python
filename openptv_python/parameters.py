@@ -358,7 +358,7 @@ def read_volume_par(filename: str) -> VolumePar:
     ----
         filename (str): filename
 
-    Returns:
+    Returns
     -------
         VolumePar: volume of interest parameters
     """

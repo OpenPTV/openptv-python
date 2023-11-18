@@ -42,7 +42,7 @@ def quicksort_n_tupel(n_tupel_list: List[n_tupel]) -> List[n_tupel]:
     ----
       n_tupel_list: A list of n_tupel instances.
 
-    Returns:
+    Returns
     -------
       A list of n_tupel instances, sorted by the corr attribute.
     """
@@ -69,7 +69,7 @@ def compare_corres(c1: Corres, c2: Corres) -> bool:
         c1: A Corres instance.
         c2: A Corres instance.
 
-    Returns:
+    Returns
     -------
         True if the Corres instances are equal, False otherwise.
     """
@@ -240,7 +240,7 @@ def compare_targets(t1: Target, t2: Target):
     ---------
     t1, t2 (tuple): the target structures to compare.
 
-    Returns:
+    Returns
     -------
     bool: True if all fields are equal, False otherwise.
     """
@@ -403,7 +403,7 @@ class Frame:
         ---------
         int cam - camera number, starting from 0.
 
-        Returns:
+        Returns
         -------
         an (n,2) array with the 2D position of targets detected in the image
             seen by camera ``cam``. for each 3D position. If no target in this
@@ -628,7 +628,7 @@ class FrameBuf(FrameBufBase):
         frame_num - number of the frame to read in the sequence of frames.
         read_links - whether or not to read data in the linkage/prio files.
 
-        Returns:
+        Returns
         -------
         True on success, false on failure.
         """
@@ -658,7 +658,7 @@ class FrameBuf(FrameBufBase):
         self_base - the framebuf object doing the reading.
         frame_num - number of the frame to write in the sequence of frames.
 
-        Returns:
+        Returns
         -------
         True on success, false on failure.
         """
@@ -807,7 +807,7 @@ def write_path_frame(
         prio_file_base: Base name of the output priority file (optional).
         frame_num: Number of the frame to add to file_base.
 
-    Returns:
+    Returns
     -------
         True on success, False on failure.
     """

@@ -26,9 +26,10 @@ class Exterior:
         ----
             exterior: The Exterior object.
 
-        Returns:
+        Returns
         -------
             The modified Exterior object.
+
         """
         cp = np.cos(self.phi)
         sp = np.sin(self.phi)
@@ -165,7 +166,7 @@ class Calibration:
         - add_file: path of file containing added (distortions) parameters.
         - add_fallback: path to file for use if add_file can't be opened.
 
-        Returns:
+        Returns
         -------
         - Ex, In, G, addp: Calibration object parts without multimedia lookup table.
         """
@@ -451,7 +452,7 @@ def read_ori(ori_file: str, add_file: str) -> Calibration:
     - add_file: path of file containing added (distortions) parameters.
     - add_fallback: path to file for use if add_file can't be opened.
 
-    Returns:
+    Returns
     -------
     - Ex, In, G, addp: Calibration object parts without multimedia lookup table.
     """
@@ -491,7 +492,7 @@ def compare_glass(g1: Glass, g2: Glass):
         g1 (_type_): _description_
         g2 (_type_): _description_
 
-    Returns:
+    Returns
     -------
         _type_: _description_
     """

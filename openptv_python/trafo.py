@@ -52,7 +52,7 @@ def metric_to_pixel(
     x_metric, y_metric (float): input metric coordinates.
     parameters (ControlPar): control structure holding image and pixel sizes.
 
-    Returns:
+    Returns
     -------
     x_pixel, y_pixel (float): output pixel coordinates.
     """
@@ -70,7 +70,7 @@ def arr_metric_to_pixel(metric: np.ndarray, parameters: ControlPar) -> np.ndarra
     metric (np.ndarray): input array of metric coordinates.
     parameters (ControlPar): control structure holding image and pixel sizes.
 
-    Returns:
+    Returns
     -------
     pixel (np.ndarray): output array of pixel coordinates.
     """

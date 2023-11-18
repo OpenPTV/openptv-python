@@ -79,7 +79,7 @@ def nearest_neighbour_pix(pix: List[Target], x: float, y: float, eps: float):
         y: y-coordinate of the point to find the nearest neighbour for.
         eps: radius of the search region around the point.
 
-    Returns:
+    Returns
     -------
         pnr: index of the nearest neighbour pixel in pix. If no pixel is
              found within the search region, PT_UNUSED is returned.
@@ -128,7 +128,7 @@ def read_calblock(filename: str) -> List[Coord3d]:
     ----
     - filename (str): path to the text file containing the calibration points.
 
-    Returns:
+    Returns
     -------
     - List of Coord3d: 3D positions and integer identification pointers of the calibration
       target points in the calibration file of class Coord3d. if fails, returns None

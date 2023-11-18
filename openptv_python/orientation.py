@@ -60,7 +60,7 @@ def point_position(
         several layers.
     cals - each camera's calibration object.
 
-    Returns:
+    Returns
     -------
     A tuple containing the ray convergence measure (an average of skew ray distance across all ray pairs)
     and the average 3D position vector.
@@ -147,7 +147,7 @@ def num_deriv_exterior(
     dang (float): the step size for numerical differentiation for the angle variables.
     pos (vec3d): the current 3D position represented on the image.
 
-    Returns:
+    Returns
     -------
     Tuple of two lists: (x_ders, y_ders) respectively the derivatives of the x and y
     image coordinates as function of each of the orientation parameters.
@@ -238,7 +238,7 @@ def orient(
         distortion parameters, which are also part of the G-M model and
         described in it. On failure returns None.
 
-    Returns:
+    Returns
     -------
     resi : ndarray of shape (maxsize,) or None
         On success, a pointer to an array of residuals. For each observation
@@ -765,7 +765,7 @@ def external_calibration(
         of image points whose 3D position is known.
     ControlParams cparam - an object holding general control parameters.
 
-    Returns:
+    Returns
     -------
     True if iteration succeeded, false otherwise.
     """
@@ -826,14 +826,14 @@ def full_calibration(
 
         This is what the underlying library uses a struct for, but come on.
 
-    Returns:
+    Returns
     -------
     ret - (r,2) array, the residuals in the x and y direction for r points used
         in orientation.
     used - r-length array, indices into target array of targets used.
     err_est - error estimation per calibration DOF. We
 
-    Raises:
+    Raises
     ------
     ValueError if iteration did not converge.
     """
@@ -912,7 +912,7 @@ def match_detection_to_ref(
     int eps - pixel radius of neighbourhood around detection to search for
         closest projection.
 
-    Returns:
+    Returns
     -------
     TargetArray holding the sorted targets.
     """
@@ -956,7 +956,7 @@ def point_positions(
     VolumeParams vparam - an object holding observed volume size parameters, needed
         for the single camera case only.
 
-    Returns:
+    Returns
     -------
     res - (n,3) array for n points represented by their targets.
     rcm - n-length array, the Ray Convergence Measure for eachpoint for multi camera
@@ -1022,7 +1022,7 @@ def multi_cam_point_positions(
     cals - a sequence of Calibration objects for each of the cameras, in the
         camera order of ``targets``.
 
-    Returns:
+    Returns
     -------
     res - (n,3) array for n points represented by their targets.
     rcm - n-length array, the Ray Convergence Measure for eachpoint.

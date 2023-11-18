@@ -139,7 +139,7 @@ def back_trans_point(
         cross_p: A numpy array representing the position of the point in the pixel coordinate system.
         cross_c: A numpy array representing the position of the point in the camera coordinate system.
 
-    Returns:
+    Returns
     -------
         A numpy array representing the position of the point in the camera coordinate system.
     """

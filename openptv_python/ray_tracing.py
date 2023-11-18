@@ -44,7 +44,7 @@ def ray_tracing(
             cal (_type_): _description_
             mm (_type_): _description_
 
-    Returns:
+    Returns
     -------
             _type_: _description_
     """
