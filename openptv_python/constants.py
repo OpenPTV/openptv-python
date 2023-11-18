@@ -17,6 +17,7 @@ NEXT_NONE = -2
 PRIO_DEFAULT = 2
 CORRES_NONE = -1
 
+SORTGRID_EPS = 25
 
 TR_UNUSED = -1
 TR_BUFSPACE = 4  # 4 frames in the buffer to track

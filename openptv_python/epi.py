@@ -93,7 +93,7 @@ def epi_mm(xl, yl, cal1, cal2, mmp, vpar) -> tuple[float, float, float, float]:
         _type_: _description_
     """
     z_min, z_max = 0, 0
-    pos, v, X = [0, 0, 0], [0, 0, 0], [0, 0, 0]
+    # pos, v, X = [0, 0, 0], [0, 0, 0], [0, 0, 0]
 
     pos, v = ray_tracing(xl, yl, cal1, mmp)
 
@@ -102,9 +102,12 @@ def epi_mm(xl, yl, cal1, cal2, mmp, vpar) -> tuple[float, float, float, float]:
         vpar.z_min_lay[1] - vpar.z_min_lay[0]
     ) / (vpar.x_lay[1] - vpar.x_lay[0])
 
-    z_max = vpar.z_max_lay[0] + (pos[0] - vpar.x_lay[0]) * (
-        vpar.z_max_lay[1] - vpar.z_max_lay[0]
-    ) / (vpar.x_lay[1] - vpar.x_lay[0])
+    z_max = float(
+        vpar.z_max_lay[0]
+        + (pos[0] - vpar.x_lay[0])
+        * (vpar.z_max_lay[1] - vpar.z_max_lay[0])
+        / (vpar.x_lay[1] - vpar.x_lay[0])
+    )
 
     X = move_along_ray(z_min, pos, v)
     xmin, ymin = flat_image_coord(X, cal2, mmp)

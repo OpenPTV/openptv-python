@@ -2,6 +2,7 @@ import unittest
 from pathlib import Path
 
 from openptv_python.calibration import read_calibration
+from openptv_python.constants import SORTGRID_EPS
 from openptv_python.parameters import read_control_par
 from openptv_python.sortgrid import (
     nearest_neighbour_pix,
@@ -37,7 +38,7 @@ class TestSortgrid(unittest.TestCase):
         eps = read_sortgrid_par(
             "tests/testing_fodder/parameters/sortgrid_corrupted.par"
         )
-        self.assertEqual(eps, None)
+        self.assertEqual(eps, SORTGRID_EPS)
 
     def test_read_calblock(self):
         """Test reading calblock.txt file."""

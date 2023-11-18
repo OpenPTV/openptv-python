@@ -1,5 +1,4 @@
 """Tracking algorithm."""
-import math
 from dataclasses import dataclass, field
 from typing import List, Tuple
 
@@ -209,6 +208,45 @@ def pos3d_in_bounds(pos, bounds):
     )
 
 
+# def angle_acc(
+#     start: np.ndarray, pred: np.ndarray, cand: np.ndarray
+# ) -> Tuple[float, float]:
+#     """Calculate the angle between the (1st order) numerical velocity vectors.
+
+#     to the predicted next_frame position and to the candidate actual position. The
+#     angle is calculated in [gon], see [1]. The predicted position is the
+#     position if the particle continued at current velocity.
+
+#     Arguments:
+#     ---------
+#     start -- vec3d, the particle start position
+#     pred -- vec3d, predicted position
+#     cand -- vec3d, possible actual position
+
+#     Returns:
+#     -------
+#     angle -- float, the angle between the two velocity vectors, [gon]
+#     acc -- float, the 1st-order numerical acceleration embodied in the deviation from prediction.
+#     """
+#     v0 = pred - start
+#     v1 = cand - start
+
+#     acc = math.dist(v0, v1)
+#     # acc = np.linalg.norm(v0 - v1)
+
+#     if np.all(v0 == -v1):
+#         angle = 200
+#     elif np.all(v0 == v1):
+#         angle = 0
+#     else:
+#         angle = float((200.0 / math.pi) * math.acos(
+#             math.fsum([v0[i] * v1[i] for i in range(3)])
+#             / (math.dist(start, pred) * math.dist(start, cand)))
+#         )
+
+#     return angle, acc
+
+
 def angle_acc(
     start: np.ndarray, pred: np.ndarray, cand: np.ndarray
 ) -> Tuple[float, float]:
@@ -216,7 +254,7 @@ def angle_acc(
 
     to the predicted next_frame position and to the candidate actual position. The
     angle is calculated in [gon], see [1]. The predicted position is the
-    position if the particle continued at current velocity.
+    position if the particle continued at the current velocity.
 
     Arguments:
     ---------
@@ -232,20 +270,22 @@ def angle_acc(
     v0 = pred - start
     v1 = cand - start
 
-    acc = math.dist(v0, v1)
-    # acc = np.linalg.norm(v0 - v1)
+    acc = np.linalg.norm(v0 - v1)
 
     if np.all(v0 == -v1):
         angle = 200
     elif np.all(v0 == v1):
         angle = 0
     else:
-        angle = (200.0 / math.pi) * math.acos(
-            math.fsum([v0[i] * v1[i] for i in range(3)])
-            / (math.dist(start, pred) * math.dist(start, cand))
+        dot_product = np.sum(v0 * v1)
+        norm_start_pred = np.linalg.norm(start - pred)
+        norm_start_cand = np.linalg.norm(start - cand)
+
+        angle = (200.0 / np.pi) * np.arccos(
+            dot_product / (norm_start_pred * norm_start_cand)
         )
 
-    return angle, acc
+    return float(angle), float(acc)
 
 
 def candsearch_in_pix(

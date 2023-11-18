@@ -74,7 +74,7 @@ def safely_allocate_adjacency_lists(
     num_cams: int, target_counts: List[int]
 ) -> List[List[List[Correspond]]]:
     """Allocate adjacency lists."""
-    lists = [[[] for _ in range(num_cams)] for _ in range(num_cams)]
+    lists = [[[float] for _ in range(num_cams)] for _ in range(num_cams)]
     error = 0
 
     for c1 in range(num_cams - 1):

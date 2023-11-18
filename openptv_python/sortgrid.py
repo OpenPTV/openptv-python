@@ -1,11 +1,11 @@
-from typing import List, Tuple
+from typing import List
 
 import numpy as np
 
 from openptv_python.calibration import Calibration
 from openptv_python.parameters import ControlPar
 
-from .constants import POS_INF, PT_UNUSED
+from .constants import POS_INF, PT_UNUSED, SORTGRID_EPS
 from .epi import Coord3d
 from .imgcoord import img_coord
 from .tracking_frame_buf import Target
@@ -113,13 +113,14 @@ def read_sortgrid_par(filename) -> int:
         with open(filename, "r", encoding="utf-8") as fpp:
             eps = int(fpp.readline())
     except IOError:
+        print(f"Can't open sortgrid parameter file: {filename} using default value")
         # handle error
-        eps = None
+        eps = SORTGRID_EPS
 
     return eps
 
 
-def read_calblock(filename: str) -> Tuple[Coord3d]:
+def read_calblock(filename: str) -> List[Coord3d]:
     """
     Read the calibration block file into the structure of 3D positions and pointers.
 
@@ -146,9 +147,9 @@ def read_calblock(filename: str) -> Tuple[Coord3d]:
                 coords.append(coord)
     except FileNotFoundError:
         print(f"Can't open calibration block file: {filename}")
-        return None
+        return []
     except ValueError:
         print(f"Empty or badly formatted file: {filename}")
-        return None
+        return []
 
     return coords
