@@ -1,3 +1,5 @@
+from typing import List
+
 import numpy as np
 
 from openptv_python.calibration import Calibration
@@ -23,7 +25,10 @@ part_traject[:, 0] = np.r_[:num_frames] * velocity
 cpar = ControlPar(num_cams=3)
 cpar.from_file("testing_fodder/track/parameters/control_newpart.par")
 
-targs = []
+targs: List[List[List[float]]] = [
+    [[0.0, 0.0] for _ in range(num_frames)] for _ in range(num_cams)
+]
+
 for cam in range(num_cams):
     cal = Calibration()
     cal.from_file(
@@ -31,14 +36,15 @@ for cam in range(num_cams):
         "testing_fodder/cal/cam1.tif.addpar",
     )
     # check this out
-    x, y = img_coord(part_traject, cal, cpar.mm)
-    x, y = metric_to_pixel(x, y, cpar)
-    targs.append([x, y])
+    for frame in range(num_frames):
+        x, y = img_coord(part_traject[frame, :], cal, cpar.mm)
+        x, y = metric_to_pixel(x, y, cpar)
+        targs[cam][frame] = [x, y]
 
 for frame in range(num_frames):
     # write 3D positions:
     with open(
-        "testing_fodder/track/res_orig/particles.%d" % (frame + 1), "w"
+        f"testing_fodder/track/res_orig/particles.{frame+1}", "w", encoding="utf-8"
     ) as outfile:
         # Note correspondence to the single target in each frame.
         outfile.writelines(
@@ -48,7 +54,7 @@ for frame in range(num_frames):
                     1,
                     part_traject[frame, 0],
                     part_traject[frame, 1],
-                    part_traject[frame, 1],
+                    part_traject[frame, 2],
                     0,
                     0,
                     0,
@@ -60,16 +66,17 @@ for frame in range(num_frames):
     # write associated targets from all cameras:
     for cam in range(num_cams):
         with open(
-            "testing_fodder/track/newpart/cam%d.%04d_targets" % (cam + 1, frame + 1),
+            f"testing_fodder/track/newpart/cam{cam+1}.{frame+1:04d}_targets",
             "w",
+            encoding="utf-8",
         ) as outfile:
             outfile.writelines(
                 [
                     str(1) + "\n",
                     "{:5d}{:10.3f}{:10.3f}{:5d}{:5d}{:5d}{:10d}{:5d}\n".format(
                         0,
-                        targs[cam][frame, 0],
-                        targs[cam][frame, 1],
+                        targs[cam][frame][0],
+                        targs[cam][frame][1],
                         100,
                         10,
                         10,

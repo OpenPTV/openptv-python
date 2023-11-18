@@ -113,7 +113,7 @@ def weighted_dumbbell_precision(
     """Calculate the weighted dumbbell precision of the current orientation."""
     res = [np.empty((3,)), np.empty((3,))]
     dtot = 0.0
-    len_err_tot = 0.0
+    len_err_tot: float = 0.0
 
     num_targs = targets.shape[0]
     num_cams = targets.shape[1]
@@ -124,7 +124,7 @@ def weighted_dumbbell_precision(
 
         if pt % 2 == 1:
             dist = np.linalg.norm(res[0] - res[1])
-            len_err_tot += 1 - (
+            len_err_tot += 1.0 - float(
                 db_length / dist if dist > db_length else dist / db_length
             )
 
@@ -590,7 +590,6 @@ def raw_orient(
     beta = np.zeros(6)
     dm = 0.0001
     drad = 0.0001
-    xp, yp, xc, yc = 0, 0, 0, 0
     pos = np.zeros(3)
 
     cal.added_par.k1 = 0

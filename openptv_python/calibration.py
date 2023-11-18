@@ -2,7 +2,7 @@
 
 import pathlib
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import List, Optional
 
 import numpy as np
 
@@ -111,15 +111,15 @@ class ap_52:
     scx: float = 1.0
     she: float = 0.0
 
-    def set_radial_distortion(self, dist_list: np.ndarray) -> None:
+    def set_radial_distortion(self, dist_list: List[float]) -> None:
         """Set the radial distortion parameters k1, k2, k3."""
         self.k1, self.k2, self.k3 = dist_list
 
-    def set_decentering(self, decent: np.ndarray) -> None:
+    def set_decentering(self, decent: List[float]) -> None:
         """Set the decentring parameters p1 and p2."""
         self.p1, self.p2 = decent
 
-    def set_affine_distortion(self, affine: np.ndarray) -> None:
+    def set_affine_distortion(self, affine: List[float]) -> None:
         """Set the affine distortion parameters scx and she."""
         self.scx, self.she = affine
 
@@ -214,7 +214,7 @@ class Calibration:
         # Additional parameters
         try:
             with open(add_file, "r", encoding="utf-8") as fp:
-                tmp = np.array(list(map(float, fp.readline().split())))
+                tmp = list(map(float, fp.readline().split()))
 
                 self.added_par.set_radial_distortion(tmp[:3])
                 self.added_par.set_decentering(tmp[3:5])
@@ -313,7 +313,7 @@ class Calibration:
         """
         return np.r_[self.int_par.xh, self.int_par.yh, self.int_par.cc]
 
-    def set_radial_distortion(self, dist_coeffs: np.ndarray):
+    def set_radial_distortion(self, dist_coeffs: List[float]) -> None:
         """
         Set the parameters for the image radial distortion, where the x/y.
 
@@ -337,7 +337,7 @@ class Calibration:
         """
         return np.r_[self.added_par.k1, self.added_par.k2, self.added_par.k3]
 
-    def set_decentering(self, decent: np.ndarray) -> None:
+    def set_decentering(self, decent: List[float]) -> None:
         """
         Set the parameters of decentering distortion (a.k.a. p1, p2, see [1]).
 
@@ -357,7 +357,7 @@ class Calibration:
         ret[1] = self.added_par.p2
         return ret
 
-    def set_affine_trans(self, affine: np.ndarray) -> None:
+    def set_affine_trans(self, affine: List[float]) -> None:
         """
         Set the affine transform parameters (x-scale, shear) of the image.
 

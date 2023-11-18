@@ -54,9 +54,10 @@ def vec_norm(vec: np.ndarray) -> float:
     return float(np.linalg.norm(vec))
 
 
-def vec_dot(vec1: np.ndarray, vec2: np.ndarray) -> np.ndarray:
+def vec_dot(vec1: np.ndarray, vec2: np.ndarray) -> float:
     """vec_dot() gives the dot product of two vectors as lists of floats."""
-    return np.dot(vec1, vec2)
+    val = np.dot(vec1, vec2)
+    return float(val)
 
 
 def vec_cross(vec1: np.ndarray, vec2: np.ndarray) -> np.ndarray:

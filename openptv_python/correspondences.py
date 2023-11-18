@@ -70,31 +70,46 @@ def safely_allocate_target_usage_marks(
 #             lists[c1][c2] = None
 
 
+# def safely_allocate_adjacency_lists(
+#     num_cams: int, target_counts: List[int]
+# ) -> List[List[List[Correspond]]]:
+#     """Allocate adjacency lists."""
+#     lists = [[[] for _ in range(num_cams)] for _ in range(num_cams)]
+#     error = 0
+
+#     for c1 in range(num_cams - 1):
+#         for c2 in range(c1 + 1, num_cams):
+#             if error == 0:
+#                 lists[c1][c2] = [Correspond() for _ in range(target_counts[c1])]  # type: ignore
+#                 if not lists[c1][c2]:
+#                     error = 1
+#                     lists[c1][c2] = []
+
+#                 for edge in range(target_counts[c1]):
+#                     lists[c1][c2][edge].n = 0
+#                     lists[c1][c2][edge].p1 = 0
+#             else:
+#                 lists[c1][c2] = []
+
+#     if error == 0:
+#         return lists
+
+#     return []
+
+
 def safely_allocate_adjacency_lists(
     num_cams: int, target_counts: List[int]
 ) -> List[List[List[Correspond]]]:
-    """Allocate adjacency lists."""
-    lists = [[[float] for _ in range(num_cams)] for _ in range(num_cams)]
-    error = 0
+    try:
+        lists = [
+            [[Correspond() for _ in range(target_counts[c1])] for _ in range(num_cams)]
+            for c1 in range(num_cams)
+        ]
+    except MemoryError:
+        print("Memory allocation failed.")
+        lists = []
 
-    for c1 in range(num_cams - 1):
-        for c2 in range(c1 + 1, num_cams):
-            if error == 0:
-                lists[c1][c2] = [Correspond() for _ in range(target_counts[c1])]  # type: ignore
-                if not lists[c1][c2]:
-                    error = 1
-                    lists[c1][c2] = []
-
-                for edge in range(target_counts[c1]):
-                    lists[c1][c2][edge].n = 0
-                    lists[c1][c2][edge].p1 = 0
-            else:
-                lists[c1][c2] = []
-
-    if error == 0:
-        return lists
-
-    return []
+    return lists
 
 
 def four_camera_matching(

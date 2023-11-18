@@ -102,6 +102,9 @@ def img_coord(
 ) -> Tuple[float, float]:
     """Image coordinate."""
     # Estimate metric coordinates in image space using flat_image_coord()
+    if pos.shape[0] != 3:
+        raise ValueError("pos must be a 3D vector")
+
     x, y = flat_image_coord(pos, cal, mm)
     # print(f"flat_image_coord: x = {x}, y = {y}")
 

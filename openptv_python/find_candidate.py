@@ -54,7 +54,7 @@ def find_candidate(
     -------
         cand: list of candidates, or empty list if nothing is found
     """
-    cand = []
+    cand: List[Candidate] = []
 
     # The image space is the image plane of the camera. The image space is
     # given in millimeters of sensor size and the origin is in the center of the sensor.

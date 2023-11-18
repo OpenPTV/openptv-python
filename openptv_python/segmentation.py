@@ -238,9 +238,9 @@ def peak_fit(
     gv1, gv2 = 0, 0
     x1, x2, y1, y2, s12 = 0.0, 0.0, 0.0, 0.0, 0.0
     label_img = [0] * (imx * imy)
-    peaks = []
-    waitlist = [[]]
-    pix = []
+    peaks: List[Peak] = []
+    waitlist: List[List[int]] = [[]]
+    pix: List[Target] = []
     n_target = 0
 
     for i in range(ymin, ymax - 1):

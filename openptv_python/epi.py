@@ -92,9 +92,6 @@ def epi_mm(xl, yl, cal1, cal2, mmp, vpar) -> tuple[float, float, float, float]:
     -------
         _type_: _description_
     """
-    z_min, z_max = 0, 0
-    # pos, v, X = [0, 0, 0], [0, 0, 0], [0, 0, 0]
-
     pos, v = ray_tracing(xl, yl, cal1, mmp)
 
     # calculate min and max depth for position (valid only for one setup)
