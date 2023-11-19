@@ -743,7 +743,7 @@ def add_particle(frm: Frame, pos: np.ndarray, cand_inds: np.ndarray) -> None:
     - cand_inds (list[list[int]]): Indices of candidate targets for association with this particle.
     """
     num_parts = frm.num_parts
-    if num_parts > 0:
+    if num_parts > len(frm.path_info):
         ref_path_inf = frm.path_info[num_parts]
         ref_corres = frm.correspond[num_parts]
     else:
