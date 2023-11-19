@@ -709,11 +709,42 @@ def assess_new_position(
     return valid_cams, targ_pos, cand_inds
 
 
+# def add_particle(frm: Frame, pos: np.ndarray, cand_inds: np.ndarray) -> None:
+#     """Add a new particle to the frame buffer."""
+#     ref_path_inf = Pathinfo(x=pos)
+#     ref_path_inf.reset_links()
+
+#     frm.path_info.append(ref_path_inf)
+
+
+#     ref_corres =  Corres()
+#     ref_targets = frm.targets
+
+#     for cam in range(frm.num_cams):
+#         ref_corres.p[cam] = CORRES_NONE
+
+#         # We always take the 1st candidate, apparently. Why did we fetch 4?
+#         if cand_inds[cam][0] != PT_UNUSED:
+#             _ix = cand_inds[cam][0]
+#             ref_targets[cam][_ix].tnr = frm.num_parts
+#             ref_corres.p[cam] = _ix
+#             ref_corres.nr = frm.num_parts
+
+#     frm.correspond.append(ref_corres)
+#     frm.num_parts += 1
+
+
 def add_particle(frm: Frame, pos: np.ndarray, cand_inds: np.ndarray) -> None:
-    """Add a new particle to the frame buffer."""
+    """Insert a particle at a given position to the end of the frame, along with associated targets.
+
+    Arguments:
+    - frm (frame): The frame to store the particle.
+    - pos (vec3d): Position of the inserted particle in global coordinates.
+    - cand_inds (list[list[int]]): Indices of candidate targets for association with this particle.
+    """
     num_parts = frm.num_parts
     ref_path_inf = frm.path_info[num_parts]
-    ref_path_inf.x = pos
+    ref_path_inf.x = vec_copy(pos)
     ref_path_inf.reset_links()
 
     ref_corres = frm.correspond[num_parts]
@@ -730,6 +761,7 @@ def add_particle(frm: Frame, pos: np.ndarray, cand_inds: np.ndarray) -> None:
             ref_corres.nr = num_parts
 
     frm.num_parts += 1
+
 
 
 def track_forward_start(tr: TrackingRun):
@@ -764,7 +796,6 @@ def trackcorr_c_loop(run_info, step):
     rr = 0.0
 
     _ix = 0  # For use in any of the complex index expressions below
-    orig_parts = 0  # avoid infinite loop with particle addition set
     num_added = 0
     count1 = 0
     count2 = 0

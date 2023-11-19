@@ -1,12 +1,16 @@
-import unittest
 import os
-import shutil 
+import shutil
+import unittest
 from pathlib import Path
 
-from openptv_python.parameters import read_control_par
 from openptv_python.calibration import Calibration, read_calibration
+from openptv_python.parameters import read_control_par
+from openptv_python.track import (
+    track_forward_start,
+    trackcorr_c_finish,
+    trackcorr_c_loop,
+)
 from openptv_python.tracking_run import tr_new
-from openptv_python.track import track_forward_start, trackcorr_c_loop, trackcorr_c_finish
 
 
 def remove_directory(directory_path):
@@ -141,7 +145,7 @@ class TestCavity(unittest.TestCase):
         self.assertEqual(run.nlinks, 132 + 180 + 149,
                          f"Was expecting nlinks == 461 found {run.nlinks}")
 
-        
+
         remove_directory("res/")
         remove_directory("img/")
 

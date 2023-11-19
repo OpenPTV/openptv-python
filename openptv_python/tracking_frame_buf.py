@@ -715,7 +715,8 @@ def read_path_frame(
 
     # we do not need number of particles, reading till EOF
     n_particles = int(filein.readline())
-    cor_buf = [Corres() for _ in range(n_particles)]
+    print(f"Reading {n_particles} particles from {fname}")
+    cor_buf = [Corres() for _ in range(n_particles)] # we do not want empty lists
     path_buf = [Pathinfo() for _ in range(n_particles)]
 
     if linkage_file_base != "":
