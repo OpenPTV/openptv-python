@@ -21,7 +21,7 @@ from .constants import (
 from .imgcoord import img_coord
 from .orientation import point_position
 from .parameters import ControlPar, TrackPar
-from .tracking_frame_buf import Frame, Target
+from .tracking_frame_buf import Corres, Frame, Pathinfo, Target
 from .tracking_run import TrackingRun
 from .trafo import dist_to_flat, metric_to_pixel, pixel_to_metric
 from .vec_utils import vec_copy, vec_diff_norm, vec_subt
@@ -628,7 +628,7 @@ def sorted_candidates_in_volume(
     if num_cands > 0:
         points = points[:num_cands] + [Foundpix(ftnr=TR_UNUSED)]
     else:
-        points = []
+        points = [Foundpix(ftnr=TR_UNUSED)]
 
     return points
 
@@ -743,11 +743,20 @@ def add_particle(frm: Frame, pos: np.ndarray, cand_inds: np.ndarray) -> None:
     - cand_inds (list[list[int]]): Indices of candidate targets for association with this particle.
     """
     num_parts = frm.num_parts
-    ref_path_inf = frm.path_info[num_parts]
+    if num_parts > 0:
+        ref_path_inf = frm.path_info[num_parts]
+        ref_corres = frm.correspond[num_parts]
+    else:
+        ref_path_inf = Pathinfo()
+        frm.path_info.append(ref_path_inf)
+
+        ref_corres = Corres()
+        frm.correspond.append(ref_corres)
+
     ref_path_inf.x = vec_copy(pos)
     ref_path_inf.reset_links()
 
-    ref_corres = frm.correspond[num_parts]
+
     ref_targets = frm.targets
 
     for cam in range(frm.num_cams):
@@ -852,7 +861,7 @@ def trackcorr_c_loop(run_info, step):
         # Continue to find candidates for the candidates.
         count2 += 1
         mm = 0
-        while w[mm].ftnr != TR_UNUSED:  # counter1-loop
+        while w[mm].ftnr != TR_UNUSED and len(fb.buf[2].path_info) > w[mm].ftnr:  # counter1-loop
             # search for found corr of current the corr in next_frame with predicted location
 
             # found 3D-position
@@ -878,7 +887,7 @@ def trackcorr_c_loop(run_info, step):
             if len(wn) > 0:  # not empty
                 count3 += 1
                 kk = 0
-                while wn[kk].ftnr != TR_UNUSED:
+                while wn[kk].ftnr != TR_UNUSED and len(fb.buf[3].path_info) > wn[kk].ftnr:
                     # print(f" inside wn[{kk}].ftnr {wn[kk].ftnr}")
                     ref_path_inf = fb.buf[3].path_info[wn[kk].ftnr]
                     X[4] = vec_copy(ref_path_inf.x)
