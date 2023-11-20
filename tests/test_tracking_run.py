@@ -93,8 +93,8 @@ class TestTrackCorrNoAdd(unittest.TestCase):
 
         os.chdir(directory)
 
-        print(os.path.abspath(os.curdir))
-        print(Path.cwd())
+        # print(os.path.abspath(os.curdir))
+        # print(Path.cwd())
 
         if Path("res/").exists():
             remove_directory("res/")
@@ -162,8 +162,8 @@ class TestTrackCorrNoAdd(unittest.TestCase):
 
         os.chdir(directory)
 
-        print(os.path.abspath(os.curdir))
-        print(Path.cwd())
+        # print(os.path.abspath(os.curdir))
+        # print(Path.cwd())
 
         if Path("res/").exists():
             remove_directory("res/")
@@ -238,8 +238,8 @@ class TestTrackback(unittest.TestCase):
 
         os.chdir(directory)
 
-        print(os.path.abspath(os.curdir))
-        print(Path.cwd())
+        # print(os.path.abspath(os.curdir))
+        # print(Path.cwd())
 
         if Path("res/").exists():
             remove_directory("res/")
@@ -327,7 +327,7 @@ class TestNewParticle(unittest.TestCase):
         print(f"working from {current_directory}")
 
         os.chdir("tests/testing_fodder/")
-        print(os.path.abspath(os.curdir))
+        # print(os.path.abspath(os.curdir))
 
         # Set up all scene parameters to track one specially-contrived trajectory.
         calib: List[Calibration] = []
@@ -338,7 +338,7 @@ class TestNewParticle(unittest.TestCase):
             calib.append(cal)
 
         os.chdir("track/")
-        print(os.path.abspath(os.curdir))
+        # print(os.path.abspath(os.curdir))
 
         copy_directory("res_orig/", "res/")
         copy_directory("img_orig/", "img/")

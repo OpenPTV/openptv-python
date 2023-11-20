@@ -74,8 +74,8 @@ class TestBurgers(unittest.TestCase):
 
         os.chdir(directory)
 
-        print(os.path.abspath(os.curdir))
-        print(Path.cwd())
+        # print(os.path.abspath(os.curdir))
+        # # print(Path.cwd())
 
         if Path("res/").exists():
             remove_directory("res/")
@@ -110,15 +110,15 @@ class TestBurgers(unittest.TestCase):
             10000.0,
         )
 
-        print("num cams in run is", run.cpar.num_cams)
-        print("add particle is", run.tpar.add)
+        # print("num cams in run is", run.cpar.num_cams)
+        # print("add particle is", run.tpar.add)
 
         track_forward_start(run)
         for step in range(run.seq_par.first, run.seq_par.last):
             trackcorr_c_loop(run, step)
         trackcorr_c_finish(run, run.seq_par.last)
 
-        print(f"total num parts is {run.npart}, num links is {run.nlinks}")
+        # print(f"total num parts is {run.npart}, num links is {run.nlinks}")
 
         self.assertEqual(run.npart, 19, f"Was expecting npart == 19 but found {run.npart}")
         self.assertEqual(run.nlinks, 17, f"Was expecting nlinks == 17 but found {run.nlinks}")

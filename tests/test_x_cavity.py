@@ -71,8 +71,8 @@ class TestCavity(unittest.TestCase):
 
         os.chdir(directory)
 
-        print(os.path.abspath(os.curdir))
-        print(Path.cwd())
+        # print(os.path.abspath(os.curdir))
+        # print(Path.cwd())
 
         if Path("res/").exists():
             remove_directory("res/")

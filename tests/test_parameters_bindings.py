@@ -492,7 +492,7 @@ class TestTargetPar(unittest.TestCase):
         if tp is None:
             print(inp_filename)
             print(os.getcwd())
-            print(os.path.exists(inp_filename))
+            # print(os.path.exists(inp_filename))
 
         self.assertEqual(tp.discont, 5)
         self.assertEqual(tp.nnmin, 3)
