@@ -83,17 +83,16 @@ def copy_images(src: np.ndarray) -> np.ndarray:
 
 def prepare_image(
     img: np.ndarray,
-    cpar: ControlPar,
     dim_lp: int = 1,
-    filter_hp: int = 1,
+    filter_hp: int = 0, # or 1,2
     filter_file: str = "",
 ) -> np.ndarray:
     """Prepare an image for particle detection: an averaging (smoothing).
 
     filter on an image, optionally followed by additional user-defined filter.
     """
-    image_size = cpar.imx * cpar.imy
-    img_lp = np.zeros(image_size, dtype=np.uint8)
+    # image_size = cpar.imx * cpar.imy
+    # img_lp = np.zeros_like(img, dtype=np.uint8)
 
     # Apply low-pass filter
     # img = img.reshape((cpar.imy, cpar.imx))  # Reshape to 2D image
@@ -101,11 +100,11 @@ def prepare_image(
         img,
         size=dim_lp * 2 + 1,
         mode="constant",
-        cval=0.0,
+        cval=0,
     )
 
     # Subtract low-pass filtered image from original image
-    img_hp = np.subtract(img, img_lp)
+    img_hp = img | img_lp
 
     # Filter highpass image, if wanted, if filter_hp == 0, no highpass filtering
     if filter_hp == 1:
@@ -115,8 +114,8 @@ def prepare_image(
             size=3,
             mode="constant",
             cval=0.0,
-        ).flatten()
-    elif filter_hp == 2:
+        )
+    elif filter_hp == 2 and filter_file != "":
         try:
             with open(filter_file, "r", encoding="utf-8") as fp:
                 filt = np.array(fp.read().split(), dtype=np.float64).reshape((3, 3))
@@ -129,7 +128,7 @@ def prepare_image(
             weights=filt,
             mode="constant",
             cval=0.0,
-        ).flatten()
+        )
 
     return img_hp
 

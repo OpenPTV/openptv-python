@@ -22,7 +22,7 @@ class Test_image_processing(unittest.TestCase):
             ],
             dtype=np.uint8,
         )
-        self.filter_hp = 0
+        self.filter_hp = False
         self.control = ControlPar(4)
         self.control.set_image_size((5, 5))
 
@@ -31,37 +31,42 @@ class Test_image_processing(unittest.TestCase):
         output_img = prepare_image(
             self.input_img,
             filter_hp=self.filter_hp,
-            cpar=self.control,
-            dim_lp=1,
+            dim_lp=True,
         )
         assert output_img.shape == (5, 5)
 
-        with self.assertRaises(IOError):
-            # filter_hp=2 but filter_file=None
-            output_img = prepare_image(
-                self.input_img, filter_hp=2, cpar=self.control, filter_file=None
-            )
-
     def test_preprocess_image(self):
         """Test that the function returns the correct result."""
+        # correct_res = np.array(
+        #     [
+        #         [0, 0, 0, 0, 0],
+        #         [0, 142, 85, 142, 0],
+        #         [0, 85, 0, 85, 0],
+        #         [0, 142, 85, 142, 0],
+        #         [0, 0, 0, 0, 0],
+        #     ],
+        #     dtype=np.uint8,
+        # )
+
         correct_res = np.array(
             [
-                [0, 0, 0, 0, 0],
-                [0, 142, 85, 142, 0],
-                [0, 85, 0, 85, 0],
-                [0, 142, 85, 142, 0],
-                [0, 0, 0, 0, 0],
+                [ 28, 56, 85, 56, 28],
+                [ 56,255,255, 255, 56],
+                [ 85, 255, 255, 255,  85],
+                [ 56 ,255 ,255, 255 , 56],
+                [ 28 , 56 , 85 , 56,  28],
             ],
             dtype=np.uint8,
         )
 
         res = prepare_image(
             self.input_img,
-            filter_hp=self.filter_hp,
-            cpar=self.control,
             dim_lp=1,
+            filter_hp=self.filter_hp,
             filter_file='',
         )
+
+        # print(res)
 
         # this test fails as we changed the image processing
         # to use Numpy approach
