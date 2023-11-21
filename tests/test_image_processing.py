@@ -60,7 +60,7 @@ class Test_image_processing(unittest.TestCase):
             filter_hp=self.filter_hp,
             cpar=self.control,
             dim_lp=1,
-            filter_file=None,
+            filter_file='',
         )
 
         # this test fails as we changed the image processing

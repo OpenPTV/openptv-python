@@ -506,6 +506,7 @@ def compare_control_par(c1: ControlPar, c2: ControlPar) -> bool:
     )
 
 
+
 @dataclass
 class TargetPar:
     """Target parameters."""
@@ -522,49 +523,55 @@ class TargetPar:
     cr_sz: int = 1
 
 
-def read_target_par(filename: str) -> TargetPar | None:
-    """Read target parameters from file and returns target_par object.
+    def from_file(self, filename: str) -> None:
+        """Read target parameters from file and returns target_par object.
 
-    Reads target recognition parameters from a legacy .par file, which
-    holds one parameter per line. The arguments are read in this order:
+        Reads target recognition parameters from a legacy .par file, which
+        holds one parameter per line. The arguments are read in this order:
 
-    1. gvthres[0]
-    2. gvthres[1]
-    3. gvthres[2]
-    4. gvthres[3]
-    5. discont
-    6. nnmin
-    7. nnmax
-    8. nxmin
-    9. nxmax
-    10. nymin
-    11. nymax
-    12. sumg_min
-    13. cr_sz
+        1. gvthres[0]
+        2. gvthres[1]
+        3. gvthres[2]
+        4. gvthres[3]
+        5. discont
+        6. nnmin
+        7. nnmax
+        8. nxmin
+        9. nxmax
+        10. nymin
+        11. nymax
+        12. sumg_min
+        13. cr_sz
 
 
 
-    """
+        """
+        ret = self
+        try:
+            with open(filename, "r", encoding="utf-8") as file:
+                for _ in range(TR_MAX_CAMS):  # todo - make it no. cameras
+                    ret.gvthresh.append(int(file.readline()))
+
+                ret.discont = int(file.readline())
+                ret.nnmin = int(file.readline())
+                ret.nnmax = int(file.readline())
+                ret.nxmin = int(file.readline())
+                ret.nxmax = int(file.readline())
+                ret.nymin = int(file.readline())
+                ret.nymax = int(file.readline())
+                ret.sumg_min = int(file.readline())
+                ret.cr_sz = int(file.readline())
+            # return ret
+        except IOError:
+            print(f"Could not open target recognition parameters file {filename}.")
+            # return None
+
+
+def read_target_par(filename: str) -> TargetPar:
+    """Read target parameters from file and returns target_par object."""
     ret = TargetPar()
-    try:
-        with open(filename, "r", encoding="utf-8") as file:
-            for _ in range(TR_MAX_CAMS):  # todo - make it no. cameras
-                ret.gvthresh.append(int(file.readline()))
-
-            ret.discont = int(file.readline())
-            ret.nnmin = int(file.readline())
-            ret.nnmax = int(file.readline())
-            ret.nxmin = int(file.readline())
-            ret.nxmax = int(file.readline())
-            ret.nymin = int(file.readline())
-            ret.nymax = int(file.readline())
-            ret.sumg_min = int(file.readline())
-            ret.cr_sz = int(file.readline())
-        return ret
-    except IOError:
-        print(f"Could not open target recognition parameters file {filename}.")
-        return None
-
+    ret.from_file(filename)
+    return ret
 
 def compare_target_par(targ1: TargetPar, targ2: TargetPar) -> bool:
     """Compare two target_par objects."""

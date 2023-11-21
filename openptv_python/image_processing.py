@@ -87,7 +87,7 @@ def prepare_image(
     dim_lp: int = 1,
     filter_hp: int = 1,
     filter_file: str = "",
-):
+) -> np.ndarray:
     """Prepare an image for particle detection: an averaging (smoothing).
 
     filter on an image, optionally followed by additional user-defined filter.
@@ -96,7 +96,7 @@ def prepare_image(
     img_lp = np.zeros(image_size, dtype=np.uint8)
 
     # Apply low-pass filter
-    img = img.reshape((cpar.imy, cpar.imx))  # Reshape to 2D image
+    # img = img.reshape((cpar.imy, cpar.imx))  # Reshape to 2D image
     img_lp = ndimage.uniform_filter(
         img,
         size=dim_lp * 2 + 1,
@@ -110,7 +110,8 @@ def prepare_image(
     # Filter highpass image, if wanted, if filter_hp == 0, no highpass filtering
     if filter_hp == 1:
         img_hp = ndimage.uniform_filter(
-            img_hp.reshape((cpar.imy, cpar.imx)),
+            # img_hp.reshape((cpar.imy, cpar.imx)),
+            img_hp,
             size=3,
             mode="constant",
             cval=0.0,
@@ -123,7 +124,8 @@ def prepare_image(
             raise IOError(f"Could not open filter file: {filter_file}") from exc
 
         img_hp = ndimage.convolve(
-            img_hp.reshape((cpar.imy, cpar.imx)),
+            # img_hp.reshape((cpar.imy, cpar.imx)),
+            img_hp,
             weights=filt,
             mode="constant",
             cval=0.0,
