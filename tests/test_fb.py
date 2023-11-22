@@ -24,7 +24,7 @@ class TestReadTargets(unittest.TestCase):
         t1 = Target(0, 1127.0000, 796.0000, 13320, 111, 120, 828903, 1)
         t2 = Target(1, 796.0000, 809.0000, 13108, 113, 116, 658928, 0)
 
-        file_base = "tests/testing_fodder/sample_"
+        file_base = "tests/testing_fodder/sample_%04d"
         frame_num = 42
 
         tbuf = read_targets(file_base, frame_num)
@@ -54,7 +54,7 @@ class TestZeroTargets(unittest.TestCase):
         -------
         None
         """
-        file_base = "tests/testing_fodder/sample_"
+        file_base = "tests/testing_fodder/sample_%04d"
         frame_num = 1
         tbuf = read_targets(file_base, frame_num)
         self.assertEqual(len(tbuf), 0)
@@ -79,7 +79,7 @@ class TestWriteTargets(unittest.TestCase):
         t1 = Target(0, 1127.0000, 796.0000, 13320, 111, 120, 828903, 1)
         t2 = Target(1, 796.0000, 809.0000, 13108, 113, 116, 658928, 0)
 
-        file_base = "tests/testing_fodder/test_"
+        file_base = "tests/testing_fodder/test_%04d"
         frame_num = 42
         num_targets = 2
 

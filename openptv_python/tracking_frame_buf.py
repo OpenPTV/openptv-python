@@ -168,7 +168,8 @@ def read_targets(file_base: str, frame_num: int) -> List[Target]:
     # file_base = file_base.split(".")[0]
 
     if frame_num > 0:
-        filename = f"{file_base}{frame_num:04d}_targets"
+        # filename = f"{file_base}{frame_num:04d}_targets"
+        filename = file_base % frame_num + '_targets'
     else:
         filename = f"{file_base}_targets"
 

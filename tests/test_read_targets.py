@@ -32,7 +32,7 @@ class TestTargets(unittest.TestCase):
 
     def test_read_targets(self):
         """Reading a targets file from Python."""
-        targs = read_targets("tests/testing_folder/sample_", 42)
+        targs = read_targets("tests/testing_folder/sample_%04d", 42)
 
         self.assertEqual(len(targs), 2)
         self.assertEqual([targ.tnr for targ in targs], [1, 0])
@@ -41,8 +41,8 @@ class TestTargets(unittest.TestCase):
 
     def test_sort_y(self):
         """Sorting on the Y coordinate in place."""
-        targs = read_targets("tests/testing_folder/frame/cam1.", 333)
-        revs = read_targets("tests/testing_folder/frame/cam1_reversed.", 333)
+        targs = read_targets("tests/testing_folder/frame/cam1.%04d", 333)
+        revs = read_targets("tests/testing_folder/frame/cam1_reversed.%04d", 333)
         revs.sort(key=lambda x: x.pos()[1])
 
         for targ, rev in zip(targs, revs):
@@ -50,9 +50,9 @@ class TestTargets(unittest.TestCase):
 
     def test_write_targets(self):
         """Round-trip test of writing targets."""
-        targs = read_targets("tests/testing_folder/sample_", 42)
+        targs = read_targets("tests/testing_folder/sample_%04d", 42)
         write_targets(targs, len(targs), "tests/testing_folder/round_trip.", 1)
-        tback = read_targets("tests/testing_folder/round_trip.", 1)
+        tback = read_targets("tests/testing_folder/round_trip.%04d", 1)
 
         self.assertEqual(len(targs), len(tback))
         self.assertEqual([targ.tnr for targ in targs], [targ.tnr for targ in tback])

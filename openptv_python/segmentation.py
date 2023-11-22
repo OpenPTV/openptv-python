@@ -589,7 +589,8 @@ def target_recognition(
     return target_array
 
 
-def blob_detection(image, threshold):
+def blob_detection(image, threshold) -> List[int]:
+    """Detect blobs in an image."""
     # Initialize the output list.
     blobs = []
 

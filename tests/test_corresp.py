@@ -163,7 +163,7 @@ class TestReadControlPar(unittest.TestCase):
             "tests/testing_folder/calibration/cam2.tif.addpar",
         )
         cpar = read_control_par("tests/testing_folder/corresp/control.par")
-        targs = read_targets("tests/testing_folder/frame/cam1.", 333)
+        targs = read_targets("tests/testing_folder/frame/cam1.%04d", 333)
 
         # mc = MatchedCoords(targs, cpar, cal)
         mc = match_coords(targs, cpar, cal)

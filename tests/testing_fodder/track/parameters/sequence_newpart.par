@@ -1,5 +1,5 @@
-newpart/cam1.
-newpart/cam2.
-newpart/cam3.
+newpart/cam1.%05d
+newpart/cam2.%05d
+newpart/cam3.%05d
 10001
 10005

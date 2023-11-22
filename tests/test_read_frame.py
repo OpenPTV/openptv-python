@@ -29,7 +29,7 @@ class TestFrame(unittest.TestCase):
             frame_num: int,
 
         """
-        targ_files = [f"tests/testing_folder/frame/cam{c:d}." for c in range(1, 5)]
+        targ_files = [f"tests/testing_folder/frame/cam{c:d}.%04d" for c in range(1, 5)]
         frm = Frame(num_cams=4)
         frm.read(
             corres_file_base="tests/testing_folder/frame/rt_is",

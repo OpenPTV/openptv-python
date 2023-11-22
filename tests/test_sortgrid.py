@@ -1,6 +1,8 @@
 import unittest
 from pathlib import Path
 
+import numpy as np
+
 from openptv_python.calibration import read_calibration
 from openptv_python.constants import SORTGRID_EPS
 from openptv_python.parameters import read_control_par
@@ -48,7 +50,7 @@ class TestSortgrid(unittest.TestCase):
         # with self.assertRaises(FileNotFoundError):
         assert calblock_file.exists()
 
-        cal_points = read_calblock(calblock_file)
+        cal_points = read_calblock(str(calblock_file))
         self.assertEqual(len(cal_points), correct_num_points)
 
     def test_sortgrid(self):
@@ -58,7 +60,7 @@ class TestSortgrid(unittest.TestCase):
         eps = read_sortgrid_par("tests/testing_fodder/parameters/sortgrid.par")
         self.assertEqual(eps, correct_eps)
 
-        file_base = "tests/testing_fodder/sample_"
+        file_base = "tests/testing_fodder/sample_%04d"
         frame_num = 42
 
         targets = read_targets(file_base, frame_num)
@@ -74,7 +76,7 @@ class TestSortgrid(unittest.TestCase):
         self.assertEqual(nfix, 5)
 
         # sortgrid expects only x,y,z
-        fix = [vec_set(p.x, p.y, p.z) for p in cal_points]
+        fix = np.array([vec_set(p.x, p.y, p.z) for p in cal_points])
 
         sorted_pix = sortgrid(cal, cpar, nfix, fix, eps, targets)
         self.assertEqual(sorted_pix[0].pnr, -999)
