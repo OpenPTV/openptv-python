@@ -19,6 +19,7 @@ class MultimediaPar:
 
     @classmethod
     def from_dict(cls, data):
+        """Read MultimediaPar from a dictionary."""
         return cls(**data)
 
     def __post_init__(self):
@@ -85,6 +86,11 @@ class SequencePar:
     img_base_name: List[str] = field(default_factory=list)  # empty list
     first: int = 0
     last: int = 0
+
+    @classmethod
+    def from_dict(cls, data):
+        """Read SequencePar from a dictionary."""
+        return cls(**data)
 
     def __post_init__(self):
         if len(self.img_base_name) == 0:
@@ -166,6 +172,11 @@ class TrackPar:
     dn: float = 0.0
     dnx: float = 0.0
     dny: float = 0.0
+
+    @classmethod
+    def from_dict(cls, data):
+        """Read TrackPar from a dictionary."""
+        return cls(**data)
 
     def from_file(self, filename: str):
         """Read tracking parameters from file and return TrackPar object.
@@ -288,6 +299,11 @@ class VolumePar:
         default_factory=float
     )  # minimal correlation value of all criteria
 
+    @classmethod
+    def from_dict(cls, data):
+        """Read VolumePar from a dictionary."""
+        return cls(**data)
+
     def set_z_min_lay(self, z_min_lay: list[float]) -> None:
         """Set the minimum z coordinate of the layers."""
         self.z_min_lay = z_min_lay
@@ -377,6 +393,7 @@ class ControlPar:
 
     @classmethod
     def from_dict(cls, data):
+        """Read ControlPar from a dictionary."""
         mm_data = data.get('mm', {})
         data['mm'] = MultimediaPar.from_dict(mm_data)
         return cls(**data)
@@ -519,6 +536,10 @@ class TargetPar:
     sumg_min: int = 10  # minimum sum of grey values
     cr_sz: int = 1
 
+    @classmethod
+    def from_dict(cls, data):
+        return cls(**data)
+
 
     def from_file(self, filename: str) -> None:
         """Read target parameters from file and returns target_par object.
@@ -602,3 +623,36 @@ class OrientPar:
     scxflag: int = 0
     sheflag: int = 0
     interfflag: int = 0
+
+
+@dataclass
+class CalibrationPar:
+    """Calibration parameters."""
+
+    fixp_name: str
+    img_name: list
+    img_ori0: list
+    tiff_flag: int
+    pair_flag: int
+    chfield: int
+
+    @classmethod
+    def from_dict(cls, data):
+        """Read from cal_ori.par dictionary."""
+        return cls(**data)
+
+# Function to read parameters from a file into an instance of CalibrationParameters
+def read_cal_ori_parameters(file_path: str, num_cams: int) -> CalibrationPar:
+    """Read from cal_ori.par file."""
+    with open(file_path, 'r', encoding="utf-8") as file:
+        fixp_name = file.readline().strip()
+        tmp = [file.readline().strip() for _ in range(num_cams*2)]
+        # img_ori0 = [file.readline().strip() for _ in range(4)]
+        img_name = tmp[0::2]
+        img_ori0 = tmp[1::2]
+
+        tiff_flag = int(file.readline().strip())
+        pair_flag = int(file.readline().strip())
+        chfield = int(file.readline().strip())
+
+    return CalibrationPar(fixp_name, img_name, img_ori0, tiff_flag, pair_flag, chfield)
