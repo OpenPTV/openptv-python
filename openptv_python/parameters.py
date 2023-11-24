@@ -17,6 +17,10 @@ class MultimediaPar:
     d: List[float] = field(default_factory=lambda: [0.0])
     n3: float = 1.0
 
+    @classmethod
+    def from_dict(cls, data):
+        return cls(**data)
+
     def __post_init__(self):
         if len(self.n2) != len(self.d):
             raise ValueError("n2 and d must have the same length")
@@ -268,27 +272,7 @@ def compare_track_par(t1: TrackPar, t2: TrackPar) -> bool:
 
 @dataclass
 class VolumePar:
-    """Volume parameters.
-
-    /* Volume parameters */
-    fpp = fopen(filename, "r");
-    if(fscanf(fpp, &(ret->x_lay[0])) == 0) goto handle_error;
-    if(fscanf(fpp, &(ret->z_min_lay[0])) == 0) goto handle_error;
-    if(fscanf(fpp, &(ret->z_max_lay[0])) == 0) goto handle_error;
-    if(fscanf(fpp, &(ret->x_lay[1])) == 0) goto handle_error;
-    if(fscanf(fpp, &(ret->z_min_lay[1])) == 0) goto handle_error;
-    if(fscanf(fpp, &(ret->z_max_lay[1])) == 0) goto handle_error;
-
-    if(fscanf(fpp, &(ret->cnx)) == 0) goto handle_error;
-    if(fscanf(fpp, &(ret->cny)) == 0) goto handle_error;
-    if(fscanf(fpp, &(ret->cn)) == 0) goto handle_error;
-    if(fscanf(fpp, &(ret->csumg)) == 0) goto handle_error;
-    if(fscanf(fpp, &(ret->corrmin)) == 0) goto handle_error;
-    if(fscanf(fpp, &(ret->eps0)) == 0) goto handle_error;
-    /* End of volume parameters */
-
-
-    """
+    """Volume parameters."""
 
     x_lay: List[float] = field(default_factory=list)
     z_min_lay: List[float] = field(default_factory=list)
@@ -391,6 +375,12 @@ class ControlPar:
     chfield: int = field(default_factory=int)
     mm: MultimediaPar = field(default_factory=MultimediaPar)
 
+    @classmethod
+    def from_dict(cls, data):
+        mm_data = data.get('mm', {})
+        data['mm'] = MultimediaPar.from_dict(mm_data)
+        return cls(**data)
+
     def set_image_size(self, imsize: Tuple[int, int]):
         """Set image size in pixels."""
         self.imx = imsize[0]
@@ -477,6 +467,13 @@ class ControlPar:
     def get_multimedia_params(self):
         """Return multimedia parameters."""
         return self.mm
+
+    def to_dict(self):
+        """Convert ControlPar instance to a dictionary."""
+        control_par_dict = dict(self.__dict__)
+        if isinstance(control_par_dict['mm'], MultimediaPar):
+            control_par_dict['mm'] = control_par_dict['mm'].__dict__
+        return control_par_dict
 
 
 def read_control_par(filename: str) -> ControlPar:
