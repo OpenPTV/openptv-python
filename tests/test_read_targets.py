@@ -51,7 +51,7 @@ class TestTargets(unittest.TestCase):
     def test_write_targets(self):
         """Round-trip test of writing targets."""
         targs = read_targets("tests/testing_folder/sample_%04d", 42)
-        write_targets(targs, len(targs), "tests/testing_folder/round_trip.", 1)
+        write_targets(targs, len(targs), "tests/testing_folder/round_trip.%04d", 1)
         tback = read_targets("tests/testing_folder/round_trip.%04d", 1)
 
         self.assertEqual(len(targs), len(tback))

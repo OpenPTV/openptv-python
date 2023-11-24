@@ -214,7 +214,7 @@ def write_targets(
     file_name = (
         file_base + "_targets"
         if frame_num == 0
-        else f"{file_base}{frame_num:04d}_targets"
+        else file_base % frame_num + "_targets"
     )
 
     try:

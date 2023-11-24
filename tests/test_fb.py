@@ -98,7 +98,7 @@ class TestWriteTargets(unittest.TestCase):
         self.assertTrue(compare_targets(tbuf[1], t2))
 
         # Clean up the test directory
-        os.remove(f"{file_base}{frame_num:04}_targets")
+        os.remove(file_base % frame_num +"_targets")
 
 
 class TestReadPathFrame(unittest.TestCase):
