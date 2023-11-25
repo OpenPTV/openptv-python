@@ -123,12 +123,12 @@ class TestPos3dInBounds(unittest.TestCase):
         outside = np.array([2.0, -0.8, 2.1])
 
         bounds = TrackPar(
-            2.0,
             -2.0,
             2.0,
             -2.0,
             2.0,
             -2.0,
+            2.0,
             120,
             0.4,
             1,
@@ -348,8 +348,7 @@ class TestSort(unittest.TestCase):
 
 class TestSearchQuader(unittest.TestCase):
     def setUp(self):
-        self.cpar = ControlPar()
-        self.cpar.from_file("tests/testing_fodder/track/parameters/ptv.par")
+        self.cpar = ControlPar().from_file("tests/testing_fodder/track/parameters/ptv.par")
         self.cpar.mm.n2[0] = 1.0
         self.cpar.mm.n3 = 1.0
 

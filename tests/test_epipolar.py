@@ -35,13 +35,12 @@ class TestEpipolarCurve(unittest.TestCase):
         ori_tmpl = f"tests/testing_folder/calibration/sym_cam{cam_num}.tif.ori"
         add_file = "tests/testing_folder/calibration/cam1.tif.addpar"
 
-        orig_cal = Calibration()
-        orig_cal.from_file(ori_tmpl, add_file)
+        orig_cal = Calibration().from_file(ori_tmpl, add_file)
 
-        proj_cal = Calibration()
+
         cam_num = 3
         ori_tmpl = f"tests/testing_folder/calibration/sym_cam{cam_num}.tif.ori"
-        proj_cal.from_file(ori_tmpl, add_file)
+        proj_cal = Calibration().from_file(ori_tmpl, add_file)
 
         # reorient cams:
         orig_cal.set_angles(np.r_[0.0, -np.pi / 4.0, 0.0])
@@ -57,7 +56,7 @@ class TestEpipolarCurve(unittest.TestCase):
 
         mult_params = cpar.mm
         mult_params.set_n1(1.0)
-        mult_params.set_layers(np.array([1.0]), np.array([1.0]))
+        mult_params.set_layers([1.0], [1.0])
         mult_params.set_n3(1.0)
 
         # Central point translates to central point because cameras point

@@ -1,5 +1,5 @@
 """Functions for the orientation of the camera."""
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Tuple
 
 import numpy as np
 import scipy
@@ -655,6 +655,7 @@ def raw_orient(
 
 
 def read_man_ori_fix(calblock_filename, man_ori_filename, cam):
+    """Read the manual orientation file."""
     fix4 = np.zeros((4, 3))
     fix = None
     num_fix = 0
@@ -684,6 +685,7 @@ def read_man_ori_fix(calblock_filename, man_ori_filename, cam):
 
 
 def read_calblock(filename):
+    """Read the calibration block file."""
     with open(filename, "r", encoding="utf-8") as f:
         lines = f.readlines()
         num_fix = int(lines[0])
@@ -692,29 +694,6 @@ def read_calblock(filename):
             parts = line.split()
             fix[i] = np.array([float(parts[1]), float(parts[2]), float(parts[3])])
     return fix, num_fix
-
-
-def read_orient_par(filename: str) -> Union[OrientPar, None]:
-    try:
-        with open(filename, "r", encoding="utf-8") as file:
-            ret = OrientPar()
-            ret.useflag = int(file.readline().strip())
-            ret.ccflag = int(file.readline().strip())
-            ret.xhflag = int(file.readline().strip())
-            ret.yhflag = int(file.readline().strip())
-            ret.k1flag = int(file.readline().strip())
-            ret.k2flag = int(file.readline().strip())
-            ret.k3flag = int(file.readline().strip())
-            ret.p1flag = int(file.readline().strip())
-            ret.p2flag = int(file.readline().strip())
-            ret.scxflag = int(file.readline().strip())
-            ret.sheflag = int(file.readline().strip())
-            ret.interfflag = int(file.readline().strip())
-            return ret
-    except IOError:
-        print(f"Could not open orientation parameters file {filename}.")
-        return None
-
 
 def dumbbell_target_func(
     targets: np.ndarray,
@@ -790,7 +769,6 @@ def external_calibration(
     del targs
 
     return True if success else False
-
 
 def full_calibration(
     cal: Calibration,

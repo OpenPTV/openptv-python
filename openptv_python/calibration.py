@@ -53,11 +53,11 @@ class Exterior:
         """Set the rotation matrix of the camera."""
         self.dm = dm
 
-    def set_pos(self, pos: np.ndarray) -> None:
+    def set_pos(self, pos: List[float]) -> None:
         """Set the position of the camera."""
         self.x0, self.y0, self.z0 = pos
 
-    def set_angles(self, angles: np.ndarray) -> None:
+    def set_angles(self, angles: List[float]) -> None:
         """Set the angles of the camera."""
         self.omega, self.phi, self.kappa = angles
 
@@ -82,7 +82,7 @@ class Interior:
     yh: float = 0.0
     cc: float = 0.0
 
-    def set_primary_point(self, point: np.ndarray) -> None:
+    def set_primary_point(self, point: List[float]) -> None:
         self.xh, self.yh, self.cc = point
 
     def set_back_focal_distance(self, cc: float) -> None:
@@ -96,7 +96,8 @@ class Glass:
     vec_y: float = 0.0
     vec_z: float = 1.0
 
-    def set_glass_vec(self, vec: np.ndarray) -> None:
+    def set_glass_vec(self, vec: List[float]) -> None:
+        """Set the glass vector."""
         self.vec_x, self.vec_y, self.vec_z = vec
 
 
@@ -156,7 +157,8 @@ class Calibration:
         )
     )
 
-    def from_file(self, ori_file: str, add_file: str) -> None:
+    @classmethod
+    def from_file(cls, ori_file: str, add_file: str):
         """
         Read exterior and interior orientation, and if available, parameters for distortion corrections.
 
@@ -173,13 +175,15 @@ class Calibration:
         if not pathlib.Path(ori_file).exists():
             raise IOError(f"File {ori_file} does not exist")
 
+        ret = cls()
+
         with open(ori_file, "r", encoding="utf-8") as fp:
             # Exterior
-            # self.set_pos(np.array([float(x) for x in fp.readline().split()]))
-            # self.set_angles(np.array([float(x) for x in fp.readline().split()]))
+            ret.set_pos([float(x) for x in fp.readline().split()])
+            ret.set_angles([float(x) for x in fp.readline().split()])
 
-            self.ext_par.set_pos(np.fromstring(fp.readline(), dtype=float, sep="\t"))
-            self.ext_par.set_angles(np.fromstring(fp.readline(), dtype=float, sep="\t"))
+            # ret.ext_par.set_pos(np.fromstring(fp.readline(), dtype=float, sep="\t"))
+            # ret.ext_par.set_angles(np.fromstring(fp.readline(), dtype=float, sep="\t"))
 
             # Exterior rotation matrix
             # skip line
@@ -196,15 +200,13 @@ class Calibration:
             fp.readline()
             tmp = [float(x) for x in fp.readline().split()]  # xh,yh
             tmp += [float(x) for x in fp.readline().split()]  # cc
-            self.int_par.set_primary_point(np.array(tmp))
+            ret.int_par.set_primary_point(tmp)
             # self.int_par.set_back_focal_distance(float(fp.readline()))
 
             # Glass
             # skip
             fp.readline()
-            self.glass_par.set_glass_vec(
-                np.array([float(x) for x in fp.readline().split()])
-            )
+            ret.glass_par.set_glass_vec([float(x) for x in fp.readline().split()])
 
         # double-check that we have the correct rotation matrix
         # self.ext_par.rotation_matrix()
@@ -217,19 +219,18 @@ class Calibration:
             with open(add_file, "r", encoding="utf-8") as fp:
                 tmp = list(map(float, fp.readline().split()))
 
-                self.added_par.set_radial_distortion(tmp[:3])
-                self.added_par.set_decentering(tmp[3:5])
-                self.added_par.set_affine_distortion(tmp[5:])
+                ret.added_par.set_radial_distortion(tmp[:3])
+                ret.added_par.set_decentering(tmp[3:5])
+                ret.added_par.set_affine_distortion(tmp[5:])
 
         except FileNotFoundError:
             print("no addpar fallback used")  # Waits for proper logging.
-            self.added_par.k1 = (
-                self.added_par.k2
-            ) = (
-                self.added_par.k3
-            ) = self.added_par.p1 = self.added_par.p2 = self.added_par.she = 0.0
-            self.added_par.scx = 1.0
+            ret.added_par.k1 = ret.added_par.k2 = ret.added_par.k3 \
+            = ret.added_par.p1 = ret.added_par.p2 = ret.added_par.she = 0.0
+            ret.added_par.scx = 1.0
 
+
+        return ret
         # print(f"Calibration data read from files {ori_file} and {add_file}")
 
     def write(self, ori_file: str, addpar_file: str):
@@ -251,7 +252,7 @@ class Calibration:
             raise ValueError("Illegal argument for exterior rotation matrix")
         self.ext_par.set_rotation_matrix(dm)
 
-    def set_pos(self, x_y_z_np: np.ndarray) -> None:
+    def set_pos(self, x_y_z_np: List[float]) -> None:
         """
         Set exterior position.
 
@@ -269,7 +270,7 @@ class Calibration:
         """Return array of 3 elements representing exterior's x, y, z."""
         return np.r_[self.ext_par.x0, self.ext_par.y0, self.ext_par.z0]
 
-    def set_angles(self, o_p_k_np: np.ndarray) -> None:
+    def set_angles(self, o_p_k_np: List[float]) -> None:
         """
         Set angles (omega, phi, kappa) and recalculates Dmatrix accordingly.
 
@@ -290,7 +291,7 @@ class Calibration:
         """Return a 3x3 numpy array that represents Exterior's rotation matrix."""
         return self.ext_par.dm
 
-    def set_primary_point(self, prim_point_pos: np.ndarray) -> None:
+    def set_primary_point(self, prim_point_pos: List[float]) -> None:
         """
         Set the camera's primary point position (a.k.a. interior orientation).
 
@@ -374,7 +375,7 @@ class Calibration:
         """Return the affine transform parameters [1] as a 2 element array, (scx, she)."""
         return np.r_[self.added_par.scx, self.added_par.she]
 
-    def set_glass_vec(self, gvec: np.ndarray):
+    def set_glass_vec(self, gvec: List[float]):
         """
         Set the glass vector: a vector from the origin to the glass, directed.
 
@@ -391,7 +392,7 @@ class Calibration:
 
     def get_glass_vec(self):
         """Return the glass vector, a 3-element array."""
-        return np.r_[self.glass_par.vec_x, self.glass_par.vec_y, self.glass_par.vec_z]
+        return [self.glass_par.vec_x, self.glass_par.vec_y, self.glass_par.vec_z]
 
     def set_added_par(self, listpar: np.ndarray | list):
         """Set added par from an numpy array of parameters."""
@@ -523,11 +524,7 @@ def compare_addpar(a1, a2):
 
 def read_calibration(ori_file: str, addpar_file: str) -> Calibration:
     """Read the orientation file including the added parameters."""
-    ret = Calibration()
-    ret.from_file(ori_file, addpar_file)
-    # read_ori(ori_file, addpar_file, fallback_file)
-
-    return ret
+    return Calibration().from_file(ori_file, addpar_file)
 
 
 def write_calibration(cal, ori_file, add_file):
