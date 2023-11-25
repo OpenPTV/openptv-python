@@ -1,7 +1,7 @@
 import copy
 import unittest
 
-from openptv_python.calibration import Calibration
+from openptv_python.calibration import Calibration, Interior
 from openptv_python.parameters import ControlPar
 from openptv_python.trafo import (
     dist_to_flat,
@@ -103,7 +103,7 @@ class TestFlatToDist(unittest.TestCase):
         iter_eps = 1e-5
 
         cal = copy.copy(self.cal)
-        cal.set_int_par([1.5, 1.5, 60.0])
+        cal.int_par = Interior(1.5, 1.5, 60.0)
         cal.set_added_par([0.0005, 0, 0, 0, 0, 1, 0])
 
         xres, yres = flat_to_dist(x, y, cal)

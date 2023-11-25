@@ -133,6 +133,10 @@ class Target:
         )
 
 
+def sort_target_y(targets: List[Target]) -> List[Target]:
+    """Sort targets by y coordinate."""
+    return sorted(targets, key=lambda t: t.y)
+
 class TargetArray(list):
     """Target array class."""
 

@@ -337,12 +337,11 @@ class Test_VolumeParams(unittest.TestCase):
         """Initialize volume parameters with keyword arguments."""
         xlay = [111.1, 222.2]
         zlay = [[333.3, 555.5], [444.4, 666.6]]
-        z_min, z_max = list(zip(*zlay))
 
         vol_obj = VolumePar(
             x_lay=xlay,
-            z_min_lay=z_min,
-            z_max_lay=z_max,
+            z_min_lay=zlay[0],
+            z_max_lay=zlay[1],
             cn=1,
             cnx=2,
             cny=3,
@@ -352,8 +351,8 @@ class Test_VolumeParams(unittest.TestCase):
         )
 
         numpy.testing.assert_array_equal(xlay, vol_obj.x_lay)
-        numpy.testing.assert_array_equal(z_min, vol_obj.z_min_lay)
-        numpy.testing.assert_array_equal(z_max, vol_obj.z_max_lay)
+        numpy.testing.assert_array_equal(zlay[0], vol_obj.z_min_lay)
+        numpy.testing.assert_array_equal(zlay[1], vol_obj.z_max_lay)
 
         self.assertTrue(vol_obj.cn == 1)
         self.assertTrue(vol_obj.cnx == 2)
