@@ -4,6 +4,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Tuple
 
+import yaml
+
 from openptv_python.constants import TR_MAX_CAMS
 
 
@@ -545,8 +547,8 @@ class TargetPar:
     def from_file(self, filename: str) -> None:
         """Read target parameters from file and returns target_par object.
 
-        Reads target recognition parameters from a legacy .par file, which
-        holds one parameter per line. The arguments are read in this order:
+        Reads target recognition parameters from a legacy detect_plate.par file,
+        which holds one parameter per line. The arguments are read in this order:
 
         1. gvthres[0]
         2. gvthres[1]
@@ -655,3 +657,79 @@ def read_cal_ori_parameters(file_path: str, num_cams: int) -> CalibrationPar:
         chfield = int(file.readline().strip())
 
     return CalibrationPar(fixp_name, img_name, img_ori0, tiff_flag, pair_flag, chfield)
+
+
+@dataclass
+class OrientationPar:
+    """Orientation parameters."""
+
+    useflag: int
+    ccflag: int
+    xhflag: int
+    yhflag: int
+    k1flag: int
+    k2flag: int
+    k3flag: int
+    p1flag: int
+    p2flag: int
+    scxflag: int
+    sheflag: int
+    interfflag: int
+
+    @classmethod
+    def from_file(cls, file_path):
+        """Read from orient.par file."""
+        with open(file_path, 'r', encoding='utf-8') as file:
+            useflag, \
+            ccflag, \
+            xhflag, \
+            yhflag, \
+            k1flag, \
+            k2flag, \
+            k3flag, \
+            p1flag, \
+            p2flag, \
+            scxflag, \
+            sheflag, \
+            interfflag = map(int, file.read().split())
+        return cls(useflag, \
+            ccflag, \
+            xhflag, \
+            yhflag, \
+            k1flag, \
+            k2flag, \
+            k3flag, \
+            p1flag, \
+            p2flag, \
+            scxflag, \
+            sheflag, \
+            interfflag)
+
+    def to_dict(self):
+        """Convert OrientationPar instance to a dictionary."""
+        return {
+            'useflag': self.useflag,
+            'ccflag': self.ccflag,
+            'xhflag': self.xhflag,
+            'yhflag': self.yhflag,
+            'k1flag': self.k1flag,
+            'k2flag': self.k2flag,
+            'k3flag': self.k3flag,
+            'p1flag': self.p1flag,
+            'p2flag': self.p2flag,
+            'scxflag': self.scxflag,
+            'sheflag': self.sheflag,
+            'interfflag': self.interfflag,
+        }
+
+    def to_yaml(self, file_path):
+        """Write to YAML file."""
+        with open(file_path, 'w', encoding='utf-8') as file:
+            yaml.dump(self.to_dict(), file, default_flow_style=False)
+
+    @classmethod
+    def from_yaml(cls, file_path):
+        """Read from YAML file."""
+        with open(file_path, 'r', encoding='utf-8') as file:
+            data_dict = yaml.safe_load(file)
+            return cls(**data_dict)

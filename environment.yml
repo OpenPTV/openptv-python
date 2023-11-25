@@ -7,5 +7,6 @@ dependencies:
 - numpy
 - scipy
 - matplotlib
+- pyyaml
 # - package2
 # DO NOT EDIT ABOVE THIS LINE, ADD DEPENDENCIES BELOW AS SHOWN IN THE EXAMPLE
