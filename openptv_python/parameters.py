@@ -733,3 +733,31 @@ class OrientationPar:
         with open(file_path, 'r', encoding='utf-8') as file:
             data_dict = yaml.safe_load(file)
             return cls(**data_dict)
+
+@dataclass
+class MultiPlanesPar:
+    planes: int
+    multi_filename: list
+
+    @classmethod
+    def from_file(cls, file_path):
+        with open(file_path, 'r') as file:
+            planes = int(file.readline().strip())
+            multi_filename = [file.readline().strip() for _ in range(planes)]
+        return cls(planes, multi_filename)
+
+    def to_dict(self):
+        return {
+            'planes': self.planes,
+            'multi_filename': self.multi_filename,
+        }
+
+    def to_yaml(self, file_path):
+        with open(file_path, 'w') as file:
+            yaml.dump(self.to_dict(), file, default_flow_style=False)
+
+    @classmethod
+    def from_yaml(cls, file_path):
+        with open(file_path, 'r') as file:
+            data_dict = yaml.safe_load(file)
+            return cls(**data_dict)
