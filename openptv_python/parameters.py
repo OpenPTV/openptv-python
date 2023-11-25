@@ -538,6 +538,7 @@ class TargetPar:
 
     @classmethod
     def from_dict(cls, data):
+        """Read from target.par dictionary."""
         return cls(**data)
 
 
@@ -641,7 +642,6 @@ class CalibrationPar:
         """Read from cal_ori.par dictionary."""
         return cls(**data)
 
-# Function to read parameters from a file into an instance of CalibrationParameters
 def read_cal_ori_parameters(file_path: str, num_cams: int) -> CalibrationPar:
     """Read from cal_ori.par file."""
     with open(file_path, 'r', encoding="utf-8") as file:
@@ -650,7 +650,6 @@ def read_cal_ori_parameters(file_path: str, num_cams: int) -> CalibrationPar:
         # img_ori0 = [file.readline().strip() for _ in range(4)]
         img_name = tmp[0::2]
         img_ori0 = tmp[1::2]
-
         tiff_flag = int(file.readline().strip())
         pair_flag = int(file.readline().strip())
         chfield = int(file.readline().strip())
