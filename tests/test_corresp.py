@@ -139,7 +139,7 @@ class TestReadControlPar(unittest.TestCase):
             "cal/cam4.tif",
         ]
         expected.hp_flag = 1
-        expected.allCam_flag = 0
+        expected.all_cam_flag = 0
         expected.tiff_flag = 1
         expected.imx = 1280
         expected.imy = 1024

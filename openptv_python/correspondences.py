@@ -671,7 +671,7 @@ def correspondences(
         match_counts[3] += match_counts[0]
 
     # search consistent triplets: 123, 124, 134, 234
-    if (cpar.num_cams == 4 and cpar.allCam_flag == 0) or cpar.num_cams == 3:
+    if (cpar.num_cams == 4 and cpar.all_cam_flag == 0) or cpar.num_cams == 3:
         three_camera_matching(
             corr_list, cpar.num_cams, frm.num_targets, vpar.corrmin, con0, 4 * nmax, tim
         )
@@ -682,7 +682,7 @@ def correspondences(
         match_counts[3] += match_counts[1]
 
     # Search consistent pairs: 12, 13, 14, 23, 24, 34
-    if cpar.num_cams > 1 and cpar.allCam_flag == 0:
+    if cpar.num_cams > 1 and cpar.all_cam_flag == 0:
         consistent_pair_matching(
             corr_list, cpar.num_cams, frm.num_targets, vpar.corrmin, con0, 4 * nmax, tim
         )

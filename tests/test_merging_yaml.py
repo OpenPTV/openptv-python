@@ -1,10 +1,10 @@
 # %%
 import glob
 import os
+from dataclasses import asdict
 
 import yaml
 
-# %%
 # dictionary that connects the .par file names and the respective parameter classes
 from openptv_python.parameters import (
     CalibrationPar,
@@ -27,9 +27,8 @@ par_dict = {'cal_ori': CalibrationPar,
             'targ_rec': TargetPar,
             'orient' : OrientPar
             }
-par_dict
 
-# %%
+# print(par_dict)
 
 # Define the directory containing the .par files
 directory_path = 'tests/testing_fodder/parameters'
@@ -72,7 +71,7 @@ for file_path in par_files:
         # print(par_content)
 
         # Add the dictionary to the merged data with the title as the key
-        merged_data[title] = par_content.to_dict()
+        merged_data[title] = asdict(par_content)
 
 # Write the merged data to a single YAML file
 with open(output_yaml_file, 'w', encoding='utf-8') as output_file:

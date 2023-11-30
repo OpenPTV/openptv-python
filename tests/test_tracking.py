@@ -216,7 +216,7 @@ class TestCandSearchInPix(unittest.TestCase):
             test_cpar.cal_img_base_name[cam] = cal_format.format(cam + 1)
 
         test_cpar.hp_flag = 1
-        test_cpar.allCam_flag = 0
+        test_cpar.all_cam_flag = 0
         test_cpar.tiff_flag = 1
         test_cpar.imx = 1280
         test_cpar.imy = 1024

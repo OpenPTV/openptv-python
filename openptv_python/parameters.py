@@ -1,6 +1,6 @@
 """Parameters for OpenPTV-Python."""
 import os
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import List, Tuple
 
@@ -10,7 +10,35 @@ from openptv_python.constants import TR_MAX_CAMS
 
 
 @dataclass
-class MultimediaPar:
+class Parameters:
+    """Base class for all parameters with a couple of methods."""
+
+    @classmethod
+    def from_dict(cls, data):
+        """Read MultimediaPar from a dictionary."""
+        return cls(**data)
+
+    @classmethod
+    def to_dict(cls, data):
+        """Read MultimediaPar from a dictionary."""
+        return asdict(data)
+
+    def to_yaml(self, file_path: Path):
+        """Write parameters to YAML file."""
+        with open(file_path, 'w', encoding='utf-8') as output_file:
+            yaml.dump(asdict(self), output_file, default_flow_style=False)
+
+    @classmethod
+    def from_yaml(cls, file_path: Path):
+        """Read from YAML file."""
+        with open(file_path, 'r', encoding='utf-8') as file:
+            data_dict = yaml.safe_load(file)
+            return cls(**data_dict)
+
+
+
+@dataclass
+class MultimediaPar(Parameters):
     """Multimedia parameters."""
 
     nlay: int = 1
@@ -18,11 +46,6 @@ class MultimediaPar:
     n2: List[float] = field(default_factory=lambda: [1.0])
     d: List[float] = field(default_factory=lambda: [0.0])
     n3: float = 1.0
-
-    @classmethod
-    def from_dict(cls, data):
-        """Read MultimediaPar from a dictionary."""
-        return cls(**data)
 
     def __post_init__(self):
         if len(self.n2) != len(self.d):
@@ -81,25 +104,21 @@ def compare_mm_np(mm_np1: MultimediaPar, mm_np2: MultimediaPar) -> bool:
 
 
 @dataclass
-class SequencePar:
+class SequencePar(Parameters):
     """Sequence parameters."""
 
     img_base_name: List[str] = field(default_factory=list)
     first: int = 0
     last: int = 0
 
-    @classmethod
-    def from_dict(cls, data):
-        """Read SequencePar from a dictionary."""
-        return cls(**data)
 
-    def to_dict(self):
-        """Convert SequencePar instance to a dictionary."""
-        return {
-            'img_base_name': self.img_base_name,
-            'first': self.first,
-            'last': self.last,
-        }
+    # def to_dict(self):
+    #     """Convert SequencePar instance to a dictionary."""
+    #     return {
+    #         'img_base_name': self.img_base_name,
+    #         'first': self.first,
+    #         'last': self.last,
+    #     }
 
     def set_img_base_name(self, new_name: List[str]):
         """Set the image base name for each camera."""
@@ -157,7 +176,7 @@ def compare_sequence_par(sp1: SequencePar, sp2: SequencePar) -> bool:
 
 
 @dataclass
-class TrackPar:
+class TrackPar(Parameters):
     """Tracking parameters."""
 
     dvxmin: float = 0.0
@@ -174,28 +193,24 @@ class TrackPar:
     dnx: float = 0.0
     dny: float = 0.0
 
-    @classmethod
-    def from_dict(cls, data):
-        """Read TrackPar from a dictionary."""
-        return cls(**data)
 
-    def to_dict(self):
-        """Convert TrackPar instance to a dictionary."""
-        return {
-            'dvxmax': self.dvxmax,
-            'dvxmin': self.dvxmin,
-            'dvymax': self.dvymax,
-            'dvymin': self.dvymin,
-            'dvzmax': self.dvzmax,
-            'dvzmin': self.dvzmin,
-            'dangle': self.dangle,
-            'dacc': self.dacc,
-            'add': self.add,
-            'dsumg': self.dsumg,
-            'dn': self.dn,
-            'dnx': self.dnx,
-            'dny': self.dny,
-        }
+    # def to_dict(self):
+    #     """Convert TrackPar instance to a dictionary."""
+    #     return {
+    #         'dvxmax': self.dvxmax,
+    #         'dvxmin': self.dvxmin,
+    #         'dvymax': self.dvymax,
+    #         'dvymin': self.dvymin,
+    #         'dvzmax': self.dvzmax,
+    #         'dvzmin': self.dvzmin,
+    #         'dangle': self.dangle,
+    #         'dacc': self.dacc,
+    #         'add': self.add,
+    #         'dsumg': self.dsumg,
+    #         'dn': self.dn,
+    #         'dnx': self.dnx,
+    #         'dny': self.dny,
+    #     }
 
     @classmethod
     def from_file(cls, filename: str):
@@ -302,7 +317,7 @@ def compare_track_par(t1: TrackPar, t2: TrackPar) -> bool:
 
 
 @dataclass
-class VolumePar:
+class VolumePar(Parameters):
     """Volume parameters."""
 
     x_lay: List[float] = field(default_factory=list)
@@ -319,24 +334,19 @@ class VolumePar:
         default_factory=float
     )  # minimal correlation value of all criteria
 
-    @classmethod
-    def from_dict(cls, data):
-        """Read VolumePar from a dictionary."""
-        return cls(**data)
-
-    def to_dict(self):
-        """Convert VolumePar instance to a dictionary."""
-        return {
-            'x_lay': self.x_lay,
-            'z_min_lay': self.z_min_lay,
-            'z_max_lay': self.z_max_lay,
-            'cn': self.cn,
-            'cnx': self.cnx,
-            'cny': self.cny,
-            'csumg': self.csumg,
-            'eps0': self.eps0,
-            'corrmin': self.corrmin,
-        }
+    # def to_dict(self):
+    #     """Convert VolumePar instance to a dictionary."""
+    #     return {
+    #         'x_lay': self.x_lay,
+    #         'z_min_lay': self.z_min_lay,
+    #         'z_max_lay': self.z_max_lay,
+    #         'cn': self.cn,
+    #         'cnx': self.cnx,
+    #         'cny': self.cny,
+    #         'csumg': self.csumg,
+    #         'eps0': self.eps0,
+    #         'corrmin': self.corrmin,
+    #     }
 
     def set_z_min_lay(self, z_min_lay: list[float]) -> None:
         """Set the minimum z coordinate of the layers."""
@@ -413,14 +423,14 @@ def compare_volume_par(v1: VolumePar, v2: VolumePar) -> bool:
 
 
 @dataclass
-class ControlPar:
+class ControlPar(Parameters):
     """Control parameters."""
 
     num_cams: int = field(default_factory=int)
     img_base_name: List[str] = field(default_factory=list)
     cal_img_base_name: List[str] = field(default_factory=list)
     hp_flag: int = field(default=1)
-    allCam_flag: int = field(default=0)
+    all_cam_flag: int = field(default=0)
     tiff_flag: int = field(default=1)
     imx: int = field(default_factory=int)
     imy: int = field(default_factory=int)
@@ -480,7 +490,7 @@ class ControlPar:
 
     def get_allCam_flag(self):
         """Return allCam flag."""
-        return self.allCam_flag
+        return self.all_cam_flag
 
     def get_tiff_flag(self):
         """Return tiff flag."""
@@ -501,7 +511,7 @@ class ControlPar:
                 ret.cal_img_base_name.append(par_file.readline().strip())
 
             ret.hp_flag = int(par_file.readline().strip())
-            ret.allCam_flag = int(par_file.readline().strip())
+            ret.all_cam_flag = int(par_file.readline().strip())
             ret.tiff_flag = int(par_file.readline().strip())
             ret.imx = int(par_file.readline().strip())
             ret.imy = int(par_file.readline().strip())
@@ -527,11 +537,12 @@ class ControlPar:
         """Return multimedia parameters."""
         return self.mm
 
-    def to_dict(self):
+    @classmethod
+    def to_dict(cls, data):
         """Convert ControlPar instance to a dictionary."""
-        control_par_dict = dict(self.__dict__)
+        control_par_dict = asdict(data)
         if isinstance(control_par_dict['mm'], MultimediaPar):
-            control_par_dict['mm'] = control_par_dict['mm'].__dict__
+            control_par_dict['mm'] = asdict(control_par_dict['mm'])
         return control_par_dict
 
 
@@ -549,7 +560,7 @@ def compare_control_par(c1: ControlPar, c2: ControlPar) -> bool:
             for attr in ["img_base_name", "cal_img_base_name"]
         )
         and c1.hp_flag == c2.hp_flag
-        and c1.allCam_flag == c2.allCam_flag
+        and c1.all_cam_flag == c2.all_cam_flag
         and c1.tiff_flag == c2.tiff_flag
         and c1.imx == c2.imx
         and c1.imy == c2.imy
@@ -562,7 +573,7 @@ def compare_control_par(c1: ControlPar, c2: ControlPar) -> bool:
 
 
 @dataclass
-class TargetPar:
+class TargetPar(Parameters):
     """Target parameters."""
 
     gvthresh: list[int] = field(default_factory=list)
@@ -576,25 +587,25 @@ class TargetPar:
     sumg_min: int = 10  # minimum sum of grey values
     cr_sz: int = 1
 
-    @classmethod
-    def from_dict(cls, data):
-        """Read from target.par dictionary."""
-        return cls(**data)
+    # @classmethod
+    # def from_dict(cls, data):
+    #     """Read from target.par dictionary."""
+    #     return cls(**data)
 
-    def to_dict(self):
-        """Convert TargetPar instance to a dictionary."""
-        return {
-            'gvthresh': self.gvthresh,
-            'discont': self.discont,
-            'nnmin': self.nnmin,
-            'nnmax': self.nnmax,
-            'nxmin': self.nxmin,
-            'nxmax': self.nxmax,
-            'nymin': self.nymin,
-            'nymax': self.nymax,
-            'sumg_min': self.sumg_min,
-            'cr_sz': self.cr_sz,
-        }
+    # def to_dict(self):
+    #     """Convert TargetPar instance to a dictionary."""
+    #     return {
+    #         'gvthresh': self.gvthresh,
+    #         'discont': self.discont,
+    #         'nnmin': self.nnmin,
+    #         'nnmax': self.nnmax,
+    #         'nxmin': self.nxmin,
+    #         'nxmax': self.nxmax,
+    #         'nymin': self.nymin,
+    #         'nymax': self.nymax,
+    #         'sumg_min': self.sumg_min,
+    #         'cr_sz': self.cr_sz,
+    #     }
 
     @classmethod
     def from_file(cls, filename: str):
@@ -664,7 +675,7 @@ def write_target_par(targ: TargetPar, filename: str) -> None:
 
 
 @dataclass
-class OrientPar:
+class OrientPar(Parameters):
     """Orientation parameters."""
 
     useflag: int = 0
@@ -703,38 +714,33 @@ class OrientPar:
             print(f"Could not open orientation parameters file {filename}.")
             return None
 
-    def to_dict(self):
-        """Convert OrientPar instance to a dictionary."""
-        return {
-            'useflag': self.useflag,
-            'ccflag': self.ccflag,
-            'xhflag': self.xhflag,
-            'yhflag': self.yhflag,
-            'k1flag': self.k1flag,
-            'k2flag': self.k2flag,
-            'k3flag': self.k3flag,
-            'p1flag': self.p1flag,
-            'p2flag': self.p2flag,
-            'scxflag': self.scxflag,
-            'sheflag': self.sheflag,
-            'interfflag': self.interfflag,
-        }
+    # def to_dict(self):
+    #     """Convert OrientPar instance to a dictionary."""
+    #     return {
+    #         'useflag': self.useflag,
+    #         'ccflag': self.ccflag,
+    #         'xhflag': self.xhflag,
+    #         'yhflag': self.yhflag,
+    #         'k1flag': self.k1flag,
+    #         'k2flag': self.k2flag,
+    #         'k3flag': self.k3flag,
+    #         'p1flag': self.p1flag,
+    #         'p2flag': self.p2flag,
+    #         'scxflag': self.scxflag,
+    #         'sheflag': self.sheflag,
+    #         'interfflag': self.interfflag,
+    #     }
 
-    def to_yaml(self, file_path):
-        """Write to YAML file."""
-        with open(file_path, 'w', encoding='utf-8') as file:
-            yaml.dump(self.__dict__, file, default_flow_style=False)
+    # def to_yaml(self, file_path):
+    #     """Write to YAML file."""
+    #     with open(file_path, 'w', encoding='utf-8') as file:
+    #         yaml.dump(self.__dict__, file, default_flow_style=False)
 
-    @classmethod
-    def from_yaml(cls, file_path):
-        """Read from YAML file."""
-        with open(file_path, 'r', encoding='utf-8') as file:
-            data_dict = yaml.safe_load(file)
-            return cls(**data_dict)
+
 
 
 @dataclass
-class CalibrationPar:
+class CalibrationPar(Parameters):
     """Calibration parameters."""
 
     fixp_name: str = ''
@@ -744,21 +750,17 @@ class CalibrationPar:
     pair_flag: int = 0
     chfield: int = 0
 
-    @classmethod
-    def from_dict(cls, data):
-        """Read from cal_ori.par dictionary."""
-        return cls(**data)
 
-    def to_dict(self):
-        """Convert CalibrationPar instance to a dictionary."""
-        return {
-            'fixp_name': self.fixp_name,
-            'img_name': self.img_name,
-            'img_ori0': self.img_ori0,
-            'tiff_flag': self.tiff_flag,
-            'pair_flag': self.pair_flag,
-            'chfield': self.chfield,
-        }
+    # def to_dict(self):
+    #     """Convert CalibrationPar instance to a dictionary."""
+    #     return {
+    #         'fixp_name': self.fixp_name,
+    #         'img_name': self.img_name,
+    #         'img_ori0': self.img_ori0,
+    #         'tiff_flag': self.tiff_flag,
+    #         'pair_flag': self.pair_flag,
+    #         'chfield': self.chfield,
+    #     }
 
     @classmethod
     def from_file(cls, file_path: str, num_cams: int):
@@ -791,7 +793,7 @@ def read_cal_ori_parameters(file_path: str, num_cams: int) -> CalibrationPar:
     return CalibrationPar(fixp_name, img_name, img_ori0, tiff_flag, pair_flag, chfield)
 
 @dataclass
-class MultiPlanesPar:
+class MultiPlanesPar(Parameters):
     """Multiplanes parameters."""
 
     planes: int = field(default_factory=int)
@@ -804,22 +806,3 @@ class MultiPlanesPar:
             planes = int(file.readline().strip())
             multi_filename = [file.readline().strip() for _ in range(planes)]
         return cls(planes, multi_filename)
-
-    def to_dict(self):
-        """Convert MultiPlanesPar instance to a dictionary."""
-        return {
-            'planes': self.planes,
-            'multi_filename': self.multi_filename,
-        }
-
-    def to_yaml(self, file_path):
-        """Write to YAML file."""
-        with open(file_path, 'w', encoding="utf-8") as file:
-            yaml.dump(self.to_dict(), file, default_flow_style=False)
-
-    @classmethod
-    def from_yaml(cls, file_path):
-        """Read from YAML file."""
-        with open(file_path, 'r', encoding="utf-8") as file:
-            data_dict = yaml.safe_load(file)
-            return cls(**data_dict)
