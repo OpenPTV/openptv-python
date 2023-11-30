@@ -123,12 +123,12 @@ class TestPos3dInBounds(unittest.TestCase):
         outside = np.array([2.0, -0.8, 2.1])
 
         bounds = TrackPar(
-            2.0,
             -2.0,
             2.0,
             -2.0,
             2.0,
             -2.0,
+            2.0,
             120,
             0.4,
             1,
@@ -216,7 +216,7 @@ class TestCandSearchInPix(unittest.TestCase):
             test_cpar.cal_img_base_name[cam] = cal_format.format(cam + 1)
 
         test_cpar.hp_flag = 1
-        test_cpar.allCam_flag = 0
+        test_cpar.all_cam_flag = 0
         test_cpar.tiff_flag = 1
         test_cpar.imx = 1280
         test_cpar.imy = 1024
@@ -348,8 +348,7 @@ class TestSort(unittest.TestCase):
 
 class TestSearchQuader(unittest.TestCase):
     def setUp(self):
-        self.cpar = ControlPar()
-        self.cpar.from_file("tests/testing_fodder/track/parameters/ptv.par")
+        self.cpar = ControlPar().from_file("tests/testing_fodder/track/parameters/ptv.par")
         self.cpar.mm.n2[0] = 1.0
         self.cpar.mm.n3 = 1.0
 

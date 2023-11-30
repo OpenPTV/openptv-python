@@ -1,3 +1,4 @@
+"""Test the calibration binding module."""
 import filecmp
 import os
 import shutil
@@ -18,7 +19,9 @@ from openptv_python.calibration import (
 )
 
 
-class Test_Calibration(unittest.TestCase):
+class TestCalibration(unittest.TestCase):
+    """Test the Calibration class."""
+
     def setUp(self):
         self.input_ori_file_name = "tests/testing_folder/calibration/cam1.tif.ori"
         self.input_add_file_name = "tests/testing_folder/calibration/cam2.tif.addpar"
@@ -32,6 +35,7 @@ class Test_Calibration(unittest.TestCase):
         self.cal = Calibration()
 
     def test_full_instantiate(self):
+        """Test the full instantiation of the Calibration class."""
         pos = np.r_[1.0, 3.0, 5.0]
         angs = np.r_[2.0, 4.0, 6.0]
         prim_point = pos * 3
@@ -87,24 +91,10 @@ class Test_Calibration(unittest.TestCase):
         # self.assertTrue(filecmp.cmp(self.input_ori_file_name, output_ori_file_name, 0))
         self.assertTrue(filecmp.cmp(self.input_add_file_name, output_add_file_name, 0))
 
-        # with open(self.input_add_file_name,'r') as file1:
-        #     file1_info = file1.readlines()
-        # with open(output_add_file_name,'r') as file2:
-        #     file2_info = file2.readlines()
-
-        # print(file1_info)
-
-        # diff = difflib.unified_diff(
-        # file1_info, file2_info, fromfile=self.input_add_file_name,tofile=output_add_file_name, lineterm=''
-        # )
-
-        # for lines in diff:
-        #     print(lines)
-
     def test_set_pos(self):
         """Set exterior position, only for admissible values."""
         # test set_pos() by passing a np array of 3 elements
-        new_np = np.array([111.1111, 222.2222, 333.3333])
+        new_np = [111.1111, 222.2222, 333.3333]
         self.cal.set_pos(new_np)
 
         # test getting position and assert that position is equal to set position
@@ -117,7 +107,7 @@ class Test_Calibration(unittest.TestCase):
     def test_set_angles(self):
         """Set angles correctly."""
         dmatrix_before = self.cal.get_rotation_matrix()  # dmatrix before setting angles
-        angles_np = np.array([0.1111, 0.2222, 0.3333])
+        angles_np = [0.1111, 0.2222, 0.3333]
         self.cal.set_angles(angles_np)
         # rotate the dmatrix by the angles_np
         self.cal.ext_par.update_rotation_matrix()
@@ -137,7 +127,7 @@ class Test_Calibration(unittest.TestCase):
 
     def test_set_primary(self):
         """Set primary point (interior) position, only for admissible values."""
-        new_pp = np.array([111.1111, 222.2222, 333.3333])
+        new_pp = [111.1111, 222.2222, 333.3333]
         self.cal.set_primary_point(new_pp)
 
         np.testing.assert_array_equal(new_pp, self.cal.get_primary_point())
@@ -155,7 +145,7 @@ class Test_Calibration(unittest.TestCase):
 
     def test_set_decentering(self):
         """Set radial distortion, only for admissible values."""
-        new_de = np.array([111.1111, 222.2222])
+        new_de = [111.1111, 222.2222]
         self.cal.set_decentering(new_de)
 
         np.testing.assert_array_equal(new_de, self.cal.get_decentering())
@@ -164,15 +154,17 @@ class Test_Calibration(unittest.TestCase):
 
     def test_set_glass(self):
         """Set glass vector, only for admissible values."""
-        new_gv = np.array([1.0, 2.0, 3.0])
+        new_gv = [1.0, 2.0, 3.0]
         self.cal.set_glass_vec(new_gv)
 
         np.testing.assert_array_equal(new_gv, self.cal.get_glass_vec())
-        self.assertRaises(ValueError, self.cal.set_glass_vec, np.ones(2))
-        self.assertRaises(ValueError, self.cal.set_glass_vec, np.ones(1))
+        self.assertRaises(ValueError, self.cal.set_glass_vec, [0,0])
+        self.assertRaises(ValueError, self.cal.set_glass_vec, [1])
 
 
 class TestCompareAddpar(unittest.TestCase):
+    """Test the compare_addpar() function."""
+
     def test_compare_addpar(self):
         """Test compare_addpar() function."""
         a1 = ap_52(1, 2, 3, 4, 5, 6, 7)

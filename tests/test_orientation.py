@@ -17,7 +17,6 @@ from openptv_python.parameters import (
     ControlPar,
     VolumePar,
     read_control_par,
-    read_volume_par,
 )
 from openptv_python.tracking_frame_buf import TargetArray
 from openptv_python.trafo import arr_metric_to_pixel
@@ -33,12 +32,9 @@ class Test_Orientation(unittest.TestCase):
         self.control_file_name = "tests/testing_folder/control_parameters/control.par"
         self.volume_file_name = "tests/testing_folder/corresp/criteria.par"
 
-        self.calibration = Calibration()
-        self.calibration.from_file(self.input_ori_file_name, self.input_add_file_name)
-        self.control = ControlPar(4)
-        self.control = read_control_par(self.control_file_name)
-        self.vpar = VolumePar()
-        self.vpar = read_volume_par(self.volume_file_name)
+        self.control = ControlPar(4).from_file(self.control_file_name)
+        self.calibration = Calibration().from_file(self.input_ori_file_name, self.input_add_file_name)
+        self.vpar = VolumePar().from_file(self.volume_file_name)
 
     def test_match_detection_to_ref(self):
         """Match detection to reference (sortgrid)."""
@@ -127,8 +123,7 @@ class Test_Orientation(unittest.TestCase):
         # read calibration for each camera from files
         for cam in range(num_cams):
             ori_name = ori_tmpl.format(cam_num=cam + 1)
-            new_cal = Calibration()
-            new_cal.from_file(ori_file=ori_name, add_file=add_file)
+            new_cal = Calibration().from_file(ori_file=ori_name, add_file=add_file)
             calibs.append(new_cal)
 
         for cam_num, cam_cal in enumerate(calibs):
@@ -175,20 +170,17 @@ class Test_Orientation(unittest.TestCase):
         # prepare MultimediaParams
         cpar_file = "tests/testing_folder/single_cam/parameters/ptv.par"
         vpar_file = "tests/testing_folder/single_cam/parameters/criteria.par"
-        cpar = ControlPar(num_cams)
-        cpar.from_file(cpar_file)
+        cpar = ControlPar(num_cams).from_file(cpar_file)
         # mm_params = cpar.get_multimedia_params()
 
-        vpar = VolumePar()
-        vpar.from_file(vpar_file)
+        vpar = VolumePar().from_file(vpar_file)
 
         ori_name = "tests/testing_folder/single_cam/calibration/cam_1.tif.ori"
         add_name = "tests/testing_folder/single_cam/calibration/cam_1.tif.addpar"
         calibs = []
 
         # read calibration for each camera from files
-        new_cal = Calibration()
-        new_cal.from_file(ori_file=ori_name, add_file=add_name)
+        new_cal = Calibration().from_file(ori_file=ori_name, add_file=add_name)
         calibs.append(new_cal)
 
         # 3d point
@@ -212,6 +204,8 @@ class Test_Orientation(unittest.TestCase):
         # print(f"new_jigged_targs: {new_jigged_targs}")
 
         targs_plain = np.array(targs_plain).transpose(1, 0, 2)
+
+
         targs_jigged = np.array(targs_jigged).transpose(1, 0, 2)
 
         # print(f"targs_plain: {targs_plain}")
@@ -249,8 +243,7 @@ class Test_Orientation(unittest.TestCase):
         # read calibration for each camera from files
         for cam in range(num_cams):
             ori_name = ori_tmpl.format(cam_num=cam + 1)
-            new_cal = Calibration()
-            new_cal.from_file(ori_file=ori_name, add_file=add_file)
+            new_cal = Calibration().from_file(ori_file=ori_name, add_file=add_file)
             calibs.append(new_cal)
 
         for cam_cal in calibs:
@@ -287,13 +280,11 @@ class TestGradientDescent(unittest.TestCase):
         # self.control = ControlPar(4)
         self.control = read_control_par(control_file_name)
 
-        self.cal = Calibration()
-        self.cal.from_file(
+        self.cal = Calibration().from_file(
             "tests/testing_folder/calibration/cam1.tif.ori",
             "tests/testing_folder/calibration/cam1.tif.addpar",
         )
-        self.orig_cal = Calibration()
-        self.orig_cal.from_file(
+        self.orig_cal = Calibration().from_file(
             "tests/testing_folder/calibration/cam1.tif.ori",
             "tests/testing_folder/calibration/cam1.tif.addpar",
         )

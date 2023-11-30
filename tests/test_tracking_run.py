@@ -333,8 +333,7 @@ class TestNewParticle(unittest.TestCase):
         calib: List[Calibration] = []
         for cam in range(3):
             ori_name = ori_tmpl % (cam + 1)
-            cal = Calibration()
-            cal.from_file(ori_name, added_name)
+            cal = Calibration().from_file(ori_name, added_name)
             calib.append(cal)
 
         os.chdir("track/")

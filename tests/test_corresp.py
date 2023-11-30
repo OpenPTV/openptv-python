@@ -21,7 +21,6 @@ from openptv_python.parameters import ControlPar, read_control_par, read_volume_
 from openptv_python.tracking_frame_buf import (
     Frame,
     Target,
-    TargetArray,
     match_coords,
     matched_coords_as_arrays,
     n_tupel,
@@ -140,7 +139,7 @@ class TestReadControlPar(unittest.TestCase):
             "cal/cam4.tif",
         ]
         expected.hp_flag = 1
-        expected.allCam_flag = 0
+        expected.all_cam_flag = 0
         expected.tiff_flag = 1
         expected.imx = 1280
         expected.imy = 1024
@@ -157,8 +156,7 @@ class TestReadControlPar(unittest.TestCase):
 
     def test_instantiate(self):
         """Creating a MatchedCoords object."""
-        cal = Calibration()
-        cal.from_file(
+        cal = Calibration().from_file(
             "tests/testing_folder/calibration/cam1.tif.ori",
             "tests/testing_folder/calibration/cam2.tif.addpar",
         )
@@ -221,15 +219,14 @@ class TestReadControlPar(unittest.TestCase):
         cals = []
         img_pts = []
         corrected = []
-        cal = Calibration()
-        cal.from_file(
+        cal = Calibration().from_file(
             "tests/testing_folder/single_cam/calibration/cam_1.tif.ori",
             "tests/testing_folder/single_cam/calibration/cam_1.tif.addpar",
         )
         cals.append(cal)
 
         # Generate test targets.
-        targs = TargetArray(9)
+        targs = [Target() for _ in range(9)]
         for row, col in np.ndindex(3, 3):
             targ_ix = row * 3 + col
             targ = targs[targ_ix]
@@ -457,6 +454,8 @@ class TestReadControlPar(unittest.TestCase):
 
 
 class TestSafelyAllocateAdjacencyLists(unittest.TestCase):
+    """Test the safely_allocate_adjacency_lists function."""
+
     def test_correct_list_size(self):
         """Test that the adjacency lists are correctly sized."""
         num_cams = 5

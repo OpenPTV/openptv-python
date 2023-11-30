@@ -22,8 +22,8 @@ this structure
 For the best experience create a new conda environment (e.g. DEVELOP) with Python 3.10:
 
 ```
-conda create -n DEVELOP -c conda-forge python=3.10
-conda activate DEVELOP
+conda create -n openptvpy -c conda-forge python=3.10
+conda activate openptvpy
 ```
 
 Before pushing to GitHub, run the following commands:

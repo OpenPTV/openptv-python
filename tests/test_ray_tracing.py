@@ -52,7 +52,7 @@ class TestRayTracing(unittest.TestCase):
         test_cal = Calibration(test_Ex, test_I, test_G, test_addp)
 
         # The mm_np parameters
-        test_mm = mm_np(3, 1.0, (1.49, 0.0, 0.0), (5.0, 0.0, 0.0), 1.33)
+        test_mm = mm_np(3, 1.0, [1.49, 0.0, 0.0], [5.0, 0.0, 0.0], 1.33)
 
         # Expected output values
         expected_X = [110.406944, 88.325788, 0.988076]

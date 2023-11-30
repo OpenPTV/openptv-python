@@ -1,7 +1,7 @@
 """Tracking frame buffer."""
 from collections import deque
 from dataclasses import dataclass, field
-from typing import Any, Deque, List, Optional, Tuple
+from typing import Deque, List, Optional, Tuple
 
 import numpy as np
 
@@ -133,6 +133,10 @@ class Target:
         )
 
 
+def sort_target_y(targets: List[Target]) -> List[Target]:
+    """Sort targets by y coordinate."""
+    return sorted(targets, key=lambda t: t.y)
+
 class TargetArray(list):
     """Target array class."""
 
@@ -207,8 +211,7 @@ def read_targets(file_base: str, frame_num: int) -> List[Target]:
 
 
 def write_targets(
-    targets: List[Target], num_targets: int, file_base: str, frame_num: int
-) -> bool:
+    targets: List[Target], num_targets: int, file_base: str, frame_num: int) -> bool:
     """Write targets to a file."""
     success = False
     file_name = (
@@ -322,9 +325,9 @@ class Frame:
 
     def read(
         self,
-        corres_file_base: Any,
-        linkage_file_base: Any,
-        prio_file_base: Any,
+        corres_file_base: str,
+        linkage_file_base: str,
+        prio_file_base: str,
         target_file_base: List[str],
         frame_num: int,
     ) -> bool:
@@ -345,7 +348,7 @@ class Frame:
             return False
 
         for cam in range(self.num_cams):
-            self.targets[cam] = read_targets(target_file_base[cam], frame_num)
+            self.targets[cam] = read_targets( target_file_base[cam], frame_num )
             self.num_targets[cam] = len(self.targets[cam])
 
             if self.num_targets[cam] == -1:
@@ -355,10 +358,10 @@ class Frame:
 
     def write(
         self,
-        corres_file_base: Any,
-        linkage_file_base: Any,
-        prio_file_base: Any,
-        target_file_base: List[Any],
+        corres_file_base: str,
+        linkage_file_base: str,
+        prio_file_base: str,
+        target_file_base: List[str],
         frame_num: int,
     ) -> bool:
         """Write a frame to the disk."""
@@ -648,8 +651,8 @@ class FrameBuf(FrameBufBase):
         else:
             return frame.read(
                 self.corres_file_base,
-                None,
-                None,
+                '',
+                '',
                 self.target_file_base,
                 frame_num,
             )

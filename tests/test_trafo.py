@@ -15,7 +15,9 @@ from openptv_python.trafo import (
 )
 
 
-class testMetricPixel(unittest.TestCase):
+class TestMetricPixel(unittest.TestCase):
+    """Test the metric_to_pixel function."""
+
     def test_metric_to_pixel(self):
         """Test the metric_to_pixel function."""
         cpar = ControlPar()
@@ -159,6 +161,7 @@ class TestDistFlatRoundTrip(unittest.TestCase):
         self.assertAlmostEqual(yres, y, delta=eps)
 
     def test_metric_to_pixel(self):
+        """Test the metric_to_pixel function."""
         # input
         xc = 0.0  # [mm]
         yc = 0.0  # [mm]
@@ -236,13 +239,12 @@ class Test_transforms(unittest.TestCase):
         self.input_control_par_file_name = (
             "tests/testing_folder/control_parameters/control.par"
         )
-        self.control = ControlPar(4)
-        self.control.from_file(self.input_control_par_file_name)
+        self.control = ControlPar().from_file(self.input_control_par_file_name)
 
         self.input_ori_file_name = "tests/testing_folder/calibration/cam1.tif.ori"
         self.input_add_file_name = "tests/testing_folder/calibration/cam2.tif.addpar"
 
-        self.calibration = Calibration()
+        # self.calibration = Calibration()
         self.calibration = read_calibration(
             self.input_ori_file_name, self.input_add_file_name
         )
@@ -318,13 +320,13 @@ class Test_transforms(unittest.TestCase):
         """Distortion and correction of pixel coordinates."""
         # This is all based on values from liboptv/tests/check_imgcoord.c
         cal = Calibration()
-        cal.set_pos(np.r_[0.0, 0.0, 40.0])
-        cal.set_angles(np.r_[0.0, 0.0, 0.0])
-        cal.set_primary_point(np.r_[0.0, 0.0, 10.0])
+        cal.set_pos([0.0, 0.0, 40.0])
+        cal.set_angles([0.0, 0.0, 0.0])
+        cal.set_primary_point([0.0, 0.0, 10.0])
         cal.set_glass_vec(np.r_[0.0, 0.0, 20.0])
-        cal.set_radial_distortion(np.zeros(3))
-        cal.set_decentering(np.zeros(2))
-        cal.set_affine_trans(np.r_[1, 0])
+        cal.set_radial_distortion([0,0,0])
+        cal.set_decentering([0,0])
+        cal.set_affine_trans([1, 0])
 
         # reference metric positions:
         ref_pos = np.array([[0.1, 0.1], [1.0, -1.0], [-10.0, 10.0]])
@@ -355,9 +357,9 @@ class Test_transforms(unittest.TestCase):
         cal.set_angles(np.r_[0.0, 0.0, 0.0])
         cal.set_primary_point(np.r_[0.0, 0.0, 10.0])
         cal.set_glass_vec(np.r_[0.0, 0.0, 20.0])
-        cal.set_radial_distortion(np.zeros(3))
-        cal.set_decentering(np.zeros(2))
-        cal.set_affine_trans(np.r_[1, 0])
+        cal.set_radial_distortion([0,0,0])
+        cal.set_decentering([0,0])
+        cal.set_affine_trans([1, 0])
 
         # reference metric positions:
         # Note the last value is different than in test_brown_affine() because
