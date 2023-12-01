@@ -177,7 +177,7 @@ def read_targets(file_base: str, frame_num: int) -> List[Target]:
     else:
         filename = f"{file_base}_targets"
 
-    # print(f" filename: {filename}")
+    print(f" filename: {filename}")
 
     try:
         with open(filename, "r", encoding="utf-8") as file:
@@ -258,7 +258,7 @@ def compare_targets(t1: Target, t2: Target):
 class Pathinfo:
     """Pathinfo structure for tracking."""
 
-    x: np.ndarray = np.zeros(3, dtype=np.float64)
+    x: np.ndarray = field(default_factory=lambda: np.zeros(3))
     prev_frame: int = PREV_NONE
     next_frame: int = NEXT_NONE
     prio: int = PRIO_DEFAULT

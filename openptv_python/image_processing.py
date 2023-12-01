@@ -96,6 +96,9 @@ def prepare_image(
 
     # Apply low-pass filter
     # img = img.reshape((cpar.imy, cpar.imx))  # Reshape to 2D image
+    if img.dtype != np.uint8:
+        raise TypeError("Image must be of type uint8")
+
     img_lp = ndimage.uniform_filter(
         img,
         size=dim_lp * 2 + 1,

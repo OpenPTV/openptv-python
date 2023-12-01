@@ -800,9 +800,44 @@ class MultiPlanesPar(Parameters):
     multi_filename: list = field(default_factory=list)
 
     @classmethod
-    def from_file(cls, file_path):
+    def from_file(cls, file_path: str):
         """Read from multiplanes.par file."""
         with open(file_path, 'r', encoding="utf-8") as file:
             planes = int(file.readline().strip())
             multi_filename = [file.readline().strip() for _ in range(planes)]
         return cls(planes, multi_filename)
+
+@dataclass
+class ExaminePar(Parameters):
+    """Examine parameters."""
+
+    examine_flag: bool = False
+    combine_flag: bool = False
+
+    @classmethod
+    def from_file(cls, file_path: str):
+        """Read from examine.par file."""
+        with open(file_path, 'r', encoding="utf-8") as file:
+            examine_flag = bool(file.readline().strip())
+            combine_flag = bool(file.readline().strip())
+        return cls(examine_flag, combine_flag)
+
+
+@dataclass
+class PftVersionPar(Parameters):
+    """Pft version parameters."""
+
+    existing_target_flag: bool = False
+
+    @classmethod
+    def from_file(cls, file_path: str):
+        """Read from pft_version.par file."""
+        with open(file_path, 'r', encoding="utf-8") as file:
+            pft_version = bool(file.readline().strip())
+        return cls(pft_version)
+
+    @classmethod
+    def write(cls, file_path: str):
+        """Write to pft_version.par file."""
+        with open(file_path, 'w', encoding="utf-8") as file:
+            file.write(f"{cls.existing_target_flag}\n")

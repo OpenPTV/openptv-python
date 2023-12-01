@@ -130,7 +130,7 @@ class ap_52:
 class mm_lut:
     """Multimedia lookup table data structure."""
 
-    origin: np.ndarray = np.r_[0.0, 0.0, 0.0]
+    origin: np.ndarray = field(default_factory=lambda: np.zeros(3))
     nr: int = 0
     nz: int = 0
     rw: int = 0
