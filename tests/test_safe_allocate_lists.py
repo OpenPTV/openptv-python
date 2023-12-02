@@ -1,5 +1,6 @@
 import unittest
 
+from openptv_python.constants import PT_UNUSED
 from openptv_python.correspondences import safely_allocate_adjacency_lists
 
 # class Correspond:
@@ -49,7 +50,7 @@ class TestSafelyAllocateAdjacencyLists(unittest.TestCase):
                 if col:
                     for item in range(target_counts[i]):
                         self.assertEqual(col[item].n, 0)
-                        self.assertEqual(col[item].p1, 0)
+                        self.assertEqual(col[item].p1, PT_UNUSED)
                     # print(lists[row][col])
 
         # self.assertEqual(lists, expected_lists)

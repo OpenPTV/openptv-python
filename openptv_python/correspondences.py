@@ -99,8 +99,10 @@ class MatchedCoords:
         del self.buf
 
 class Correspond:
+    """Correspondence between two points in two cameras."""
+
     def __init__(self):
-        self.p1 = 0
+        self.p1 = PT_UNUSED
         self.n = 0
         self.p2 = [0] * MAXCAND
         self.corr = [0.0] * MAXCAND
@@ -134,49 +136,10 @@ def safely_allocate_target_usage_marks(
 
     return tusage
 
-
-# Python should take care of memory collection
-# def deallocate_adjacency_lists(
-#     lists: List[List[List[Correspond]]], num_cams: int
-# ) -> None:
-#     """ Deallocate adjacency lists."""
-#     for c1 in range(num_cams - 1):
-#         for c2 in range(c1 + 1, num_cams):
-#             for i in range(len(lists[c1][c2])):
-#                 lists[c1][c2][i] = None
-#             lists[c1][c2] = None
-
-
-# def safely_allocate_adjacency_lists(
-#     num_cams: int, target_counts: List[int]
-# ) -> List[List[List[Correspond]]]:
-#     """Allocate adjacency lists."""
-#     lists = [[[] for _ in range(num_cams)] for _ in range(num_cams)]
-#     error = 0
-
-#     for c1 in range(num_cams - 1):
-#         for c2 in range(c1 + 1, num_cams):
-#             if error == 0:
-#                 lists[c1][c2] = [Correspond() for _ in range(target_counts[c1])]  # type: ignore
-#                 if not lists[c1][c2]:
-#                     error = 1
-#                     lists[c1][c2] = []
-
-#                 for edge in range(target_counts[c1]):
-#                     lists[c1][c2][edge].n = 0
-#                     lists[c1][c2][edge].p1 = 0
-#             else:
-#                 lists[c1][c2] = []
-
-#     if error == 0:
-#         return lists
-
-#     return []
-
-
 def safely_allocate_adjacency_lists(
     num_cams: int, target_counts: List[int]
 ) -> List[List[List[Correspond]]]:
+    """Allocate space for the adjacency lists."""
     try:
         lists = [
             [[Correspond() for _ in range(target_counts[c1])] for _ in range(num_cams)]
@@ -478,7 +441,8 @@ def match_pairs(
                     calib[i2],
                 )
 
-                # write first MAXCAND corresponding candidates to the preliminary corr_list of correspondences
+                # write first MAXCAND corresponding candidates
+                # to the preliminary corr_list of correspondences
                 count = min(len(cand), MAXCAND)
 
                 for j in range(count):

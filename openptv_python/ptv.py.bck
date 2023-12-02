@@ -6,22 +6,30 @@ from skimage.io import imread
 from skimage.util import img_as_ubyte
 
 from openptv_python.calibration import Calibration
-from openptv_python.constants import MAX_TARGETS, TR_BUFSPACE
-from openptv_python.correspondences import MatchedCoords, correspondences
+from openptv_python.constants import CORRES_NONE, MAX_TARGETS, PT_UNUSED, TR_BUFSPACE
+from openptv_python.correspondences import (
+    MatchedCoords,
+    correspondences,
+    single_cam_correspondences,
+)
+from openptv_python.epi import Coord2d
 from openptv_python.image_processing import prepare_image
 from openptv_python.orientation import (
     full_calibration,
     point_positions,
 )
 from openptv_python.parameters import (
+    CalibrationPar,
     ControlPar,
     ExaminePar,
+    MultiPlanesPar,
     OrientPar,
     PftVersionPar,
     SequencePar,
     TargetPar,
     TrackPar,
     VolumePar,
+    read_cal_ori_parameters,
 )
 from openptv_python.segmentation import target_recognition
 from openptv_python.track import (
@@ -30,7 +38,7 @@ from openptv_python.track import (
     trackcorr_c_finish,
     trackcorr_c_loop,
 )
-from openptv_python.tracking_frame_buf import TargetArray, read_targets
+from openptv_python.tracking_frame_buf import Frame, Target, TargetArray, read_targets
 from openptv_python.tracking_run import tr_new
 
 default_naming = {
@@ -38,13 +46,6 @@ default_naming = {
     'linkage': 'res/ptv_is',
     'prio': 'res/added'
 }
-
-
-DEFAULT_NAMING = {
-    'corres': 'corres',
-    'linkage': 'linkage',
-    'prio': 'prio'
-}  # Assuming default_naming is defined somewhere in your code
 
 
 class Tracker:
@@ -56,8 +57,8 @@ class Tracker:
     do all this for you.
     """
 
-    def __init__(self, cpar, vpar, tpar, spar, cals, naming=DEFAULT_NAMING, flatten_tol=0.0001):
-        """Initialize.
+    def __init__(self, cpar, vpar, tpar, spar, cals, naming=default_naming, flatten_tol=0.0001):
+        """Initialize Tracker.
 
         Arguments:
         ControlParams cpar, VolumeParams vpar, TrackingParams tpar,
@@ -123,6 +124,111 @@ class Tracker:
                                # owner of the Tracker.
         del self.run_info  # not using tr_free() which assumes ownership of
                            # parameter structs.
+
+
+def _correspondences(img_pts: List[List[Target]],
+                     flat_coords: List[Coord2d],
+                     cals: List[Calibration],
+                     vparam: VolumePar,
+                     cparam: ControlPar):
+    """
+    Get the correspondences for each clique size.
+
+    Arguments:
+    img_pts - a list of c := len(cals), containing TargetArray objects, each
+        with the target coordinates of n detections in the respective image.
+        The target arrays are clobbered: returned arrays have the tnr property
+        set. the pnr property should be set to the target index in its array.
+    flat_coords - a list of MatchedCoordinates objects, one per camera, holding
+        the x-sorted flat-coordinates conversion of the respective image
+        targets.
+    cals - a list of Calibration objects, each for the camera taking one image.
+    VolumeParams vparam - an object holding observed volume size parameters.
+    ControlParams cparam - an object holding general control parameters.
+
+    Returns
+    -------
+    sorted_pos - a tuple of (c,?,2) arrays, each with the positions in each of
+        c image planes of points belonging to quadruplets, triplets, pairs
+        found.
+    sorted_corresp - a tuple of (c,?) arrays, each with the point identifiers
+        of targets belonging to a quad/trip/etc per camera.
+    num_targs - total number of targets (must be greater than the sum of
+        previous 3).
+    """
+    num_cams = len(cals)
+
+    # Special case of a single camera, follow the single_cam_correspondence docstring
+    if num_cams == 1:
+        sorted_pos, sorted_corresp, num_targs = \
+            single_cam_correspondences(
+            img_pts[0], flat_coords
+            )
+
+        return sorted_pos, sorted_corresp, num_targs
+
+    corrected = [flat_coord.buf for flat_coord in flat_coords]
+
+    # Return buffers:
+    # match_counts = np.empty(num_cams, dtype=np.int32)
+    match_counts = [0]*num_cams
+
+    # Initialize frame partially, without the extra memory used by init_frame.
+    # frm_targets = [img_pt._tarr for img_pt in img_pts]
+
+
+    frm = Frame(num_cams=num_cams)
+    for cam in range(num_cams):
+        # fill in only what's needed
+        frm.num_targets[cam] = len(img_pts[cam])
+        frm.targets[cam] = img_pts[cam]
+
+    # frm_num_targets = np.array([len(img_pt) for img_pt in img_pts], dtype=np.int32)
+
+    # The biz:
+    corresp_buf = correspondences(
+        frm,
+        corrected,
+        vparam,
+        cparam,
+        cals,
+        match_counts
+        )
+
+    # Distribute data to return structures:
+    sorted_pos = [None]*(num_cams - 1)
+    sorted_corresp = [None]*(num_cams - 1)
+    last_count = 0
+
+    for clique_type in range(num_cams - 1):
+        num_points = match_counts[4 - num_cams + clique_type]  # for 1-4 cameras
+        clique_targs = np.full((num_cams, num_points, 2), PT_UNUSED, dtype=np.float64)
+        clique_ids = np.full((num_cams, num_points), CORRES_NONE, dtype=np.int32)
+
+        # Trace back the pixel target properties through the flat metric
+        # intermediary that's x-sorted.
+        for cam in range(num_cams):
+            for pt in range(num_points):
+                geo_id = corresp_buf[pt + last_count].p[cam]
+                if geo_id < 0:
+                    continue
+
+                p1 = corrected[cam][geo_id].pnr
+                clique_ids[cam, pt] = p1
+
+                if p1 > -1:
+                    targ = img_pts[cam][p1]
+                    clique_targs[cam, pt, 0] = targ._targ.x
+                    clique_targs[cam, pt, 1] = targ._targ.y
+
+        last_count += num_points
+        sorted_pos[clique_type] = clique_targs
+        sorted_corresp[clique_type] = clique_ids
+
+    # Clean up.
+    num_targs = match_counts[num_cams - 1]
+
+    return sorted_pos, sorted_corresp, num_targs
 
 
 
@@ -220,13 +326,14 @@ def py_correspondences_proc_c(exp):
     #        if any([len(det) == 0 for det in detections]):
     #            return False
 
+
     # Corresp. + positions.
-    sorted_pos, sorted_corresp, num_targs = correspondences(
-        exp.detections, exp.corrected, exp.cals, exp.vpar, exp.cpar)
+    sorted_pos, sorted_corresp, num_targs = _correspondences(
+        detections, corrected, cals, vpar, cpar)
 
     # Save targets only after they've been modified:
-    for i_cam in range(exp.n_cams):
-        exp.detections[i_cam].write(exp.spar.get_img_base_name(i_cam), frame)
+    for i_cam in range(n_cams):
+        detections[i_cam].write(spar.get_img_base_name(i_cam), frame)
 
     print("Frame " + str(frame) + " had " +
           repr([s.shape[1] for s in sorted_pos]) + " correspondences.")
@@ -282,20 +389,23 @@ def py_determination_proc_c(n_cams, sorted_pos, sorted_corresp, corrected):
 
 
 
-def py_sequence_loop(exp):
+def py_sequence_loop(
+    n_cams: int,
+    cpar: ControlPar,
+    spar: SequencePar,
+    vpar: VolumePar,
+    tpar: TargetPar,
+    cals: List[Calibration],
+) -> bool:
     """Run a sequence of detection, stereo-correspondence, determination.
 
     and store the data in the cam#.XXX_targets (rewritten) and rt_is.XXX files.
     Basically it is to run the batch as in pyptv_batch.py without tracking.
     """
-    n_cams, cpar, spar, vpar, tpar, cals = (
-        exp.n_cams,
-        exp.cpar,
-        exp.spar,
-        exp.vpar,
-        exp.tpar,
-        exp.cals,
-    )
+    # Control parameters
+    negative_image_flag = False # cpar.negative_image_flag
+    subtract_mask_flag = False # cpar.subtract_img_flag
+    base_mask_name = '' # cpar.mask_name
 
     pftVersionPar = PftVersionPar().from_file("parameters/pft_version.par")
 
@@ -310,47 +420,41 @@ def py_sequence_loop(exp):
                 targs = read_targets(spar.get_img_base_name(i_cam), frame)
             else:
                 # imname = spar.get_img_base_name(i_cam) + str(frame).encode()
-                imname = spar.get_img_base_name(i_cam).decode()
+                imname = spar.img_base_name[i_cam]
                 imname = Path(imname % frame)
-                # imname = Path(imname.replace('#',f'{frame}'))
-                # print(f'Image name {imname}')
 
                 if not imname.exists():
                     print(f"{imname} does not exist")
 
                 img = img_as_ubyte(imread(imname))
-                # time.sleep(.1) # I'm not sure we need it here
 
-                if 'exp1' in exp.__dict__:
-                    if exp.exp1.active_Par.m_Par.Inverse:
-                        print("Invert image")
-                        img = 255 - img
+                if negative_image_flag:
+                    img = negative(img)
 
-                    if exp.exp1.active_Par.m_Par.Subtr_Mask:
-                        # print("Subtracting mask")
-                        try:
-                            mask_name = exp.exp1.active_Par.m_Par.Base_Name_Mask.replace('#',str(i_cam+1))
-                            mask = imread(mask_name)
-                            img[mask] = 0
+                if subtract_mask_flag:
+                    # print("Subtracting mask")
+                    try:
+                        mask_name = base_mask_name.replace('#',str(i_cam+1))
+                        mask = imread(mask_name)
+                        img[mask] = 0
 
-                        except ValueError:
-                            print("failed to read the mask")
+                    except ValueError:
+                        print("failed to read the mask")
 
 
                 high_pass = simple_highpass(img)
                 targs = target_recognition(high_pass, tpar, i_cam, cpar)
 
-            targs.sort_y()
+            targs.sort(key=lambda t: t.y)
+
             detections.append(targs)
             masked_coords = MatchedCoords(targs, cpar, cals[i_cam])
             pos, _ = masked_coords.as_arrays()
             corrected.append(masked_coords)
 
-        #        if any([len(det) == 0 for det in detections]):
-        #            return False
 
         # Corresp. + positions.
-        sorted_pos, sorted_corresp, _ = correspondences(
+        sorted_pos, sorted_corresp, _ = _correspondences(
             detections, corrected, cals, vpar, cpar)
 
         # Save targets only after they've been modified:
@@ -385,7 +489,7 @@ def py_sequence_loop(exp):
             print_corresp = sorted_corresp
 
         # Save rt_is
-        rt_is_filename = default_naming["corres"].decode()
+        rt_is_filename = default_naming["corres"]
         rt_is_filename = rt_is_filename + f'.{frame}'
         with open(rt_is_filename, "w", encoding="utf8") as rt_is:
             rt_is.write(str(pos.shape[0]) + "\n")
@@ -398,10 +502,9 @@ def py_sequence_loop(exp):
 
 def py_trackcorr_init(exp):
     """Read all the necessary stuff into Tracker."""
-    tracker = Tracker(exp.cpar, exp.vpar, exp.track_par, exp.spar, exp.cals,
+    tracker = Tracker(cpar, vpar, track_par, spar, cals,
                       default_naming)
     return tracker
-
 
 
 def py_calibration(selection):
@@ -420,7 +523,7 @@ def py_calibration(selection):
         """
 
 
-def py_multiplanecalibration(exp):
+def py_multiplanecalibration(n_cams: int):
     """Perform multiplane calibration.
 
     in which for all cameras the pre-processed plane in multiplane.par
@@ -428,15 +531,18 @@ def py_multiplanecalibration(exp):
     Overwrites the ori and addpar files of the cameras specified
     in cal_ori.par of the multiplane parameter folder.
     """
-    for i_cam in range(exp.n_cams):  # iterate over all cameras
+    multi_planes_par = MultiPlanesPar().from_file("parameters/multiplane.par")
+    cal_par = CalibrationPar().from_file("parameters/cal_ori.par", n_cams)
+
+    for i_cam in range(n_cams):  # iterate over all cameras
         all_known = []
         all_detected = []
-        for i in range(exp.MultiPar.n_planes):  # combine all single planes
+        for i in range(multi_planes_par.planes):  # combine all single planes
 
-            c = exp.calPar.img_ori[i_cam][-9]  # Get camera id
+            c = cal_par.img_ori[i_cam][-9]  # Get camera id
 
-            file_known = exp.MultiPar.plane_name[i] + str(c) + ".tif.fix"
-            file_detected = exp.MultiPar.plane_name[i] + str(c) + ".tif.crd"
+            file_known = multi_planes_par.multi_filename[i] + str(c) + ".tif.fix"
+            file_detected = multi_planes_par.multi_filename[i] + str(c) + ".tif.crd"
 
             # Load calibration point information from plane i
             known = np.loadtxt(file_known)
@@ -476,7 +582,7 @@ def py_multiplanecalibration(exp):
             targ.set_pos(det[1:])
 
         # backup the ORI/ADDPAR files first
-        exp.backup_ori_files()
+        # backup_ori_files()
 
         op = OrientPar().from_file("parameters/cal_ori.par")
 
@@ -512,10 +618,63 @@ def py_multiplanecalibration(exp):
                 flags.append(name)
 
         # Run the multiplane calibration
-        residuals, targ_ix, err_est = full_calibration(exp.cals[0], all_known,
-                                                       targs, exp.cpar, flags)
+        residuals, targ_ix, err_est = full_calibration(cals[0], all_known,
+                                                       targs, cpar, flags)
 
         # Save the results
-        exp._write_ori(i_cam,
-                       addpar_flag=True)  # addpar_flag to save addpar file
+        _write_ori(i_cam, addpar_flag=True)  # addpar_flag to save addpar file
+        calibpar = read_cal_ori_parameters("parameters/cal_ori.par", n_cams)
+        ori = calibpar.img_name[i_cam]
+        cals[i_cam].write(ori, addpar)
+
+
         print("End multiplane")
+
+def _write_ori(i_cam, addpar_flag=False):
+    """Write ORI and ADDPAR files for a single calibration result.
+
+    i_cam, addpar_flag is a boolean that allows to keep previous addpar
+    otherwise external_calibration overwrites zeros
+    """
+    calibpar = read_cal_ori_parameters("parameters/cal_ori.par", i_cam)
+
+    ori = calibpar.img_name[i_cam]
+
+
+    if addpar_flag:
+        addpar = ori.replace("ori", "addpar")
+    else:
+        addpar = "tmp.addpar"
+
+    print("Saving:", ori, addpar)
+    cals[i_cam].write(ori, addpar)
+
+    if epar.Examine_Flag and not epar.Combine_Flag:
+        save_point_sets(i_cam)
+
+def save_point_sets(i_cam):
+    """
+    Saves detected and known calibration points in crd and fix format, respectively.
+    These files are needed for multiplane calibration.
+    """
+    ori = cal_par.img_ori[i_cam]
+    txt_detected = ori.replace("ori", "crd")
+    txt_matched = ori.replace("ori", "fix")
+
+    detected, known = [], []
+    targs = sorted_targs[i_cam]
+    for i, t in enumerate(targs):
+        if t.pnr() != -999:
+            detected.append(t.pos())
+            known.append(cal_points["pos"][i])
+    nums = np.arange(len(detected))
+    # for pnr in nums:
+    #     print(targs[pnr].pnr())
+    #     print(targs[pnr].pos())
+    #   detected[pnr] = targs[pnr].pos()
+
+    detected = np.hstack((nums[:, None], np.array(detected)))
+    known = np.hstack((nums[:, None], np.array(known)))
+
+    np.savetxt(txt_detected, detected, fmt="%9.5f")
+    np.savetxt(txt_matched, known, fmt="%10.5f")
