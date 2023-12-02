@@ -1087,6 +1087,45 @@ def trackcorr_c_loop(run_info, step):
         if curr_path_inf.next_frame != NEXT_NONE:
             count1 += 1
 
+    # # ******** Draw links now ********
+    # if display_tracks_flag is True:
+    #     for h in range(m[1]):
+    #         if mega[1][h].next != -2:
+    #             buf = "green"
+
+    #             for j in range(num_cams):
+    #                 if c4[1][h].p[j] > 0 and c4[2][mega[1][h].next].p[j] > 0:
+    #                     xp[j] = t4[1][j][c4[1][h].p[j]].x
+    #                     yp[j] = t4[1][j][c4[1][h].p[j]].y
+    #                     xc[j] = t4[2][j][c4[2][mega[1][h].next].p[j]].x
+    #                     yc[j] = t4[2][j][c4[2][mega[1][h].next].p[j]].y
+    #                     predict(xp[j], yp[j], xc[j], yc[j], xn[j], yn[j])
+
+    #                     if (
+    #                         (abs(xp[j] - zoom_x[j]) < imx / (2 * zoom_f[j]))
+    #                         and (abs(yp[j] - zoom_y[j]) < imy / (2 * zoom_f[j]))
+    #                     ):
+    #                         val = "orange"
+
+    #                         intx0 = int(imx / 2 + zoom_f[j] * (xp[j] - zoom_x[j]))
+    #                         inty0 = int(imy / 2 + zoom_f[j] * (yp[j] - zoom_y[j]))
+    #                         intx1 = int(imx / 2 + zoom_f[j] * (xc[j] - zoom_x[j]))
+    #                         inty1 = int(imy / 2 + zoom_f[j] * (yc[j] - zoom_y[j]))
+    #                         intx2 = int(imx / 2 + zoom_f[j] * (xn[j] - zoom_x[j]))
+    #                         inty2 = int(imy / 2 + zoom_f[j] * (yn[j] - zoom_y[j]))
+
+    #                         drawcross(interp, intx0, inty0, cr_sz, j, "green")
+    #                         drawcross(interp, intx1, inty1, cr_sz + 1, j, "yellow")
+    #                         drawcross(interp, intx2, inty2, cr_sz + 1, j, "white")
+    #                         drawvector(interp, intx0, inty0, intx1, inty1, 2, j, buf)
+    #                         drawvector(interp, intx1, inty1, intx2, inty2, 1, j, "white")
+
+    #                         if mega[1][h].finaldecis > 0.2:
+    #                             draw_pnr(interp, intx0, inty0, h, j, "white")
+    #                             draw_pnr(interp, intx0, inty0 + 10, mega[1][h].next, j, val)
+    #                             draw_value(interp, intx0, inty0 + 20, mega[1][h].finaldecis, j, val)
+
+
     # end of creation of links with decision check
     print(
         f"step: {step}, curr: {fb.buf[1].num_parts}, next_frame: {fb.buf[2].num_parts}, \
