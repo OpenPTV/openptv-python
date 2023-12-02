@@ -1,3 +1,9 @@
+"""Generate a 5-frame trajectory.
+
+that is pretty degenerates so is good for
+testing. It starts from (0,0,0) and moves in a straight line on the x axis,
+at a slow velocity.
+"""
 from typing import List
 
 import numpy as np
@@ -6,13 +12,6 @@ from openptv_python.calibration import Calibration
 from openptv_python.imgcoord import img_coord
 from openptv_python.parameters import ControlPar
 from openptv_python.trafo import metric_to_pixel
-
-"""
-Generate a 5-frame trajectory that is pretty degenerates so is good for
-testing. It starts from (0,0,0) and moves in a straight line on the x axis,
-at a slow velocity.
-"""
-
 
 num_cams = 3
 num_frames = 5
