@@ -818,8 +818,8 @@ class ExaminePar(Parameters):
     def from_file(cls, file_path: str):
         """Read from examine.par file."""
         with open(file_path, 'r', encoding="utf-8") as file:
-            examine_flag = bool(file.readline().strip())
-            combine_flag = bool(file.readline().strip())
+            examine_flag = bool(int(file.readline().strip()))
+            combine_flag = bool(int(file.readline().strip()))
         return cls(examine_flag, combine_flag)
 
 
