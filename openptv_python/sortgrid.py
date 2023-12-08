@@ -2,12 +2,11 @@ from typing import List
 
 import numpy as np
 
-from openptv_python.calibration import Calibration
-from openptv_python.parameters import ControlPar
-
+from .calibration import Calibration
 from .constants import POS_INF, PT_UNUSED, SORTGRID_EPS
 from .epi import Coord3d
 from .imgcoord import img_coord
+from .parameters import ControlPar
 from .tracking_frame_buf import Target
 from .trafo import metric_to_pixel
 

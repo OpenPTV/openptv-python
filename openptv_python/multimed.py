@@ -1,4 +1,3 @@
-import copy
 import math
 from typing import List, Tuple
 
@@ -82,8 +81,8 @@ def multimed_r_nlay(cal: Calibration, mm: MultimediaPar, pos: np.ndarray) -> flo
 
 
 def trans_cam_point(
-    ex: Exterior, mm: MultimediaPar, glass: Glass, pos: np.ndarray, ex_t: Exterior
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    ex: Exterior, mm: MultimediaPar, glass: Glass, pos: np.ndarray
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, float]:
     """Transform the camera and point coordinates to the glass coordinates.
 
     ex = Exterior(x0=ex_x, y0=ex_y, z0=ex_z)
@@ -109,16 +108,14 @@ def trans_cam_point(
     renorm_glass = glass_dir * (dist_point_glass / dist_o_glass)
     cross_p = pos - renorm_glass
 
-    ex_t.x0 = 0.0
-    ex_t.y0 = 0.0
-    ex_t.z0 = dist_cam_glas + mm.d[0]
+    z0 = dist_cam_glas + mm.d[0]
 
     renorm_glass = glass_dir * (mm.d[0] / dist_o_glass)
     temp = cross_c - renorm_glass
     temp = cross_p - temp
     pos_t = np.r_[np.linalg.norm(temp), 0, dist_point_glass]
 
-    return pos_t, cross_p, cross_c
+    return pos_t, cross_p, cross_c, z0
 
 
 def back_trans_point(
@@ -218,7 +215,7 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibrati
     z_max_t = z_max
 
     # intersect with image vertices rays
-    cal_t = copy.deepcopy(cal)
+    cal_t = Calibration(mmlut  = cal.mmlut)
 
     for i in range(2):
         for j in range(2):
@@ -228,8 +225,8 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibrati
             x, y = correct_brown_affine(x, y, cal.added_par)
             pos, a = ray_tracing(x, y, cal, cpar.mm)
             xyz = move_along_ray(z_min, pos, a)
-            xyz_t, _, _ = trans_cam_point(
-                cal.ext_par, cpar.mm, cal.glass_par, xyz, cal_t.ext_par
+            xyz_t, _, _, cal_t.ext_par.z0 = trans_cam_point(
+                cal.ext_par, cpar.mm, cal.glass_par, xyz
             )
 
             if xyz_t[2] < z_min_t:
@@ -243,8 +240,8 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibrati
                 Rmax = R
 
             xyz = move_along_ray(z_max, pos, a)
-            xyz_t, _, _ = trans_cam_point(
-                cal.ext_par, cpar.mm, cal.glass_par, xyz, cal_t.ext_par
+            xyz_t, _, _, cal_t.ext_par.z0 = trans_cam_point(
+                cal.ext_par, cpar.mm, cal.glass_par, xyz
             )
 
             if xyz_t[2] < z_min_t:
@@ -345,6 +342,7 @@ def volumedimension(
     cpar: ControlPar,
     cal: List[Calibration],
 ) -> Tuple[float, float, float, float, float, float]:
+    """Calculate the volume dimensions."""
     xc = [0.0, cpar.imx]
     yc = [0.0, cpar.imy]
 

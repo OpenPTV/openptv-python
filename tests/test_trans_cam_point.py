@@ -43,7 +43,7 @@ class TestTransformFunctions(unittest.TestCase):
 
         Ex_t = Exterior()
 
-        pos_t, cross_p, cross_c = trans_cam_point(test_Ex, test_mm, test_G, pos, Ex_t)
+        pos_t, cross_p, cross_c, Ex_t.z0 = trans_cam_point(test_Ex, test_mm, test_G, pos)
 
         np.allclose(pos, np.r_[141.429134, 0.000000, -0.989000])
         np.allclose(cross_p, np.r_[100.000099, 100.000010, 0.989000])
@@ -84,7 +84,7 @@ class TestTransformFunctions(unittest.TestCase):
         test_mm = MultimediaPar(1, 1.0, [1.49, 0.0, 0.0], [5.0, 0.0, 0.0], 1.33)
 
         Ex_t = Exterior()
-        pos_t, cross_p, cross_c = trans_cam_point(test_Ex, test_mm, test_G, pos, Ex_t)
+        pos_t, cross_p, cross_c, Ex_t.z0 = trans_cam_point(test_Ex, test_mm, test_G, pos)
 
         self.assertTrue(np.allclose(pos_t, np.r_[sep_norm, 0.0, -test_G.vec_z]))
         self.assertTrue(np.allclose(cross_p, np.r_[pos[0], pos[1], test_G.vec_z]))

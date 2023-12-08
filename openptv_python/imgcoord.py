@@ -27,14 +27,13 @@ def flat_image_coord(
     -------
         _type_: _description_
     """
-    cal_t = Calibration()
-    cal_t.mmlut = cal.mmlut
+    cal_t = Calibration(mmlut = cal.mmlut)
 
     # This block calculate 3D position in an imaginary air-filled space,
     # i.e. where the point will have been seen in the absence of refractive
     # layers between it and the camera.
-    pos_t, cross_p, cross_c = trans_cam_point(
-        cal.ext_par, mm, cal.glass_par, orig_pos, cal_t.ext_par
+    pos_t, cross_p, cross_c, cal_t.ext_par.z0 = trans_cam_point(
+        cal.ext_par, mm, cal.glass_par, orig_pos
     )
 
     # print(f"pos_t {pos_t}")
