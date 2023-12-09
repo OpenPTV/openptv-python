@@ -488,10 +488,10 @@ def orient(
 
         # Interpret the results
         print(
-            f"Coefficients (beta): {beta} \
-                Residuals: {residuals} \
-                singular_values: {singular_values} \
-                rank: {rank} \
+            f"Coefficients (beta): {beta} \n \
+                Residuals: {residuals} \n \
+                singular_values: {singular_values} \n \
+                rank: {rank} \n \
             "
         )
 
@@ -775,8 +775,8 @@ def full_calibration(
     ref_pts: np.ndarray,
     img_pts: TargetArray,
     cparam: ControlPar,
-    flags: Optional[list] = None,
-):
+    orient_par: OrientPar,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Perform a full calibration, affecting all calibration structs.
 
@@ -815,36 +815,8 @@ def full_calibration(
     ------
     ValueError if iteration did not converge.
     """
-    # cdef:
-    #     vec3d *ref_coord
-    #     np.ndarray[ndim=2, dtype=pos_t] ret
-    #     np.ndarray[ndim=1, dtype=np.int_t] used
-    #     np.ndarray[ndim=1, dtype=pos_t] err_est
-    #     orient_par *orip
-    #     double *residuals
-
-    # Load up the orientation parameters. Silly, but saves on defining
-    # a whole new class for what is no more than a list.
-
-    if flags is None:
-        flags = []
-
-    orip = OrientPar()
-    orip.useflag = 0
-    orip.ccflag = 1 if "cc" in flags else 0
-    orip.xhflag = 1 if "xh" in flags else 0
-    orip.yhflag = 1 if "yh" in flags else 0
-    orip.k1flag = 1 if "k1" in flags else 0
-    orip.k2flag = 1 if "k2" in flags else 0
-    orip.k3flag = 1 if "k3" in flags else 0
-    orip.p1flag = 1 if "p1" in flags else 0
-    orip.p2flag = 1 if "p2" in flags else 0
-    orip.scxflag = 1 if "scale" in flags else 0
-    orip.sheflag = 1 if "shear" in flags else 0
-    orip.interfflag = 0  # This also solves for the glass, I'm skipping it.
-
     err_est = np.empty((NPAR + 1), dtype=np.float64)
-    residuals = orient(cal, cparam, len(ref_pts), ref_pts, img_pts, orip, err_est)
+    residuals = orient(cal, cparam, len(ref_pts), ref_pts, img_pts, orient_par, err_est)
 
     # free(orip)
 

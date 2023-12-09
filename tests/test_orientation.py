@@ -13,11 +13,7 @@ from openptv_python.orientation import (
     point_positions,
     weighted_dumbbell_precision,
 )
-from openptv_python.parameters import (
-    ControlPar,
-    VolumePar,
-    read_control_par,
-)
+from openptv_python.parameters import ControlPar, OrientPar, VolumePar, read_control_par
 from openptv_python.tracking_frame_buf import TargetArray
 from openptv_python.trafo import arr_metric_to_pixel
 
@@ -31,10 +27,12 @@ class Test_Orientation(unittest.TestCase):
         self.input_add_file_name = "tests/testing_folder/calibration/cam2.tif.addpar"
         self.control_file_name = "tests/testing_folder/control_parameters/control.par"
         self.volume_file_name = "tests/testing_folder/corresp/criteria.par"
+        self.orient_par_file_name = "tests/testing_folder/corresp/orient.par"
 
         self.control = ControlPar(4).from_file(self.control_file_name)
         self.calibration = Calibration().from_file(self.input_ori_file_name, self.input_add_file_name)
         self.vpar = VolumePar().from_file(self.volume_file_name)
+        self.orient_par = OrientPar().from_file(self.orient_par_file_name)
 
     def test_match_detection_to_ref(self):
         """Match detection to reference (sortgrid)."""
@@ -280,6 +278,9 @@ class TestGradientDescent(unittest.TestCase):
         # self.control = ControlPar(4)
         self.control = read_control_par(control_file_name)
 
+        self.orient_par_file_name = "tests/testing_folder/corresp/orient.par"
+        self.orient_par = OrientPar().from_file(self.orient_par_file_name)
+
         self.cal = Calibration().from_file(
             "tests/testing_folder/calibration/cam1.tif.ori",
             "tests/testing_folder/calibration/cam1.tif.addpar",
@@ -288,6 +289,7 @@ class TestGradientDescent(unittest.TestCase):
             "tests/testing_folder/calibration/cam1.tif.ori",
             "tests/testing_folder/calibration/cam1.tif.addpar",
         )
+
 
     def test_external_calibration(self):
         """External calibration using clicked points."""
@@ -342,7 +344,15 @@ class TestGradientDescent(unittest.TestCase):
         self.cal.set_pos(self.cal.get_pos() + np.r_[15.0, -15.0, 15.0])
         self.cal.set_angles(self.cal.get_angles() + np.r_[-0.5, 0.5, -0.5])
 
-        _, _, _ = full_calibration(self.cal, ref_pts, target_array, self.control)
+        print(f"Calibrating with the following flags: {self.orient_par}")
+
+        _, _, _ = full_calibration(
+            self.cal,
+            ref_pts,
+            target_array,
+            self.control,
+            self.orient_par
+            )
 
         np.testing.assert_array_almost_equal(
             self.cal.get_angles(), self.orig_cal.get_angles(), decimal=4
