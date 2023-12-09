@@ -1,5 +1,6 @@
 import os
 import unittest
+from pathlib import Path
 
 from openptv_python.parameters import MultiPlanesPar
 
@@ -24,14 +25,14 @@ class TestMultiPlanesParameters(unittest.TestCase):
         instance = MultiPlanesPar().from_file(self.temp_file)
 
         # Write to YAML
-        yaml_file = 'multi_planes_parameters.yaml'
+        yaml_file = Path('multi_planes_parameters.yaml')
         instance.to_yaml(yaml_file)
 
         # Read back from YAML
         read_instance = MultiPlanesPar().from_yaml(yaml_file)
 
         # Verify equality
-        self.assertEqual(instance, read_instance)
+        self.assertEqual(instance.to_dict(), read_instance.to_dict())
 
         os.remove(yaml_file)
 

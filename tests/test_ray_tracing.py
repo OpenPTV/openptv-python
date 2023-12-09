@@ -18,6 +18,7 @@ class TestRayTracing(unittest.TestCase):
         x, y = 0, 0
         cal = Calibration()  # create Variable for cal with necessary data
         cpar = ControlPar()
+        print(cpar.to_dict())
         expected_output = np.zeros(3), np.zeros(3)
         output = ray_tracing(x, y, cal, cpar.mm)
         assert np.allclose(output, expected_output)

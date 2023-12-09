@@ -1,7 +1,6 @@
 # %%
 import glob
 import os
-from dataclasses import asdict
 
 import yaml
 
@@ -71,7 +70,7 @@ for file_path in par_files:
         # print(par_content)
 
         # Add the dictionary to the merged data with the title as the key
-        merged_data[title] = asdict(par_content)
+        merged_data[title] = par_content.to_dict()
 
 # Write the merged data to a single YAML file
 with open(output_yaml_file, 'w', encoding='utf-8') as output_file:

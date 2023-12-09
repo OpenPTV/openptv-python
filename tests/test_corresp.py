@@ -152,7 +152,7 @@ class TestReadControlPar(unittest.TestCase):
         expected.mm.d = [5.0]
 
         result = read_control_par("tests/testing_folder/corresp/valid.par")
-        self.assertEqual(result, expected)
+        self.assertEqual(result.to_dict(), expected.to_dict())
 
     def test_instantiate(self):
         """Creating a MatchedCoords object."""

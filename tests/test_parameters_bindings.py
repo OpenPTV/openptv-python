@@ -11,7 +11,6 @@ from openptv_python.parameters import (
     TargetPar,
     TrackPar,
     VolumePar,
-    compare_sequence_par,
     read_sequence_par,
     read_target_par,
 )
@@ -55,7 +54,7 @@ class Test_SequenceParams(unittest.TestCase):
             last=10004,
         )
         # Call the function and check the result
-        assert compare_sequence_par(sp1, sp2) is True
+        assert (sp1 == sp2) is True
 
         # Create two SequencePar objects with different values
         sp3 = SequencePar(
@@ -69,7 +68,7 @@ class Test_SequenceParams(unittest.TestCase):
             last=10004,
         )
         # Call the function and check the result
-        assert compare_sequence_par(sp3, sp4) is False
+        assert(sp3.to_dict() != sp4.to_dict())
 
 
 class TestMultimediaParams(unittest.TestCase):
@@ -238,10 +237,9 @@ class Test_SequenceParamsC(unittest.TestCase):
     # testing __richcmp__ comparison method of SequencePar class
     def test_rich_compare(self):
         self.seq_obj2 = read_sequence_par(self.input_sequence_par_file_name, 4)
-
         self.seq_obj3 = read_sequence_par(self.input_sequence_par_file_name, 4)
 
-        self.assertTrue(self.seq_obj2 == self.seq_obj3)
+        self.assertTrue(self.seq_obj2.to_dict() == self.seq_obj3.to_dict())
         self.assertFalse(self.seq_obj2 != self.seq_obj3)
 
         self.seq_obj2.set_first(-999)
@@ -366,8 +364,8 @@ class Test_VolumeParams(unittest.TestCase):
         """Test comparison of VolumePar objects."""
         self.vol_obj2 = VolumePar().from_file(self.input_volume_par_file_name)
         self.vol_obj3 = VolumePar().from_file(self.input_volume_par_file_name)
-        self.assertTrue(self.vol_obj2 == self.vol_obj3)
-        self.assertFalse(self.vol_obj2 != self.vol_obj3)
+        self.assertEqual(self.vol_obj2.to_dict(), self.vol_obj3.to_dict())
+        self.assertFalse(self.vol_obj2.to_dict() != self.vol_obj3.to_dict())
 
         self.vol_obj2.set_cn(-999)
         self.assertTrue(self.vol_obj2 != self.vol_obj3)
@@ -426,8 +424,8 @@ class Test_ControlPar(unittest.TestCase):
 
         self.cp_obj3 = ControlPar(num_cams=4).from_file(self.input_control_par_file_name)
 
-        self.assertTrue(self.cp_obj2 == self.cp_obj3)
-        self.assertFalse(self.cp_obj2 != self.cp_obj3)
+        self.assertEqual(self.cp_obj2.to_dict(), self.cp_obj3.to_dict())
+        self.assertFalse(self.cp_obj2.to_dict() != self.cp_obj3.to_dict())
 
         self.cp_obj2.set_hp_flag(False)
         self.assertTrue(self.cp_obj2 != self.cp_obj3)

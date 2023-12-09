@@ -1,5 +1,4 @@
 """Test the reading of the parameters from a yaml file."""
-from dataclasses import asdict
 from typing import Dict
 
 import yaml
@@ -8,6 +7,7 @@ import yaml
 from openptv_python.parameters import (
     CalibrationPar,
     ControlPar,
+    MultimediaPar,
     MultiPlanesPar,
     OrientPar,
     SequencePar,
@@ -28,10 +28,6 @@ def write_parameters_to_yaml(file_path, params: Dict):
     with open(file_path, 'w', encoding='utf-8') as file:
         yaml.dump(params, file, default_flow_style=False)
 
-
-# %%
-
-
 par_dict = {'cal_ori': CalibrationPar,
             'detect_plate':TargetPar,
             'track': TrackPar,
@@ -40,7 +36,8 @@ par_dict = {'cal_ori': CalibrationPar,
             'criteria':VolumePar,
             'sequence':SequencePar,
             'targ_rec': TargetPar,
-            'orient' : OrientPar
+            'orient' : OrientPar,
+            'mm': MultimediaPar,
             }
 # par_dict
 
@@ -51,4 +48,4 @@ for key in parameters:
     par_class = par_dict[key]
     instance = par_class().from_dict(parameters[key])
     print(instance)
-    print(asdict(instance))
+    print(instance.to_dict())
