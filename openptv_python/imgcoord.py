@@ -97,7 +97,9 @@ def flat_image_coordinates(
 
 
 def img_coord(
-    pos: np.ndarray, cal: Calibration, mm: MultimediaPar
+    pos: np.ndarray,
+    cal: Calibration,
+    mm: MultimediaPar
 ) -> Tuple[float, float]:
     """Image coordinate."""
     # Estimate metric coordinates in image space using flat_image_coord()
