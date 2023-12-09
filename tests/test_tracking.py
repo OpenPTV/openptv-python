@@ -348,7 +348,9 @@ class TestSort(unittest.TestCase):
 
 class TestSearchQuader(unittest.TestCase):
     def setUp(self):
-        self.cpar = ControlPar().from_file("tests/testing_fodder/track/parameters/ptv.par")
+        self.cpar = ControlPar().from_file(
+            "tests/testing_fodder/track/parameters/ptv.par"
+        )
         self.cpar.mm.n2[0] = 1.0
         self.cpar.mm.n3 = 1.0
 

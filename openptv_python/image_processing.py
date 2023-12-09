@@ -84,7 +84,7 @@ def copy_images(src: np.ndarray) -> np.ndarray:
 def prepare_image(
     img: np.ndarray,
     dim_lp: int = 1,
-    filter_hp: int = 0, # or 1,2
+    filter_hp: int = 0,  # or 1,2
     filter_file: str = "",
 ) -> np.ndarray:
     """Prepare an image for particle detection: an averaging (smoothing).

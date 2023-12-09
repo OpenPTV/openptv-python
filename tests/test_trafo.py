@@ -324,8 +324,8 @@ class Test_transforms(unittest.TestCase):
         cal.set_angles([0.0, 0.0, 0.0])
         cal.set_primary_point([0.0, 0.0, 10.0])
         cal.set_glass_vec(np.r_[0.0, 0.0, 20.0])
-        cal.set_radial_distortion([0,0,0])
-        cal.set_decentering([0,0])
+        cal.set_radial_distortion([0, 0, 0])
+        cal.set_decentering([0, 0])
         cal.set_affine_trans([1, 0])
 
         # reference metric positions:
@@ -357,8 +357,8 @@ class Test_transforms(unittest.TestCase):
         cal.set_angles(np.r_[0.0, 0.0, 0.0])
         cal.set_primary_point(np.r_[0.0, 0.0, 10.0])
         cal.set_glass_vec(np.r_[0.0, 0.0, 20.0])
-        cal.set_radial_distortion([0,0,0])
-        cal.set_decentering([0,0])
+        cal.set_radial_distortion([0, 0, 0])
+        cal.set_decentering([0, 0])
         cal.set_affine_trans([1, 0])
 
         # reference metric positions:

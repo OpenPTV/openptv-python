@@ -7,8 +7,7 @@ class TestCalibrationParameters(unittest.TestCase):
     """Tests for the read_cal_ori_parameters function."""
 
     def setUp(self):
-        self.temp_file = 'tests/testing_fodder/parameters/cal_ori.par'
-
+        self.temp_file = "tests/testing_fodder/parameters/cal_ori.par"
 
     # def tearDown(self):
     #     # Close and remove the temporary file
@@ -20,15 +19,19 @@ class TestCalibrationParameters(unittest.TestCase):
         parameters = read_cal_ori_parameters(self.temp_file, 4)
 
         self.assertEqual(parameters.fixp_name, "cal/calblock_20.txt")
-        self.assertEqual(parameters.img_name, ["cal/cam1.tif",
-                                               "cal/cam2.tif",
-                                               "cal/cam3.tif",
-                                               "cal/cam4.tif"
-                                               ])
-        self.assertEqual(parameters.img_ori0, ["cal/cam1.tif.ori",
-                                               "cal/cam2.tif.ori",
-                                               "cal/cam3.tif.ori",
-                                               "cal/cam4.tif.ori"])
+        self.assertEqual(
+            parameters.img_name,
+            ["cal/cam1.tif", "cal/cam2.tif", "cal/cam3.tif", "cal/cam4.tif"],
+        )
+        self.assertEqual(
+            parameters.img_ori0,
+            [
+                "cal/cam1.tif.ori",
+                "cal/cam2.tif.ori",
+                "cal/cam3.tif.ori",
+                "cal/cam4.tif.ori",
+            ],
+        )
         self.assertEqual(parameters.tiff_flag, 1)
         self.assertEqual(parameters.pair_flag, 0)
         self.assertEqual(parameters.chfield, 0)
@@ -45,5 +48,6 @@ class TestCalibrationParameters(unittest.TestCase):
     #     with self.assertRaises(ValueError):
     #         read_cal_ori_parameters(self.temp_file, 4)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

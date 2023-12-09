@@ -37,7 +37,6 @@ class TestEpipolarCurve(unittest.TestCase):
 
         orig_cal = Calibration().from_file(ori_tmpl, add_file)
 
-
         cam_num = 3
         ori_tmpl = f"tests/testing_folder/calibration/sym_cam{cam_num}.tif.ori"
         proj_cal = Calibration().from_file(ori_tmpl, add_file)
@@ -46,7 +45,7 @@ class TestEpipolarCurve(unittest.TestCase):
         orig_cal.set_angles(np.r_[0.0, -np.pi / 4.0, 0.0])
         proj_cal.set_angles(np.r_[0.0, 3 * np.pi / 4.0, 0.0])
 
-        cpar = ControlPar(4)
+        # cpar = ControlPar(4)
         cpar = read_control_par("tests/testing_folder/corresp/control.par")
         sens_size = cpar.get_image_size()
 
@@ -73,20 +72,20 @@ class TestEpipolarCurve(unittest.TestCase):
         np.testing.assert_array_equal(np.argsort(line[:, 0]), np.arange(5)[::-1])
         self.assertTrue(np.all(abs(line[:, 1] - mid[1]) < 1e-6))
 
-    def test_epi_mm_2D(self):
+    def test_epi_mm_2d(self):
         """Test the epi_mm_2D function."""
-        test_Ex = Exterior(0.0, 0.0, 100.0, 0.0, 0.0, 0.0)
+        test_Ex = Exterior(0.0, 0.0, 100.0, 0.0, 0.0, 0.0, np.eye(3, dtype=float))
         test_I = Interior(0.0, 0.0, 100.0)
         test_G = Glass(0.0, 0.0, 50.0)
         test_addp = ap_52(0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
         test_cal = Calibration(test_Ex, test_I, test_G, test_addp)
 
-        test_mm = MultimediaPar(1, 1.0, [1.49, 0.0, 0.0], [5.0, 0.0, 0.0], 1.33)
+        test_mm = MultimediaPar(1, 1.0, [1.49, 0, 0], [5.0, 0, 0], 1.33)
 
         test_vpar = VolumePar(
-            (-250.0, 250.0),
-            (-100.0, -100.0),
-            (100.0, 100.0),
+            [-250.0, 250.0],
+            [-100.0, -100.0],
+            [100.0, 100.0],
             0.01,
             0.3,
             0.3,
@@ -121,11 +120,10 @@ class TestEpipolarCurve(unittest.TestCase):
         test_Ex_2 = Exterior(-10.0, 0.0, 100.0, 0.0, 0.01, 0.0)
         test_cal_2 = Calibration(test_Ex_2, test_I, test_G, test_addp)
 
-        test_mm = MultimediaPar(1, 1.0, [1.49, 0.0, 0.0], [5.0, 0.0, 0.0], 1.33)
+        test_mm = MultimediaPar(1, 1.0, [1.49], [5.0], 1.33)
 
         test_vpar = VolumePar(
-            [-250.0, 250.0], [-50.0, -50.0], [50.0, 50.0], \
-                0.01, 0.3, 0.3, 0.01, 1.0, 33
+            [-250.0, 250.0], [-50.0, -50.0], [50.0, 50.0], 0.01, 0.3, 0.3, 0.01, 1.0, 33
         )
 
         x = 10.0
@@ -154,9 +152,9 @@ class TestEpipolarCurve(unittest.TestCase):
         test_mm = MultimediaPar(1, 1.0, [1.0, 0.0, 0.0], [1.0, 0.0, 0.0], 1.0)
 
         test_vpar = VolumePar(
-            (-100.0, 100.0),
-            (-100.0, -100.0),
-            (100.0, 100.0),
+            [-100.0, 100.0],
+            [-100.0, -100.0],
+            [100.0, 100.0],
             0.01,
             0.3,
             0.3,
@@ -234,8 +232,8 @@ class TestFindCandidate(unittest.TestCase):
             33,
         )
         test_cpar = ControlPar(4)
-        test_cpar.set_image_size([1280, 1024])
-        test_cpar.set_pixel_size([0.02, 0.02])
+        test_cpar.set_image_size((1280, 1024))
+        test_cpar.set_pixel_size((0.02, 0.02))
         test_cpar.mm = test_mm
 
         # the result is that the sensor size is 12.8 mm x 10.24 mm

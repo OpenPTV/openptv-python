@@ -137,6 +137,7 @@ def sort_target_y(targets: List[Target]) -> List[Target]:
     """Sort targets by y coordinate."""
     return sorted(targets, key=lambda t: t.y)
 
+
 class TargetArray(list):
     """Target array class."""
 
@@ -173,7 +174,7 @@ def read_targets(file_base: str, frame_num: int) -> List[Target]:
 
     if frame_num > 0:
         # filename = f"{file_base}{frame_num:04d}_targets"
-        filename = file_base % frame_num + '_targets'
+        filename = file_base % frame_num + "_targets"
     else:
         filename = f"{file_base}_targets"
 
@@ -211,13 +212,12 @@ def read_targets(file_base: str, frame_num: int) -> List[Target]:
 
 
 def write_targets(
-    targets: List[Target], num_targets: int, file_base: str, frame_num: int) -> bool:
+    targets: List[Target], num_targets: int, file_base: str, frame_num: int
+) -> bool:
     """Write targets to a file."""
     success = False
     file_name = (
-        file_base + "_targets"
-        if frame_num == 0
-        else file_base % frame_num + "_targets"
+        file_base + "_targets" if frame_num == 0 else file_base % frame_num + "_targets"
     )
 
     try:
@@ -348,7 +348,7 @@ class Frame:
             return False
 
         for cam in range(self.num_cams):
-            self.targets[cam] = read_targets( target_file_base[cam], frame_num )
+            self.targets[cam] = read_targets(target_file_base[cam], frame_num)
             self.num_targets[cam] = len(self.targets[cam])
 
             if self.num_targets[cam] == -1:
@@ -651,8 +651,8 @@ class FrameBuf(FrameBufBase):
         else:
             return frame.read(
                 self.corres_file_base,
-                '',
-                '',
+                "",
+                "",
                 self.target_file_base,
                 frame_num,
             )
@@ -720,7 +720,7 @@ def read_path_frame(
     # we do not need number of particles, reading till EOF
     n_particles = int(filein.readline())
     # print(f"Reading {n_particles} particles from {fname}")
-    cor_buf = [Corres() for _ in range(n_particles)] # we do not want empty lists
+    cor_buf = [Corres() for _ in range(n_particles)]  # we do not want empty lists
     path_buf = [Pathinfo() for _ in range(n_particles)]
 
     if linkage_file_base != "":

@@ -36,20 +36,9 @@ def ray_tracing(
         vec3d X - crossing point position.
         vec3d out - vector pointing normal to the interface.
     */
-
-    Args:
-    ----
-            x (_type_): _description_
-            y (_type_): _description_
-            cal (_type_): _description_
-            mm (_type_): _description_
-
-    Returns
-    -------
-            _type_: _description_
     """
     # Initial ray direction in global coordinate system
-    tmp1 = np.r_[x, y, -1 * cal.int_par.cc]
+    tmp1 = np.r_[x, y, -cal.int_par.cc]
     tmp1 = unit_vector(tmp1)
     start_dir = np.empty(3, dtype=float)
     matmul(start_dir, cal.ext_par.dm, tmp1, 3, 3, 1, 3, 3)

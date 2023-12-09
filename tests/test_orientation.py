@@ -30,7 +30,9 @@ class Test_Orientation(unittest.TestCase):
         self.orient_par_file_name = "tests/testing_folder/corresp/orient.par"
 
         self.control = ControlPar(4).from_file(self.control_file_name)
-        self.calibration = Calibration().from_file(self.input_ori_file_name, self.input_add_file_name)
+        self.calibration = Calibration().from_file(
+            self.input_ori_file_name, self.input_add_file_name
+        )
         self.vpar = VolumePar().from_file(self.volume_file_name)
         self.orient_par = OrientPar().from_file(self.orient_par_file_name)
 
@@ -203,7 +205,6 @@ class Test_Orientation(unittest.TestCase):
 
         targs_plain = np.array(targs_plain).transpose(1, 0, 2)
 
-
         targs_jigged = np.array(targs_jigged).transpose(1, 0, 2)
 
         # print(f"targs_plain: {targs_plain}")
@@ -290,7 +291,6 @@ class TestGradientDescent(unittest.TestCase):
             "tests/testing_folder/calibration/cam1.tif.addpar",
         )
 
-
     def test_external_calibration(self):
         """External calibration using clicked points."""
         ref_pts = np.array(
@@ -347,12 +347,8 @@ class TestGradientDescent(unittest.TestCase):
         print(f"Calibrating with the following flags: {self.orient_par}")
 
         _, _, _ = full_calibration(
-            self.cal,
-            ref_pts,
-            target_array,
-            self.control,
-            self.orient_par
-            )
+            self.cal, ref_pts, target_array, self.control, self.orient_par
+        )
 
         np.testing.assert_array_almost_equal(
             self.cal.get_angles(), self.orig_cal.get_angles(), decimal=4

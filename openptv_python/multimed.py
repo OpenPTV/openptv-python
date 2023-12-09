@@ -215,7 +215,7 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibrati
     z_max_t = z_max
 
     # intersect with image vertices rays
-    cal_t = Calibration(mmlut  = cal.mmlut)
+    cal_t = Calibration(mmlut=cal.mmlut)
 
     for i in range(2):
         for j in range(2):

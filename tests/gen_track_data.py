@@ -21,7 +21,9 @@ part_traject = np.zeros((num_frames, 3))
 part_traject[:, 0] = np.r_[:num_frames] * velocity
 
 # Find targets on each camera.
-cpar = ControlPar(num_cams=3).from_file("testing_fodder/track/parameters/control_newpart.par")
+cpar = ControlPar(num_cams=3).from_file(
+    "testing_fodder/track/parameters/control_newpart.par"
+)
 
 targs: List[List[List[float]]] = [
     [[0.0, 0.0] for _ in range(num_frames)] for _ in range(num_cams)

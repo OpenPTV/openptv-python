@@ -48,10 +48,10 @@ class TestCalibrationClass(unittest.TestCase):
         """Test mmlut parameters initialization."""
         mml = self.cal.mmlut
         assert np.all(mml.origin == np.zeros(3))
-        assert mml.nr == 0
-        assert mml.nz == 0
-        assert mml.rw == 0
-        assert mml.data is None
+        assert mml.nr == 1
+        assert mml.nz == 1
+        assert mml.rw == 1
+        assert mml.data == np.zeros((1, 1))
         # assert isinstance(mml.data, np.ndarray)
         # assert mml.data.shape == (3,)
 

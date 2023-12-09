@@ -3,6 +3,7 @@ from typing import List, Optional, Tuple
 
 import numpy as np
 import scipy
+from numba import jit
 
 from openptv_python.constants import COORD_UNUSED
 
@@ -185,6 +186,7 @@ def num_deriv_exterior(
     return (x_ders, y_ders)
 
 
+@jit(nopython=True, fastmath=True, cache=True)
 def orient(
     cal: Calibration,
     cpar: ControlPar,
@@ -695,6 +697,7 @@ def read_calblock(filename):
             fix[i] = np.array([float(parts[1]), float(parts[2]), float(parts[3])])
     return fix, num_fix
 
+
 def dumbbell_target_func(
     targets: np.ndarray,
     cparam: ControlPar,
@@ -769,6 +772,7 @@ def external_calibration(
     del targs
 
     return True if success else False
+
 
 def full_calibration(
     cal: Calibration,

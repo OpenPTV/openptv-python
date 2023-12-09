@@ -1,6 +1,6 @@
 """Epipolar geometry."""
 from dataclasses import dataclass, field
-from typing import List
+from typing import List, Tuple
 
 import numpy as np
 
@@ -58,7 +58,14 @@ class Coord3d:
     z: float = field(default=0.0)
 
 
-def epi_mm(xl, yl, cal1, cal2, mmp, vpar) -> tuple[float, float, float, float]:
+def epi_mm(
+    xl: float,
+    yl: float,
+    cal1: Calibration,
+    cal2: Calibration,
+    mmp: MultimediaPar,
+    vpar: VolumePar,
+) -> Tuple[float, float, float, float]:
     """Return the end points of the epipolar line in the "second" camera.
 
     /*  epi_mm() takes a point in images space of one camera, positions of this

@@ -27,7 +27,8 @@ def flat_image_coord(
     -------
         _type_: _description_
     """
-    cal_t = Calibration(mmlut = cal.mmlut)
+    cal_t = Calibration()
+    cal_t.mmlut = cal.mmlut
 
     # This block calculate 3D position in an imaginary air-filled space,
     # i.e. where the point will have been seen in the absence of refractive

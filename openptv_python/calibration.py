@@ -1,23 +1,32 @@
 """Calibration data structures and functions."""
 
 import pathlib
-from dataclasses import dataclass, field
 from typing import List, Optional
 
 import numpy as np
 
 
-@dataclass
 class Exterior:
     """Exterior orientation data structure."""
 
-    x0: float = 0.0
-    y0: float = 0.0
-    z0: float = 0.0
-    omega: float = 0.0
-    phi: float = 0.0
-    kappa: float = 0.0
-    dm: np.ndarray = field(default_factory=lambda: np.identity(3, dtype=np.float64))
+    def __init__(self,
+                 x0: float = 0.0,
+                 y0: float = 0.0,
+                 z0: float = 0.0,
+                 omega: float = 0.0,
+                 phi: float = 0.0,
+                 kappa: float = 0.0,
+                 dm: np.ndarray = np.eye(3, dtype=np.float64)):
+
+        self.x0 = x0
+        self.y0 = y0
+        self.z0 = z0
+        self.omega = omega
+        self.phi = phi
+        self.kappa = kappa
+        self.dm = dm
+        self.update_rotation_matrix() # shoud update dm
+
 
     def update_rotation_matrix(self) -> None:
         """Rotates the Dmatrix of Exterior using three angles of the camera.
@@ -38,7 +47,7 @@ class Exterior:
         ck = np.cos(self.kappa)
         sk = np.sin(self.kappa)
 
-        self.dm = np.zeros((3, 3), dtype=np.float64)
+        # self.dm = np.eye((3, 3), dtype=np.float64)
         self.dm[0, 0] = cp * ck
         self.dm[0, 1] = -cp * sk
         self.dm[0, 2] = sp
@@ -76,11 +85,13 @@ class Exterior:
         return output
 
 
-@dataclass
 class Interior:
-    xh: float = 0.0
-    yh: float = 0.0
-    cc: float = 0.0
+    """Interior orientation data structure."""
+
+    def __init__(self, xh: float = 0.0, yh: float = 0.0, cc: float = 0.0):
+        self.xh = xh
+        self.yh = yh
+        self.cc = cc
 
     def set_primary_point(self, point: List[float]) -> None:
         self.xh, self.yh, self.cc = point
@@ -90,28 +101,40 @@ class Interior:
         self.cc = cc
 
 
-@dataclass
+
 class Glass:
-    vec_x: float = 0.0
-    vec_y: float = 0.0
-    vec_z: float = 1.0
+    """Glass data structure."""
+
+    def __init__(self, vec_x: float = 0.0, vec_y: float = 0.0, vec_z: float = 1.0):
+        self.vec_x = vec_x
+        self.vec_y = vec_y
+        self.vec_z = vec_z
 
     def set_glass_vec(self, vec: List[float]) -> None:
         """Set the glass vector."""
         self.vec_x, self.vec_y, self.vec_z = vec
 
 
-@dataclass
+
 class ap_52:
     """Additional parameters for distortion correction."""
 
-    k1: float = 0.0
-    k2: float = 0.0
-    k3: float = 0.0
-    p1: float = 0.0
-    p2: float = 0.0
-    scx: float = 1.0
-    she: float = 0.0
+    def __init__(self,
+                 k1: float = 0.0,
+                 k2: float = 0.0,
+                 k3: float = 0.0,
+                 p1: float = 0.0,
+                 p2: float = 0.0,
+                 scx: float = 1.0,
+                 she: float = 0.0):
+
+        self.k1 = k1
+        self.k2 = k2
+        self.k3 = k3
+        self.p1 = p1
+        self.p2 = p2
+        self.scx = scx
+        self.she = she
 
     def set_radial_distortion(self, dist_list: List[float]) -> None:
         """Set the radial distortion parameters k1, k2, k3."""
@@ -126,39 +149,58 @@ class ap_52:
         self.scx, self.she = affine
 
 
-@dataclass
+
 class mm_lut:
     """Multimedia lookup table data structure."""
 
-    origin: np.ndarray = field(default_factory=lambda: np.zeros(3))
-    nr: int = 0
-    nz: int = 0
-    rw: int = 0
-    data: np.ndarray | None = None
+    def __init__(self,
+                 origin: np.ndarray | None = None,
+                 nr: int = 1,
+                 nz: int = 1,
+                 rw: int = 1,
+                 data: np.ndarray | None = None):
+
+        if origin is None:
+            origin = np.zeros(3, dtype=np.float64)
+
+        # if data is None:
+        #     data = np.zeros((nr, nz), dtype=np.float64)
+
+        self.origin = origin
+        self.nr = nr
+        self.nz = nz
+        self.rw = rw
+        self.data = data
 
 
-@dataclass
 class Calibration:
     """Calibration data structure."""
 
-    ext_par: Exterior = field(default_factory=Exterior)
-    int_par: Interior = field(default_factory=Interior)
-    glass_par: Glass = field(default_factory=Glass)
-    added_par: ap_52 = field(default_factory=ap_52)
-    mmlut: mm_lut = field(
-        default_factory=lambda: mm_lut(
-            np.zeros(
-                3,
-            ),
-            0,
-            0,
-            0,
-            None,
-        )
-    )
+    def __init__(self,
+                 ext_par: Exterior | None = None,
+                 int_par: Interior | None = None,
+                 glass_par: Glass | None = None,
+                 added_par: ap_52 | None = None,
+                 mmlut: mm_lut | None = None):
+        if ext_par is None:
+            ext_par = Exterior()
+        if int_par is None:
+            int_par = Interior()
+        if glass_par is None:
+            glass_par = Glass()
+        if added_par is None:
+            added_par = ap_52()
+        if mmlut is None:
+            mmlut = mm_lut()
 
-    @classmethod
-    def from_file(cls, ori_file: str, add_file: str):
+        self.ext_par = ext_par
+        self.int_par = int_par
+        self.glass_par = glass_par
+        self.added_par = added_par
+        self.mmlut = mmlut
+
+
+    def from_file(self, ori_file: str, add_file: str):
         """
         Read exterior and interior orientation, and if available, parameters for distortion corrections.
 
@@ -175,7 +217,7 @@ class Calibration:
         if not pathlib.Path(ori_file).exists():
             raise IOError(f"File {ori_file} does not exist")
 
-        ret = cls()
+        ret = self
 
         with open(ori_file, "r", encoding="utf-8") as fp:
             # Exterior
@@ -524,7 +566,8 @@ def compare_addpar(a1, a2):
 
 def read_calibration(ori_file: str, addpar_file: str) -> Calibration:
     """Read the orientation file including the added parameters."""
-    return Calibration().from_file(ori_file, addpar_file)
+    ret = Calibration()
+    return ret.from_file(ori_file, addpar_file)
 
 
 def write_calibration(cal, ori_file, add_file):
@@ -532,26 +575,3 @@ def write_calibration(cal, ori_file, add_file):
     return write_ori(
         cal.ext_par, cal.int_par, cal.glass_par, cal.added_par, ori_file, add_file
     )
-
-
-# def rotation_matrix(Ex: Exterior) -> None:
-#     """Calculate the necessary trigonometric functions to rotate the Dmatrix of Exterior Ex."""
-#     cp = np.cos(Ex.phi)
-#     sp = np.sin(Ex.phi)
-#     co = np.cos(Ex.omega)
-#     so = np.sin(Ex.omega)
-#     ck = np.cos(Ex.kappa)
-#     sk = np.sin(Ex.kappa)
-
-#     # Modify the Exterior Ex with the new Dmatrix
-#     Ex.dm[0][0] = cp * ck
-#     Ex.dm[0][1] = -cp * sk
-#     Ex.dm[0][2] = sp
-#     Ex.dm[1][0] = co * sk + so * sp * ck
-#     Ex.dm[1][1] = co * ck - so * sp * sk
-#     Ex.dm[1][2] = -so * cp
-#     Ex.dm[2][0] = so * sk - co * sp * ck
-#     Ex.dm[2][1] = so * ck + co * sp * sk
-#     Ex.dm[2][2] = co * cp
-
-#     # Ex.dm = np.round(Ex.dm, 6)

@@ -62,7 +62,6 @@ def read_all_calibration(num_cams: int = 4) -> list[Calibration]:
     return calib
 
 
-
 class TestBurgers(unittest.TestCase):
     """Test the Burgers vortex case."""
 
@@ -83,7 +82,6 @@ class TestBurgers(unittest.TestCase):
         if Path("img/").exists():
             remove_directory("img/")
 
-
         copy_directory("res_orig/", "res/")
         copy_directory("img_orig/", "img/")
 
@@ -94,7 +92,6 @@ class TestBurgers(unittest.TestCase):
 
         print("----------------------------")
         print("Test Burgers vortex case")
-
 
         run = tr_new(
             "parameters/sequence.par",
@@ -120,10 +117,12 @@ class TestBurgers(unittest.TestCase):
 
         # print(f"total num parts is {run.npart}, num links is {run.nlinks}")
 
-        self.assertEqual(run.npart, 19, f"Was expecting npart == 19 but found {run.npart}")
-        self.assertEqual(run.nlinks, 17, f"Was expecting nlinks == 17 but found {run.nlinks}")
-
-
+        self.assertEqual(
+            run.npart, 19, f"Was expecting npart == 19 but found {run.npart}"
+        )
+        self.assertEqual(
+            run.nlinks, 17, f"Was expecting nlinks == 17 but found {run.nlinks}"
+        )
 
         run = tr_new(
             "parameters/sequence.par",
@@ -149,15 +148,18 @@ class TestBurgers(unittest.TestCase):
         trackcorr_c_finish(run, run.seq_par.last)
         print(f"total num parts is {run.npart}, num links is {run.nlinks}")
 
-        self.assertEqual(run.npart, 20, f"Was expecting npart == 19 but found {run.npart}")
-        self.assertEqual(run.nlinks, 20, f"Was expecting nlinks == 17 but found {run.nlinks}")
-
-
+        self.assertEqual(
+            run.npart, 20, f"Was expecting npart == 19 but found {run.npart}"
+        )
+        self.assertEqual(
+            run.nlinks, 20, f"Was expecting nlinks == 17 but found {run.nlinks}"
+        )
 
         remove_directory("res/")
         remove_directory("img/")
 
         os.chdir(current_directory)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

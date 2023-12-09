@@ -44,23 +44,25 @@ class MatchedCoords:
             don't.
         """
         self._num_pts = len(targs)
-        self.buf = np.empty(self._num_pts, \
-            dtype=np.dtype([('x', np.float64), ('y', np.float64), ('pnr', np.int32)]))
+        self.buf = np.empty(
+            self._num_pts,
+            dtype=np.dtype([("x", np.float64), ("y", np.float64), ("pnr", np.int32)]),
+        )
 
         for tnum in range(self._num_pts):
             targ = targs._tarr[tnum]
             if reset_numbers:
                 targ.pnr = tnum
 
-            self.buf[tnum]['x'], self.buf[tnum]['y'] = pixel_to_metric(
-                targ.x, targ.y,  cpar._control_par
-                )
-            self.buf[tnum]['x'], self.buf[tnum]['y'] = dist_to_flat(
-                self.buf[tnum]['x'], self.buf[tnum]['y'], cal._calibration, tol
-                )
-            self.buf[tnum]['pnr'] = targ.pnr
+            self.buf[tnum]["x"], self.buf[tnum]["y"] = pixel_to_metric(
+                targ.x, targ.y, cpar._control_par
+            )
+            self.buf[tnum]["x"], self.buf[tnum]["y"] = dist_to_flat(
+                self.buf[tnum]["x"], self.buf[tnum]["y"], cal._calibration, tol
+            )
+            self.buf[tnum]["pnr"] = targ.pnr
 
-        self.buf.sort(order='x')
+        self.buf.sort(order="x")
 
     def as_arrays(self):
         """Return the matched coordinates as NumPy arrays.
@@ -74,9 +76,9 @@ class MatchedCoords:
         pnr = np.empty(self._num_pts, dtype=np.int_)
 
         for pt in range(self._num_pts):
-            pos[pt, 0] = self.buf[pt]['x']
-            pos[pt, 1] = self.buf[pt]['y']
-            pnr[pt] = self.buf[pt]['pnr']
+            pos[pt, 0] = self.buf[pt]["x"]
+            pos[pt, 1] = self.buf[pt]["y"]
+            pnr[pt] = self.buf[pt]["pnr"]
 
         return pos, pnr
 
@@ -88,15 +90,16 @@ class MatchedCoords:
         """
         pos = np.full((len(pnrs), 2), COORD_UNUSED, dtype=np.float64)
         for pt in range(self._num_pts):
-            which = np.flatnonzero(self.buf[pt]['pnr'] == pnrs)
+            which = np.flatnonzero(self.buf[pt]["pnr"] == pnrs)
             if len(which) > 0:
                 which = which[0]
-                pos[which, 0] = self.buf[pt]['x']
-                pos[which, 1] = self.buf[pt]['y']
+                pos[which, 0] = self.buf[pt]["x"]
+                pos[which, 1] = self.buf[pt]["y"]
         return pos
 
     def __del__(self):
         del self.buf
+
 
 class Correspond:
     """Correspondence between two points in two cameras."""
@@ -135,6 +138,7 @@ def safely_allocate_target_usage_marks(
             return []  # was None
 
     return tusage
+
 
 def safely_allocate_adjacency_lists(
     num_cams: int, target_counts: List[int]

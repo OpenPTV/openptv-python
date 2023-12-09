@@ -38,7 +38,7 @@ class Test_SequenceParams(unittest.TestCase):
         # Get the filename and the SequencePar object from the fixture
         # filename, expected_sp = test_sequence_par
         # Call the function and check the result
-        assert read_sequence_par(filename, num_cams = 2) == expected_sp
+        assert read_sequence_par(filename, num_cams=2) == expected_sp
 
     def test_compare_sequence_par(self):
         """Test compare_sequence_par function."""
@@ -68,7 +68,7 @@ class Test_SequenceParams(unittest.TestCase):
             last=10004,
         )
         # Call the function and check the result
-        assert(sp3.to_dict() != sp4.to_dict())
+        assert sp3.to_dict() != sp4.to_dict()
 
 
 class TestMultimediaParams(unittest.TestCase):
@@ -219,7 +219,9 @@ class Test_SequenceParamsC(unittest.TestCase):
     def test_getters_setters(self):
         """Test getters and setters."""
         num_cams = 4
-        self.seq_obj = SequencePar().from_file(self.input_sequence_par_file_name, num_cams)
+        self.seq_obj = SequencePar().from_file(
+            self.input_sequence_par_file_name, num_cams
+        )
         newStr = []
         for cam in range(num_cams):
             newStr.append(str(cam) + "some string")
@@ -248,9 +250,7 @@ class Test_SequenceParamsC(unittest.TestCase):
 
     def test_full_instantiate(self):
         """Instantiate a SequencePar object from keywords."""
-        spar = SequencePar(
-            img_base_name=["test1", "test2"], first=1, last=100
-        )
+        spar = SequencePar(img_base_name=["test1", "test2"], first=1, last=100)
 
         self.assertTrue(spar.img_base_name[0] == "test1")
         self.assertTrue(spar.img_base_name[1] == "test2")
@@ -275,7 +275,6 @@ class Test_VolumeParams(unittest.TestCase):
             os.makedirs(self.temp_output_directory)
 
         self.vol_obj = VolumePar().from_file(self.input_volume_par_file_name)
-
 
     def test_read_volume(self):
         """Test reading volume parameters from file."""
@@ -420,9 +419,13 @@ class Test_ControlPar(unittest.TestCase):
     # testing __richcmp__ comparison method of ControlPar class
     def test_rich_compare(self):
         """Test __richcmp__ method of ControlPar class."""
-        self.cp_obj2 = ControlPar(num_cams=4).from_file(self.input_control_par_file_name)
+        self.cp_obj2 = ControlPar(num_cams=4).from_file(
+            self.input_control_par_file_name
+        )
 
-        self.cp_obj3 = ControlPar(num_cams=4).from_file(self.input_control_par_file_name)
+        self.cp_obj3 = ControlPar(num_cams=4).from_file(
+            self.input_control_par_file_name
+        )
 
         self.assertEqual(self.cp_obj2.to_dict(), self.cp_obj3.to_dict())
         self.assertFalse(self.cp_obj2.to_dict() != self.cp_obj3.to_dict())

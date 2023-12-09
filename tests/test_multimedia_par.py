@@ -4,7 +4,6 @@ from openptv_python.parameters import MultimediaPar
 
 
 class TestMultimediaPar(unittest.TestCase):
-
     def test_multimedia_par(self):
         # Test case 1: Create an instance with default values
         multimedia_instance = MultimediaPar()
@@ -16,11 +15,11 @@ class TestMultimediaPar(unittest.TestCase):
 
         # Test case 2: Create an instance with custom values
         custom_values = {
-            'nlay': 2,
-            'n1': 2.5,
-            'n2': [2.0, 3.0],
-            'd': [0.5, 1.0],
-            'n3': 2.0
+            "nlay": 2,
+            "n1": 2.5,
+            "n2": [2.0, 3.0],
+            "d": [0.5, 1.0],
+            "n3": 2.0,
         }
         multimedia_instance_custom = MultimediaPar(**custom_values)
         self.assertEqual(multimedia_instance_custom.nlay, 2)
@@ -31,11 +30,11 @@ class TestMultimediaPar(unittest.TestCase):
 
         # Test case 3: Ensure that an exception is raised for invalid lengths of n2 and d
         invalid_values = {
-            'nlay': 2,
-            'n1': 2.5,
-            'n2': [2.0, 3.0, 4.0],  # Invalid length
-            'd': [0.5, 1.0],
-            'n3': 2.0
+            "nlay": 2,
+            "n1": 2.5,
+            "n2": [2.0, 3.0, 4.0],  # Invalid length
+            "d": [0.5, 1.0],
+            "n3": 2.0,
         }
         with self.assertRaises(ValueError):
             MultimediaPar(**invalid_values)
@@ -43,11 +42,11 @@ class TestMultimediaPar(unittest.TestCase):
     def test_to_dict_from_dict(self):
         # Test case for to_dict and from_dict methods
         data = {
-            'nlay': 3,
-            'n1': 1.5,
-            'n2': [1.0, 2.0, 3.0],
-            'd': [0.5, 1.0, 1.5],
-            'n3': 1.8
+            "nlay": 3,
+            "n1": 1.5,
+            "n2": [1.0, 2.0, 3.0],
+            "d": [0.5, 1.0, 1.5],
+            "n3": 1.8,
         }
         multimedia_instance = MultimediaPar(**data)
 
@@ -62,5 +61,6 @@ class TestMultimediaPar(unittest.TestCase):
         self.assertEqual(multimedia_instance.d, new_instance.d)
         self.assertEqual(multimedia_instance.n3, new_instance.n3)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

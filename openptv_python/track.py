@@ -756,7 +756,6 @@ def add_particle(frm: Frame, pos: np.ndarray, cand_inds: np.ndarray) -> None:
     ref_path_inf.x = vec_copy(pos)
     ref_path_inf.reset_links()
 
-
     ref_targets = frm.targets
 
     for cam in range(frm.num_cams):
@@ -770,7 +769,6 @@ def add_particle(frm: Frame, pos: np.ndarray, cand_inds: np.ndarray) -> None:
             ref_corres.nr = num_parts
 
     frm.num_parts += 1
-
 
 
 def track_forward_start(tr: TrackingRun):
@@ -861,7 +859,9 @@ def trackcorr_c_loop(run_info, step):
         # Continue to find candidates for the candidates.
         count2 += 1
         mm = 0
-        while w[mm].ftnr != TR_UNUSED and len(fb.buf[2].path_info) > w[mm].ftnr:  # counter1-loop
+        while (
+            w[mm].ftnr != TR_UNUSED and len(fb.buf[2].path_info) > w[mm].ftnr
+        ):  # counter1-loop
             # search for found corr of current the corr in next_frame with predicted location
 
             # found 3D-position
@@ -887,7 +887,9 @@ def trackcorr_c_loop(run_info, step):
             if len(wn) > 0:  # not empty
                 count3 += 1
                 kk = 0
-                while wn[kk].ftnr != TR_UNUSED and len(fb.buf[3].path_info) > wn[kk].ftnr:
+                while (
+                    wn[kk].ftnr != TR_UNUSED and len(fb.buf[3].path_info) > wn[kk].ftnr
+                ):
                     # print(f" inside wn[{kk}].ftnr {wn[kk].ftnr}")
                     ref_path_inf = fb.buf[3].path_info[wn[kk].ftnr]
                     X[4] = vec_copy(ref_path_inf.x)

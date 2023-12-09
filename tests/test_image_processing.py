@@ -50,11 +50,11 @@ class Test_image_processing(unittest.TestCase):
 
         correct_res = np.array(
             [
-                [ 28, 56, 85, 56, 28],
-                [ 56,255,255, 255, 56],
-                [ 85, 255, 255, 255,  85],
-                [ 56 ,255 ,255, 255 , 56],
-                [ 28 , 56 , 85 , 56,  28],
+                [28, 56, 85, 56, 28],
+                [56, 255, 255, 255, 56],
+                [85, 255, 255, 255, 85],
+                [56, 255, 255, 255, 56],
+                [28, 56, 85, 56, 28],
             ],
             dtype=np.uint8,
         )
@@ -63,7 +63,7 @@ class Test_image_processing(unittest.TestCase):
             self.input_img,
             dim_lp=1,
             filter_hp=self.filter_hp,
-            filter_file='',
+            filter_file="",
         )
 
         # print(res)

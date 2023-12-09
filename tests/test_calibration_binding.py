@@ -158,7 +158,7 @@ class TestCalibration(unittest.TestCase):
         self.cal.set_glass_vec(new_gv)
 
         np.testing.assert_array_equal(new_gv, self.cal.get_glass_vec())
-        self.assertRaises(ValueError, self.cal.set_glass_vec, [0,0])
+        self.assertRaises(ValueError, self.cal.set_glass_vec, [0, 0])
         self.assertRaises(ValueError, self.cal.set_glass_vec, [1])
 
 
