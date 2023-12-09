@@ -16,8 +16,8 @@ class TestMultiPlanesParameters(unittest.TestCase):
     def test_read_from_file(self):
         """Read from file."""
         instance = MultiPlanesPar().from_file(self.temp_file)
-        self.assertEqual(instance.planes, 3)
-        self.assertEqual(instance.multi_filename, ['img/calib_a_cam', 'img/calib_b_cam', 'img/calib_c_cam'])
+        self.assertEqual(instance.num_planes, 3)
+        self.assertEqual(instance.filename, ['img/calib_a_cam', 'img/calib_b_cam', 'img/calib_c_cam'])
 
     def test_write_to_yaml_and_read_back(self):
         """Write to YAML and read back."""

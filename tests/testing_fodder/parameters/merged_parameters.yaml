@@ -45,11 +45,11 @@ detect_plate:
   nymin: 5
   sumg_min: 500
 multi_planes:
-  multi_filename:
+  filename:
   - img/calib_a_cam
   - img/calib_b_cam
   - img/calib_c_cam
-  planes: 3
+  num_planes: 3
 orient:
   ccflag: 0
   interfflag: 0

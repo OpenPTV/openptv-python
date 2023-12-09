@@ -697,45 +697,22 @@ class OrientPar(Parameters):
         try:
             with open(filename, "r", encoding="utf-8") as file:
                 ret = cls()
-                ret.useflag = int(file.readline().strip())
-                ret.ccflag = int(file.readline().strip())
-                ret.xhflag = int(file.readline().strip())
+                ret.useflag = int(file.readline().strip())  # /* use every point or every other pt */
+                ret.ccflag = int(file.readline().strip())   # /* change back focal distance */
+                ret.xhflag = int(file.readline().strip())   # /* change xh point, 1-yes, 0-no */
                 ret.yhflag = int(file.readline().strip())
                 ret.k1flag = int(file.readline().strip())
                 ret.k2flag = int(file.readline().strip())
                 ret.k3flag = int(file.readline().strip())
                 ret.p1flag = int(file.readline().strip())
                 ret.p2flag = int(file.readline().strip())
-                ret.scxflag = int(file.readline().strip())
-                ret.sheflag = int(file.readline().strip())
-                ret.interfflag = int(file.readline().strip())
+                ret.scxflag = int(file.readline().strip())  # /* scx - scaling  */
+                ret.sheflag = int(file.readline().strip())  # /* she - shearing  */
+                ret.interfflag = int(file.readline().strip())   # /* interface glass vector */
                 return ret
         except IOError:
             print(f"Could not open orientation parameters file {filename}.")
             return None
-
-    # def to_dict(self):
-    #     """Convert OrientPar instance to a dictionary."""
-    #     return {
-    #         'useflag': self.useflag,
-    #         'ccflag': self.ccflag,
-    #         'xhflag': self.xhflag,
-    #         'yhflag': self.yhflag,
-    #         'k1flag': self.k1flag,
-    #         'k2flag': self.k2flag,
-    #         'k3flag': self.k3flag,
-    #         'p1flag': self.p1flag,
-    #         'p2flag': self.p2flag,
-    #         'scxflag': self.scxflag,
-    #         'sheflag': self.sheflag,
-    #         'interfflag': self.interfflag,
-    #     }
-
-    # def to_yaml(self, file_path):
-    #     """Write to YAML file."""
-    #     with open(file_path, 'w', encoding='utf-8') as file:
-    #         yaml.dump(self.__dict__, file, default_flow_style=False)
-
 
 
 
@@ -796,16 +773,16 @@ def read_cal_ori_parameters(file_path: str, num_cams: int) -> CalibrationPar:
 class MultiPlanesPar(Parameters):
     """Multiplanes parameters."""
 
-    planes: int = field(default_factory=int)
-    multi_filename: list = field(default_factory=list)
+    num_planes: int = field(default_factory=int)
+    filename: list = field(default_factory=list)
 
     @classmethod
     def from_file(cls, file_path: str):
         """Read from multiplanes.par file."""
         with open(file_path, 'r', encoding="utf-8") as file:
-            planes = int(file.readline().strip())
-            multi_filename = [file.readline().strip() for _ in range(planes)]
-        return cls(planes, multi_filename)
+            num_planes = int(file.readline().strip())
+            filename = [file.readline().strip() for _ in range(num_planes)]
+        return cls(num_planes, filename)
 
 @dataclass
 class ExaminePar(Parameters):
