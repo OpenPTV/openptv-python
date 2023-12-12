@@ -2,6 +2,7 @@ import math
 from typing import List, Tuple
 
 import numpy as np
+from numba import njit
 
 from .calibration import Calibration, Exterior, Glass
 from .parameters import (
@@ -22,17 +23,13 @@ def multimed_nlay(
     using radial shift from the multimedia model
     """
     radial_shift = multimed_r_nlay(cal, mm, pos)
-    Xq = cal.ext_par.x0 + (pos[0] - cal.ext_par.x0) * radial_shift
-    Yq = cal.ext_par.y0 + (pos[1] - cal.ext_par.y0) * radial_shift
+    Xq =  cal.ext_par.x0 + (pos[0] -  cal.ext_par.x0) * radial_shift
+    Yq =  cal.ext_par.y0 + (pos[1] -  cal.ext_par.y0) * radial_shift
     return Xq, Yq
 
 
 def multimed_r_nlay(cal: Calibration, mm: MultimediaPar, pos: np.ndarray) -> float:
     """Calculate the radial shift for the multimedia model."""
-    n_iter = 40
-    beta2 = [0.0] * mm.nlay
-    rdiff = 0.1
-
     # 1-medium case
     if mm.n1 == 1 and mm.nlay == 1 and mm.n2[0] == 1 and mm.n3 == 1:
         return 1.0
@@ -42,29 +39,70 @@ def multimed_r_nlay(cal: Calibration, mm: MultimediaPar, pos: np.ndarray) -> flo
         print("going into get_mmf_from_mmlut\n")
         mmf = get_mmf_from_mmlut(cal, pos)
         if mmf > 0:
+            print(f"mmf from data = {mmf}")
             return mmf
+
+    mmf = fast_multimed_r_nlay(
+        mm.nlay,
+        mm.n1,
+        np.array(mm.n2),
+        mm.n3,
+        np.array(mm.d),
+        cal.ext_par.x0,
+        cal.ext_par.y0,
+        cal.ext_par.z0,
+        pos)
+    print(f"mmf from a loop = {mmf}")
+
+    return mmf
+
+
+@njit
+def fast_multimed_r_nlay(
+    nlay:int,
+    n1: float,
+    n2: np.ndarray,
+    n3: float,
+    d: np.ndarray,
+    x0,
+    y0,
+    z0,
+    pos: np.ndarray
+    ) -> float:
+    """Calculate the radial shift for the multimedia model.
+
+    mm = MultimediaPar.to_dict()
+    mm = {'nlay': 2, 'n1': 1, 'n2': [1.49, 0.0, 0.0], 'd': [5.0, 0.0, 0.0], 'n3': 1.33}
+    data = cal.mmlut.data (np.ndarray)
+
+    x0,y0,z0 =  x0, y0, z0
+
+    """
+    n_iter = 40
+    rdiff = 0.1
+    beta2 = np.zeros(nlay, dtype=np.float64)
 
     X, Y, Z = pos
     zout = Z
-    for i in range(1, mm.nlay):
-        zout += mm.d[i]
+    for i in range(1, nlay):
+        zout += d[i]
 
-    r = norm(X - cal.ext_par.x0, Y - cal.ext_par.y0, 0)
+    r = np.linalg.norm(np.array([X-x0, Y-y0, 0], dtype=np.float64))
     rq = r
 
     it = 0
     while (rdiff > 0.001 or rdiff < -0.001) and it < n_iter:
-        zdiff = cal.ext_par.z0 - Z
+        zdiff =  z0 - Z
         if zdiff == 0:
             zdiff = 1.0
         beta1 = math.atan(rq / zdiff)
-        for i in range(mm.nlay):
-            beta2[i] = math.asin(math.sin(beta1) * mm.n1 / mm.n2[i])
-        beta3 = math.asin(math.sin(beta1) * mm.n1 / mm.n3)
+        for i in range(nlay):
+            beta2[i] = math.asin(math.sin(beta1) * n1 / n2[i])
+        beta3 = math.asin(math.sin(beta1) * n1 / n3)
 
-        rbeta = (cal.ext_par.z0 - mm.d[0]) * math.tan(beta1) - zout * math.tan(beta3)
-        for i in range(mm.nlay):
-            rbeta += mm.d[i] * math.tan(beta2[i])
+        rbeta = ( z0 - d[0]) * math.tan(beta1) - zout * math.tan(beta3)
+        for i in range(nlay):
+            rbeta += d[i] * math.tan(beta2[i])
 
         rdiff = r - rbeta
         rq += rdiff
@@ -74,10 +112,7 @@ def multimed_r_nlay(cal: Calibration, mm: MultimediaPar, pos: np.ndarray) -> flo
         print("multimed_r_nlay stopped after", n_iter, "iterations")
         return 1.0
 
-    if r != 0:
-        return rq / r
-    else:
-        return 1.0
+    return 1.0 if r == 0 else float(rq / r)
 
 
 def trans_cam_point(
