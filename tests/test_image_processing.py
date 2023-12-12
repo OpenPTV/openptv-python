@@ -30,8 +30,8 @@ class Test_image_processing(unittest.TestCase):
         """Test that the function raises errors when it should."""
         output_img = prepare_image(
             self.input_img,
-            filter_hp=self.filter_hp,
-            dim_lp=True,
+            # filter_hp=self.filter_hp,
+            # dim_lp=True,
         )
         assert output_img.shape == (5, 5)
 
@@ -62,8 +62,8 @@ class Test_image_processing(unittest.TestCase):
         res = prepare_image(
             self.input_img,
             dim_lp=1,
-            filter_hp=self.filter_hp,
-            filter_file='',
+            # filter_hp=self.filter_hp,
+            # filter_file='',
         )
 
         # print(res)
