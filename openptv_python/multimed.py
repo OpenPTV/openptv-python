@@ -156,7 +156,7 @@ def trans_cam_point(
 def back_trans_point(
     pos_t: np.ndarray,
     mm: MultimediaPar,
-    G: Glass,
+    glass: Glass,
     cross_p: np.ndarray,
     cross_c: np.ndarray,
 ) -> np.ndarray:
@@ -176,7 +176,7 @@ def back_trans_point(
         A numpy array representing the position of the point in the camera coordinate system.
     """
     # Calculate the glass direction vector
-    glass_direction = np.array([G.vec_x, G.vec_y, G.vec_z])
+    glass_direction = np.array([glass.vec_x, glass.vec_y, glass.vec_z])
     norm_glass_direction = np.linalg.norm(glass_direction)
 
     # Normalize the glass direction vector
@@ -203,7 +203,7 @@ def back_trans_point(
 
     return pos
 
-
+@njit
 def move_along_ray(glob_z: float, vertex: np.ndarray, direct: np.ndarray) -> np.ndarray:
     """Move along the ray to the global z plane.
 
@@ -312,6 +312,7 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibrati
                 xyz = vec_set(Ri[i] + cal_t.ext_par.x0, cal_t.ext_par.y0, Zi[j])
                 data.flat[i * nz + j] = multimed_r_nlay(cal_t, cpar.mm, xyz)
 
+        print("filled mmlut data with {data}")
         cal.mmlut.data = data
 
     return cal
@@ -321,16 +322,28 @@ def get_mmf_from_mmlut(cal: Calibration, pos: np.ndarray) -> float:
     """Get the refractive index of the medium at a given position."""
     rw = cal.mmlut.rw
     origin = cal.mmlut.origin
-    data = cal.mmlut.data.flat  # type: ignore
+    data = cal.mmlut.data.flatten()  # type: ignore
     nz = cal.mmlut.nz
     nr = cal.mmlut.nr
 
+    return fast_get_mmf_from_mmlut(rw, origin, data, nz, nr, pos)
+
+@njit
+def fast_get_mmf_from_mmlut(
+    rw: int,
+    origin: np.ndarray,
+    data: np.ndarray,
+    nz: int,
+    nr: int,
+    pos: np.ndarray
+    ) -> float:
+    """Get the refractive index of the medium at a given position."""
     temp = pos - origin
     sz = temp[2] / rw
     iz = int(sz)
     sz -= iz
 
-    R = norm(temp[0], temp[1], 0)
+    R = np.linalg.norm(np.array([temp[0], temp[1], 0]))
     sr = R / rw
     ir = int(sr)
     sr -= ir
