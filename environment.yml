@@ -8,6 +8,7 @@ dependencies:
 - scipy
 - matplotlib
 - pyyaml
+- numba
 - pip:
   - types-PyYAML
 # - package2
