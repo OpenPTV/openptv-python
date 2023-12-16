@@ -23,7 +23,7 @@ from .imgcoord import img_coord
 from .orientation import point_position
 from .parameters import ControlPar, SequencePar, TrackPar, VolumePar
 from .tracking_frame_buf import Corres, Frame, Pathinfo, Target
-from .tracking_run import TrackingRun, tr_new
+from .tracking_run import TrackingRun
 from .trafo import dist_to_flat, metric_to_pixel, pixel_to_metric
 from .vec_utils import vec_copy, vec_diff_norm, vec_subt
 
@@ -1341,9 +1341,9 @@ def trackback_c(run_info: TrackingRun):
 
 
 default_naming = {
-    "corres": b"res/rt_is",
-    "linkage": b"res/ptv_is",
-    "prio": b"res/added",
+    "corres": "res/rt_is",
+    "linkage": "res/ptv_is",
+    "prio": "res/added",
 }
 
 
@@ -1382,7 +1382,7 @@ class Tracker:
         # allocations are not freed.
         self._keepalive = (cpar, vpar, tpar, spar, cals)
 
-        self.run_info = tr_new(
+        self.run_info = TrackingRun(
             spar,
             tpar,
             vpar,
@@ -1434,4 +1434,5 @@ class Tracker:
         trackback_c(self.run_info)
 
     def current_step(self):
+        """Return the current step."""
         return self.step

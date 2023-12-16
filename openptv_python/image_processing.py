@@ -1,10 +1,8 @@
 """Image processing functions."""
 import copy
-from functools import partial
 
 import numpy as np
-
-# from numba import njit
+from numba import njit, prange
 from scipy import ndimage
 from scipy.ndimage import uniform_filter
 
@@ -12,7 +10,7 @@ from .parameters import ControlPar
 
 filter_t = np.zeros((3, 3), dtype=float)
 
-# @njit
+@njit
 def filter_3(img, kernel=None) -> np.ndarray:
     """Apply a 3x3 filter to an image."""
     if kernel is None:  # default is a low pass
@@ -20,7 +18,7 @@ def filter_3(img, kernel=None) -> np.ndarray:
     filtered_img = ndimage.convolve(img, kernel)
     return filtered_img
 
-# @njit
+@njit
 def lowpass_3(img: np.ndarray) -> np.ndarray:
     """Lowpass filter of 3x3."""
     # Define the 3x3 lowpass filter kernel
@@ -31,7 +29,7 @@ def lowpass_3(img: np.ndarray) -> np.ndarray:
 
     return img_lp
 
-# @njit
+@njit
 def fast_box_blur(filt_span: int, src: np.ndarray, cpar: ControlPar) -> np.ndarray:
     """Fast box blur."""
     n = 2 * filt_span + 1
@@ -59,7 +57,7 @@ def fast_box_blur(filt_span: int, src: np.ndarray, cpar: ControlPar) -> np.ndarr
 #     new_img = map_coordinates(img, [coords_y, coords_x], mode="constant", cval=0)
 #     return new_img
 
-# @njit
+@njit
 def subtract_img(img1: np.ndarray, img2: np.ndarray, img_new: np.ndarray) -> None:
     """
     Subtract img2 from img1 and store the result in img_new.
@@ -71,7 +69,7 @@ def subtract_img(img1: np.ndarray, img2: np.ndarray, img_new: np.ndarray) -> Non
     """
     img_new[:] = ndimage.maximum(img1 - img2, 0)
 
-# @njit
+@njit
 def subtract_mask(img: np.ndarray, img_mask: np.ndarray):
     """Subtract mask from image."""
     img_new = np.where(img_mask == 0, 0, img)
@@ -138,9 +136,9 @@ def prepare_image(
 
     return img_hp
 
-def preprocess_image():
+def preprocess_image(img, filter_hp, cpar, dim_lp)-> np.ndarray:
     """Decorate prepare_image with default parameters."""
-    return partial(prepare_image, dim_lp=1, filter_hp=0, filter_file="")
+    return prepare_image(img=img, dim_lp=dim_lp, filter_hp=filter_hp, filter_file="")
 
 
 # def preprocess_image(
@@ -228,3 +226,62 @@ def preprocess_image():
 
 #     # implementation of the function here
 #     pass # replace this with the actual implementation of the function
+
+@njit(parallel=True)
+def fast_box_blur_numba(filt_span, src, cpar):
+    imx, imy = cpar['imx'], cpar['imy']
+    n = 2 * filt_span + 1
+    nq = n * n
+
+    row_accum = np.zeros(imx * imy, dtype=np.int32)
+    col_accum = np.zeros(imx, dtype=np.int32)
+    dest = np.zeros_like(src, dtype=np.int32)
+
+    # Sum over lines first [1]:
+    for i in prange(imy):
+        row_start = i * imx
+        accum = src[row_start]
+        row_accum[row_start] = accum * n
+
+        for j in range(1, filt_span + 1):
+            accum += src[row_start + j - 1] + src[row_start + j + filt_span]
+            row_accum[row_start + j] = accum * n // (2 * j + 1)
+
+        for j in range(filt_span + 1, imx - filt_span):
+            accum += src[row_start + j + filt_span] - src[row_start + j - filt_span - 1]
+            row_accum[row_start + j] = accum
+
+        for j in range(imx - filt_span, imx):
+            accum -= src[row_start + j - filt_span - 1] + src[row_start + j + filt_span]
+            row_accum[row_start + j] = accum * n // (2 * (imx - j - 1) + 1)
+
+    # Sum over columns:
+    col_accum[:imx] = row_accum[:imx]
+    dest[:imx] = col_accum[:imx] // n
+
+    for i in range(1, filt_span + 1):
+        ptr1 = row_accum[(2 * i - 1) * imx:(2 * i + 1) * imx]
+        ptr2 = ptr1[imx:]
+        col_accum += ptr1 + ptr2
+        dest[i * imx:(i + 1) * imx] = n * col_accum // nq // (2 * i + 1)
+
+    for i in range(filt_span + 1, imy - filt_span):
+        ptr1 = row_accum[(i - filt_span - 1) * imx:i * imx]
+        ptr2 = row_accum[(i + filt_span) * imx:(i + filt_span + 1) * imx]
+        col_accum += ptr2 - ptr1
+        dest[i * imx:(i + 1) * imx] = col_accum // nq
+
+    for i in range(filt_span, 0, -1):
+        ptr1 = row_accum[(imy - 2 * i - 1) * imx:(imy - 2 * i + 1) * imx]
+        ptr2 = ptr1[imx:]
+        col_accum -= ptr1 + ptr2
+        dest[(imy - i) * imx:] = n * col_accum // nq // (2 * i + 1)
+
+    return dest
+
+# # Example usage:
+# filt_span = 3
+# src = np.random.randint(0, 256, size=(1000, 1000), dtype=np.uint8)
+# cpar = {'imx': src.shape[1], 'imy': src.shape[0]}
+
+# result = fast_box_blur_numba(filt_span, src, cpar)

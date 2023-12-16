@@ -661,6 +661,18 @@ class TargetPar(Parameters):
         """Return the pixel count bounds."""
         return (self.nnmin, self.nnmax)
 
+    def get_xsize_bounds(self):
+        """Return the xsize bounds."""
+        return (self.nxmin, self.nxmax)
+
+    def get_ysize_bounds(self):
+        """Return the ysize bounds."""
+        return (self.nymin, self.nymax)
+
+    def get_min_sum_grey(self):
+        """Return the sum grey bounds."""
+        return self.sumg_min
+
 def read_target_par(filename: str) -> TargetPar:
     """Read target parameters from file and returns target_par object."""
     tpar = TargetPar()
