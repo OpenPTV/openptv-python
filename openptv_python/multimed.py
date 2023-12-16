@@ -2,8 +2,8 @@ import math
 from typing import List, Tuple
 
 import numpy as np
-from numba import njit
 
+# from numba import njit
 from .calibration import Calibration, Exterior, Glass
 from .parameters import (
     ControlPar,
@@ -57,7 +57,7 @@ def multimed_r_nlay(cal: Calibration, mm: MultimediaPar, pos: np.ndarray) -> flo
     return mmf
 
 
-@njit
+# @njit
 def fast_multimed_r_nlay(
     nlay:int,
     n1: float,
@@ -203,7 +203,7 @@ def back_trans_point(
 
     return pos
 
-@njit
+# @njit
 def move_along_ray(glob_z: float, vertex: np.ndarray, direct: np.ndarray) -> np.ndarray:
     """Move along the ray to the global z plane.
 
@@ -328,7 +328,7 @@ def get_mmf_from_mmlut(cal: Calibration, pos: np.ndarray) -> float:
 
     return fast_get_mmf_from_mmlut(rw, origin, data, nz, nr, pos)
 
-@njit
+# @njit
 def fast_get_mmf_from_mmlut(
     rw: int,
     origin: np.ndarray,

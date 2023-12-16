@@ -653,10 +653,18 @@ class TargetPar(Parameters):
 
         return ret
 
+    def get_grey_thresholds(self):
+        """Return the grey thresholds."""
+        return self.gvthresh
+
+    def get_pixel_count_bounds(self):
+        """Return the pixel count bounds."""
+        return (self.nnmin, self.nnmax)
 
 def read_target_par(filename: str) -> TargetPar:
     """Read target parameters from file and returns target_par object."""
-    return TargetPar().from_file(filename)
+    tpar = TargetPar()
+    return tpar.from_file(filename)
 
 def compare_target_par(targ1: TargetPar, targ2: TargetPar) -> bool:
     """Compare two target_par objects."""
@@ -799,6 +807,12 @@ class ExaminePar(Parameters):
             combine_flag = bool(int(file.readline().strip()))
         return cls(examine_flag, combine_flag)
 
+def read_examine_par(file_path: str) -> ExaminePar:
+    """Read from examine.par file."""
+    with open(file_path, 'r', encoding="utf-8") as file:
+        examine_flag = bool(int(file.readline().strip()))
+        combine_flag = bool(int(file.readline().strip()))
+    return ExaminePar(examine_flag, combine_flag)
 
 @dataclass
 class PftVersionPar(Parameters):

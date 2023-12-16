@@ -532,7 +532,7 @@ def peak_fit_new(
     peaks = []
     for i in range(num_objects):
         indices = np.argwhere(labeled == i + 1)
-        coordinates = [center_of_mass(mask[indices[:, 0], indices[:, 1]])[::-1]]
+        coordinates = np.array([center_of_mass(mask[indices[:, 0], indices[:, 1]])[::-1]])
         intensity = smoothed[indices[:, 0], indices[:, 1]].max()
         x, y = np.mean(coordinates, axis=0)
         peaks.append(Peak(int(round(x)), int(round(y)), intensity))

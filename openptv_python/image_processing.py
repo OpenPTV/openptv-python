@@ -1,8 +1,10 @@
 """Image processing functions."""
 import copy
+from functools import partial
 
 import numpy as np
-from numba import njit
+
+# from numba import njit
 from scipy import ndimage
 from scipy.ndimage import uniform_filter
 
@@ -10,7 +12,7 @@ from .parameters import ControlPar
 
 filter_t = np.zeros((3, 3), dtype=float)
 
-@njit
+# @njit
 def filter_3(img, kernel=None) -> np.ndarray:
     """Apply a 3x3 filter to an image."""
     if kernel is None:  # default is a low pass
@@ -18,7 +20,7 @@ def filter_3(img, kernel=None) -> np.ndarray:
     filtered_img = ndimage.convolve(img, kernel)
     return filtered_img
 
-@njit
+# @njit
 def lowpass_3(img: np.ndarray) -> np.ndarray:
     """Lowpass filter of 3x3."""
     # Define the 3x3 lowpass filter kernel
@@ -29,7 +31,7 @@ def lowpass_3(img: np.ndarray) -> np.ndarray:
 
     return img_lp
 
-@njit
+# @njit
 def fast_box_blur(filt_span: int, src: np.ndarray, cpar: ControlPar) -> np.ndarray:
     """Fast box blur."""
     n = 2 * filt_span + 1
@@ -57,7 +59,7 @@ def fast_box_blur(filt_span: int, src: np.ndarray, cpar: ControlPar) -> np.ndarr
 #     new_img = map_coordinates(img, [coords_y, coords_x], mode="constant", cval=0)
 #     return new_img
 
-@njit
+# @njit
 def subtract_img(img1: np.ndarray, img2: np.ndarray, img_new: np.ndarray) -> None:
     """
     Subtract img2 from img1 and store the result in img_new.
@@ -69,7 +71,7 @@ def subtract_img(img1: np.ndarray, img2: np.ndarray, img_new: np.ndarray) -> Non
     """
     img_new[:] = ndimage.maximum(img1 - img2, 0)
 
-@njit
+# @njit
 def subtract_mask(img: np.ndarray, img_mask: np.ndarray):
     """Subtract mask from image."""
     img_new = np.where(img_mask == 0, 0, img)
@@ -135,6 +137,10 @@ def prepare_image(
         )
 
     return img_hp
+
+def preprocess_image():
+    """Decorate prepare_image with default parameters."""
+    return partial(prepare_image, dim_lp=1, filter_hp=0, filter_file="")
 
 
 # def preprocess_image(
