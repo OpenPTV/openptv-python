@@ -98,16 +98,16 @@ class MatchedCoords:
     def __del__(self):
         del self.buf
 
+
 class Correspond:
     """Correspondence between two points in two cameras."""
 
     def __init__(self):
         self.p1 = PT_UNUSED
         self.n = 0
-        self.p2 = [0] * MAXCAND
-        self.corr = [0.0] * MAXCAND
-        self.dist = [0.0] * MAXCAND
-
+        self.p2 = np.array([0] * MAXCAND)
+        self.corr = np.array([0.0] * MAXCAND)
+        self.dist = np.array([0.0] * MAXCAND)
 
 def safely_allocate_target_usage_marks(
     num_cams: int, nmax: int = NMAX
@@ -150,7 +150,6 @@ def safely_allocate_adjacency_lists(
         lists = []
 
     return lists
-
 
 def four_camera_matching(
     corr_list: List[List[List[Correspond]]],

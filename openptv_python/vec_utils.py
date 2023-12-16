@@ -5,6 +5,8 @@
 # system to decide whether to invest in loop peeling etc. Here we write
 # the logical structure, and allow optimizing for size as well.
 
+import math
+
 import numpy as np
 
 # Define the np.ndarray type as an numpy array of 3 floats
@@ -46,39 +48,41 @@ def vec_scalar_mul(vec: np.ndarray, scalar: float) -> np.ndarray:
 
 def vec_diff_norm(vec1: np.ndarray, vec2: np.ndarray) -> float:
     """vec_diff_norm() gives the norm of the difference between two vectors."""
-    return float(np.linalg.norm(vec1 - vec2))
+    # return np.linalg.norm(vec1 - vec2)
+    vec = vec1 - vec2
+    return math.sqrt(vec[0]**2 + vec[1]**2 + vec[2]**2)
 
 
 def vec_norm(vec: np.ndarray) -> float:
     """vec_norm() gives the norm of a vector."""
-    return float(np.linalg.norm(vec))
+    return math.sqrt(vec[0]**2 + vec[1]**2 + vec[2]**2)
 
 
 def vec_dot(vec1: np.ndarray, vec2: np.ndarray) -> float:
     """vec_dot() gives the dot product of two vectors as lists of floats."""
-    val = np.dot(vec1, vec2)
-    return float(val)
+    # return np.dot(vec1, vec2)
+    return float(vec1[0]*vec2[0] + vec1[1]*vec2[1] + vec1[2]*vec2[2])
 
 
 def vec_cross(vec1: np.ndarray, vec2: np.ndarray) -> np.ndarray:
     """Cross product of two vectors."""
-    return np.cross(vec1, vec2)
+    # return np.cross(vec1, vec2)
+    return np.r_[vec1[1]*vec2[2] - vec1[2]*vec2[1],
+                 vec1[2]*vec2[0] - vec1[0]*vec2[2],
+                 vec1[0]*vec2[1] - vec1[1]*vec2[0]]
 
 
 def vec_cmp(vec1: np.ndarray, vec2: np.ndarray, tol: float = 1e-6) -> bool:
     """vec_cmp() checks whether two vectors are equal within a tolerance."""
     return np.allclose(vec1, vec2, atol=tol)
 
-
 def unit_vector(vec: np.ndarray) -> np.ndarray:
-    """Create unit vector as a list of floats."""
-    normed = vec_norm(vec)
-    if normed == 0:
-        normed = 1.0
-    out = vec_scalar_mul(vec, 1.0 / normed)
-    return out
+    """Normalize a vector to a unit vector."""
+    magnitude = np.linalg.norm(vec)
+    if magnitude == 0:
+        return vec  # Avoid division by zero for zero vectors
+    return vec / magnitude
 
-
-def vec_init():
+def vec_init(length=3) -> np.ndarray:
     """Initialize a vector to zero."""
-    return np.zeros(3, dtype=float)
+    return np.zeros(length, dtype=float)

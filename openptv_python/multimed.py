@@ -2,8 +2,8 @@ import math
 from typing import List, Tuple
 
 import numpy as np
+from numba import njit
 
-# from numba import njit
 from .calibration import Calibration, Exterior, Glass
 from .parameters import (
     ControlPar,
@@ -12,7 +12,7 @@ from .parameters import (
 )
 from .ray_tracing import ray_tracing
 from .trafo import correct_brown_affine, pixel_to_metric
-from .vec_utils import norm, vec_dot, vec_norm, vec_set
+from .vec_utils import norm, vec_set
 
 
 def multimed_nlay(
@@ -23,8 +23,8 @@ def multimed_nlay(
     using radial shift from the multimedia model
     """
     radial_shift = multimed_r_nlay(cal, mm, pos)
-    Xq =  cal.ext_par.x0 + (pos[0] -  cal.ext_par.x0) * radial_shift
-    Yq =  cal.ext_par.y0 + (pos[1] -  cal.ext_par.y0) * radial_shift
+    Xq = cal.ext_par.x0 + (pos[0] - cal.ext_par.x0) * radial_shift
+    Yq = cal.ext_par.y0 + (pos[1] - cal.ext_par.y0) * radial_shift
     return Xq, Yq
 
 
@@ -59,7 +59,7 @@ def multimed_r_nlay(cal: Calibration, mm: MultimediaPar, pos: np.ndarray) -> flo
 
 # @njit
 def fast_multimed_r_nlay(
-    nlay:int,
+    nlay: int,
     n1: float,
     n2: np.ndarray,
     n3: float,
@@ -68,7 +68,7 @@ def fast_multimed_r_nlay(
     y0,
     z0,
     pos: np.ndarray
-    ) -> float:
+) -> float:
     """Calculate the radial shift for the multimedia model.
 
     mm = MultimediaPar.to_dict()
@@ -92,7 +92,7 @@ def fast_multimed_r_nlay(
 
     it = 0
     while (rdiff > 0.001 or rdiff < -0.001) and it < n_iter:
-        zdiff =  z0 - Z
+        zdiff = z0 - Z
         if zdiff == 0:
             zdiff = 1.0
         beta1 = math.atan(rq / zdiff)
@@ -100,7 +100,7 @@ def fast_multimed_r_nlay(
             beta2[i] = math.asin(math.sin(beta1) * n1 / n2[i])
         beta3 = math.asin(math.sin(beta1) * n1 / n3)
 
-        rbeta = ( z0 - d[0]) * math.tan(beta1) - zout * math.tan(beta3)
+        rbeta = (z0 - d[0]) * math.tan(beta1) - zout * math.tan(beta3)
         for i in range(nlay):
             rbeta += d[i] * math.tan(beta2[i])
 
@@ -117,7 +117,7 @@ def fast_multimed_r_nlay(
 
 def trans_cam_point(
     ex: Exterior, mm: MultimediaPar, glass: Glass, pos: np.ndarray
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray, float]:
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.float64]:
     """Transform the camera and point coordinates to the glass coordinates.
 
     ex = Exterior(x0=ex_x, y0=ex_y, z0=ex_z)
@@ -127,15 +127,34 @@ def trans_cam_point(
 
     pos_t, cross_p, cross_c = trans_cam_point(ex, mm, glass, pos, ex_t)
     """
-    glass_dir = np.array([glass.vec_x, glass.vec_y, glass.vec_z])
-    primary_point = np.array([ex.x0, ex.y0, ex.z0])
+    origin = np.array([ex.x0, ex.y0, ex.z0], dtype=np.float64)
+    glass_dir = np.array([glass.vec_x, glass.vec_y, glass.vec_z], dtype=np.float64)
+    pos = pos.astype(np.float64)
 
-    dist_o_glass = vec_norm(glass_dir)  # vector length
-    dist_cam_glas = (
-        np.dot(primary_point, glass_dir) / dist_o_glass - dist_o_glass - mm.d[0]
-    )
+    return fast_trans_cam_point(
+        origin, mm.d[0], glass_dir, pos)
 
-    dist_point_glass = vec_dot(pos, glass_dir) / dist_o_glass - dist_o_glass
+
+@njit(fastmath=True)
+def fast_trans_cam_point(
+    primary_point: np.ndarray,
+    d: float,
+    glass_dir: np.ndarray,
+    pos: np.ndarray
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.float64]:
+    """Derive translation of camera point."""
+    dist_o_glass = float(np.linalg.norm(glass_dir))  # vector length
+    if dist_o_glass == 0.0:
+        dist_o_glass = 1.0
+
+    dist_cam_glas = primary_point.dot(glass_dir)
+    dist_cam_glas /= dist_o_glass
+    dist_cam_glas -= dist_o_glass
+    dist_cam_glas -= d
+
+    dist_point_glass = pos.dot(glass_dir)
+    dist_point_glass /= dist_o_glass
+    dist_point_glass -= dist_o_glass
 
     renorm_glass = glass_dir * (dist_cam_glas / dist_o_glass)
     cross_c = primary_point - renorm_glass
@@ -143,12 +162,12 @@ def trans_cam_point(
     renorm_glass = glass_dir * (dist_point_glass / dist_o_glass)
     cross_p = pos - renorm_glass
 
-    z0 = dist_cam_glas + mm.d[0]
+    z0 = dist_cam_glas + d
 
-    renorm_glass = glass_dir * (mm.d[0] / dist_o_glass)
+    renorm_glass = glass_dir * (d / float(dist_o_glass))
     temp = cross_c - renorm_glass
     temp = cross_p - temp
-    pos_t = np.r_[np.linalg.norm(temp), 0, dist_point_glass]
+    pos_t = np.array([np.linalg.norm(temp), 0, dist_point_glass])
 
     return pos_t, cross_p, cross_c, z0
 
@@ -197,13 +216,15 @@ def back_trans_point(
 
     # If the norm of the vector temp is greater than zero, adjust the position
     # of the point in the camera coordinate system
-    if norm_temp > 0:
+    if norm_temp > 0.0: # type: ignore
         renorm_temp = temp * (-pos_t[0] / norm_temp)
         pos = pos - renorm_temp
 
     return pos
 
 # @njit
+
+
 def move_along_ray(glob_z: float, vertex: np.ndarray, direct: np.ndarray) -> np.ndarray:
     """Move along the ray to the global z plane.
 
@@ -250,7 +271,7 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibrati
     z_max_t = z_max
 
     # intersect with image vertices rays
-    cal_t = Calibration(mmlut  = cal.mmlut)
+    cal_t = Calibration(mmlut=cal.mmlut)
 
     for i in range(2):
         for j in range(2):
@@ -269,7 +290,8 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibrati
             if xyz_t[2] > z_max_t:
                 z_max_t = xyz_t[2]
 
-            R = norm(xyz_t[0] - cal_t.ext_par.x0, xyz_t[1] - cal_t.ext_par.y0, 0)
+            R = norm(xyz_t[0] - cal_t.ext_par.x0,
+                     xyz_t[1] - cal_t.ext_par.y0, 0)
 
             if R > Rmax:
                 Rmax = R
@@ -284,7 +306,8 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibrati
             if xyz_t[2] > z_max_t:
                 z_max_t = xyz_t[2]
 
-            R = norm(xyz_t[0] - cal_t.ext_par.x0, xyz_t[1] - cal_t.ext_par.y0, 0)
+            R = norm(xyz_t[0] - cal_t.ext_par.x0,
+                     xyz_t[1] - cal_t.ext_par.y0, 0)
 
             if R > Rmax:
                 Rmax = R
@@ -309,7 +332,8 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibrati
 
         for i in range(nr):
             for j in range(nz):
-                xyz = vec_set(Ri[i] + cal_t.ext_par.x0, cal_t.ext_par.y0, Zi[j])
+                xyz = vec_set(Ri[i] + cal_t.ext_par.x0,
+                              cal_t.ext_par.y0, Zi[j])
                 data.flat[i * nz + j] = multimed_r_nlay(cal_t, cpar.mm, xyz)
 
         print("filled mmlut data with {data}")
@@ -329,6 +353,8 @@ def get_mmf_from_mmlut(cal: Calibration, pos: np.ndarray) -> float:
     return fast_get_mmf_from_mmlut(rw, origin, data, nz, nr, pos)
 
 # @njit
+
+
 def fast_get_mmf_from_mmlut(
     rw: int,
     origin: np.ndarray,
@@ -336,7 +362,7 @@ def fast_get_mmf_from_mmlut(
     nz: int,
     nr: int,
     pos: np.ndarray
-    ) -> float:
+) -> float:
     """Get the refractive index of the medium at a given position."""
     temp = pos - origin
     sz = temp[2] / rw
