@@ -9,7 +9,7 @@ from numba import njit
 
 @njit
 def rotation_matrix(phi: float, omega: float, kappa: float) -> np.ndarray:
-    """Calculate the necessary trigonometric functions to rotate the Dmatrix of Exterior Ex."""
+    """Calculate the necessary trigonometric functions to rotate the Dmatrix of Exterior ext_par."""
     cp = np.cos(phi)
     sp = np.sin(phi)
     co = np.cos(omega)
@@ -29,6 +29,7 @@ def rotation_matrix(phi: float, omega: float, kappa: float) -> np.ndarray:
     dm[2, 2] = co * cp
     return dm
 
+
 class Exterior:
     """Exterior orientation data structure."""
 
@@ -40,7 +41,6 @@ class Exterior:
         self.phi = phi
         self.kappa = kappa
         self.dm = dm if dm is not None else np.identity(3, dtype=np.float64)
-
 
     def update_rotation_matrix(self) -> None:
         """Create rotation matrix using three angles of the camera."""
@@ -64,7 +64,8 @@ class Exterior:
     def increment_attribute(self, attr_name, increment_value):
         """Update the value of an attribute by increment_value."""
         if hasattr(self, attr_name):
-            setattr(self, attr_name, getattr(self, attr_name) + increment_value)
+            setattr(self, attr_name, getattr(
+                self, attr_name) + increment_value)
 
     def __repr__(self) -> str:
         """Return a string representation of the Exterior object."""
@@ -177,7 +178,7 @@ class Calibration:
 
         Returns
         -------
-        - Ex, In, G, addp: Calibration object parts without multimedia lookup table.
+        - ext_par, int_par, glass, addp: Calibration object parts without multimedia lookup table.
         """
         if not pathlib.Path(ori_file).exists():
             raise IOError(f"File {ori_file} does not exist")
@@ -214,7 +215,8 @@ class Calibration:
             # Glass
             # skip
             fp.readline()
-            ret.glass_par.set_glass_vec(np.array([float(x) for x in fp.readline().split()]))
+            ret.glass_par.set_glass_vec(
+                np.array([float(x) for x in fp.readline().split()]))
 
         # double-check that we have the correct rotation matrix
         # self.ext_par.rotation_matrix()
@@ -234,9 +236,8 @@ class Calibration:
         except FileNotFoundError:
             print("no addpar fallback used")  # Waits for proper logging.
             ret.added_par.k1 = ret.added_par.k2 = ret.added_par.k3 \
-            = ret.added_par.p1 = ret.added_par.p2 = ret.added_par.she = 0.0
+                = ret.added_par.p1 = ret.added_par.p2 = ret.added_par.she = 0.0
             ret.added_par.scx = 1.0
-
 
         return ret
         # print(f"Calibration data read from files {ori_file} and {add_file}")
@@ -299,14 +300,14 @@ class Calibration:
         """Return a 3x3 numpy array that represents Exterior's rotation matrix."""
         return self.ext_par.dm
 
-    def set_primary_point(self, prim_point_pos: List[float]) -> None:
+    def set_primary_point(self, prim_point_pos: np.ndarray) -> None:
         """
         Set the camera's primary point position (a.k.a. interior orientation).
 
         Arguments:
         ---------
         prim_point_pos - a 3 element array holding the values of x and y shift
-            of point from sensor middle and sensor-point distance, in this
+            of point from sensor middle and sensor-point distance, int_par this
             order.
         """
         if len(prim_point_pos) != 3:
@@ -319,7 +320,7 @@ class Calibration:
         Return the primary point position (a.k.a. interior orientation) as a 3.
 
         element array holding the values of x and y shift of point from sensor
-        middle and sensor-point distance, in this order.
+        middle and sensor-point distance, int_par this order.
         """
         return np.r_[self.int_par.xh, self.int_par.yh, self.int_par.cc]
 
@@ -327,7 +328,7 @@ class Calibration:
         """
         Set the parameters for the image radial distortion, where the x/y.
 
-        coordinates are corrected by a polynomial in r = sqrt(x**2 + y**2):
+        coordinates are corrected by a polynomial int_par r = sqrt(x**2 + y**2):
         p = k1*r**2 + k2*r**4 + k3*r**6.
 
         Arguments:
@@ -347,7 +348,7 @@ class Calibration:
         """
         return np.r_[self.added_par.k1, self.added_par.k2, self.added_par.k3]
 
-    def set_decentering(self, decent: List[float]) -> None:
+    def set_decentering(self, decent: np.ndarray) -> None:
         """
         Set the parameters of decentering distortion (a.k.a. p1, p2, see [1]).
 
@@ -367,13 +368,13 @@ class Calibration:
         ret[1] = self.added_par.p2
         return ret
 
-    def set_affine_trans(self, affine: List[float]) -> None:
+    def set_affine_trans(self, affine: np.ndarray) -> None:
         """
         Set the affine transform parameters (x-scale, shear) of the image.
 
         Arguments:
         ---------
-        affine - array, holding (x-scale, shear) in order.
+        affine - array, holding (x-scale, shear) int_par order.
         """
         if len(affine) != 2:
             raise ValueError("Expected a 2-element list")
@@ -420,9 +421,9 @@ class Calibration:
 
 
 def write_ori(
-    Ex: Exterior,
-    In: Interior,
-    G: Glass,
+    ext_par: Exterior,
+    int_par: Interior,
+    glass: Glass,
     added_par: ap_52,
     filename: str,
     add_file: Optional[str],
@@ -431,12 +432,13 @@ def write_ori(
     success = False
 
     with open(filename, "w", encoding="utf-8") as fp:
-        fp.write(f"{Ex.x0:.8f} {Ex.y0:.8f} {Ex.z0:.8f}\n")
-        fp.write(f"{Ex.omega:.8f} {Ex.phi:.8f} {Ex.kappa:.8f}\n\n")
-        for row in Ex.dm:
+        fp.write(f"{ext_par.x0:.8f} {ext_par.y0:.8f} {ext_par.z0:.8f}\n")
+        fp.write(f"{ext_par.omega:.8f} {ext_par.phi:.8f} {ext_par.kappa:.8f}\n\n")
+        for row in ext_par.dm:
             fp.write(f"{row[0]:.7f} {row[1]:.7f} {row[2]:.7f}\n")
-        fp.write(f"\n{In.xh:.4f} {In.yh:.4f}\n{In.cc:.4f}\n")
-        fp.write(f"\n{G.vec_x:.15f} {G.vec_y:.15f} {G.vec_z:.15f}\n")
+        fp.write(f"\n{int_par.xh:.4f} {int_par.yh:.4f}\n{int_par.cc:.4f}\n")
+        fp.write(
+            f"\n{glass.vec_x:.15f} {glass.vec_y:.15f} {glass.vec_z:.15f}\n")
 
     if add_file is None:
         return success
@@ -463,7 +465,7 @@ def read_ori(ori_file: str, add_file: str) -> Calibration:
 
     Returns
     -------
-    - Ex, In, G, addp: Calibration object parts without multimedia lookup table.
+    - ext_par, int_par, glass, addp: Calibration object parts without multimedia lookup table.
     """
     ret = Calibration()
     ret.from_file(ori_file, add_file)
@@ -494,7 +496,7 @@ def compare_glass(g1: Glass, g2: Glass):
 
     objects that need to be compared. The function then returns `1` if all
     `vec_x`, `vec_y` and `vec_z` values of `g1` are equal to the corresponding
-    values in `g2`. Else, the function returns `0`.
+    values int_par `g2`. Else, the function returns `0`.
 
     Args:
     ----
@@ -540,26 +542,3 @@ def write_calibration(cal, ori_file, add_file):
     return write_ori(
         cal.ext_par, cal.int_par, cal.glass_par, cal.added_par, ori_file, add_file
     )
-
-
-# def rotation_matrix(Ex: Exterior) -> None:
-#     """Calculate the necessary trigonometric functions to rotate the Dmatrix of Exterior Ex."""
-#     cp = np.cos(Ex.phi)
-#     sp = np.sin(Ex.phi)
-#     co = np.cos(Ex.omega)
-#     so = np.sin(Ex.omega)
-#     ck = np.cos(Ex.kappa)
-#     sk = np.sin(Ex.kappa)
-
-#     # Modify the Exterior Ex with the new Dmatrix
-#     Ex.dm[0][0] = cp * ck
-#     Ex.dm[0][1] = -cp * sk
-#     Ex.dm[0][2] = sp
-#     Ex.dm[1][0] = co * sk + so * sp * ck
-#     Ex.dm[1][1] = co * ck - so * sp * sk
-#     Ex.dm[1][2] = -so * cp
-#     Ex.dm[2][0] = so * sk - co * sp * ck
-#     Ex.dm[2][1] = so * ck + co * sp * sk
-#     Ex.dm[2][2] = co * cp
-
-#     # Ex.dm = np.round(Ex.dm, 6)
