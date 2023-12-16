@@ -2,9 +2,10 @@ from dataclasses import dataclass, field
 from typing import List
 
 import numpy as np
+from numba import njit
 from scipy.ndimage import center_of_mass, gaussian_filter, label, maximum_filter
 
-from .constants import CORRES_NONE
+from .constants import CORRES_NONE, MAX_TARGETS
 from .parameters import ControlPar, TargetPar
 from .tracking_frame_buf import Target
 
@@ -39,19 +40,8 @@ def targ_rec(
     num_cam,
 ) -> List[Target]:
     """Target recognition function."""
-    n = 0
-    n_wait = 0
-    n_targets = 0
-    sumg = 0
-    numpix = 0
     thres = targ_par.gvthresh[num_cam]
     disco = targ_par.discont
-
-    imx = cpar.imx
-    imy = cpar.imy
-
-    # img0 = [0] * (imx * imy)  # create temporary mask
-    img0 = img.copy()  # copy the original image
 
     # Make sure the min/max coordinates don't cause us to access memory
     # outside the image memory.
@@ -59,12 +49,51 @@ def targ_rec(
         xmin = 1
     if ymin <= 0:
         ymin = 1
-    if xmax >= imx:
-        xmax = imx - 1
-    if ymax >= imy:
-        ymax = imy - 1
+    if xmax >= cpar.imx:
+        xmax = cpar.imx - 1
+    if ymax >= cpar.imy:
+        ymax = cpar.imy - 1
 
-    waitlist = [[0] * 2 for _ in range(2048)]
+    nnmin, nnmax = targ_par.nnmin, targ_par.nnmax
+    nxmin, nxmax = targ_par.nxmin, targ_par.nxmax
+    nymin, nymax = targ_par.nymin, targ_par.nymax
+    sumg_min = targ_par.sumg_min
+
+    pix = fast_targ_rec(img, thres, disco, nnmin, nnmax,
+                        nxmin, nxmax, nymin, nymax, sumg_min, xmin, xmax, ymin, ymax)
+
+    out = [Target(x=x, y=y, tnr=CORRES_NONE,
+                  pnr=pnr, n=numpix, nx=nx,
+                  ny=ny, sumg=sumg) for x, y, _,
+           pnr, numpix, nx, ny, sumg in pix]
+    return out
+
+
+@njit(fastmath=True)
+def fast_targ_rec(img,
+                  thres,
+                  disco,
+                  nnmin,
+                  nnmax,
+                  nxmin,
+                  nxmax,
+                  nymin,
+                  nymax,
+                  sumg_min,
+                  xmin,
+                  xmax,
+                  ymin,
+                  ymax) -> List:
+    """Target recognition function."""
+    n = 0
+    n_wait = 0
+    n_targets = 0
+    sumg = 0
+    numpix = 0
+
+    img0 = img.copy()  # copy the original image
+
+    waitlist = [[0] * 2 for _ in range(MAX_TARGETS)]
 
     xa = 0
     ya = 0
@@ -183,25 +212,21 @@ def targ_rec(
                     ny = yb - ya + 1
 
                     if (
-                        numpix >= targ_par.nnmin
-                        and numpix <= targ_par.nnmax
-                        and nx >= targ_par.nxmin
-                        and nx <= targ_par.nxmax
-                        and ny >= targ_par.nymin
-                        and ny <= targ_par.nymax
-                        and sumg > targ_par.sumg_min
+                        numpix >= nnmin
+                        and numpix <= nnmax
+                        and nx >= nxmin
+                        and nx <= nxmax
+                        and ny >= nymin
+                        and ny <= nymax
+                        and sumg > sumg_min
                     ):
-                        pix.append(Target(n=numpix, nx=nx, ny=ny, sumg=sumg))
                         sumg -= numpix * thres
                         # finish the grey-value weighting:
                         x /= sumg
                         x += 0.5
                         y /= sumg
                         y += 0.5
-                        pix[n_targets].x = x
-                        pix[n_targets].y = y
-                        pix[n_targets].tnr = CORRES_NONE
-                        pix[n_targets].pnr = n_targets
+                        pix.append([x,y,CORRES_NONE, n_targets, numpix, nx, ny, sumg])
                         n_targets += 1
                         xn = x
                         yn = y
@@ -270,7 +295,8 @@ def peak_fit(
                 # label peak in label_img, initialize peak
                 n_peaks += 1
                 label_img[n] = n_peaks
-                peaks.append(Peak(pos=n, status=1, xmin=j, xmax=i, ymin=i, ymax=i))
+                peaks.append(
+                    Peak(pos=n, status=1, xmin=j, xmax=i, ymin=i, ymax=i))
 
                 waitlist[0][0] = j
                 waitlist[0][1] = i
@@ -532,7 +558,8 @@ def peak_fit_new(
     peaks = []
     for i in range(num_objects):
         indices = np.argwhere(labeled == i + 1)
-        coordinates = np.array([center_of_mass(mask[indices[:, 0], indices[:, 1]])[::-1]])
+        coordinates = np.array(
+            [center_of_mass(mask[indices[:, 0], indices[:, 1]])[::-1]])
         intensity = smoothed[indices[:, 0], indices[:, 1]].max()
         x, y = np.mean(coordinates, axis=0)
         peaks.append(Peak(int(round(x)), int(round(y)), intensity))
