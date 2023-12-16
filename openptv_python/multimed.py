@@ -57,7 +57,7 @@ def multimed_r_nlay(cal: Calibration, mm: MultimediaPar, pos: np.ndarray) -> flo
     return mmf
 
 
-# @njit
+@njit
 def fast_multimed_r_nlay(
     nlay: int,
     n1: float,
@@ -87,7 +87,7 @@ def fast_multimed_r_nlay(
     for i in range(1, nlay):
         zout += d[i]
 
-    r = np.linalg.norm(np.array([X-x0, Y-y0, 0], dtype=np.float64))
+    r = norm(X-x0, Y-y0, 0)
     rq = r
 
     it = 0
@@ -117,7 +117,7 @@ def fast_multimed_r_nlay(
 
 def trans_cam_point(
     ex: Exterior, mm: MultimediaPar, glass: Glass, pos: np.ndarray
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.float64]:
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, float]:
     """Transform the camera and point coordinates to the glass coordinates.
 
     ex = Exterior(x0=ex_x, y0=ex_y, z0=ex_z)
@@ -141,7 +141,7 @@ def fast_trans_cam_point(
     d: float,
     glass_dir: np.ndarray,
     pos: np.ndarray
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.float64]:
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, float]:
     """Derive translation of camera point."""
     dist_o_glass = float(np.linalg.norm(glass_dir))  # vector length
     if dist_o_glass == 0.0:
@@ -169,7 +169,7 @@ def fast_trans_cam_point(
     temp = cross_p - temp
     pos_t = np.array([np.linalg.norm(temp), 0, dist_point_glass])
 
-    return pos_t, cross_p, cross_c, z0
+    return pos_t, cross_p, cross_c, float(z0)
 
 
 def back_trans_point(
