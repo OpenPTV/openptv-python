@@ -1,53 +1,50 @@
 """Calibration data structures and functions."""
 
 import pathlib
-from dataclasses import dataclass, field
 from typing import List, Optional
 
 import numpy as np
+from numba import njit
 
 
-@dataclass
+@njit
+def rotation_matrix(phi: float, omega: float, kappa: float) -> np.ndarray:
+    """Calculate the necessary trigonometric functions to rotate the Dmatrix of Exterior Ex."""
+    cp = np.cos(phi)
+    sp = np.sin(phi)
+    co = np.cos(omega)
+    so = np.sin(omega)
+    ck = np.cos(kappa)
+    sk = np.sin(kappa)
+
+    dm = np.zeros((3, 3), dtype=np.float64)
+    dm[0, 0] = cp * ck
+    dm[0, 1] = -cp * sk
+    dm[0, 2] = sp
+    dm[1, 0] = co * sk + so * sp * ck
+    dm[1, 1] = co * ck - so * sp * sk
+    dm[1, 2] = -so * cp
+    dm[2, 0] = so * sk - co * sp * ck
+    dm[2, 1] = so * ck + co * sp * sk
+    dm[2, 2] = co * cp
+    return dm
+
 class Exterior:
     """Exterior orientation data structure."""
 
-    x0: float = 0.0
-    y0: float = 0.0
-    z0: float = 0.0
-    omega: float = 0.0
-    phi: float = 0.0
-    kappa: float = 0.0
-    dm: np.ndarray = field(default_factory=lambda: np.identity(3, dtype=np.float64))
+    def __init__(self, x0=0.0, y0=0.0, z0=0.0, omega=0.0, phi=0.0, kappa=0.0, dm=None):
+        self.x0 = x0
+        self.y0 = y0
+        self.z0 = z0
+        self.omega = omega
+        self.phi = phi
+        self.kappa = kappa
+        self.dm = dm if dm is not None else np.identity(3, dtype=np.float64)
+
 
     def update_rotation_matrix(self) -> None:
-        """Rotates the Dmatrix of Exterior using three angles of the camera.
-
-        Args:
-        ----
-            exterior: The Exterior object.
-
-        Returns
-        -------
-            The modified Exterior object.
-
-        """
-        cp = np.cos(self.phi)
-        sp = np.sin(self.phi)
-        co = np.cos(self.omega)
-        so = np.sin(self.omega)
-        ck = np.cos(self.kappa)
-        sk = np.sin(self.kappa)
-
-        self.dm = np.zeros((3, 3), dtype=np.float64)
-        self.dm[0, 0] = cp * ck
-        self.dm[0, 1] = -cp * sk
-        self.dm[0, 2] = sp
-        self.dm[1, 0] = co * sk + so * sp * ck
-        self.dm[1, 1] = co * ck - so * sp * sk
-        self.dm[1, 2] = -so * cp
-        self.dm[2, 0] = so * sk - co * sp * ck
-        self.dm[2, 1] = so * ck + co * sp * sk
-        self.dm[2, 2] = co * cp
+        """Create rotation matrix using three angles of the camera."""
+        self.dm = rotation_matrix(self.phi, self.omega, self.kappa)
 
     def set_rotation_matrix(self, dm: np.ndarray) -> None:
         """Set the rotation matrix of the camera."""
@@ -76,13 +73,16 @@ class Exterior:
         return output
 
 
-@dataclass
 class Interior:
-    xh: float = 0.0
-    yh: float = 0.0
-    cc: float = 0.0
+    """Interior orientation data structure."""
 
-    def set_primary_point(self, point: List[float]) -> None:
+    def __init__(self, xh=0.0, yh=0.0, cc=0.0):
+        self.xh = xh
+        self.yh = yh
+        self.cc = cc
+
+    def set_primary_point(self, point: np.ndarray) -> None:
+        """Set the primary point of the camera."""
         self.xh, self.yh, self.cc = point
 
     def set_back_focal_distance(self, cc: float) -> None:
@@ -90,72 +90,79 @@ class Interior:
         self.cc = cc
 
 
-@dataclass
 class Glass:
-    vec_x: float = 0.0
-    vec_y: float = 0.0
-    vec_z: float = 1.0
+    """Glass data structure."""
 
-    def set_glass_vec(self, vec: List[float]) -> None:
+    def __init__(self, vec_x=0.0, vec_y=0.0, vec_z=1.0):
+        self.vec_x = vec_x
+        self.vec_y = vec_y
+        self.vec_z = vec_z
+
+    def set_glass_vec(self, vec: np.ndarray) -> None:
         """Set the glass vector."""
         self.vec_x, self.vec_y, self.vec_z = vec
 
 
-@dataclass
 class ap_52:
     """Additional parameters for distortion correction."""
 
-    k1: float = 0.0
-    k2: float = 0.0
-    k3: float = 0.0
-    p1: float = 0.0
-    p2: float = 0.0
-    scx: float = 1.0
-    she: float = 0.0
+    def __init__(self, k1=0.0, k2=0.0, k3=0.0, p1=0.0, p2=0.0, scx=1.0, she=0.0):
+        self.k1 = k1
+        self.k2 = k2
+        self.k3 = k3
+        self.p1 = p1
+        self.p2 = p2
+        self.scx = scx
+        self.she = she
 
-    def set_radial_distortion(self, dist_list: List[float]) -> None:
+    def set_radial_distortion(self, dist_array: np.ndarray) -> None:
         """Set the radial distortion parameters k1, k2, k3."""
-        self.k1, self.k2, self.k3 = dist_list
+        self.k1, self.k2, self.k3 = dist_array
 
-    def set_decentering(self, decent: List[float]) -> None:
+    def set_decentering(self, decent: np.ndarray) -> None:
         """Set the decentring parameters p1 and p2."""
         self.p1, self.p2 = decent
 
-    def set_affine_distortion(self, affine: List[float]) -> None:
+    def set_affine_distortion(self, affine: np.ndarray) -> None:
         """Set the affine distortion parameters scx and she."""
         self.scx, self.she = affine
 
 
-@dataclass
 class mm_lut:
     """Multimedia lookup table data structure."""
 
-    origin: np.ndarray = field(default_factory=lambda: np.zeros(3))
-    nr: int = 0
-    nz: int = 0
-    rw: int = 0
-    data: np.ndarray | None = None
+    def __init__(self, origin=None, nr=3, nz=3, rw=0, data=None):
+        if origin is None:
+            origin = np.zeros(3, dtype=np.float32)
+        # if data is None:
+        #     data = np.zeros((nr, nz), dtype=np.float32)  # Assuming data is a 2D array, adjust as needed
+        self.origin = origin
+        self.nr = nr
+        self.nz = nz
+        self.rw = rw
+        self.data = data
 
 
-@dataclass
 class Calibration:
     """Calibration data structure."""
 
-    ext_par: Exterior = field(default_factory=Exterior)
-    int_par: Interior = field(default_factory=Interior)
-    glass_par: Glass = field(default_factory=Glass)
-    added_par: ap_52 = field(default_factory=ap_52)
-    mmlut: mm_lut = field(
-        default_factory=lambda: mm_lut(
-            np.zeros(
-                3,
-            ),
-            0,
-            0,
-            0,
-            None,
-        )
-    )
+    def __init__(self, ext_par=None, int_par=None, glass_par=None, added_par=None, mmlut=None):
+        if ext_par is None:
+            ext_par = Exterior()
+        if int_par is None:
+            int_par = Interior()
+        if glass_par is None:
+            glass_par = Glass()
+        if added_par is None:
+            added_par = ap_52()
+        if mmlut is None:
+            mmlut = mm_lut(np.zeros(3), 0, 0, 0, None)
+
+        self.ext_par = ext_par
+        self.int_par = int_par
+        self.glass_par = glass_par
+        self.added_par = added_par
+        self.mmlut = mmlut
 
     @classmethod
     def from_file(cls, ori_file: str, add_file: str):
@@ -198,15 +205,16 @@ class Calibration:
             # Interior
             # skip
             fp.readline()
+
             tmp = [float(x) for x in fp.readline().split()]  # xh,yh
             tmp += [float(x) for x in fp.readline().split()]  # cc
-            ret.int_par.set_primary_point(tmp)
+            ret.int_par.set_primary_point(np.array(tmp))
             # self.int_par.set_back_focal_distance(float(fp.readline()))
 
             # Glass
             # skip
             fp.readline()
-            ret.glass_par.set_glass_vec([float(x) for x in fp.readline().split()])
+            ret.glass_par.set_glass_vec(np.array([float(x) for x in fp.readline().split()]))
 
         # double-check that we have the correct rotation matrix
         # self.ext_par.rotation_matrix()
@@ -219,9 +227,9 @@ class Calibration:
             with open(add_file, "r", encoding="utf-8") as fp:
                 tmp = list(map(float, fp.readline().split()))
 
-                ret.added_par.set_radial_distortion(tmp[:3])
-                ret.added_par.set_decentering(tmp[3:5])
-                ret.added_par.set_affine_distortion(tmp[5:])
+                ret.added_par.set_radial_distortion(np.array(tmp[:3]))
+                ret.added_par.set_decentering(np.array(tmp[3:5]))
+                ret.added_par.set_affine_distortion(np.array(tmp[5:]))
 
         except FileNotFoundError:
             print("no addpar fallback used")  # Waits for proper logging.
@@ -315,7 +323,7 @@ class Calibration:
         """
         return np.r_[self.int_par.xh, self.int_par.yh, self.int_par.cc]
 
-    def set_radial_distortion(self, dist_coeffs: List[float]) -> None:
+    def set_radial_distortion(self, dist_coeffs: np.ndarray) -> None:
         """
         Set the parameters for the image radial distortion, where the x/y.
 
@@ -327,7 +335,7 @@ class Calibration:
         dist_coeffs - length-3 array, holding k_i.
         """
         if len(dist_coeffs) != 3:
-            raise ValueError("Expected a 3-element list")
+            raise ValueError("Expected a 3-element array")
 
         self.added_par.set_radial_distortion(dist_coeffs)
 
@@ -375,7 +383,7 @@ class Calibration:
         """Return the affine transform parameters [1] as a 2 element array, (scx, she)."""
         return np.r_[self.added_par.scx, self.added_par.she]
 
-    def set_glass_vec(self, gvec: List[float]):
+    def set_glass_vec(self, gvec: np.ndarray):
         """
         Set the glass vector: a vector from the origin to the glass, directed.
 

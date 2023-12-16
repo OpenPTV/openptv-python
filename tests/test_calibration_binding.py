@@ -136,7 +136,7 @@ class TestCalibration(unittest.TestCase):
 
     def test_set_radial(self):
         """Set radial distortion, only for admissible values."""
-        new_rd = [111.1111, 222.2222, 333.3333]
+        new_rd = np.array([111.1111, 222.2222, 333.3333])
         self.cal.set_radial_distortion(new_rd)
 
         np.testing.assert_array_equal(new_rd, self.cal.get_radial_distortion())
