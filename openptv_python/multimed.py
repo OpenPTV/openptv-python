@@ -194,12 +194,19 @@ def back_trans_point(
     -------
         A numpy array representing the position of the point in the camera coordinate system.
     """
+    glass_direction = np.array([glass.vec_x, glass.vec_y, glass.vec_z], dtype=np.float64)
+
+    return fast_back_trans_point(glass_direction, mm.d[0], cross_c, cross_p, pos_t)
+
+@njit
+def fast_back_trans_point(glass_direction: np.ndarray, d: float, cross_c, cross_p, pos_t) -> np.ndarray:
+    """Run numba faster version of back projection."""
     # Calculate the glass direction vector
-    glass_direction = np.array([glass.vec_x, glass.vec_y, glass.vec_z])
-    norm_glass_direction = np.linalg.norm(glass_direction)
+
+    norm_glass_direction = float(np.linalg.norm(glass_direction))
 
     # Normalize the glass direction vector
-    renorm_glass = glass_direction * (mm.d[0] / norm_glass_direction)
+    renorm_glass = glass_direction * (d / norm_glass_direction)
 
     # Calculate the position of the point after passing through the glass
     after_glass = cross_c - renorm_glass
@@ -222,9 +229,7 @@ def back_trans_point(
 
     return pos
 
-# @njit
-
-
+@njit
 def move_along_ray(glob_z: float, vertex: np.ndarray, direct: np.ndarray) -> np.ndarray:
     """Move along the ray to the global z plane.
 
@@ -369,7 +374,7 @@ def fast_get_mmf_from_mmlut(
     iz = int(sz)
     sz -= iz
 
-    R = np.linalg.norm(np.array([temp[0], temp[1], 0]))
+    R = float(np.linalg.norm(np.array([temp[0], temp[1], 0])))
     sr = R / rw
     ir = int(sr)
     sr -= ir
