@@ -1,8 +1,10 @@
 """Least squares adjustment of the camera parameters."""
 import numpy as np
+from numba import njit
 
 
-def ata(a: np.ndarray, ata: np.ndarray, m: int, n: int, n_large: int) -> None:
+@njit
+def ata(a: np.ndarray, at: np.ndarray, m: int, n: int, n_large: int) -> None:
     """
     Multiply transpose of a matrix A by matrix A itself, creating a symmetric matrix inplace.
 
@@ -16,9 +18,9 @@ def ata(a: np.ndarray, ata: np.ndarray, m: int, n: int, n_large: int) -> None:
     """
     for i in range(n):
         for j in range(n):
-            ata.flat[i * n + j] = 0.0
+            at.flat[i * n + j] = 0.0
             for k in range(m):
-                ata.flat[i * n + j] += a.flat[k * n_large + i] * a.flat[k * n_large + j]
+                at.flat[i * n + j] += a.flat[k * n_large + i] * a.flat[k * n_large + j]
 
 
 # def ata(a: np.ndarray, ata: np.ndarray, m: int, n: int, n_large: int) -> None:
@@ -45,7 +47,7 @@ def ata(a: np.ndarray, ata: np.ndarray, m: int, n: int, n_large: int) -> None:
 #                     a.flat[k * n_large + i] * a.flat[k * n_large + j]
 #                 )
 
-
+@njit
 def atl(u: np.ndarray, a: np.ndarray, b: np.ndarray, m: int, n: int, n_large: int):
     """Multiply transpose of a matrix A by vector b, creating vector u.
 
@@ -229,7 +231,7 @@ def atl(u: np.ndarray, a: np.ndarray, b: np.ndarray, m: int, n: int, n_large: in
 #             pa += k
 #         c += 1
 
-
+@njit
 def matmul(
     a: np.ndarray,
     b: np.ndarray,
