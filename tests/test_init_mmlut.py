@@ -39,8 +39,9 @@ class TestInitMmLut(unittest.TestCase):
         cal = init_mmlut(vpar, cpar, cal)
 
         # Data[0] Is the radial shift of a point directly on the glass vector
-
-        data = cal.mmlut.data.flatten()
+        data = []
+        if cal.mmlut.data is not None:
+            data = cal.mmlut.data.flatten()
 
         self.assertAlmostEqual(data[0], 1)
 

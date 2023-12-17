@@ -28,7 +28,7 @@ class TestGetMmfMmLUT(unittest.TestCase):
         init_mmlut(self.vpar, self.cpar, self.cal)
 
         pos = vec_set(1.0, 1.0, 1.0)
-        mmf = get_mmf_from_mmlut(self.cal, pos)
+        mmf = get_mmf_from_mmlut(self.cal.mmlut, pos)
         self.assertAlmostEqual(mmf, 1.0038208, delta=1e-6)
 
 

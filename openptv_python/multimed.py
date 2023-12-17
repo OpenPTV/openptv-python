@@ -4,7 +4,7 @@ from typing import List, Tuple
 import numpy as np
 from numba import njit
 
-from .calibration import Calibration, Exterior, Glass
+from .calibration import Calibration, Exterior, Glass, mm_lut
 from .parameters import (
     ControlPar,
     MultimediaPar,
@@ -22,22 +22,23 @@ def multimed_nlay(
 
     using radial shift from the multimedia model
     """
-    radial_shift = multimed_r_nlay(cal, mm, pos)
+    principal_point = vec_set(cal.ext_par.x0, cal.ext_par.y0, cal.ext_par.z0)
+    radial_shift = multimed_r_nlay(principal_point, cal.mmlut, mm, pos)
     Xq = cal.ext_par.x0 + (pos[0] - cal.ext_par.x0) * radial_shift
     Yq = cal.ext_par.y0 + (pos[1] - cal.ext_par.y0) * radial_shift
     return Xq, Yq
 
 
-def multimed_r_nlay(cal: Calibration, mm: MultimediaPar, pos: np.ndarray) -> float:
+def multimed_r_nlay(principal_point: np.ndarray, mmlut: mm_lut, mm: MultimediaPar, pos: np.ndarray) -> float:
     """Calculate the radial shift for the multimedia model."""
     # 1-medium case
     if mm.n1 == 1 and mm.nlay == 1 and mm.n2[0] == 1 and mm.n3 == 1:
         return 1.0
 
     #  interpolation using the existing mmlut
-    if cal.mmlut.data is not None:
+    if mmlut.data is not None:
         print("going into get_mmf_from_mmlut\n")
-        mmf = get_mmf_from_mmlut(cal, pos)
+        mmf = get_mmf_from_mmlut(mmlut, pos)
         if mmf > 0:
             print(f"mmf from data = {mmf}")
             return mmf
@@ -48,9 +49,7 @@ def multimed_r_nlay(cal: Calibration, mm: MultimediaPar, pos: np.ndarray) -> flo
         np.array(mm.n2),
         mm.n3,
         np.array(mm.d),
-        cal.ext_par.x0,
-        cal.ext_par.y0,
-        cal.ext_par.z0,
+        principal_point,
         pos)
     print(f"mmf from a loop = {mmf}")
 
@@ -64,9 +63,7 @@ def fast_multimed_r_nlay(
     n2: np.ndarray,
     n3: float,
     d: np.ndarray,
-    x0,
-    y0,
-    z0,
+    principal_point: np.ndarray,
     pos: np.ndarray
 ) -> float:
     """Calculate the radial shift for the multimedia model.
@@ -75,9 +72,9 @@ def fast_multimed_r_nlay(
     mm = {'nlay': 2, 'n1': 1, 'n2': [1.49, 0.0, 0.0], 'd': [5.0, 0.0, 0.0], 'n3': 1.33}
     data = cal.mmlut.data (np.ndarray)
 
-    x0,y0,z0 =  x0, y0, z0
-
     """
+    x0, y0, z0 = principal_point
+
     n_iter = 40
     rdiff = 0.1
     beta2 = np.zeros(nlay, dtype=np.float64)
@@ -128,7 +125,8 @@ def trans_cam_point(
     pos_t, cross_p, cross_c = trans_cam_point(ex, mm, glass, pos, ex_t)
     """
     origin = np.array([ex.x0, ex.y0, ex.z0], dtype=np.float64)
-    glass_dir = np.array([glass.vec_x, glass.vec_y, glass.vec_z], dtype=np.float64)
+    glass_dir = np.array(
+        [glass.vec_x, glass.vec_y, glass.vec_z], dtype=np.float64)
     pos = pos.astype(np.float64)
 
     return fast_trans_cam_point(
@@ -141,7 +139,7 @@ def fast_trans_cam_point(
     d: float,
     glass_dir: np.ndarray,
     pos: np.ndarray
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, float]:
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, float]:
     """Derive translation of camera point."""
     dist_o_glass = float(np.linalg.norm(glass_dir))  # vector length
     if dist_o_glass == 0.0:
@@ -194,9 +192,11 @@ def back_trans_point(
     -------
         A numpy array representing the position of the point in the camera coordinate system.
     """
-    glass_direction = np.array([glass.vec_x, glass.vec_y, glass.vec_z], dtype=np.float64)
+    glass_direction = np.array(
+        [glass.vec_x, glass.vec_y, glass.vec_z], dtype=np.float64)
 
     return fast_back_trans_point(glass_direction, mm.d[0], cross_c, cross_p, pos_t)
+
 
 @njit
 def fast_back_trans_point(glass_direction: np.ndarray, d: float, cross_c, cross_p, pos_t) -> np.ndarray:
@@ -223,11 +223,12 @@ def fast_back_trans_point(glass_direction: np.ndarray, d: float, cross_c, cross_
 
     # If the norm of the vector temp is greater than zero, adjust the position
     # of the point in the camera coordinate system
-    if norm_temp > 0.0: # type: ignore
+    if norm_temp > 0.0:  # type: ignore
         renorm_temp = temp * (-pos_t[0] / norm_temp)
         pos = pos - renorm_temp
 
     return pos
+
 
 @njit
 def move_along_ray(glob_z: float, vertex: np.ndarray, direct: np.ndarray) -> np.ndarray:
@@ -275,9 +276,14 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibrati
     z_min_t = z_min
     z_max_t = z_max
 
-    # intersect with image vertices rays
-    cal_t = Calibration(mmlut=cal.mmlut)
 
+    # A frame representing a point outside tank, middle of glass
+    cal_t = Calibration()
+    # missing here the pointer cal_t = *cal
+
+
+
+    # intersect with image vertices rays
     for i in range(2):
         for j in range(2):
             x, y = pixel_to_metric(xc[i], yc[j], cpar)
@@ -347,15 +353,11 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibrati
     return cal
 
 
-def get_mmf_from_mmlut(cal: Calibration, pos: np.ndarray) -> float:
+def get_mmf_from_mmlut(mmlut: mm_lut, pos: np.ndarray) -> float:
     """Get the refractive index of the medium at a given position."""
-    rw = cal.mmlut.rw
-    origin = cal.mmlut.origin
-    data = cal.mmlut.data.flatten()  # type: ignore
-    nz = cal.mmlut.nz
-    nr = cal.mmlut.nr
+    data = mmlut.data.flatten()  # type: ignore
 
-    return fast_get_mmf_from_mmlut(rw, origin, data, nz, nr, pos)
+    return fast_get_mmf_from_mmlut(mmlut.rw, mmlut.origin, data, mmlut.nz, mmlut.nr, pos)
 
 # @njit
 

@@ -17,15 +17,19 @@ def flat_image_coord(
 ) -> Tuple[float, float]:
     """Flat image coordinate.
 
-    Args:
-    ----
-        orig_pos (_type_): _description_
-        cal (_type_): _description_
-        mm (_type_): _description_
+    /* flat_image_coord() calculates projection from coordinates in
+        world space to metric coordinates in image space without
+        distortions
 
-    Returns
-    -------
-        _type_: _description_
+        Arguments:
+        vec3d orig_pos - a vector of position in 3D (X,Y,Z real space)
+        Calibration *cal - parameters of the camera on which to project.
+        mm_np *mm - layer thickness and refractive index parameters.
+
+        Output:
+        double x,y - metric coordinates of projection in the image space.
+    */
+
     """
     cal_t = Calibration(mmlut = cal.mmlut)
 
