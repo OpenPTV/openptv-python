@@ -17,6 +17,7 @@ from openptv_python.correspondences import (
 )
 from openptv_python.epi import Coord2d
 from openptv_python.imgcoord import img_coord
+from openptv_python.multimed import init_mmlut
 from openptv_python.parameters import ControlPar, read_control_par, read_volume_par
 from openptv_python.tracking_frame_buf import (
     Frame,
@@ -191,6 +192,9 @@ class TestReadControlPar(unittest.TestCase):
         # con = correspondences(frm, corrected, vpar, cpar, calib, match_counts)
         # print(f" con = {con[0]}")
         # assert match_counts == [16, 0, 0, 16]
+
+        for cal in calib:
+            cal = init_mmlut(vpar, cpar, cal)
 
         sorted_pos, sorted_corresp, num_targs = py_correspondences(
             frm.targets, corrected, calib, vpar, cpar

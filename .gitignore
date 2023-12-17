@@ -480,3 +480,4 @@ tests/testing_fodder/track/newpart/*
 tests/testing_fodder/burgers/*
 tests/testing_fodder/test_0042_targets
 tests/testing_folder/round_trip.%04d0001_targets
+*.prof

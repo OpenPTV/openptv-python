@@ -36,10 +36,10 @@ def multimed_r_nlay(cal: Calibration, mm: MultimediaPar, pos: np.ndarray) -> flo
 
     #  interpolation using the existing mmlut
     if cal.mmlut.data is not None:
-        print("going into get_mmf_from_mmlut\n")
+        # print("going into get_mmf_from_mmlut\n")
         mmf = get_mmf_from_mmlut(cal, pos)
         if mmf > 0:
-            print(f"mmf from data = {mmf}")
+            # print(f"mmf from data = {mmf}")
             return mmf
 
     mmf = fast_multimed_r_nlay(
@@ -52,7 +52,7 @@ def multimed_r_nlay(cal: Calibration, mm: MultimediaPar, pos: np.ndarray) -> flo
         cal.ext_par.y0,
         cal.ext_par.z0,
         pos)
-    print(f"mmf from a loop = {mmf}")
+    # print(f"mmf from a loop = {mmf}")
 
     return mmf
 
