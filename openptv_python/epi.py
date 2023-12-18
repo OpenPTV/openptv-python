@@ -1,8 +1,9 @@
 """Epipolar geometry."""
-from dataclasses import dataclass, field
-from typing import List
+from typing import List, Tuple
 
 import numpy as np
+from numba import float64, int32, njit
+from numba.experimental import jitclass
 
 from .calibration import Calibration
 from .constants import PT_UNUSED
@@ -12,8 +13,13 @@ from .parameters import ControlPar, MultimediaPar, VolumePar
 from .ray_tracing import ray_tracing
 from .trafo import dist_to_flat, metric_to_pixel, pixel_to_metric
 
+spec = [
+    ('pnr', int32),
+    ('tol', float64),
+    ('corr', float64),
+]
 
-@dataclass
+@jitclass(spec)
 class Candidate:
     """Candidate point in the second image."""
 
@@ -22,10 +28,16 @@ class Candidate:
         self.tol = tol
         self.corr = corr
 
-    def __repr__(self):
-        return f"Candidate(pnr={self.pnr}, tol={self.tol}, corr={self.corr})"
+    # def __repr__(self):
+    #     return f"Candidate(pnr={self.pnr}, tol={self.tol}, corr={self.corr})"
 
+spec = [
+    ('pnr', int32),
+    ('x', float64),
+    ('y', float64),
+]
 
+@jitclass(spec)
 class Coord2d:
     """2D coordinates in the image space."""
 
@@ -34,31 +46,38 @@ class Coord2d:
         self.x = x
         self.y = y
 
-    def __repr__(self):
-        return f"Coord2d(pnr={self.pnr}, x={self.x}, y={self.y})"
+    # def __repr__(self):
+    #     return f"Coord2d(pnr={self.pnr}, x={self.x}, y={self.y})"
 
-
+@njit
 def sort_coord2d_x(crd: List[Coord2d]) -> List[Coord2d]:
     """Quicksort for coordinates by x ."""
     return sorted(crd, key=lambda p: p.x)
 
-
+@njit
 def sort_coord2d_y(crd: List[Coord2d]) -> List[Coord2d]:
     """Sort coordinates by y."""
     return sorted(crd, key=lambda p: p.y)
 
+spec = [
+    ('pnr', int32),
+    ('x', float64),
+    ('y', float64),
+    ('z', float64),
+]
 
-@dataclass
+@jitclass(spec)
 class Coord3d:
-    """3D coordinates in the object space."""
+    """2D coordinates in the image space."""
 
-    pnr: int = field(default=PT_UNUSED)
-    x: float = field(default=0.0)
-    y: float = field(default=0.0)
-    z: float = field(default=0.0)
+    def __init__(self, pnr=PT_UNUSED, x=0.0, y=0.0, z=0.0):
+        self.pnr = pnr
+        self.x = x
+        self.y = y
+        self.z = z
 
 
-def epi_mm(xl, yl, cal1, cal2, mmp, vpar) -> tuple[float, float, float, float]:
+def epi_mm(xl, yl, cal1, cal2, mmp, vpar) -> Tuple[float, float, float, float]:
     """Return the end points of the epipolar line in the "second" camera.
 
     /*  epi_mm() takes a point in images space of one camera, positions of this
