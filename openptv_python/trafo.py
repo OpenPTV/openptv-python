@@ -3,6 +3,7 @@ from math import cos, sin, sqrt
 from typing import Tuple
 
 import numpy as np
+from numba import njit
 
 from .calibration import Calibration, ap_52
 from .parameters import ControlPar
@@ -19,8 +20,21 @@ def pixel_to_metric(
     x_pixel, y_pixel (float): input pixel coordinates.
     parameters (ControlPar): control structure holding image and pixel sizes.
     """
-    x_metric = (x_pixel - float(parameters.imx) / 2.0) * parameters.pix_x
-    y_metric = (float(parameters.imy) / 2.0 - y_pixel) * parameters.pix_y
+    return fast_pixel_to_metric(
+        x_pixel,
+        y_pixel,
+        parameters.imx,
+        parameters.imy,
+        parameters.pix_x,
+        parameters.pix_y
+    )
+
+
+@njit
+def fast_pixel_to_metric(x_pixel, y_pixel, imx, imy, pix_x, pix_y) -> Tuple[float, float]:
+    """Convert pixel coordinates to metric coordinates."""
+    x_metric = (x_pixel - float(imx) / 2.0) * pix_x
+    y_metric = (float(imy) / 2.0 - y_pixel) * pix_y
 
     return (x_metric, y_metric)
 
@@ -36,8 +50,10 @@ def arr_pixel_to_metric(pixel: np.ndarray, parameters: ControlPar) -> np.ndarray
     """
     pixel = np.atleast_2d(np.array(pixel))
     metric = np.empty_like(pixel)
-    metric[:, 0] = (pixel[:, 0] - float(parameters.imx) / 2.0) * parameters.pix_x
-    metric[:, 1] = (float(parameters.imy) / 2.0 - pixel[:, 1]) * parameters.pix_y
+    metric[:, 0] = (pixel[:, 0] - float(parameters.imx) /
+                    2.0) * parameters.pix_x
+    metric[:, 1] = (float(parameters.imy) / 2.0 -
+                    pixel[:, 1]) * parameters.pix_y
 
     return metric
 
@@ -56,8 +72,27 @@ def metric_to_pixel(
     -------
     x_pixel, y_pixel (float): output pixel coordinates.
     """
-    x_pixel = (x_metric / parameters.pix_x) + (float(parameters.imx) / 2.0)
-    y_pixel = (float(parameters.imy) / 2.0) - (y_metric / parameters.pix_y)
+    return fast_metric_to_pixel(
+        x_metric,
+        y_metric,
+        parameters.imx,
+        parameters.imy,
+        parameters.pix_x,
+        parameters.pix_y
+    )
+
+@njit
+def fast_metric_to_pixel(
+    x_metric,
+    y_metric,
+    imx,
+    imy,
+    pix_x,
+    pix_y
+    ) -> Tuple[float, float]:
+    """Convert metric coordinates to pixel coordinates."""
+    x_pixel = (x_metric / pix_x) + (float(imx) / 2.0)
+    y_pixel = (float(imy) / 2.0) - (y_metric / pix_y)
 
     return x_pixel, y_pixel
 
@@ -74,38 +109,77 @@ def arr_metric_to_pixel(metric: np.ndarray, parameters: ControlPar) -> np.ndarra
     -------
     pixel (np.ndarray): output array of pixel coordinates.
     """
+    metric = np.atleast_2d(np.array(metric))
+
+    return fast_arr_metric_to_pixel(
+        metric,
+        parameters.imx,
+        parameters.imy,
+        parameters.pix_x,
+        parameters.pix_y
+    )
+
+@njit
+def fast_arr_metric_to_pixel(
+    metric,
+    imx,
+    imy,
+    pix_x,
+    pix_y
+    ) -> np.ndarray:
+    """Convert an array of metric coordinates to pixel coordinates."""
     pixel = np.zeros_like(metric)
-    pixel[:, 0] = (metric[:, 0] / parameters.pix_x) + (float(parameters.imx) / 2.0)
-    pixel[:, 1] = (float(parameters.imy) / 2.0) - (metric[:, 1] / parameters.pix_y)
+    pixel[:, 0] = (metric[:, 0] / pix_x) + (float(imx) / 2.0)
+    pixel[:, 1] = (float(imy) / 2.0) - (metric[:, 1] / pix_y)
 
     return pixel
 
 
-def distort_brown_affine(x: float, y: float, ap: ap_52) -> Tuple[float, float]:
+def distort_brown_affine(x: float,
+                         y: float,
+                         ap: ap_52
+                         ) -> Tuple[float, float]:
     """Distort a point using the Brown affine model."""
     if x == 0 and y == 0:
         return 0, 0
 
+    return fast_distort_brown_affine(x, y, ap.k1, ap.k2, ap.k3,
+                                     ap.p1, ap.p2, ap.she, ap.scx)
+
     # print(f"x {x}, y {y}")
 
+
+@njit
+def fast_distort_brown_affine(
+    x: float,
+    y: float,
+    k1: float,
+    k2: float,
+    k3: float,
+    p1: float,
+    p2: float,
+    she: float,
+    scx: float,
+) -> Tuple[float, float]:
+    """Distort a point using the Brown affine model."""
     r = sqrt(x**2 + y**2)
 
     x += (
-        x * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
-        + ap.p1 * (r**2 + 2 * x**2)
-        + 2 * ap.p2 * x * y
+        x * (k1 * r**2 + k2 * r**4 + k3 * r**6)
+        + p1 * (r**2 + 2 * x**2)
+        + 2 * p2 * x * y
     )
     y += (
-        y * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
-        + ap.p2 * (r**2 + 2 * y**2)
-        + 2 * ap.p1 * x * y
+        y * (k1 * r**2 + k2 * r**4 + k3 * r**6)
+        + p2 * (r**2 + 2 * y**2)
+        + 2 * p1 * x * y
     )
 
     # print(f"x {x}, y {y}")
     # print(f"ap.she {ap.she} ap.scx {ap.scx}")
 
-    x1 = ap.scx * x - sin(ap.she) * y
-    y1 = cos(ap.she) * y
+    x1 = scx * x - sin(she) * y
+    y1 = cos(she) * y
 
     # print(f"x1 {x1}, y1 {y1}")
 
@@ -115,6 +189,22 @@ def distort_brown_affine(x: float, y: float, ap: ap_52) -> Tuple[float, float]:
 def correct_brown_affine(
     x: float, y: float, ap: ap_52, tol: float = 1e-5
 ) -> Tuple[float, float]:
+    """Correct a distorted point using the Brown affine model."""
+    return fast_correct_brown_affine(x, y, ap.k1, ap.k2, ap.k3, ap.p1, ap.p2, ap.she, ap.scx, tol)
+
+
+@njit
+def fast_correct_brown_affine(
+        x: float,
+        y: float,
+        k1: float,
+        k2: float,
+        k3: float,
+        p1: float,
+        p2: float,
+        she: float,
+        scx: float,
+        tol: float = 1e-5) -> Tuple[float, float]:
     """Correct a distorted point using the Brown affine model."""
     r, rq, xq, yq = 0.0, 0.0, x, y
     itnum = 0
@@ -127,17 +217,17 @@ def correct_brown_affine(
     while True:
         r = rq
         xq = (
-            (x + yq * np.sin(ap.she)) / ap.scx
-            - xq * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
-            - ap.p1 * (r**2 + 2 * xq**2)
-            - 2 * ap.p2 * xq * yq
+            (x + yq * np.sin(she)) / scx
+            - xq * (k1 * r**2 + k2 * r**4 + k3 * r**6)
+            - p1 * (r**2 + 2 * xq**2)
+            - 2 * p2 * xq * yq
         )
 
         yq = (
-            y / np.cos(ap.she)
-            - yq * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
-            - ap.p2 * (r**2 + 2 * yq**2)
-            - 2 * ap.p1 * xq * yq
+            y / np.cos(she)
+            - yq * (k1 * r**2 + k2 * r**4 + k3 * r**6)
+            - p2 * (r**2 + 2 * yq**2)
+            - 2 * p1 * xq * yq
         )
 
         rq = np.sqrt(xq**2 + yq**2)
@@ -152,72 +242,20 @@ def correct_brown_affine(
 
     r = rq
     x1 = (
-        (x + yq * np.sin(ap.she)) / ap.scx
-        - xq * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
-        - ap.p1 * (r**2 + 2 * xq**2)
-        - 2 * ap.p2 * xq * yq
+        (x + yq * np.sin(she)) / scx
+        - xq * (k1 * r**2 + k2 * r**4 + k3 * r**6)
+        - p1 * (r**2 + 2 * xq**2)
+        - 2 * p2 * xq * yq
     )
 
     y1 = (
-        y / np.cos(ap.she)
-        - yq * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
-        - ap.p2 * (r**2 + 2 * yq**2)
-        - 2 * ap.p1 * xq * yq
+        y / np.cos(she)
+        - yq * (k1 * r**2 + k2 * r**4 + k3 * r**6)
+        - p2 * (r**2 + 2 * yq**2)
+        - 2 * p1 * xq * yq
     )
 
     return x1, y1
-
-
-# def correct_brown_affine(x, y, ap, tol=1e-5):
-#     """Correct a distorted point using the Brown affine model."""
-#     xq, yq = x, y
-#     rq = np.sqrt(x**2 + y**2)
-
-#     def f(r, xq, yq):
-#         xq = (
-#             (x + yq * np.sin(ap.she)) / ap.scx
-#             - xq * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
-#             - ap.p1 * (r**2 + 2 * xq**2)
-#             - 2 * ap.p2 * xq * yq
-#         )
-#         yq = (
-#             y / np.cos(ap.she)
-#             - yq * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
-#             - ap.p2 * (r**2 + 2 * yq**2)
-#             - 2 * ap.p1 * xq * yq
-#         )
-#         rq = np.sqrt(xq**2 + yq**2)
-#         return rq - r
-
-#     r = root_scalar(f, args=(xq, yq), bracket=[0, 2 * rq], maxiter=200, xtol=tol).root
-
-#     xq = (
-#         (x + yq * np.sin(ap.she)) / ap.scx
-#         - xq * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
-#         - ap.p1 * (r**2 + 2 * xq**2)
-#         - 2 * ap.p2 * xq * yq
-#     )
-#     yq = (
-#         y / np.cos(ap.she)
-#         - yq * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
-#         - ap.p2 * (r**2 + 2 * yq**2)
-#         - 2 * ap.p1 * xq * yq
-#     )
-
-#     x1 = (
-#         (x + yq * np.sin(ap.she)) / ap.scx
-#         - xq * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
-#         - ap.p1 * (r**2 + 2 * xq**2)
-#         - 2 * ap.p2 * xq * yq
-#     )
-#     y1 = (
-#         y / np.cos(ap.she)
-#         - yq * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
-#         - ap.p2 * (r**2 + 2 * yq**2)
-#         - 2 * ap.p1 * xq * yq
-#     )
-
-#     return x1, y1
 
 
 def flat_to_dist(flat_x: float, flat_y: float, cal: Calibration) -> Tuple[float, float]:
