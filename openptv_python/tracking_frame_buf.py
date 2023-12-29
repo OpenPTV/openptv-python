@@ -4,6 +4,8 @@ from dataclasses import dataclass, field
 from typing import Deque, List, Optional, Tuple
 
 import numpy as np
+from numba import float32, int32  # import the types
+from numba.experimental import jitclass
 
 from .calibration import Calibration
 from .constants import (
@@ -76,20 +78,34 @@ def compare_corres(c1: Corres, c2: Corres) -> bool:
     return c1 == c2  # type: ignore
 
 
-@dataclass
-class Target:
+
+spec = [
+    ('pnr', int32),  # a simple scalar field
+    ('x', float32),
+    ('y', float32),
+    ('n', int32),
+    ('nx', int32),
+    ('ny', int32),
+    ('sumg', int32),
+    ('tnr', int32),
+]
+
+@jitclass(spec)
+class Target(object):
     """Target structure for tracking."""
 
-    pnr: int = PT_UNUSED  # target number
-    x: float = 0.0  # pixel position
-    y: float = 0.0  # pixel position
-    n: int = 0  # number of pixels
-    nx: int = 0  # in x
-    ny: int = 0  # in y
-    sumg: int = 0  # sum of grey values
-    tnr: int = -1  # used in tracking
+    def __init__(self, pnr=PT_UNUSED, x=0.0, y=0.0, n=0, nx=0, ny=0, sumg=0, tnr = PT_UNUSED):
+        self.pnr = pnr
+        self.x = x
+        self.y = y
+        self.n = n
+        self.nx = nx
+        self.ny = ny
+        self.sumg = sumg
+        self.tnr = tnr
 
-    def set_pos(self, pos: Tuple[float, float]) -> None:
+
+    def set_pos(self, pos: np.ndarray) -> None:
         """Set target position."""
         self.x, self.y = pos
 
@@ -133,6 +149,46 @@ class Target:
         )
 
 
+
+# class Bag(object):
+#     def __init__(self, value):
+#         self.value = value
+#         self.array = np.zeros(value, dtype=np.float32)
+
+#     @property
+#     def size(self):
+#         return self.array.size
+
+#     def increment(self, val):
+#         for i in range(self.size):
+#             self.array[i] += val
+#         return self.array
+
+#     @staticmethod
+#     def add(x, y):
+#         return x + y
+
+# n = 21
+# mybag = Bag(n)
+
+# Target_dtype = np.dtype([
+#     ('pnr', 'i4'),  # target number
+#     ('x', 'f8'),  # pixel position
+#     ('y', 'f8'),  # pixel position
+#     ('n', 'i4'),  # number of pixels
+#     ('nx', 'i4'),  # in x
+#     ('ny', 'i4'),  # in y
+#     ('sumg', 'i4'),  # sum of grey values
+#     ('tnr', 'i4'),  # used in tracking
+# ])
+
+# def sort_target_y(targets: np.ndarray) -> np.ndarray:
+#     """Sort targets by y coordinate."""
+#     # return sorted(targets, key=lambda t: t.y)
+#     targets = targets.view(np.recarray)
+#     targets.sort(order='y')
+#     return targets
+
 def sort_target_y(targets: List[Target]) -> List[Target]:
     """Sort targets by y coordinate."""
     return sorted(targets, key=lambda t: t.y)
@@ -163,8 +219,7 @@ class TargetArray(list):
         """Return the number of targets in the list."""
         return len(self)
 
-
-def read_targets(file_base: str, frame_num: int) -> List[Target]:
+def read_targets(file_base: str, frame_num: int) -> np.ndarray:
     """Read targets from a file."""
     buffer = []
 
