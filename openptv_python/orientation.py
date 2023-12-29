@@ -3,6 +3,7 @@ from typing import List, Optional, Tuple
 
 import numpy as np
 import scipy
+from numba import njit
 
 from openptv_python.constants import COORD_UNUSED
 
@@ -20,6 +21,7 @@ from .trafo import correct_brown_affine, pixel_to_metric
 from .vec_utils import unit_vector, vec_norm, vec_set
 
 
+@njit
 def skew_midpoint(
     vert1: np.ndarray, direct1: np.ndarray, vert2: np.ndarray, direct2: np.ndarray
 ) -> Tuple[float, np.ndarray]:
