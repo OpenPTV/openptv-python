@@ -1,9 +1,9 @@
 """Module for coordinate transformations."""
-from math import cos, sin, sqrt
 from typing import Tuple
 
 import numpy as np
-from numba import njit
+from numba import float64, int32, njit
+from numpy import cos, sin, sqrt
 
 from .calibration import Calibration, ap_52
 from .parameters import ControlPar
@@ -38,22 +38,29 @@ def fast_pixel_to_metric(x_pixel, y_pixel, imx, imy, pix_x, pix_y) -> Tuple[floa
 
     return (x_metric, y_metric)
 
-
-def arr_pixel_to_metric(pixel: np.ndarray, parameters: ControlPar) -> np.ndarray:
+@njit(float64[:,:](int32[:,:],int32,int32,float64,float64))
+def arr_pixel_to_metric(pixel: np.ndarray,
+                        imx: int,
+                        imy: int,
+                        pix_x: float,
+                        pix_y: float) -> np.ndarray:
     """Convert pixel coordinates to metric coordinates.
 
     Arguments:
     ---------
+    imx (float): image width in pixels.
+    imy (float): image height in pixels.
+    pix_x (float): pixel size in x-direction.
+    pix_y (float): pixel size in y-direction.
+
+    Returns
+    -------
     metric (np.ndarray): output metric coordinates.
-    pixel (np.ndarray): input pixel coordinates.
-    parameters (ControlPar): control structure holding image and pixel sizes.
+
     """
-    pixel = np.atleast_2d(np.array(pixel))
-    metric = np.empty_like(pixel)
-    metric[:, 0] = (pixel[:, 0] - float(parameters.imx) /
-                    2.0) * parameters.pix_x
-    metric[:, 1] = (float(parameters.imy) / 2.0 -
-                    pixel[:, 1]) * parameters.pix_y
+    metric = np.empty_like(pixel, dtype=np.float64)
+    metric[:, 0] = (pixel[:, 0] - imx / 2.0) * pix_x
+    metric[:, 1] = (imy / 2.0 - pixel[:, 1]) * pix_y
 
     return metric
 
@@ -81,6 +88,7 @@ def metric_to_pixel(
         parameters.pix_y
     )
 
+
 @njit
 def fast_metric_to_pixel(
     x_metric,
@@ -89,7 +97,7 @@ def fast_metric_to_pixel(
     imy,
     pix_x,
     pix_y
-    ) -> Tuple[float, float]:
+) -> Tuple[float, float]:
     """Convert metric coordinates to pixel coordinates."""
     x_pixel = (x_metric / pix_x) + (float(imx) / 2.0)
     y_pixel = (float(imy) / 2.0) - (y_metric / pix_y)
@@ -97,7 +105,8 @@ def fast_metric_to_pixel(
     return x_pixel, y_pixel
 
 
-def arr_metric_to_pixel(metric: np.ndarray, parameters: ControlPar) -> np.ndarray:
+def arr_metric_to_pixel(metric: np.ndarray,
+                        parameters: ControlPar) -> np.ndarray:
     """Convert an array of metric coordinates to pixel coordinates.
 
     Arguments:
@@ -109,7 +118,7 @@ def arr_metric_to_pixel(metric: np.ndarray, parameters: ControlPar) -> np.ndarra
     -------
     pixel (np.ndarray): output array of pixel coordinates.
     """
-    metric = np.atleast_2d(np.array(metric))
+    metric = np.atleast_2d(metric)
 
     return fast_arr_metric_to_pixel(
         metric,
@@ -119,18 +128,19 @@ def arr_metric_to_pixel(metric: np.ndarray, parameters: ControlPar) -> np.ndarra
         parameters.pix_y
     )
 
-@njit
+
+@njit(float64[:,:](float64[:,:],int32,int32,float64,float64))
 def fast_arr_metric_to_pixel(
-    metric,
-    imx,
-    imy,
-    pix_x,
-    pix_y
-    ) -> np.ndarray:
+    metric: np.ndarray,
+    imx: int,
+    imy: int,
+    pix_x: float,
+    pix_y: float
+) -> np.ndarray:
     """Convert an array of metric coordinates to pixel coordinates."""
     pixel = np.zeros_like(metric)
-    pixel[:, 0] = (metric[:, 0] / pix_x) + (float(imx) / 2.0)
-    pixel[:, 1] = (float(imy) / 2.0) - (metric[:, 1] / pix_y)
+    pixel[:, 0] = (metric[:, 0] / pix_x) + (imx / 2.0)
+    pixel[:, 1] = (imy / 2.0) - (metric[:, 1] / pix_y)
 
     return pixel
 
@@ -143,13 +153,14 @@ def distort_brown_affine(x: float,
     if x == 0 and y == 0:
         return 0, 0
 
-    return fast_distort_brown_affine(x, y, ap.k1, ap.k2, ap.k3,
+    tmp = fast_distort_brown_affine(x, y, ap.k1, ap.k2, ap.k3,
                                      ap.p1, ap.p2, ap.she, ap.scx)
+    return tmp[0], tmp[1]
 
     # print(f"x {x}, y {y}")
 
 
-@njit
+@njit(float64[:](float64,float64,float64,float64,float64,float64,float64,float64,float64))
 def fast_distort_brown_affine(
     x: float,
     y: float,
@@ -160,7 +171,7 @@ def fast_distort_brown_affine(
     p2: float,
     she: float,
     scx: float,
-) -> Tuple[float, float]:
+) -> np.ndarray:
     """Distort a point using the Brown affine model."""
     r = sqrt(x**2 + y**2)
 
@@ -183,7 +194,7 @@ def fast_distort_brown_affine(
 
     # print(f"x1 {x1}, y1 {y1}")
 
-    return x1, y1
+    return np.array([x1, y1])
 
 
 def correct_brown_affine(

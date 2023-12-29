@@ -224,7 +224,13 @@ class TestDistFlatRoundTrip(unittest.TestCase):
         y_metric_expected = (float(parameters.imy) / 2.0 - y_pixel) * parameters.pix_y
 
         # call the function to get actual output metric coordinates
-        metric = arr_pixel_to_metric(np.array([x_pixel, y_pixel]), parameters)
+        metric = arr_pixel_to_metric(
+            np.atleast_2d(np.array([x_pixel, y_pixel], dtype=np.int32)),
+            parameters.imx,
+            parameters.imy,
+            parameters.pix_x,
+            parameters.pix_y
+            )
 
         # check if the actual output matches the expected output
         assert metric[:, 0] == x_metric_expected
@@ -251,23 +257,33 @@ class Test_transforms(unittest.TestCase):
 
     def test_transforms_regress(self):
         """Transformed values are as before."""
-        input_pos = np.full((3, 2), 100.0)
+        correct_output_pixel_to_metric = np.array(
+            [
+            [-8181.0, 6657.92],
+            [-8181.0, 6657.92],
+            [-8181.0, 6657.92],
+        ])
+        correct_output_metric_to_pixel = np.array([
+            [646.60066007, 505.81188119],
+            [646.60066007, 505.81188119],
+            [646.60066007, 505.81188119],
+        ])
 
-        correct_output_pixel_to_metric = [
-            [-8181.0, 6657.92],
-            [-8181.0, 6657.92],
-            [-8181.0, 6657.92],
-        ]
-        correct_output_metric_to_pixel = [
-            [646.60066007, 505.81188119],
-            [646.60066007, 505.81188119],
-            [646.60066007, 505.81188119],
-        ]
+        input_pos = np.full((3, 2), 100, dtype=np.int32)
+
 
         # Test when passing a list
-        output = arr_pixel_to_metric(input_pos, self.control)
+        output = arr_pixel_to_metric(
+            input_pos,
+            self.control.imx,
+            self.control.imy,
+            self.control.pix_x,
+            self.control.pix_y
+            )
         np.testing.assert_array_almost_equal(output, correct_output_pixel_to_metric)
 
+
+        input_pos = np.full((3, 2), 100, dtype=np.float64)
         output = arr_metric_to_pixel(input_pos, self.control)
         np.testing.assert_array_almost_equal(output, correct_output_metric_to_pixel)
 
@@ -278,21 +294,28 @@ class Test_transforms(unittest.TestCase):
         cpar.set_pixel_size((0.1, 0.1))
 
         metric_pos = np.array([[1.0, 1.0], [-10.0, 15.0], [20.0, -30.0]])
-        pixel_pos = np.array([[650.0, 490.0], [540.0, 350.0], [840.0, 800.0]])
+        pixel_pos = np.array([[650, 490], [540, 350], [840, 800]],dtype=np.int32)
 
         np.testing.assert_array_almost_equal(
-            pixel_pos, arr_metric_to_pixel(metric_pos, cpar)
+            pixel_pos,
+            arr_metric_to_pixel(
+                metric_pos,
+                cpar)
         )
         np.testing.assert_array_almost_equal(
-            metric_pos, arr_pixel_to_metric(pixel_pos, cpar)
+            metric_pos, arr_pixel_to_metric(pixel_pos,
+                                            cpar.imx,
+                                            cpar.imy,
+                                            cpar.pix_x,
+                                            cpar.pix_y)
         )
 
     def test_brown_affine_regress(self):
         """Test that the brown affine transform gives the same results as before."""
         input_vec = np.full((3, 2), 100.0)
         output = np.zeros((3, 2))
-        correct_output_corr = [[100.0, 100.0], [100.0, 100.0], [100.0, 100.0]]
-        correct_output_dist = [[100.0, 100.0], [100.0, 100.0], [100.0, 100.0]]
+        correct_output_corr = np.array([[100.0, 100.0], [100.0, 100.0], [100.0, 100.0]])
+        correct_output_dist = np.array([[100.0, 100.0], [100.0, 100.0], [100.0, 100.0]])
 
         # Test when passing an array for output
         for i in range(3):
@@ -322,11 +345,11 @@ class Test_transforms(unittest.TestCase):
         cal = Calibration()
         cal.set_pos([0.0, 0.0, 40.0])
         cal.set_angles([0.0, 0.0, 0.0])
-        cal.set_primary_point([0.0, 0.0, 10.0])
+        cal.set_primary_point(np.array([0.0, 0.0, 10.0]))
         cal.set_glass_vec(np.r_[0.0, 0.0, 20.0])
-        cal.set_radial_distortion([0,0,0])
-        cal.set_decentering([0,0])
-        cal.set_affine_trans([1, 0])
+        cal.set_radial_distortion(np.zeros(3,))
+        cal.set_decentering(np.zeros(2,))
+        cal.set_affine_trans(np.array([1,0]))
 
         # reference metric positions:
         ref_pos = np.array([[0.1, 0.1], [1.0, -1.0], [-10.0, 10.0]])
@@ -357,9 +380,9 @@ class Test_transforms(unittest.TestCase):
         cal.set_angles(np.r_[0.0, 0.0, 0.0])
         cal.set_primary_point(np.r_[0.0, 0.0, 10.0])
         cal.set_glass_vec(np.r_[0.0, 0.0, 20.0])
-        cal.set_radial_distortion([0,0,0])
-        cal.set_decentering([0,0])
-        cal.set_affine_trans([1, 0])
+        cal.set_radial_distortion(np.zeros(3,))
+        cal.set_decentering(np.zeros(2,))
+        cal.set_affine_trans(np.array([1, 0]))
 
         # reference metric positions:
         # Note the last value is different than in test_brown_affine() because
