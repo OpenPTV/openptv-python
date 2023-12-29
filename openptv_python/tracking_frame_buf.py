@@ -214,6 +214,13 @@ def write_targets(
     targets: List[Target], num_targets: int, file_base: str, frame_num: int) -> bool:
     """Write targets to a file."""
     success = False
+
+    # fix old-type names, that are like cam1.# or just cam1.
+    if "%" not in file_base:
+        file_base = file_base + "%05d"
+    if '#' in file_base:
+        file_base = file_base.replace('#', '%05d')
+
     file_name = (
         file_base + "_targets"
         if frame_num == 0

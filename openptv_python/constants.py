@@ -1,6 +1,6 @@
 """Constants used in the Python version of OpenPTV."""
-NMAX = 202400  # correspondences
-MAXCAND = 20  # assuming a maximum capacity of MAXCAND candidates
+NMAX = 10000  # correspondences
+MAXCAND = 40  # assuming a maximum capacity of MAXCAND candidates
 PT_UNUSED = -999
 
 COORD_UNUSED = -1e10
@@ -22,7 +22,7 @@ SORTGRID_EPS = 25
 TR_UNUSED = -1
 TR_BUFSPACE = 4  # 4 frames in the buffer to track
 TR_MAX_CAMS = 4  # 4 cameras in the imaging system
-MAX_TARGETS = 2048  # maximum number of targets
+MAX_TARGETS = 20480  # maximum number of targets
 MAX_CANDS = 4
 ADD_PART = 3
 

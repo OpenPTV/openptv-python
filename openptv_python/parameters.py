@@ -836,7 +836,7 @@ class PftVersionPar(Parameters):
     def from_file(cls, file_path: str):
         """Read from pft_version.par file."""
         with open(file_path, 'r', encoding="utf-8") as file:
-            pft_version = bool(file.readline().strip())
+            pft_version = bool(int(file.readline().strip()))
         return cls(pft_version)
 
     @classmethod

@@ -47,16 +47,16 @@ class MatchedCoords:
         self.buf = np.empty(self._num_pts, \
             dtype=np.dtype([('x', np.float64), ('y', np.float64), ('pnr', np.int32)]))
 
-        for tnum in range(self._num_pts):
-            targ = targs._tarr[tnum]
+        for tnum, targ in enumerate(targs):
+            targ = targs[tnum]
             if reset_numbers:
                 targ.pnr = tnum
 
             self.buf[tnum]['x'], self.buf[tnum]['y'] = pixel_to_metric(
-                targ.x, targ.y,  cpar._control_par
-                )
+                targ.x, targ.y,  cpar)
+
             self.buf[tnum]['x'], self.buf[tnum]['y'] = dist_to_flat(
-                self.buf[tnum]['x'], self.buf[tnum]['y'], cal._calibration, tol
+                self.buf[tnum]['x'], self.buf[tnum]['y'], cal, tol
                 )
             self.buf[tnum]['pnr'] = targ.pnr
 
@@ -244,7 +244,7 @@ def three_camera_matching(
         for i in range(target_counts[i1]):
             for i2 in range(i1 + 1, num_cams - 1):
                 p1 = corr_list[i1][i2][i].p1
-                if p1 > nmax or tusage[i1][p1] > 0:
+                if p1 >= nmax or tusage[i1][p1] > 0:
                     continue
 
                 # print(f"p1 {p1} candidates {corr_list[i1][i2][i].n } ")
@@ -323,14 +323,14 @@ def consistent_pair_matching(
         for i2 in range(i1 + 1, num_cams):
             for i in range(target_counts[i1]):
                 p1 = corr_list[i1][i2][i].p1
-                if p1 > nmax or tusage[i1][p1] > 0:
+                if p1 >= nmax or tusage[i1][p1] > 0:
                     continue
 
                 if corr_list[i1][i2][i].n != 1:
                     continue
 
                 p2 = corr_list[i1][i2][i].p2[0]
-                if p2 > nmax or tusage[i2][p2] > 0:
+                if p2 >= nmax or tusage[i2][p2] > 0:
                     continue
 
                 corr = corr_list[i1][i2][i].corr[0] / corr_list[i1][i2][i].dist[0]
@@ -423,6 +423,7 @@ def match_pairs(
 
                 # search for a conjugate point in corrected[i2]
                 # cand = [Correspond() for _ in range(MAXCAND)]
+
                 cand = find_candidate(
                     corrected[i2],
                     frm.targets[i2],
@@ -682,7 +683,7 @@ def correspondences(
 
 
     """
-    nmax = 1000  # NMAX
+    nmax = NMAX
 
     # Allocation of scratch buffers for internal tasks and return-value space
     con0 = [n_tupel() for _ in range(nmax * cpar.num_cams)]
