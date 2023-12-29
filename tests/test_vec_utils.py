@@ -1,3 +1,4 @@
+"""Tests for the vec_utils module."""
 import numpy as np
 
 from openptv_python.vec_utils import (

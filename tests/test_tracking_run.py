@@ -285,8 +285,8 @@ class TestTrackback(unittest.TestCase):
         trackcorr_c_finish(run, run.seq_par.last)
 
 
-        run.tpar.dvxmin = run.tpar.dvymin = run.tpar.dvzmin = -50
-        run.tpar.dvxmax = run.tpar.dvymax = run.tpar.dvzmax = 50
+        run.tpar.dvxmin = run.tpar.dvymin = run.tpar.dvzmin = -50.0
+        run.tpar.dvxmax = run.tpar.dvymax = run.tpar.dvzmax = 50.0
 
 
         run.lmax = vec_norm(
