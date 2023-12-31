@@ -1,6 +1,9 @@
 import math
 from typing import List
 
+import numpy as np
+from numba import float64, int32, njit
+
 from .calibration import Calibration
 from .constants import MAXCAND
 from .epi import Candidate, Coord2d
@@ -146,13 +149,12 @@ def find_candidate(
 #     """ Return the ratio of the smaller to the larger of the two numbers."""
 #     return a / b if a < b else b / a
 
-
-def quality_ratio(a, b):
+@njit(float64(float64, float64))
+def quality_ratio(a: float, b: float) -> float:
     """Return the ratio of the smaller to the larger of the two numbers."""
     if a == 0 and b == 0:
         return 0
     return min(a, b) / max(a, b)
-
 
 def find_start_point(crd: List[Coord2d], num: int, xa: float, vpar: VolumePar) -> int:
     """Find the start point of the candidate search.
@@ -169,12 +171,19 @@ def find_start_point(crd: List[Coord2d], num: int, xa: float, vpar: VolumePar) -
     -------
         The start point of the candidate search.
     """
-    num = len(crd)
+    x = np.array([_.x for _ in crd])
+    eps0 = vpar.eps0
+    out = find_start_point_binary(x, num, xa, eps0)
+    return out
+
+@njit(int32(float64[:], int32, float64, float64))
+def find_start_point_binary(x: np.ndarray, num: int, xa: float, eps0: float) -> int:
+    # num = len(x)
     j0 = num // 2
     dj = num // 4
 
     while dj > 1:
-        if crd[j0].x < (xa - vpar.eps0):
+        if x[j0] < (xa - eps0):
             j0 += dj
         else:
             j0 -= dj
