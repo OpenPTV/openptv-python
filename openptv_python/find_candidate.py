@@ -1,6 +1,8 @@
 import math
 from typing import List
 
+from numba import float64, njit
+
 from .calibration import Calibration
 from .constants import MAXCAND
 from .epi import Candidate, Coord2d
@@ -146,8 +148,8 @@ def find_candidate(
 #     """ Return the ratio of the smaller to the larger of the two numbers."""
 #     return a / b if a < b else b / a
 
-
-def quality_ratio(a, b):
+@njit(float64(float64, float64))
+def quality_ratio(a: float, b: float) -> float:
     """Return the ratio of the smaller to the larger of the two numbers."""
     if a == 0 and b == 0:
         return 0
