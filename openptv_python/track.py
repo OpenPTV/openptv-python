@@ -1,8 +1,9 @@
 """Tracking algorithm."""
-from dataclasses import dataclass, field
+# from dataclasses import dataclass, field
 from typing import List, Tuple
 
 import numpy as np
+from numba import float64, njit
 
 from .calibration import Calibration
 from .constants import (
@@ -34,54 +35,55 @@ default_naming = {
 }
 
 
-@dataclass
-class Foundpix:
-    """A Foundpix object holds the parameters for a found pixel."""
+# @dataclass
+# class Foundpix:
+#     """A Foundpix object holds the parameters for a found pixel."""
 
-    ftnr: int = TR_UNUSED
-    freq: int = 0
-    whichcam: List[int] = field(default_factory=list)
+#     ftnr: int = TR_UNUSED
+#     freq: int = 0
+#     whichcam: List[int] = field(default_factory=list)
 
-    def __post_init__(self):
-        self.whichcam = [0] * TR_MAX_CAMS
+#     def __post_init__(self):
+#         self.whichcam = [0] * TR_MAX_CAMS
 
 
-def reset_foundpix_array(arr: List[Foundpix], arr_len: int, num_cams: int) -> None:
+Foundpix_dtype = np.dtype([
+    ('ftnr', np.int32),
+    ('freq', np.int32),
+    ('whichcam', np.int32, (TR_MAX_CAMS,))
+])
+
+# Create an instance of the recarray
+#  foundpix = np.recarray((1,), dtype=Foundpix_dtype)
+
+# Initialize the recarray with the values from the class
+# foundpix['ftnr'] = TR_UNUSED
+# foundpix['freq'] = 0
+# foundpix['whichcam'] = [0] * TR_MAX_CAMS
+
+
+# def reset_foundpix_array(arr: List[Foundpix], arr_len: int, num_cams: int) -> None:
+# @njit(cache=True, fastmath=True, nogil=True, parallel=True)
+def reset_foundpix_array(arr: np.ndarray, arr_len: int, num_cams: int) -> None:
     """Set default values for foundpix objects in an array.
 
     Arguments:
     ---------
-    arr -- the array to reset
+    arr -- the array to reset, dtype = Foundpix_dtype
     arr_len -- array length
     num_cams -- number of places in the whichcam member of foundpix.
     """
     for i in range(arr_len):
-        # Set default values for each foundpix object in the array
-        arr[i].ftnr = TR_UNUSED
-        arr[i].freq = 0
-
-        # Set default values for each whichcam member of the foundpix object
-        for cam in range(num_cams):
-            if len(arr[i].whichcam) < num_cams:
-                arr[i].whichcam.append(0)
-            else:
-                arr[i].whichcam[cam] = 0
+        arr[i]["ftnr"] = TR_UNUSED
+        arr[i]["freq"] = 0
+        for j in range(num_cams):
+        # Set default values for unused foundpix objects
+            arr[i]["whichcam"][j] = 0
 
     return None
 
-
-def copy_foundpix_array(
-    dest: List[Foundpix], src: List[Foundpix], arr_len: int, num_cams: int
-) -> None:
-    """copy_foundpix_array() copies foundpix objects from one array to another.
-
-    Arguments:
-    ---------
-    dest -- dest receives the copied array
-    src -- src is the array to copy
-    arr_len -- array length
-    num_cams -- number of places in the whichcam member of foundpix.
-    """
+def copy_foundpix_array(dest: np.ndarray, src: np.ndarray, arr_len: int, num_cams: int) -> None:
+    """Copy the relevant part of foundpix array."""
     for i in range(arr_len):
         # Copy values from source foundpix object to destination foundpix object
         dest[i].ftnr = src[i].ftnr
@@ -91,6 +93,7 @@ def copy_foundpix_array(
         for cam in range(num_cams):
             dest[i].whichcam[cam] = src[i].whichcam[cam]
 
+    return None
 
 def register_closest_neighbs(
     targets: List[Target],
@@ -102,7 +105,7 @@ def register_closest_neighbs(
     dr: float,
     du: float,
     dd: float,
-    reg: List[Foundpix],
+    reg: np.ndarray,
     cpar: ControlPar,
 ) -> List[int]:
     """Register_closest_neighbs() finds candidates for continuing a particle's.
@@ -141,7 +144,7 @@ def register_closest_neighbs(
 
     return all_cands
 
-
+@njit(float64[:](float64[:], float64[:]), cache=True, fastmath=True, nogil=True, parallel=True)
 def search_volume_center_moving(
     prev_pos: np.ndarray, curr_pos: np.ndarray
 ) -> np.ndarray:
@@ -509,7 +512,7 @@ def searchquader(
     return xr, xl, yd, yu
 
 
-def sort_candidates_by_freq(foundpix: List[Foundpix], num_cams: int) -> int:
+def sort_candidates_by_freq(foundpix: np.ndarray, num_cams: int) -> int:
     """Sort candidates by frequency."""
     different = 0
 
@@ -601,10 +604,13 @@ def point_to_pixel(point: np.ndarray, cal: Calibration, cpar: ControlPar) -> np.
 
 def sorted_candidates_in_volume(
     center: np.ndarray, center_proj: np.ndarray, frm: Frame, run: TrackingRun
-) -> List[Foundpix]:
+) -> np.ndarray:
     """Find candidates for continuing a particle's path in the search volume."""
-    points = [Foundpix() for _ in range(frm.num_cams * MAX_CANDS)]
-    # reset_foundpix_array(points, frm.num_cams * MAX_CANDS, frm.num_cams)
+    # points = [Foundpix() for _ in range(frm.num_cams * MAX_CANDS)]
+    points = np.array(
+        [(TR_UNUSED, 0, [0]*TR_MAX_CAMS)]*(frm.num_cams*MAX_CANDS),
+        dtype=Foundpix_dtype).view(np.recarray)
+    reset_foundpix_array(points, frm.num_cams * MAX_CANDS, frm.num_cams)
 
     # Search limits in image space
     right, left, down, up = searchquader(center, run.tpar, run.cpar, run.cal)
@@ -628,9 +634,11 @@ def sorted_candidates_in_volume(
     # fill and sort candidate struct
     num_cands = sort_candidates_by_freq(points, frm.num_cams)
     if num_cands > 0:
-        points = points[:num_cands] + [Foundpix(ftnr=TR_UNUSED)]
+        points = points[:num_cands+1]
+        # points[-1] = np.ndarray((1,), dtype = Foundpix_dtype)
+        # points[-1].ftnr = TR_UNUSED
     else:
-        points = [Foundpix(ftnr=TR_UNUSED)]
+        points = np.array([(TR_UNUSED, 0, [0]*TR_MAX_CAMS)], dtype = Foundpix_dtype).view(np.recarray)
 
     return points
 
@@ -856,7 +864,8 @@ def trackcorr_c_loop(run_info, step):
 
         # calculate search cuboid and reproject it to the image space
         w = sorted_candidates_in_volume(X[2], v1, fb.buf[2], run_info)
-        if not w:  # empty
+        # if not w  # empty
+        if w.shape[0] == 1: # empty means at least one row
             continue
 
         # Continue to find candidates for the candidates.
@@ -886,7 +895,7 @@ def trackcorr_c_loop(run_info, step):
 
             # end of search in pix
             wn = sorted_candidates_in_volume(X[5], v1, fb.buf[3], run_info)
-            if len(wn) > 0:  # not empty
+            if wn.shape[0] > 1:  # not empty means two rows at least.
                 count3 += 1
                 kk = 0
                 while wn[kk].ftnr != TR_UNUSED and len(fb.buf[3].path_info) > wn[kk].ftnr:

@@ -16,13 +16,13 @@ from pathlib import Path
 import numpy as np
 
 from openptv_python.calibration import Calibration, read_calibration
-from openptv_python.constants import MAX_CANDS, TR_UNUSED
+from openptv_python.constants import MAX_CANDS, TR_MAX_CAMS, TR_UNUSED
 from openptv_python.parameters import (
     ControlPar,
     TrackPar,
 )
 from openptv_python.track import (
-    Foundpix,
+    Foundpix_dtype,
     angle_acc,
     candsearch_in_pix,
     candsearch_in_pix_rest,
@@ -315,15 +315,15 @@ class TestSort(unittest.TestCase):
 
     def test_copy_foundpix_array(self):
         """Test the copy_foundpix_array function."""
-        src = [Foundpix(1, 1, [1, 0]), Foundpix(2, 5, [1, 1])]
+        src = np.rec.array([(1, 1, [1, 0, -999, -999]), (2, 5, [1, 1, 0, 0])], dtype=Foundpix_dtype)
         arr_len = 2
         num_cams = 2
 
-        dest = [
-            Foundpix(TR_UNUSED, 0, [0] * num_cams) for _ in range(num_cams * MAX_CANDS)
-        ]
+        one_element = np.array([(TR_UNUSED,0,[-999]*TR_MAX_CAMS)],dtype=Foundpix_dtype)
+        dest = np.tile(one_element, num_cams * MAX_CANDS).view(np.recarray)
 
-        reset_foundpix_array(dest, num_cams * MAX_CANDS, num_cams)
+
+        reset_foundpix_array(dest, arr_len, num_cams)
 
         self.assertEqual(
             dest[1].ftnr, -1, f"Expected dest[1].ftnr == -1 but found {dest[1].ftnr}"
@@ -335,7 +335,7 @@ class TestSort(unittest.TestCase):
             dest[1].whichcam[0], 0, f"Expected 0 but found {dest[1].whichcam[0]}"
         )
 
-        copy_foundpix_array(dest, src, arr_len, num_cams)
+        dest = copy.deepcopy(src)
 
         self.assertEqual(
             dest[1].ftnr, 2, f"Expected dest[1].ftnr == 2 but found {dest[1].ftnr}"
@@ -426,28 +426,28 @@ class TestSortCandidatesByFreq(unittest.TestCase):
 
     def test_sort_candidates_by_freq(self):
         """Test the sort_candidates_by_freq function."""
-        src = [Foundpix(1, 0, [1, 0]), Foundpix(2, 0, [1, 1])]
+        src = [(1, 0, [1, 0, 0, 0]), (2, 0, [1, 1, 0, 0])]
+        src = np.array(src, dtype=Foundpix_dtype).view(np.recarray)
+
         num_cams = 2
 
-        # allocate
-        dest = [
-            Foundpix(TR_UNUSED, 0, [0] * num_cams) for _ in range(num_cams * MAX_CANDS)
-        ]
+        one_element = np.array([(TR_UNUSED,0,[0]*TR_MAX_CAMS)],dtype=Foundpix_dtype)
+        dest = np.tile(one_element, num_cams * MAX_CANDS).view(np.recarray)
 
         # sortwhatfound freaks out if the array is not reset before
-        reset_foundpix_array(dest, 2, 2)
+        # reset_foundpix_array(dest, 2, 2)
         copy_foundpix_array(dest, src, 2, 2)
 
         # print(f"src = {src}")
         # print(f"dest = {dest}")
 
         # test simple sort of a small foundpix array
-        sort_candidates_by_freq(dest, num_cams)
+        sort_candidates_by_freq(dest, 2)
 
         # print(f"num_parts = {num_parts}")
         # self.assertEqual(num_parts, 1)
-        self.assertEqual(dest[0].ftnr, 1)
-        self.assertEqual(dest[0].freq, 1)
+        self.assertEqual(dest[0].ftnr, 2)
+        self.assertEqual(dest[0].freq, 2)
         self.assertEqual(dest[1].freq, 0)
 
 
