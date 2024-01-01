@@ -4,7 +4,7 @@ import numpy as np
 
 from .calibration import Calibration
 from .constants import POS_INF, PT_UNUSED, SORTGRID_EPS
-from .epi import Coord3d
+from .epi import Coord3d_dtype
 from .imgcoord import img_coord
 from .parameters import ControlPar
 from .tracking_frame_buf import Target
@@ -119,7 +119,7 @@ def read_sortgrid_par(filename) -> int:
     return eps
 
 
-def read_calblock(filename: str) -> List[Coord3d]:
+def read_calblock(filename: str) -> np.recarray: #List[Coord3d]:
     """
     Read the calibration block file into the structure of 3D positions and pointers.
 
@@ -142,13 +142,14 @@ def read_calblock(filename: str) -> List[Coord3d]:
                 x = float(values[1])
                 y = float(values[2])
                 z = float(values[3])
-                coord = Coord3d(pnr, x, y, z)
+                # coord = Coord3d(pnr, x, y, z)
+                coord = np.array([(pnr, x, y, z)], dtype=Coord3d_dtype)
                 coords.append(coord)
     except FileNotFoundError:
         print(f"Can't open calibration block file: {filename}")
-        return []
+        return np.recarray(0, dtype=Coord3d_dtype)
     except ValueError:
         print(f"Empty or badly formatted file: {filename}")
-        return []
+        return np.recarray(0, dtype = Coord3d_dtype)
 
-    return coords
+    return np.array(coords).view(np.recarray)

@@ -23,7 +23,7 @@ from .constants import (
 from .imgcoord import img_coord
 from .orientation import point_position
 from .parameters import ControlPar, SequencePar, TrackPar, VolumePar
-from .tracking_frame_buf import Corres, Frame, Pathinfo, Target
+from .tracking_frame_buf import Corres_dtype, Frame, Pathinfo, Target
 from .tracking_run import TrackingRun
 from .trafo import dist_to_flat, metric_to_pixel, pixel_to_metric
 from .vec_utils import vec_copy, vec_diff_norm, vec_subt
@@ -761,8 +761,7 @@ def add_particle(frm: Frame, pos: np.ndarray, cand_inds: np.ndarray) -> None:
         ref_path_inf = Pathinfo()
         frm.path_info.append(ref_path_inf)
 
-        ref_corres = Corres()
-        frm.correspond.append(ref_corres)
+        frm.correspond.append(np.recarray((1,), dtype=Corres_dtype))
 
     ref_path_inf.x = vec_copy(pos)
     ref_path_inf.reset_links()

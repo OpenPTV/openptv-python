@@ -1,7 +1,7 @@
 """Tracking frame buffer."""
 from collections import deque
 from dataclasses import dataclass, field
-from typing import Deque, List, Optional, Tuple
+from typing import Deque, List, Tuple
 
 import numpy as np
 
@@ -16,23 +16,17 @@ from .constants import (
     PRIO_DEFAULT,
     PT_UNUSED,
 )
-from .epi import Coord2d
+from .epi import Coord2d_dtype
 from .parameters import ControlPar
 from .trafo import dist_to_flat, pixel_to_metric
 
-
-class n_tupel:  # pylint: disable=invalid-name
-    """n_tupel data structure."""
-
-    def __init__(self, p=None, corr=None):
-        self.p = [0, 0, 0, 0] if p is None else p
-        self.corr = 0.0 if corr is None else corr
-
-    def __repr__(self):
-        return f"<n_tupel p={self.p} corr={self.corr}>"
+n_tupel_dtype = np.dtype([
+    ("p", np.int32, (4,)),
+    ("corr", np.float64)
+])
 
 
-def quicksort_n_tupel(n_tupel_list: List[n_tupel]) -> List[n_tupel]:
+def quicksort_n_tupel(arr: np.ndarray) -> np.ndarray:
     """
     Quicksorts a list of n_tupel instances based on the corr attribute.
 
@@ -40,40 +34,42 @@ def quicksort_n_tupel(n_tupel_list: List[n_tupel]) -> List[n_tupel]:
 
     Args:
     ----
-      n_tupel_list: A list of n_tupel instances.
+      n_tupel_list: Array of n_tupel instances.
 
     Returns
     -------
       A list of n_tupel instances, sorted by the corr attribute.
     """
-    return sorted(n_tupel_list, key=lambda x: x.corr)
+    return np.sort(arr, order="corr")
 
 
-class Corres:
-    """Correspondence data structure."""
-
-    def __init__(self, nr: int = 0, p: Optional[List[int]] = None):
-        self.nr = nr
-        self.p = [-1, -1, -1, -1] if p is None else p
-
-    def __eq__(self, other):
-        return self.nr == other.nr and np.all(self.p == other.p)
 
 
-def compare_corres(c1: Corres, c2: Corres) -> bool:
+Corres_dtype = np.dtype([
+    ("nr", np.int32),
+    ("p", np.int32, (4,)) # -1 for no correspondence
+])
+
+
+
+    # def __eq__(self, other):
+    #     return self.nr == other.nr and np.all(self.p == other.p)
+
+
+def compare_corres(c1: np.ndarray, c2: np.ndarray) -> bool:
     """
     Compare two Corres instances.
 
     Args:
     ----
-        c1: A Corres instance.
-        c2: A Corres instance.
+        c1: A Corres array
+        c2: A Corres array.
 
     Returns
     -------
         True if the Corres instances are equal, False otherwise.
     """
-    return c1 == c2  # type: ignore
+    return np.array_equal(c1, c2)
 
 
 @dataclass
@@ -320,7 +316,8 @@ class Frame:
             held by a frame.
         """
         self.path_info = [Pathinfo() for _ in range(max_targets)]
-        self.correspond = [Corres() for _ in range(max_targets)]
+
+        self.correspond = [np.recarray((1,), dtype=Corres_dtype) for _ in range(max_targets)]
 
         self.targets = [[Target() for _ in range(max_targets)] for _ in range(num_cams)]
         # self.targets = [[] for _ in range(num_cams)]
@@ -692,7 +689,7 @@ def read_path_frame(
     linkage_file_base: str,
     prio_file_base: str,
     frame_num: int,
-) -> Tuple[List[Corres], List[Pathinfo]]:
+) -> Tuple[List[np.recarray], List[Pathinfo]]: #List[Corres]
     """Read a rt_is frames from the disk.
 
         /* Reads rt_is files. these files contain both the path info and the
@@ -722,12 +719,15 @@ def read_path_frame(
         filein = open(fname, "r", encoding="utf-8")
     except IOError:
         print(f"Can't open ascii file: {fname}")
-        return [], []
+        return [np.recarray(0,dtype=Corres_dtype)], []
 
     # we do not need number of particles, reading till EOF
     n_particles = int(filein.readline())
     # print(f"Reading {n_particles} particles from {fname}")
-    cor_buf = [Corres() for _ in range(n_particles)] # we do not want empty lists
+    # cor_buf = [Corres() for _ in range(n_particles)] # we do not want empty lists
+
+    cor_buf = [np.recarray((0,), dtype=Corres_dtype) for _ in range(n_particles)] # we do not want empty lists
+
     path_buf = [Pathinfo() for _ in range(n_particles)]
 
     if linkage_file_base != "":
@@ -736,7 +736,7 @@ def read_path_frame(
             linkagein = open(fname, "r", encoding="utf-8")
         except IOError:
             print(f"Can't open linkage file: {fname}")
-            return [], []
+            return [np.recarray(0, dtype=Corres_dtype)], []
 
         linkagein.readline()
     else:
@@ -798,7 +798,7 @@ def read_path_frame(
 
 
 def write_path_frame(
-    cor_buf: List[Corres],
+    cor_buf: List[np.recarray], #List[Corres],
     path_buf: List[Pathinfo],
     num_parts: int,
     corres_file_base: str,
@@ -883,7 +883,7 @@ def match_coords(
     cal: Calibration,
     tol: float = 1e-5,
     reset_numbers: bool = False,
-) -> List[Coord2d]:
+) -> np.ndarray:
     """Match coordinates from all cameras into a single block.
 
     replaces MatchedCoords class in Cython
@@ -898,7 +898,7 @@ def match_coords(
     is a low priority.
 
     """
-    matched_coords = [Coord2d() for _ in range(len(targs))]
+    matched_coords = np.empty(len(targs), dtype=Coord2d_dtype)
 
     for tnum, targ in enumerate(targs):
         # targ = targs[tnum]
@@ -909,12 +909,13 @@ def match_coords(
         matched_coords[tnum].x, matched_coords[tnum].y = dist_to_flat(x, y, cal, tol)
         matched_coords[tnum].pnr = targ.pnr
 
-    matched_coords.sort(key=lambda mc: mc.x)
+    matched_coords.sort(order='x')
+
     return matched_coords
 
 
 def matched_coords_as_arrays(
-    matched_coords: List[Coord2d],
+    matched_coords: List[np.recarray], #Coord2d
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Return the data associated with the object (the matched coordinates.
@@ -938,7 +939,7 @@ def matched_coords_as_arrays(
     return pos, pnr
 
 
-def get_by_pnrs(matched_coords: List[Coord2d], pnrs: np.ndarray) -> np.ndarray:
+def get_by_pnrs(matched_coords: List[np.recarray], pnrs: np.ndarray) -> np.ndarray: #Coord2d
     """
     Return the flat positions of points whose pnr property is given, as an.
 

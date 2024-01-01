@@ -1,80 +1,44 @@
 """Epipolar geometry."""
-from typing import List, Tuple
+from typing import Tuple
 
 import numpy as np
-from numba import float64, int32, njit
-from numba.experimental import jitclass
 
+# from numba import float64, int32
 from .calibration import Calibration
-from .constants import PT_UNUSED
 from .imgcoord import flat_image_coord, img_coord
 from .multimed import move_along_ray
 from .parameters import ControlPar, MultimediaPar, VolumePar
 from .ray_tracing import ray_tracing
 from .trafo import dist_to_flat, metric_to_pixel, pixel_to_metric
 
-spec = [
-    ('pnr', int32),
-    ('tol', float64),
-    ('corr', float64),
-]
+Candidate_dtype = np.dtype([
+    ('pnr', np.int32),
+    ('tol', np.float64),
+    ('corr', np.float64),
+])
 
-@jitclass(spec)
-class Candidate:
-    """Candidate point in the second image."""
+Coord2d_dtype = np.dtype([
+    ('pnr', np.int32),
+    ('x', np.float64),
+    ('y', np.float64),
+])
 
-    def __init__(self, pnr=PT_UNUSED, tol=0.0, corr=0.0):
-        self.pnr = pnr
-        self.tol = tol
-        self.corr = corr
+Coord3d_dtype = np.dtype([
+    ('pnr', np.int32),
+    ('x', np.float64),
+    ('y', np.float64),
+    ('z', np.float64),
+])
 
-    # def __repr__(self):
-    #     return f"Candidate(pnr={self.pnr}, tol={self.tol}, corr={self.corr})"
 
-spec = [
-    ('pnr', int32),
-    ('x', float64),
-    ('y', float64),
-]
 
-@jitclass(spec)
-class Coord2d:
-    """2D coordinates in the image space."""
-
-    def __init__(self, pnr=PT_UNUSED, x=0.0, y=0.0):
-        self.pnr = pnr
-        self.x = x
-        self.y = y
-
-    # def __repr__(self):
-    #     return f"Coord2d(pnr={self.pnr}, x={self.x}, y={self.y})"
-
-@njit
-def sort_coord2d_x(crd: List[Coord2d]) -> List[Coord2d]:
+def sort_coord2d_x(crd: np.ndarray) -> np.ndarray:
     """Quicksort for coordinates by x ."""
-    return sorted(crd, key=lambda p: p.x)
+    return np.sort(crd, order='x')
 
-@njit
-def sort_coord2d_y(crd: List[Coord2d]) -> List[Coord2d]:
+def sort_coord2d_y(crd: np.ndarray) -> np.ndarray:
     """Sort coordinates by y."""
-    return sorted(crd, key=lambda p: p.y)
-
-spec = [
-    ('pnr', int32),
-    ('x', float64),
-    ('y', float64),
-    ('z', float64),
-]
-
-@jitclass(spec)
-class Coord3d:
-    """2D coordinates in the image space."""
-
-    def __init__(self, pnr=PT_UNUSED, x=0.0, y=0.0, z=0.0):
-        self.pnr = pnr
-        self.x = x
-        self.y = y
-        self.z = z
+    return np.sort(crd, order='y')
 
 
 def epi_mm(xl, yl, cal1, cal2, mmp, vpar) -> Tuple[float, float, float, float]:

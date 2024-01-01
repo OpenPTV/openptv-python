@@ -5,10 +5,10 @@ import numpy as np
 
 from .calibration import Calibration
 from .constants import COORD_UNUSED, CORRES_NONE, MAX_TARGETS, MAXCAND, NMAX, PT_UNUSED
-from .epi import Coord2d, epi_mm
+from .epi import epi_mm
 from .find_candidate import find_candidate
 from .parameters import ControlPar, VolumePar
-from .tracking_frame_buf import Frame, Target, n_tupel
+from .tracking_frame_buf import Frame, Target, n_tupel_dtype
 from .trafo import dist_to_flat, pixel_to_metric
 
 
@@ -99,15 +99,13 @@ class MatchedCoords:
         del self.buf
 
 
-class Correspond:
-    """Correspondence between two points in two cameras."""
-
-    def __init__(self):
-        self.p1 = PT_UNUSED
-        self.n = 0
-        self.p2 = np.array([0] * MAXCAND)
-        self.corr = np.array([0.0] * MAXCAND)
-        self.dist = np.array([0.0] * MAXCAND)
+Correspond_dtype = np.dtype([
+    ('p1', np.int32), # PT_UNUSED
+    ('n', np.int32), # 0
+    ('p2', (np.float64, MAXCAND)), # np.zeros
+    ('corr', (np.float64, MAXCAND)), # np.zeros
+    ('dist', (np.float64, MAXCAND)) # np.zeros
+])
 
 def safely_allocate_target_usage_marks(
     num_cams: int, nmax: int = NMAX
@@ -138,21 +136,26 @@ def safely_allocate_target_usage_marks(
 
 def safely_allocate_adjacency_lists(
     num_cams: int, target_counts: List[int]
-) -> List[List[List[Correspond]]]:
+) -> List[List[List[np.recarray]]]:
     """Allocate space for the adjacency lists."""
+    one_element = np.array(
+        [(PT_UNUSED, 0, np.zeros(MAXCAND), np.zeros(MAXCAND), np.zeros(MAXCAND))],
+        dtype=Correspond_dtype).view(np.recarray)
+
     try:
         lists = [
-            [[Correspond() for _ in range(target_counts[c1])] for _ in range(num_cams)]
+            [[one_element for _ in range(target_counts[c1])] for _ in range(num_cams)]
             for c1 in range(num_cams)
         ]
+
     except MemoryError:
         print("Memory allocation failed.")
-        lists = []
+        lists = [[[one_element]]]
 
     return lists
 
 def four_camera_matching(
-    corr_list: List[List[List[Correspond]]],
+    corr_list: List[List[List[np.recarray]]],
     base_target_count,
     accept_corr,
     scratch,
@@ -228,7 +231,7 @@ def four_camera_matching(
 
 
 def three_camera_matching(
-    corr_list: List[List[List[Correspond]]],
+    corr_list: List[List[List[np.recarray]]],
     num_cams,
     target_counts,
     accept_corr,
@@ -307,7 +310,7 @@ def three_camera_matching(
 
 
 def consistent_pair_matching(
-    corr_list: List[List[List[Correspond]]],
+    corr_list: List[List[List[np.recarray]]],
     num_cams: int,
     target_counts: List[int],
     accept_corr: float,
@@ -353,8 +356,8 @@ def consistent_pair_matching(
 
 
 def match_pairs(
-    corr_lists: List[List[List[Correspond]]],
-    corrected: List[List[Coord2d]],
+    corr_lists: List[List[List[np.recarray]]],
+    corrected: np.ndarray, # List[List[Coord2d]],
     frm: Frame,
     vpar: VolumePar,
     cpar: ControlPar,
@@ -454,7 +457,7 @@ def match_pairs(
 
 
 def take_best_candidates(
-    src: List[n_tupel], dst: List[n_tupel], num_cams: int, tusage: List[List[int]]
+    src: np.recarray, dst: np.recarray, num_cams: int, tusage: List[List[int]] #List[n_tupel]
 ):
     """
     Take the best candidates from the candidate list based on their correlation measure.
@@ -497,7 +500,8 @@ def take_best_candidates(
     taken = 0
 
     # Sort candidates by match quality (.corr)
-    src.sort(key=lambda x: x.corr, reverse=True)
+    src.sort(order='corr') # by corr
+    src = src[::-1] # reverse order
 
     # Take candidates from the top to the bottom of the sorted list
     # Only take if none of the corresponding targets have been used
@@ -528,7 +532,7 @@ def take_best_candidates(
 
 def py_correspondences(
     img_pts: List[List[Target]],  # num_cams * num_targets[cam]
-    flat_coords: List[List[Coord2d]],
+    flat_coords: List[List[np.recarray]],
     calib: List[Calibration],
     vparam: VolumePar,
     cparam: ControlPar,
@@ -644,12 +648,12 @@ def py_correspondences(
 
 def correspondences(
     frm: Frame,
-    corrected: List[List[Coord2d]],
+    corrected: List[List[np.recarray]],  # List[List[Coord2d]],
     vpar: VolumePar,
     cpar: ControlPar,
     calib: List[Calibration],
     match_counts: List[int],
-) -> List[n_tupel]:
+) -> List[np.ndarray]: # n_tupel
     """Find correspondences between cameras.
 
     /*  correspondences() generates a list of tuple target numbers (one for each
@@ -686,8 +690,9 @@ def correspondences(
     nmax = NMAX
 
     # Allocation of scratch buffers for internal tasks and return-value space
-    con0 = [n_tupel() for _ in range(nmax * cpar.num_cams)]
-    con = [n_tupel() for _ in range(nmax * cpar.num_cams)]
+    con0 = np.empty((nmax * cpar.num_cams,), dtype=n_tupel_dtype)
+    con = np.empty((nmax * cpar.num_cams,), dtype=n_tupel_dtype)
+
     tim = safely_allocate_target_usage_marks(cpar.num_cams, nmax)
 
     # allocate memory for lists of correspondences
@@ -752,7 +757,7 @@ def correspondences(
 
 
 def single_cam_correspondences(
-    img_pts: List[Target], corrected: List[Coord2d]
+    img_pts: List[Target], corrected: np.recarray #List[Coord2d]
 ) -> Tuple[List[np.ndarray], List[np.ndarray], int]:
     """
     Single camera correspondence is not a real correspondence, it will be only a projection.
