@@ -102,14 +102,14 @@ class MatchedCoords:
 Correspond_dtype = np.dtype([
     ('p1', np.int32), # PT_UNUSED
     ('n', np.int32), # 0
-    ('p2', (np.float64, MAXCAND)), # np.zeros
+    ('p2', (np.int32, MAXCAND)), # np.zeros
     ('corr', (np.float64, MAXCAND)), # np.zeros
     ('dist', (np.float64, MAXCAND)) # np.zeros
 ])
 
 def safely_allocate_target_usage_marks(
     num_cams: int, nmax: int = NMAX
-) -> List[List[int]]:
+) -> np.ndarray: # num_cams x nmax instead of List[List[int]]:
     """Allocate space for per-camera arrays marking whether a certain target was used.
 
     If some allocation failed, it cleans up memory and returns NULL. Allocated arrays are zeroed
@@ -123,39 +123,48 @@ def safely_allocate_target_usage_marks(
     -------
         A list of lists of integers, or `None` if an allocation failed.
     """
-    tusage = []
-    for cam in range(num_cams):
-        tusage.append([0] * nmax)  # Initialize the array to all zeros.
+    # tusage = []
+    # for cam in range(num_cams):
+    #     tusage.append([0] * nmax)  # Initialize the array to all zeros.
 
-    # Check if any of the allocations failed.
-    for cam in range(num_cams):
-        if tusage[cam] is None:
-            return []  # was None
+    # # Check if any of the allocations failed.
+    # for cam in range(num_cams):
+    #     if tusage[cam] is None:
+    #         return []  # was None
 
-    return tusage
+    return np.zeros((num_cams, nmax), dtype=np.int32)
 
 def safely_allocate_adjacency_lists(
     num_cams: int, target_counts: List[int]
-) -> List[List[List[np.recarray]]]:
+) -> np.recarray:
     """Allocate space for the adjacency lists."""
-    one_element = np.array(
-        [(PT_UNUSED, 0, np.zeros(MAXCAND), np.zeros(MAXCAND), np.zeros(MAXCAND))],
-        dtype=Correspond_dtype).view(np.recarray)
+    # one_element = np.array(
+    #     [(PT_UNUSED, 0, np.zeros(MAXCAND), np.zeros(MAXCAND), np.zeros(MAXCAND))],
+    #     dtype=Correspond_dtype).view(np.recarray)
 
     try:
-        lists = [
-            [[one_element for _ in range(target_counts[c1])] for _ in range(num_cams)]
-            for c1 in range(num_cams)
-        ]
+        # lists = [
+        #     [[one_element for _ in range(target_counts[c1])] for _ in range(num_cams)]
+        #     for c1 in range(num_cams)
+        # ]
 
-    except MemoryError:
-        print("Memory allocation failed.")
-        lists = [[[one_element]]]
+        lists = np.recarray((num_cams, num_cams, max(target_counts)),dtype=Correspond_dtype)
+
+    except MemoryError as exc:
+        raise MemoryError("Failed to allocate adjacency lists.") from exc
+        # lists = [[[one_element]]]
+
+    lists.p1 = PT_UNUSED
+    lists.n = 0
+    lists.p2 = np.zeros(MAXCAND)
+    lists.corr = np.zeros(MAXCAND)
+    lists.dist = np.zeros(MAXCAND)
+
 
     return lists
 
 def four_camera_matching(
-    corr_list: List[List[List[np.recarray]]],
+    corr_list: np.recarray,
     base_target_count,
     accept_corr,
     scratch,
@@ -231,7 +240,7 @@ def four_camera_matching(
 
 
 def three_camera_matching(
-    corr_list: List[List[List[np.recarray]]],
+    corr_list: np.recarray, # num_cam, num_cam, num_targets
     num_cams,
     target_counts,
     accept_corr,
@@ -310,13 +319,13 @@ def three_camera_matching(
 
 
 def consistent_pair_matching(
-    corr_list: List[List[List[np.recarray]]],
+    corr_list: np.recarray,
     num_cams: int,
     target_counts: List[int],
     accept_corr: float,
-    scratch,
+    scratch: np.recarray,
     scratch_size: int,
-    tusage: List[List[int]],
+    tusage: np.ndarray,
 ) -> int:
     """Find consistent pairs of correspondences."""
     matched = 0
@@ -356,8 +365,8 @@ def consistent_pair_matching(
 
 
 def match_pairs(
-    corr_lists: List[List[List[np.recarray]]],
-    corrected: np.ndarray, # List[List[Coord2d]],
+    corr_lists: np.recarray, # num_cam, num_cam, num_targets
+    corrected: np.recarray, # List[List[Coord2d]],
     frm: Frame,
     vpar: VolumePar,
     cpar: ControlPar,
@@ -457,7 +466,7 @@ def match_pairs(
 
 
 def take_best_candidates(
-    src: np.recarray, dst: np.recarray, num_cams: int, tusage: List[List[int]] #List[n_tupel]
+    src: np.recarray, dst: np.recarray, num_cams: int, tusage: np.ndarray #List[n_tupel]
 ):
     """
     Take the best candidates from the candidate list based on their correlation measure.
@@ -532,7 +541,7 @@ def take_best_candidates(
 
 def py_correspondences(
     img_pts: List[List[Target]],  # num_cams * num_targets[cam]
-    flat_coords: List[List[np.recarray]],
+    flat_coords: np.recarray,
     calib: List[Calibration],
     vparam: VolumePar,
     cparam: ControlPar,
@@ -648,12 +657,12 @@ def py_correspondences(
 
 def correspondences(
     frm: Frame,
-    corrected: List[List[np.recarray]],  # List[List[Coord2d]],
+    corrected: np.recarray,  # List[List[Coord2d]],
     vpar: VolumePar,
     cpar: ControlPar,
     calib: List[Calibration],
     match_counts: List[int],
-) -> List[np.ndarray]: # n_tupel
+) -> np.recarray: # n_tupel_dtype
     """Find correspondences between cameras.
 
     /*  correspondences() generates a list of tuple target numbers (one for each
@@ -690,8 +699,8 @@ def correspondences(
     nmax = NMAX
 
     # Allocation of scratch buffers for internal tasks and return-value space
-    con0 = np.empty((nmax * cpar.num_cams,), dtype=n_tupel_dtype)
-    con = np.empty((nmax * cpar.num_cams,), dtype=n_tupel_dtype)
+    con0 = np.recarray((nmax * cpar.num_cams), dtype=n_tupel_dtype)
+    con = np.recarray((nmax * cpar.num_cams), dtype=n_tupel_dtype)
 
     tim = safely_allocate_target_usage_marks(cpar.num_cams, nmax)
 

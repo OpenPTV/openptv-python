@@ -15,7 +15,7 @@ from openptv_python.correspondences import (
     safely_allocate_target_usage_marks,
     three_camera_matching,
 )
-from openptv_python.epi import Coord2d
+from openptv_python.epi import Coord2d_dtype
 from openptv_python.imgcoord import img_coord
 from openptv_python.multimed import init_mmlut
 from openptv_python.parameters import ControlPar, read_control_par, read_volume_par
@@ -24,7 +24,7 @@ from openptv_python.tracking_frame_buf import (
     Target,
     match_coords,
     matched_coords_as_arrays,
-    n_tupel,
+    n_tupel_dtype,
     read_targets,
 )
 from openptv_python.trafo import dist_to_flat, metric_to_pixel, pixel_to_metric
@@ -46,7 +46,7 @@ def read_all_calibration(num_cams: int = 4) -> list[Calibration]:
 
 def correct_frame(
     frm: Frame, calib: list[Calibration], cpar: ControlPar, tol: float
-) -> list[list[Coord2d]]:
+) -> np.recarray: # num_cams, num_targets
     """
     Perform the transition from pixel to metric to flat coordinates.
 
@@ -59,10 +59,14 @@ def correct_frame(
     tol - tolerance parameter for iterative flattening phase, see
         trafo.h:correct_brown_affine_exact().
     """
-    corrected = [[Coord2d()] * frm.num_targets[i_cam] for i_cam in range(cpar.num_cams)]
+    corrected = np.recarray((cpar.num_cams,max(frm.num_targets)), dtype=Coord2d_dtype)
 
     for cam in range(cpar.num_cams):
         row = corrected[cam]
+        # corrected.append(row)
+
+    # for cam in range(cpar.num_cams):
+        # row = corrected[cam]
 
         for part in range(frm.num_targets[cam]):
             x, y = pixel_to_metric(
@@ -70,10 +74,16 @@ def correct_frame(
             )
             x, y = dist_to_flat(x, y, calib[cam], tol)
 
-            row[part] = Coord2d(frm.targets[cam][part].pnr, x, y)
+            row[part].pnr = frm.targets[cam][part].pnr
+            row[part].x = x
+            row[part].y = y
 
         # This is expected by find_candidate()
-        row.sort(key=lambda Coord2d: Coord2d.x)
+        row.sort(order='x')
+        # corrected.append(row)
+
+        # transform to arrya
+        # out = np.array(corrected).view(np.recarray)
 
     return corrected
 
@@ -222,7 +232,7 @@ class TestReadControlPar(unittest.TestCase):
 
         cals = []
         img_pts = []
-        corrected = []
+
         cal = Calibration().from_file(
             "tests/testing_folder/single_cam/calibration/cam_1.tif.ori",
             "tests/testing_folder/single_cam/calibration/cam_1.tif.addpar",
@@ -245,7 +255,7 @@ class TestReadControlPar(unittest.TestCase):
             targ.set_sum_grey_value(10)
 
         img_pts.append(targs)
-        corrected.append(match_coords(targs, cpar, cal))
+        corrected = match_coords(targs, cpar, cal)
 
         # Note that py_correspondences expects List[List(Coord2d)]
         # so we send [img_pts] and [corrected]
@@ -314,7 +324,8 @@ class TestReadControlPar(unittest.TestCase):
                     self.assertTrue(found_correct_pnr)
 
         # continue to the consistent_pair matching test
-        con = [n_tupel() for _ in range(4 * 16)]
+        # con = [n_tupel() for _ in range(4 * 16)]
+        con = np.recarray((4 * 16,), dtype=n_tupel_dtype)
         tusage = safely_allocate_target_usage_marks(cpar.num_cams)
 
         # high accept corr bcz of closeness to epipolar lines.
@@ -420,7 +431,7 @@ class TestReadControlPar(unittest.TestCase):
 
         # Allocate the con and tusage arrays.
         # continue to the consistent_pair matching test
-        con = [n_tupel() for _ in range(4 * 16)]
+        con = np.recarray((4 * 16,), dtype=n_tupel_dtype)
         tusage = safely_allocate_target_usage_marks(cpar.num_cams)
 
         # Perform three-camera matching.
@@ -447,7 +458,7 @@ class TestReadControlPar(unittest.TestCase):
         corr_lists = safely_allocate_adjacency_lists(cpar.num_cams, frm.num_targets)
         match_pairs(corr_lists, corrected, frm, vpar, cpar, calib)
 
-        con = [n_tupel() for _ in range(4 * 16)]
+        con = np.recarray((4 * 16,), dtype=n_tupel_dtype)
         # there is a good question about this test, not sure I understand
         # why it has to stop at 16 candidates and not 64 ?
 

@@ -883,7 +883,7 @@ def match_coords(
     cal: Calibration,
     tol: float = 1e-5,
     reset_numbers: bool = False,
-) -> np.ndarray:
+) -> np.recarray:
     """Match coordinates from all cameras into a single block.
 
     replaces MatchedCoords class in Cython
@@ -898,7 +898,7 @@ def match_coords(
     is a low priority.
 
     """
-    matched_coords = np.empty(len(targs), dtype=Coord2d_dtype)
+    matched_coords = np.recarray(len(targs), dtype=Coord2d_dtype)
 
     for tnum, targ in enumerate(targs):
         # targ = targs[tnum]
@@ -915,7 +915,7 @@ def match_coords(
 
 
 def matched_coords_as_arrays(
-    matched_coords: List[np.recarray], #Coord2d
+    matched_coords: np.recarray, #Coord2d
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Return the data associated with the object (the matched coordinates.
@@ -927,7 +927,7 @@ def matched_coords_as_arrays(
     pos - (n,2) array, the (x,y) flat-coordinates position of n targets.
     pnr - n-length array, the corresponding target number for each point.
     """
-    num_pts = len(matched_coords)
+    num_pts = matched_coords.shape[0]
     pos = np.empty((num_pts, 2))
     pnr = np.empty(num_pts, dtype=np.int_)
 

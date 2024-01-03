@@ -6,14 +6,14 @@ from numba import float64, int32, njit
 
 from .calibration import Calibration
 from .constants import MAXCAND
-from .epi import Candidate, Coord2d
+from .epi import Candidate_dtype
 from .parameters import ControlPar, VolumePar
 from .tracking_frame_buf import Target
 from .trafo import correct_brown_affine
 
 
 def find_candidate(
-    crd: List[Coord2d],
+    crd: np.recarray,
     pix: List[Target],
     num: int,
     xa: float,
@@ -27,7 +27,7 @@ def find_candidate(
     vpar: VolumePar,
     cpar: ControlPar,
     cal: Calibration,
-) -> List[Candidate]:
+) -> np.recarray:
     """Search in the image space of the image all the candidates around the epipolar line.
 
     originating from another camera. It is a binary search in an x-sorted coord-set,
@@ -57,7 +57,8 @@ def find_candidate(
     -------
         cand: list of candidates, or empty list if nothing is found
     """
-    cand: List[Candidate] = []
+    cand: List[np.recarray] = []
+    # cand: np.recarray = np.recarray((0,), dtype=Candidate_dtype)
 
     # The image space is the image plane of the camera. The image space is
     # given in millimeters of sensor size and the origin is in the center of the sensor.
@@ -89,7 +90,8 @@ def find_candidate(
 
     # If epipolar line out of sensor area, give up.
     if xb <= xmin or xa >= xmax or yb <= ymin or ya >= ymax:
-        return cand
+        # return np.array(cand).view(np.recarray)
+        return np.recarray((0,), dtype=Candidate_dtype)
 
     j0 = find_start_point(crd, num, xa, vpar)
 
@@ -99,7 +101,8 @@ def find_candidate(
         # Since the list is x-sorted, an out of x-bound candidate is after the
         # last possible candidate, so stop.
         if crd[j].x > xb + vpar.eps0:
-            return cand
+            out = np.array(cand).view(np.recarray).flatten()
+            return out  # type: ignore
 
         # Candidate should at the very least be in the epipolar search window
         # to be considered.
@@ -128,8 +131,9 @@ def find_candidate(
         if qn < vpar.cn or qnx < vpar.cnx or qny < vpar.cny or qsumg <= vpar.csumg:
             continue
         if len(cand) >= MAXCAND:
-            print(f"More candidates than {MAXCAND}: {len(cand)}\n")
-            return cand
+            print(f"Increase maximum number of candidates {len(cand)}\n")
+            out = np.array(cand).view(np.recarray).flatten()
+            return out # type: ignore
 
         # Empirical correlation coefficient from shape and brightness
         # parameters.
@@ -138,11 +142,13 @@ def find_candidate(
         # Prefer matches with brighter targets.
         corr *= sumg + pix[p2].sumg
 
-        cand.append(Candidate(pnr=j, tol=d, corr=corr))
+        # cand.append(Candidate(pnr=j, tol=d, corr=corr))
+        cand.append(np.array([(j, d, corr)], dtype=Candidate_dtype)) # type: ignore
 
+        out = np.array(cand).view(np.recarray).flatten()
         # print(f"appended: {cand[-1]}")
 
-    return cand
+    return out # type: ignore
 
 
 # def quality_ratio(a, b):
@@ -156,7 +162,7 @@ def quality_ratio(a: float, b: float) -> float:
         return 0
     return min(a, b) / max(a, b)
 
-def find_start_point(crd: List[Coord2d], num: int, xa: float, vpar: VolumePar) -> int:
+def find_start_point(crd: np.recarray, num: int, xa: float, vpar: VolumePar) -> int:
     """Find the start point of the candidate search.
 
     Args:
@@ -171,9 +177,8 @@ def find_start_point(crd: List[Coord2d], num: int, xa: float, vpar: VolumePar) -
     -------
         The start point of the candidate search.
     """
-    x = np.array([_.x for _ in crd])
-    eps0 = vpar.eps0
-    out = find_start_point_binary(x, num, xa, eps0)
+    # x = np.array([_.x for _ in crd])
+    out = find_start_point_binary(crd.x, num, xa, vpar.eps0)
     return out
 
 @njit(int32(float64[:], int32, float64, float64))
