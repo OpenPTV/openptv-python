@@ -13,7 +13,6 @@ from openptv_python.sortgrid import (
     sortgrid,
 )
 from openptv_python.tracking_frame_buf import Target, read_targets
-from openptv_python.vec_utils import vec_set
 
 
 class TestSortgrid(unittest.TestCase):
@@ -76,7 +75,8 @@ class TestSortgrid(unittest.TestCase):
         self.assertEqual(nfix, 5)
 
         # sortgrid expects only x,y,z
-        fix = np.array([vec_set(p.x, p.y, p.z) for p in cal_points])
+        # fix = np.array([vec_set(p.x, p.y, p.z) for p in cal_points])
+        fix = np.c_[cal_points.x, cal_points.y, cal_points.z]
 
         sorted_pix = sortgrid(cal, cpar, nfix, fix, eps, targets)
         self.assertEqual(sorted_pix[0].pnr, -999)

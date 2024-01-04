@@ -11,13 +11,13 @@ from openptv_python.correspondences import (
     safely_allocate_adjacency_lists,
     safely_allocate_target_usage_marks,
 )
-from openptv_python.epi import Coord2d
+from openptv_python.epi import Coord2d_dtype
 from openptv_python.imgcoord import img_coord
 from openptv_python.parameters import ControlPar, read_control_par, read_volume_par
 from openptv_python.tracking_frame_buf import (
     Frame,
     Target,
-    n_tupel,
+    n_tupel_dtype,
 )
 from openptv_python.trafo import dist_to_flat, metric_to_pixel, pixel_to_metric
 
@@ -40,7 +40,7 @@ def read_all_calibration(num_cams: int = 4) -> list[Calibration]:
 
 def correct_frame(
     frm: Frame, calib: list[Calibration], cpar: ControlPar, tol: float
-) -> list[list[Coord2d]]:
+) -> np.recarray:
     """
     Perform the transition from pixel to metric to flat coordinates.
 
@@ -53,7 +53,7 @@ def correct_frame(
     tol - tolerance parameter for iterative flattening phase, see
         trafo.h:correct_brown_affine_exact().
     """
-    corrected = [[Coord2d()] * frm.num_targets[i_cam] for i_cam in range(cpar.num_cams)]
+    corrected = np.recarray((cpar.num_cams, frm.num_targets[0]), dtype=Coord2d_dtype)
 
     for cam in range(cpar.num_cams):
         row = corrected[cam]
@@ -64,10 +64,12 @@ def correct_frame(
             )
             x, y = dist_to_flat(x, y, calib[cam], tol)
 
-            row[part] = Coord2d(frm.targets[cam][part].pnr, x, y)
+            row[part].pnr = frm.targets[cam][part].pnr
+            row[part].x = x
+            row[part].y = y
 
         # This is expected by find_candidate()
-        row.sort(key=lambda Coord2d: Coord2d.x)
+        row.sort(order="x")
 
     return corrected
 
@@ -207,7 +209,10 @@ class TestTwoCameraMatching(unittest.TestCase):
                     self.assertTrue(found_correct_pnr)
 
         # # continue to the consistent_pair matching test
-        con = [n_tupel() for _ in range(4 * 16)]
+        con = np.recarray((4 * 16), dtype=n_tupel_dtype)
+        con.p = np.zeros(4,)
+        con.corr = 0.0
+
         tusage = safely_allocate_target_usage_marks(cpar.num_cams)
 
         # high accept corr bcz of closeness to epipolar lines.

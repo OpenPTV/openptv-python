@@ -145,7 +145,8 @@ def find_candidate(
         # cand.append(Candidate(pnr=j, tol=d, corr=corr))
         cand.append(np.array([(j, d, corr)], dtype=Candidate_dtype)) # type: ignore
 
-        out = np.array(cand).view(np.recarray).flatten()
+
+    out = np.array(cand).view(np.recarray).flatten()
         # print(f"appended: {cand[-1]}")
 
     return out # type: ignore

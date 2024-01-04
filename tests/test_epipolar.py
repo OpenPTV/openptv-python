@@ -14,7 +14,13 @@ from math import isclose
 import numpy as np
 
 from openptv_python.calibration import Calibration, Exterior, Glass, Interior, ap_52
-from openptv_python.epi import Candidate, Coord2d, epi_mm, epi_mm_2D, epipolar_curve
+from openptv_python.epi import (
+    Candidate_dtype,
+    Coord2d_dtype,
+    epi_mm,
+    epi_mm_2D,
+    epipolar_curve,
+)
 from openptv_python.find_candidate import find_candidate
 from openptv_python.parameters import (
     ControlPar,
@@ -84,9 +90,9 @@ class TestEpipolarCurve(unittest.TestCase):
         test_mm = MultimediaPar(1, 1.0, [1.49, 0.0, 0.0], [5.0, 0.0, 0.0], 1.33)
 
         test_vpar = VolumePar(
-            (-250.0, 250.0),
-            (-100.0, -100.0),
-            (100.0, 100.0),
+            [-250.0, 250.0],
+            [-100.0, -100.0],
+            [100.0, 100.0],
             0.01,
             0.3,
             0.3,
@@ -154,9 +160,9 @@ class TestEpipolarCurve(unittest.TestCase):
         test_mm = MultimediaPar(1, 1.0, [1.0, 0.0, 0.0], [1.0, 0.0, 0.0], 1.0)
 
         test_vpar = VolumePar(
-            (-100.0, 100.0),
-            (-100.0, -100.0),
-            (100.0, 100.0),
+            [-100.0, 100.0],
+            [-100.0, -100.0],
+            [100.0, 100.0],
             0.01,
             0.3,
             0.3,
@@ -198,17 +204,22 @@ class TestFindCandidate(unittest.TestCase):
 
         # coord_2d is int pnr, double x,y
         # note that it's x-sorted by construction
-        test_crd = [
-            [6, 0.1, 0.1],
-            [3, 0.2, 0.8],
-            [4, 0.4, -1.1],
-            [1, 0.7, -0.1],
-            [2, 1.2, 0.3],
-            [0, 0.0, 0.0],
-            [5, 10.4, 0.1],
-        ]
+        # test_crd = np.array([
+        #     [6, 0.1, 0.1],
+        #     [3, 0.2, 0.8],
+        #     [4, 0.4, -1.1],
+        #     [1, 0.7, -0.1],
+        #     [2, 1.2, 0.3],
+        #     [0, 0.0, 0.0],
+        #     [5, 10.4, 0.1],
+        # ])
 
-        test_crd = [Coord2d(*x) for x in test_crd]
+        test_crd = np.recarray(7, dtype=Coord2d_dtype)
+        test_crd.pnr = np.array([6, 3, 4, 1, 2, 0, 5])
+        test_crd.x = np.array([0.1, 0.2, 0.4, 0.7, 1.2, 0.0, 10.4])
+        test_crd.y = np.array([0.1, 0.8, -1.1, -0.1, 0.3, 0.0, 0.1])
+
+
 
         # parameters of the particle for which we look for the candidates
         n = 10
@@ -234,8 +245,8 @@ class TestFindCandidate(unittest.TestCase):
             33,
         )
         test_cpar = ControlPar(4)
-        test_cpar.set_image_size([1280, 1024])
-        test_cpar.set_pixel_size([0.02, 0.02])
+        test_cpar.set_image_size((1280, 1024))
+        test_cpar.set_pixel_size((0.02, 0.02))
         test_cpar.mm = test_mm
 
         # the result is that the sensor size is 12.8 mm x 10.24 mm
@@ -273,13 +284,11 @@ class TestFindCandidate(unittest.TestCase):
         # 13: candidate 3: pnr 4, corr 676.000000, tol 0.636396
         # 13: candidate 4: pnr 5, corr 264.000000, tol 0.000000
 
-        expected = [
-            Candidate(pnr=0, corr=1156.0, tol=0.0),
-            Candidate(pnr=1, corr=784.0, tol=0.424264),
-            Candidate(pnr=3, corr=421.0, tol=0.565685),
-            Candidate(pnr=4, corr=676.000000, tol=0.636396),
-            Candidate(pnr=5, corr=264.000000, tol=0.000000),
-        ]
+        expected = np.recarray(5, dtype=Candidate_dtype)
+        expected.pnr = np.array([0, 1, 3, 4, 5])
+        expected.corr = np.array([1156.0, 784.0, 421.0, 676.0, 264.0])
+        expected.tol = np.array([0.0, 0.424264, 0.565685, 0.636396, 0.0])
+
 
         self.assertTrue(len(test_cand) == len(expected))
         for t, e in zip(test_cand, expected):

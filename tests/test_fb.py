@@ -1,9 +1,11 @@
 import os
 import unittest
 
+import numpy as np
+
 from openptv_python.constants import POSI
 from openptv_python.tracking_frame_buf import (
-    Corres,
+    Corres_dtype,
     Pathinfo,
     Target,
     compare_corres,
@@ -108,7 +110,7 @@ class TestReadPathFrame(unittest.TestCase):
         Reads a path frame without links and checks the correctness of corres and path information.
         Then, reads a path frame with links and checks again.
         """
-        cor_buf = [Corres()] * 80
+        cor_buf = np.recarray((80,), dtype=Corres_dtype)
         path_buf = [Pathinfo()] * 80
 
         # Correct values for particle 3
@@ -124,7 +126,10 @@ class TestReadPathFrame(unittest.TestCase):
         }
         path_correct = Pathinfo(**tmp)
 
-        c_correct = Corres(nr=3, p=[96, 66, 26, 26])
+        c_correct = np.recarray(1, dtype=Corres_dtype)
+        c_correct.nr = 3
+        c_correct.p = np.array([96, 66, 26, 26])
+
 
         file_base = "tests/testing_fodder/rt_is"
         linkage_base = "tests/testing_fodder/ptv_is"

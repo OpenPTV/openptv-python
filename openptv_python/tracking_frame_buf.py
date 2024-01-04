@@ -15,6 +15,7 @@ from .constants import (
     PREV_NONE,
     PRIO_DEFAULT,
     PT_UNUSED,
+    TR_UNUSED,
 )
 from .epi import Coord2d_dtype
 from .parameters import ControlPar
@@ -26,7 +27,7 @@ n_tupel_dtype = np.dtype([
 ])
 
 
-def quicksort_n_tupel(arr: np.ndarray) -> np.ndarray:
+def quicksort_n_tupel(arr: np.recarray) -> np.recarray:
     """
     Quicksorts a list of n_tupel instances based on the corr attribute.
 
@@ -40,7 +41,9 @@ def quicksort_n_tupel(arr: np.ndarray) -> np.ndarray:
     -------
       A list of n_tupel instances, sorted by the corr attribute.
     """
-    return np.sort(arr, order="corr")
+    # inline sorting
+    arr.sort(order="corr")
+    return arr
 
 
 
@@ -56,7 +59,7 @@ Corres_dtype = np.dtype([
     #     return self.nr == other.nr and np.all(self.p == other.p)
 
 
-def compare_corres(c1: np.ndarray, c2: np.ndarray) -> bool:
+def compare_corres(c1: np.recarray, c2: np.recarray) -> bool:
     """
     Compare two Corres instances.
 
@@ -69,7 +72,7 @@ def compare_corres(c1: np.ndarray, c2: np.ndarray) -> bool:
     -------
         True if the Corres instances are equal, False otherwise.
     """
-    return np.array_equal(c1, c2)
+    return (c1 == c2).all()
 
 
 @dataclass
@@ -317,7 +320,9 @@ class Frame:
         """
         self.path_info = [Pathinfo() for _ in range(max_targets)]
 
-        self.correspond = [np.recarray((1,), dtype=Corres_dtype) for _ in range(max_targets)]
+        self.correspond = np.recarray((max_targets), dtype=Corres_dtype)
+        self.correspond.p = TR_UNUSED
+        self.correspond.nr = 0
 
         self.targets = [[Target() for _ in range(max_targets)] for _ in range(num_cams)]
         # self.targets = [[] for _ in range(num_cams)]
@@ -689,7 +694,7 @@ def read_path_frame(
     linkage_file_base: str,
     prio_file_base: str,
     frame_num: int,
-) -> Tuple[List[np.recarray], List[Pathinfo]]: #List[Corres]
+) -> Tuple[np.recarray, List[Pathinfo]]: #List[Corres]
     """Read a rt_is frames from the disk.
 
         /* Reads rt_is files. these files contain both the path info and the
@@ -719,14 +724,14 @@ def read_path_frame(
         filein = open(fname, "r", encoding="utf-8")
     except IOError:
         print(f"Can't open ascii file: {fname}")
-        return [np.recarray(0,dtype=Corres_dtype)], []
+        return np.recarray(0, dtype=Corres_dtype), []
 
     # we do not need number of particles, reading till EOF
     n_particles = int(filein.readline())
     # print(f"Reading {n_particles} particles from {fname}")
     # cor_buf = [Corres() for _ in range(n_particles)] # we do not want empty lists
 
-    cor_buf = [np.recarray((0,), dtype=Corres_dtype) for _ in range(n_particles)] # we do not want empty lists
+    cor_buf = np.recarray((n_particles), dtype=Corres_dtype) # we do not want empty lists
 
     path_buf = [Pathinfo() for _ in range(n_particles)]
 
@@ -736,7 +741,7 @@ def read_path_frame(
             linkagein = open(fname, "r", encoding="utf-8")
         except IOError:
             print(f"Can't open linkage file: {fname}")
-            return [np.recarray(0, dtype=Corres_dtype)], []
+            return np.recarray(0, dtype=Corres_dtype), []
 
         linkagein.readline()
     else:
@@ -748,7 +753,7 @@ def read_path_frame(
             prioin = open(fname, "r", encoding="utf-8")
         except IOError:
             print(f"Can't open prio file: {fname}")
-            return [], []
+            return np.recarray(0, dtype=Corres_dtype), []
 
         prioin.readline()
     else:
@@ -781,7 +786,7 @@ def read_path_frame(
 
         vals = np.fromstring(line, dtype=float, sep=" ")
         cor_buf[targets].nr = targets + 1
-        cor_buf[targets].p = vals[-4:].astype(int).tolist()
+        cor_buf[targets].p = vals[-4:].astype(int)
         path_buf[targets].x = vals[1:-4]
 
         # print(cor_buf[targets].nr, cor_buf[targets].p, path_buf[targets].x)
@@ -798,7 +803,7 @@ def read_path_frame(
 
 
 def write_path_frame(
-    cor_buf: List[np.recarray], #List[Corres],
+    cor_buf: np.recarray, #List[Corres],
     path_buf: List[Pathinfo],
     num_parts: int,
     corres_file_base: str,

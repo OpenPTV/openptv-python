@@ -5,7 +5,7 @@ import numpy as np
 
 from openptv_python.constants import POSI
 from openptv_python.tracking_frame_buf import (
-    Corres,
+    Corres_dtype,
     compare_corres,
     compare_path_info,
     read_path_frame,
@@ -19,7 +19,8 @@ class TestReadPathFrame(unittest.TestCase):
     def test_read_path_frame_bard(self):
         """Tests the read_path_frame() function."""
         # Create a buffer for the corres structures.
-        cor_buf = [Corres() for _ in range(POSI)]
+        # cor_buf = [Corres() for _ in range(POSI)]
+        cor_buf = np.recarray(POSI, dtype=Corres_dtype)
 
         # Create a buffer for the path info structures.
         path_buf = [P() for _ in range(POSI)]
@@ -40,7 +41,8 @@ class TestReadPathFrame(unittest.TestCase):
             path_correct.decis[alt_link] = 0.0
             path_correct.linkdecis[alt_link] = -999
 
-        corres_correct = Corres(3, [96, 66, 26, 26])
+        corres_correct = np.array([(3, [96, 66, 26, 26])], dtype = Corres_dtype).view(np.recarray)
+
 
         # The base name of the correspondence file.
         file_base = "tests/testing_fodder/rt_is"
@@ -70,7 +72,7 @@ class TestReadPathFrame(unittest.TestCase):
         path_correct.prio = 0
 
         # Create a buffer for the path info structures.
-        cor_buf = [Corres() for _ in range(POSI)]
+        cor_buf = np.recarray(POSI, dtype=Corres_dtype)
         path_buf = [P() for _ in range(POSI)]
 
         # The base name of the linkage file.
@@ -95,7 +97,7 @@ class TestReadPathFrame(unittest.TestCase):
 
     def test_read_path_frame_chatgpt(self):
         """Tests the read_path_frame() function."""
-        cor_buf = [Corres() for _ in range(POSI)]
+        cor_buf = np.recarray(POSI, dtype=Corres_dtype)
         path_buf = [P() for _ in range(POSI)]
 
         # Correct values for particle 3
@@ -109,7 +111,9 @@ class TestReadPathFrame(unittest.TestCase):
         )
         path_correct.decis = [0.0] * POSI
         path_correct.linkdecis = [-999] * POSI
-        c_correct = Corres(nr=3, p=[96, 66, 26, 26])
+        c_correct = np.array([(3, [96, 66, 26, 26])],dtype=Corres_dtype).view(np.recarray)
+
+
 
         file_base = "tests/testing_fodder/rt_is"
         frame_num = 818
