@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from openptv_python.calibration import Exterior, Glass
+from openptv_python.calibration import Exterior
 from openptv_python.multimed import back_trans_point, trans_cam_point
 from openptv_python.parameters import MultimediaPar
 from openptv_python.vec_utils import vec_norm, vec_set
@@ -34,7 +34,7 @@ class TestTransformFunctions(unittest.TestCase):
         )
 
         # test_I = Interior(0.0, 0.0, 100.0)
-        test_G = Glass(0.0001, 0.00001, 1.0)
+        test_G = np.array((0.0001, 0.00001, 1.0))
         # test_addp = ap_52(0., 0., 0., 0., 0., 1., 0.)
         # test_cal = Calibration(test_Ex, test_I, test_G, test_addp)
 
@@ -77,7 +77,7 @@ class TestTransformFunctions(unittest.TestCase):
             dm=np.array([[1.0, 0.2, -0.3], [0.2, 1.0, 0.0], [-0.3, 0.0, 1.0]]),
         )
 
-        test_G = Glass(0.0, 0.0, 50.0)
+        test_G = np.array((0.0, 0.0, 50.0))
         # ap_52 test_addp = {0., 0., 0., 0., 0., 1., 0.};
         # Calibration test_cal = {test_Ex, test_I, test_G, test_addp};
 
@@ -86,11 +86,11 @@ class TestTransformFunctions(unittest.TestCase):
         Ex_t = Exterior()
         pos_t, cross_p, cross_c, Ex_t.z0 = trans_cam_point(test_Ex, test_mm, test_G, pos)
 
-        self.assertTrue(np.allclose(pos_t, np.r_[sep_norm, 0.0, -test_G.vec_z]))
-        self.assertTrue(np.allclose(cross_p, np.r_[pos[0], pos[1], test_G.vec_z]))
+        self.assertTrue(np.allclose(pos_t, np.r_[sep_norm, 0.0, -test_G[2]]))
+        self.assertTrue(np.allclose(cross_p, np.r_[pos[0], pos[1], test_G[2]]))
         self.assertTrue(
             np.allclose(
-                cross_c, np.r_[test_Ex.x0, test_Ex.y0, test_G.vec_z + test_mm.d[0]]
+                cross_c, np.r_[test_Ex.x0, test_Ex.y0, test_G[2] + test_mm.d[0]]
             )
         )
 

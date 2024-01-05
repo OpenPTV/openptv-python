@@ -27,6 +27,9 @@ def flat_image_coord(
     -------
         _type_: _description_
     """
+    if orig_pos.shape != (3,):
+        raise ValueError("orig_pos must be a 3D vector")
+
     cal_t = Calibration(mmlut = cal.mmlut)
 
     # This block calculate 3D position in an imaginary air-filled space,

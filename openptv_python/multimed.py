@@ -4,7 +4,7 @@ from typing import List, Tuple
 import numpy as np
 from numba import njit
 
-from .calibration import Calibration, Exterior, Glass
+from .calibration import Calibration, Exterior
 from .parameters import (
     ControlPar,
     MultimediaPar,
@@ -116,7 +116,7 @@ def fast_multimed_r_nlay(
 
 
 def trans_cam_point(
-    ex: Exterior, mm: MultimediaPar, glass: Glass, pos: np.ndarray
+    ex: Exterior, mm: MultimediaPar, glass_dir: np.ndarray, pos: np.ndarray
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, float]:
     """Transform the camera and point coordinates to the glass coordinates.
 
@@ -128,14 +128,13 @@ def trans_cam_point(
     pos_t, cross_p, cross_c = trans_cam_point(ex, mm, glass, pos, ex_t)
     """
     origin = np.array([ex.x0, ex.y0, ex.z0], dtype=np.float64)
-    glass_dir = np.array([glass.vec_x, glass.vec_y, glass.vec_z], dtype=np.float64)
     pos = pos.astype(np.float64)
 
     return fast_trans_cam_point(
         origin, mm.d[0], glass_dir, pos)
 
 
-@njit(fastmath=True)
+# @njit(fastmath=True)
 def fast_trans_cam_point(
     primary_point: np.ndarray,
     d: float,
@@ -175,7 +174,7 @@ def fast_trans_cam_point(
 def back_trans_point(
     pos_t: np.ndarray,
     mm: MultimediaPar,
-    glass: Glass,
+    glass: np.ndarray,
     cross_p: np.ndarray,
     cross_c: np.ndarray,
 ) -> np.ndarray:
@@ -194,12 +193,10 @@ def back_trans_point(
     -------
         A numpy array representing the position of the point in the camera coordinate system.
     """
-    glass_direction = np.array([glass.vec_x, glass.vec_y, glass.vec_z], dtype=np.float64)
-
-    return fast_back_trans_point(glass_direction, mm.d[0], cross_c, cross_p, pos_t)
+    return fast_back_trans_point(glass, mm.d[0], cross_c, cross_p, pos_t)
 
 @njit
-def fast_back_trans_point(glass_direction: np.ndarray, d: float, cross_c, cross_p, pos_t) -> np.ndarray:
+def fast_back_trans_point(glass_direction: np.recarray, d: float, cross_c, cross_p, pos_t) -> np.ndarray:
     """Run numba faster version of back projection."""
     # Calculate the glass direction vector
 

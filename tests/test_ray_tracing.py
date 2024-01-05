@@ -3,7 +3,12 @@ import unittest
 
 import numpy as np
 
-from openptv_python.calibration import Calibration, Exterior, Glass, Interior, ap_52
+from openptv_python.calibration import (
+    Calibration,
+    Exterior,
+    Interior,
+    ap_52,
+)
 from openptv_python.parameters import ControlPar
 from openptv_python.parameters import MultimediaPar as mm_np
 from openptv_python.ray_tracing import ray_tracing
@@ -43,7 +48,7 @@ class TestRayTracing(unittest.TestCase):
         test_I = Interior(0.0, 0.0, 100.0)
 
         # The glass parameters
-        test_G = Glass(0.0001, 0.00001, 1.0)
+        test_G = np.array((0.0001, 0.00001, 1.0))
 
         # The addp parameters
         test_addp = ap_52(0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
@@ -55,8 +60,8 @@ class TestRayTracing(unittest.TestCase):
         test_mm = mm_np(3, 1.0, [1.49, 0.0, 0.0], [5.0, 0.0, 0.0], 1.33)
 
         # Expected output values
-        expected_X = [110.406944, 88.325788, 0.988076]
-        expected_a = [0.387960, 0.310405, -0.867834]
+        expected_X = np.array([110.406944, 88.325788, 0.988076])
+        expected_a = np.array([0.387960, 0.310405, -0.867834])
 
         # Call the ray_tracing() function
         actual_X, actual_a = ray_tracing(x, y, test_cal, test_mm)

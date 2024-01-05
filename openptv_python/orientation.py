@@ -125,7 +125,7 @@ def weighted_dumbbell_precision(
         dtot += tmp
 
         if pt % 2 == 1:
-            dist = np.linalg.norm(res[0] - res[1])
+            dist = float(np.linalg.norm(res[0] - res[1]))
             len_err_tot += 1.0 - float(
                 db_length / dist if dist > db_length else dist / db_length
             )
@@ -275,18 +275,18 @@ def orient(
     else:
         numbers = 16
 
-    glass_dir = vec_set(cal.glass_par.vec_x, cal.glass_par.vec_y, cal.glass_par.vec_z)
+    glass_dir = cal.glass_par
     nGl = vec_norm(glass_dir)
 
-    e1_x = 2 * cal.glass_par.vec_z - 3 * cal.glass_par.vec_x
-    e1_y = 3 * cal.glass_par.vec_x - 1 * cal.glass_par.vec_z
-    e1_z = 1 * cal.glass_par.vec_y - 2 * cal.glass_par.vec_y
+    e1_x = 2 * cal.glass_par[2] - 3 * cal.glass_par[0]
+    e1_y = 3 * cal.glass_par[0] - 1 * cal.glass_par[2]
+    e1_z = 1 * cal.glass_par[1] - 2 * cal.glass_par[1]
     tmp_vec = vec_set(e1_x, e1_y, e1_z)
     e1 = unit_vector(tmp_vec)
 
-    e2_x = e1_y * cal.glass_par.vec_z - e1_z * cal.glass_par.vec_x
-    e2_y = e1_z * cal.glass_par.vec_x - e1_x * cal.glass_par.vec_z
-    e2_z = e1_x * cal.glass_par.vec_y - e1_y * cal.glass_par.vec_y
+    e2_x = e1_y * cal.glass_par[2] - e1_z * cal.glass_par[0]
+    e2_y = e1_z * cal.glass_par[0] - e1_x * cal.glass_par[2]
+    e2_z = e1_x * cal.glass_par[1] - e1_y * cal.glass_par[1]
     tmp_vec = vec_set(e2_x, e2_y, e2_z)
     e2 = unit_vector(tmp_vec)
 
@@ -309,9 +309,9 @@ def orient(
     ]
 
     # backup for changing back and forth
-    safety_x = cal.glass_par.vec_x
-    safety_y = cal.glass_par.vec_y
-    safety_z = cal.glass_par.vec_z
+    safety_x = cal.glass_par[0]
+    safety_y = cal.glass_par[1]
+    safety_z = cal.glass_par[2]
 
     itnum = 0
     stopflag = False
@@ -391,46 +391,46 @@ def orient(
             #     xp, yp = 0.0, 0.0
             #     xc, yc = fix[i][0], fix[i][1]
             #     al, be, ga = cal.alpha, cal.beta, cal.gamma
-            #     safety_x, safety_y, safety_z = cal.glass_par.vec_x, cal.glass_par.vec_y, cal.glass_par.vec_z
+            #     safety_x, safety_y, safety_z = cal.glass_par[0], cal.glass_par[1], cal.glass_par[2]
             #     nGl = cal.glass_par.n / cal.air_par.n
 
             cal.int_par.cc -= dm
 
             # al += dm
-            cal.glass_par.vec_x += e1[0] * nGl * dm
-            cal.glass_par.vec_y += e1[1] * nGl * dm
-            cal.glass_par.vec_z += e1[2] * nGl * dm
+            cal.glass_par[0] += e1[0] * nGl * dm
+            cal.glass_par[1] += e1[1] * nGl * dm
+            cal.glass_par[2] += e1[2] * nGl * dm
             xpd, ypd = img_coord(fix[i], cal, cpar.mm)
             X[n][16] = (xpd - xp) / dm
             X[n + 1][16] = (ypd - yp) / dm
             # al -= dm
-            cal.glass_par.vec_x = safety_x
-            cal.glass_par.vec_y = safety_y
-            cal.glass_par.vec_z = safety_z
+            cal.glass_par[0] = safety_x
+            cal.glass_par[1] = safety_y
+            cal.glass_par[2] = safety_z
 
             # be += dm
-            cal.glass_par.vec_x += e2[0] * nGl * dm
-            cal.glass_par.vec_y += e2[1] * nGl * dm
-            cal.glass_par.vec_z += e2[2] * nGl * dm
+            cal.glass_par[0] += e2[0] * nGl * dm
+            cal.glass_par[1] += e2[1] * nGl * dm
+            cal.glass_par[2] += e2[2] * nGl * dm
             xpd, ypd = img_coord(fix[i], cal, cpar.mm)
             X[n][17] = (xpd - xp) / dm
             X[n + 1][17] = (ypd - yp) / dm
             # be -= dm
-            cal.glass_par.vec_x = safety_x
-            cal.glass_par.vec_y = safety_y
-            cal.glass_par.vec_z = safety_z
+            cal.glass_par[0] = safety_x
+            cal.glass_par[1] = safety_y
+            cal.glass_par[2] = safety_z
 
             # ga += dm
-            cal.glass_par.vec_x += cal.glass_par.vec_x * nGl * dm
-            cal.glass_par.vec_y += cal.glass_par.vec_y * nGl * dm
-            cal.glass_par.vec_z += cal.glass_par.vec_z * nGl * dm
+            cal.glass_par[0] += cal.glass_par[0] * nGl * dm
+            cal.glass_par[1] += cal.glass_par[1] * nGl * dm
+            cal.glass_par[2] += cal.glass_par[2] * nGl * dm
             xpd, ypd = img_coord(fix[i], cal, cpar.mm)
             X[n][18] = (xpd - xp) / dm
             X[n + 1][18] = (ypd - yp) / dm
             # ga -= dm
-            cal.glass_par.vec_x = safety_x
-            cal.glass_par.vec_y = safety_y
-            cal.glass_par.vec_z = safety_z
+            cal.glass_par[0] = safety_x
+            cal.glass_par[1] = safety_y
+            cal.glass_par[2] = safety_z
 
             y[n] = xc - xp
             y[n + 1] = yc - yp
@@ -543,12 +543,12 @@ def orient(
         cal.added_par.she += beta[15]
 
         if flags.interfflag:
-            cal.glass_par.vec_x += e1[0] * nGl * beta[16]
-            cal.glass_par.vec_y += e1[1] * nGl * beta[16]
-            cal.glass_par.vec_z += e1[2] * nGl * beta[16]
-            cal.glass_par.vec_x += e2[0] * nGl * beta[17]
-            cal.glass_par.vec_y += e2[1] * nGl * beta[17]
-            cal.glass_par.vec_z += e2[2] * nGl * beta[17]
+            cal.glass_par[0] += e1[0] * nGl * beta[16]
+            cal.glass_par[1] += e1[1] * nGl * beta[16]
+            cal.glass_par[2] += e1[2] * nGl * beta[16]
+            cal.glass_par[0] += e2[0] * nGl * beta[17]
+            cal.glass_par[1] += e2[1] * nGl * beta[17]
+            cal.glass_par[2] += e2[2] * nGl * beta[17]
 
     # def compute_residuals(X, y, beta, n_obs, numbers, NPAR, XPX, P, cal, cal_in, stopflag):
     # Xbeta = np.zeros((n_obs, 1))

@@ -9,7 +9,6 @@ import numpy as np
 from openptv_python.calibration import (
     Calibration,
     Exterior,
-    Glass,
     Interior,
     ap_52,
     compare_addpar,
@@ -46,7 +45,7 @@ class TestCalibration(unittest.TestCase):
 
         Ext = Exterior(x0=1.0, y0=3.0, z0=5.0, omega=2.0, phi=4.0, kappa=6.0)
         In = Interior(xh=3.0, yh=9.0, cc=15.0)
-        G = Glass(vec_x=glass[0], vec_y=glass[1], vec_z=glass[2])
+        G = np.array(glass)
         addpar = ap_52(
             k1=rad_dist[0],
             k2=rad_dist[1],
@@ -70,7 +69,7 @@ class TestCalibration(unittest.TestCase):
         np.testing.assert_array_equal(rad_dist, cal.get_radial_distortion())
         np.testing.assert_array_equal(decent, cal.get_decentering())
         np.testing.assert_array_equal(affine, cal.get_affine())
-        np.testing.assert_array_equal(glass, cal.get_glass_vec())
+        np.testing.assert_array_equal(G, cal.get_glass_vec())
 
     def test_calibration_instantiation(self):
         """Filling a calibration object by reading ori files."""
@@ -94,7 +93,7 @@ class TestCalibration(unittest.TestCase):
     def test_set_pos(self):
         """Set exterior position, only for admissible values."""
         # test set_pos() by passing a np array of 3 elements
-        new_np = [111.1111, 222.2222, 333.3333]
+        new_np = np.r_[111.1111, 222.2222, 333.3333]
         self.cal.set_pos(new_np)
 
         # test getting position and assert that position is equal to set position
@@ -154,11 +153,11 @@ class TestCalibration(unittest.TestCase):
 
     def test_set_glass(self):
         """Set glass vector, only for admissible values."""
-        new_gv = [1.0, 2.0, 3.0]
-        self.cal.set_glass_vec(new_gv)
+        new_gv = np.array([1.0, 2.0, 3.0])
+        self.cal.glass_par = new_gv
 
         np.testing.assert_array_equal(new_gv, self.cal.get_glass_vec())
-        self.assertRaises(ValueError, self.cal.set_glass_vec, [0,0])
+        self.assertRaises(ValueError, self.cal.set_glass_vec, [0, 0])
         self.assertRaises(ValueError, self.cal.set_glass_vec, [1])
 
 

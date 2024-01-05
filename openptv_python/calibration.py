@@ -1,10 +1,12 @@
 """Calibration data structures and functions."""
 
 import pathlib
-from typing import List, Optional
+from typing import Optional
 
 import numpy as np
 from numba import njit
+
+from openptv_python.vec_utils import vec_set
 
 
 @njit
@@ -50,11 +52,19 @@ class Exterior:
         """Set the rotation matrix of the camera."""
         self.dm = dm
 
-    def set_pos(self, pos: List[float]) -> None:
+    def set_pos(self, pos: np.ndarray) -> None:
         """Set the position of the camera."""
+        pos = np.array(pos, dtype = np.float64)
+
+        if pos.shape != (3,):
+            raise ValueError(
+                "Illegal array argument "
+                + str(pos)
+                + " for x, y, z. Expected array/list of 3 numbers"
+            )
         self.x0, self.y0, self.z0 = pos
 
-    def set_angles(self, angles: List[float]) -> None:
+    def set_angles(self, angles: np.ndarray) -> None:
         """Set the angles of the camera."""
         self.omega, self.phi, self.kappa = angles
 
@@ -91,18 +101,29 @@ class Interior:
         self.cc = cc
 
 
-class Glass:
-    """Glass data structure."""
+# class Glass:
+#     """Glass data structure."""
 
-    def __init__(self, vec_x=0.0, vec_y=0.0, vec_z=1.0):
-        self.vec_x = vec_x
-        self.vec_y = vec_y
-        self.vec_z = vec_z
+#     def __init__(self, vec_x=0.0, vec_y=0.0, vec_z=1.0):
+#         self.vec_x = vec_x
+#         self.vec_y = vec_y
+#         self.vec_z = vec_z
 
-    def set_glass_vec(self, vec: np.ndarray) -> None:
-        """Set the glass vector."""
-        self.vec_x, self.vec_y, self.vec_z = vec
+#     def set_glass_vec(self, vec: np.ndarray) -> None:
+#         """Set the glass vector."""
+#         self.vec_x, self.vec_y, self.vec_z = vec
 
+Glass_dtype = np.dtype(
+    [
+        ("vec_x", np.float64),
+        ("vec_y", np.float64),
+        ("vec_z", np.float64),
+    ]
+)
+
+def default_glass_vec() -> np.ndarray:
+    """Return default glass vector."""
+    return vec_set(0.0, 0.0, 1.0)
 
 class ap_52:
     """Additional parameters for distortion correction."""
@@ -153,7 +174,7 @@ class Calibration:
         if int_par is None:
             int_par = Interior()
         if glass_par is None:
-            glass_par = Glass()
+            glass_par = default_glass_vec()
         if added_par is None:
             added_par = ap_52()
         if mmlut is None:
@@ -187,8 +208,8 @@ class Calibration:
 
         with open(ori_file, "r", encoding="utf-8") as fp:
             # Exterior
-            ret.set_pos([float(x) for x in fp.readline().split()])
-            ret.set_angles([float(x) for x in fp.readline().split()])
+            ret.set_pos(np.array([float(x) for x in fp.readline().split()]))
+            ret.set_angles(np.array([float(x) for x in fp.readline().split()]))
 
             # ret.ext_par.set_pos(np.fromstring(fp.readline(), dtype=float, sep="\t"))
             # ret.ext_par.set_angles(np.fromstring(fp.readline(), dtype=float, sep="\t"))
@@ -215,8 +236,7 @@ class Calibration:
             # Glass
             # skip
             fp.readline()
-            ret.glass_par.set_glass_vec(
-                np.array([float(x) for x in fp.readline().split()]))
+            ret.glass_par = np.array([float(x) for x in fp.readline().split()])
 
         # double-check that we have the correct rotation matrix
         # self.ext_par.rotation_matrix()
@@ -261,34 +281,30 @@ class Calibration:
             raise ValueError("Illegal argument for exterior rotation matrix")
         self.ext_par.set_rotation_matrix(dm)
 
-    def set_pos(self, x_y_z_np: List[float]) -> None:
+    def set_pos(self, x_y_z_np: np.ndarray) -> None:
         """
         Set exterior position.
 
         Parameter: x_y_z_np - numpy array of 3 elements for x, y, z.
         """
-        if len(x_y_z_np) != 3:
-            raise ValueError(
-                "Illegal array argument "
-                + str(x_y_z_np)
-                + " for x, y, z. Expected array/list of 3 numbers"
-            )
         self.ext_par.set_pos(x_y_z_np)
 
     def get_pos(self):
         """Return array of 3 elements representing exterior's x, y, z."""
         return np.r_[self.ext_par.x0, self.ext_par.y0, self.ext_par.z0]
 
-    def set_angles(self, o_p_k_np: List[float]) -> None:
+    def set_angles(self, o_p_k_np: np.ndarray) -> None:
         """
         Set angles (omega, phi, kappa) and recalculates Dmatrix accordingly.
 
         Parameter: o_p_k_np - array of 3 elements.
         """
-        if len(o_p_k_np) != 3:
+        o_p_k_np = np.array(o_p_k_np, dtype=np.float64)
+
+        if o_p_k_np.shape != (3,):
             raise ValueError(
                 f"Illegal array argument {o_p_k_np} for "
-                "omega, phi, kappa. Expected array/list of 3 numbers"
+                "omega, phi, kappa. Expected array or list of 3 float"
             )
         self.ext_par.set_angles(o_p_k_np)
 
@@ -394,14 +410,16 @@ class Calibration:
         ---------
         gvec - a 3-element array, the glass vector.
         """
-        if len(gvec) != 3:
-            raise ValueError("Expected a 3-element list")
+        gvec = np.array(gvec, dtype=np.float64)
 
-        self.glass_par.set_glass_vec(gvec)
+        if gvec.shape != (3,):
+            raise ValueError("Expected a 3-element list or array")
 
-    def get_glass_vec(self):
-        """Return the glass vector, a 3-element array."""
-        return [self.glass_par.vec_x, self.glass_par.vec_y, self.glass_par.vec_z]
+        self.glass_par = gvec
+
+    def get_glass_vec(self) -> np.ndarray:
+        """Return the glass vector, a 3-element array of Glass_dtype."""
+        return self.glass_par
 
     def set_added_par(self, listpar: np.ndarray | list):
         """Set added par from an numpy array of parameters."""
@@ -423,7 +441,7 @@ class Calibration:
 def write_ori(
     ext_par: Exterior,
     int_par: Interior,
-    glass: Glass,
+    glass: np.ndarray,
     added_par: ap_52,
     filename: str,
     add_file: Optional[str],
@@ -438,7 +456,7 @@ def write_ori(
             fp.write(f"{row[0]:.7f} {row[1]:.7f} {row[2]:.7f}\n")
         fp.write(f"\n{int_par.xh:.4f} {int_par.yh:.4f}\n{int_par.cc:.4f}\n")
         fp.write(
-            f"\n{glass.vec_x:.15f} {glass.vec_y:.15f} {glass.vec_z:.15f}\n")
+            f"\n{glass[0]:.15f} {glass[1]:.15f} {glass[2]:.15f}\n")
 
     if add_file is None:
         return success
@@ -491,7 +509,7 @@ def compare_interior(i1: Interior, i2: Interior) -> bool:
     return i1.xh == i2.xh and i1.yh == i2.yh and i1.cc == i2.cc
 
 
-def compare_glass(g1: Glass, g2: Glass):
+def compare_glass(g1: np.ndarray, g2: np.ndarray) -> bool:
     """Compare `Glass` parameters.
 
     objects that need to be compared. The function then returns `1` if all
@@ -500,14 +518,14 @@ def compare_glass(g1: Glass, g2: Glass):
 
     Args:
     ----
-        g1 (_type_): _description_
-        g2 (_type_): _description_
+        g1 (Glass_dtype): vector pointing from the 3D origin to the surface of the glass
+        g2 (Glass_dtype): another vector for comparison
 
     Returns
     -------
-        _type_: _description_
+        bool: True if vectors are identical, False otherwise
     """
-    return g1.vec_x == g2.vec_x and g1.vec_y == g2.vec_y and g1.vec_z == g2.vec_z
+    return np.array_equal(g1, g2)
 
 
 def compare_calibration(c1: Calibration, c2: Calibration) -> bool:

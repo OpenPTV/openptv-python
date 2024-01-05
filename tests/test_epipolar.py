@@ -13,7 +13,12 @@ from math import isclose
 
 import numpy as np
 
-from openptv_python.calibration import Calibration, Exterior, Glass, Interior, ap_52
+from openptv_python.calibration import (
+    Calibration,
+    Exterior,
+    Interior,
+    ap_52,
+)
 from openptv_python.epi import (
     Candidate_dtype,
     Coord2d_dtype,
@@ -42,7 +47,6 @@ class TestEpipolarCurve(unittest.TestCase):
         add_file = "tests/testing_folder/calibration/cam1.tif.addpar"
 
         orig_cal = Calibration().from_file(ori_tmpl, add_file)
-
 
         cam_num = 3
         ori_tmpl = f"tests/testing_folder/calibration/sym_cam{cam_num}.tif.ori"
@@ -76,18 +80,20 @@ class TestEpipolarCurve(unittest.TestCase):
         line = epipolar_curve(
             mid - np.r_[100.0, 0.0], orig_cal, proj_cal, 5, cpar, vpar
         )
-        np.testing.assert_array_equal(np.argsort(line[:, 0]), np.arange(5)[::-1])
+        np.testing.assert_array_equal(
+            np.argsort(line[:, 0]), np.arange(5)[::-1])
         self.assertTrue(np.all(abs(line[:, 1] - mid[1]) < 1e-6))
 
     def test_epi_mm_2D(self):
         """Test the epi_mm_2D function."""
         test_Ex = Exterior(0.0, 0.0, 100.0, 0.0, 0.0, 0.0)
         test_I = Interior(0.0, 0.0, 100.0)
-        test_G = Glass(0.0, 0.0, 50.0)
+        test_G = np.array((0.0, 0.0, 50.0))
         test_addp = ap_52(0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
         test_cal = Calibration(test_Ex, test_I, test_G, test_addp)
 
-        test_mm = MultimediaPar(1, 1.0, [1.49, 0.0, 0.0], [5.0, 0.0, 0.0], 1.33)
+        test_mm = MultimediaPar(1, 1.0, [1.49, 0.0, 0.0], [
+                                5.0, 0.0, 0.0], 1.33)
 
         test_vpar = VolumePar(
             [-250.0, 250.0],
@@ -120,18 +126,19 @@ class TestEpipolarCurve(unittest.TestCase):
         """Test the epi_mm function."""
         test_Ex = Exterior(10.0, 0.0, 100.0, 0.0, -0.01, 0.0)
         test_I = Interior(0.0, 0.0, 100.0)
-        test_G = Glass(0.0, 0.0, 50.0)
+        test_G = np.array((0.0, 0.0, 50.0))
         test_addp = ap_52(0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
         test_cal_1 = Calibration(test_Ex, test_I, test_G, test_addp)
 
         test_Ex_2 = Exterior(-10.0, 0.0, 100.0, 0.0, 0.01, 0.0)
         test_cal_2 = Calibration(test_Ex_2, test_I, test_G, test_addp)
 
-        test_mm = MultimediaPar(1, 1.0, [1.49, 0.0, 0.0], [5.0, 0.0, 0.0], 1.33)
+        test_mm = MultimediaPar(1, 1.0, [1.49, 0.0, 0.0], [
+                                5.0, 0.0, 0.0], 1.33)
 
         test_vpar = VolumePar(
-            [-250.0, 250.0], [-50.0, -50.0], [50.0, 50.0], \
-                0.01, 0.3, 0.3, 0.01, 1.0, 33
+            [-250.0, 250.0], [-50.0, -50.0], [50.0, 50.0],
+            0.01, 0.3, 0.3, 0.01, 1.0, 33
         )
 
         x = 10.0
@@ -150,7 +157,7 @@ class TestEpipolarCurve(unittest.TestCase):
         """Test the epi_mm function."""
         test_Ex = Exterior(0.0, 0.0, 100.0, 0.0, 0.0, 0.0)
         test_I = Interior(0.0, 0.0, 100.0)
-        test_G = Glass(0.0, 0.0, 50.0)
+        test_G = np.array((0.0, 0.0, 50.0))
         test_addp = ap_52(0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
         test_cal_1 = Calibration(test_Ex, test_I, test_G, test_addp)
 
@@ -219,8 +226,6 @@ class TestFindCandidate(unittest.TestCase):
         test_crd.x = np.array([0.1, 0.2, 0.4, 0.7, 1.2, 0.0, 10.4])
         test_crd.y = np.array([0.1, 0.8, -1.1, -0.1, 0.3, 0.0, 0.1])
 
-
-
         # parameters of the particle for which we look for the candidates
         n = 10
         nx = 3
@@ -229,10 +234,11 @@ class TestFindCandidate(unittest.TestCase):
 
         test_Ex = Exterior(0.0, 0.0, 100.0, 0.0, 0.0, 0.0)
         test_I = Interior(0.0, 0.0, 100.0)
-        test_G = Glass(0.0, 0.0, 50.0)
+        test_G = np.array((0.0, 0.0, 50.0))
         test_addp = ap_52(0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
         test_cal = Calibration(test_Ex, test_I, test_G, test_addp)
-        test_mm = MultimediaPar(1, 1.0, [1.49, 0.0, 0.0], [5.0, 0.0, 0.0], 1.33)
+        test_mm = MultimediaPar(1, 1.0, [1.49, 0.0, 0.0], [
+                                5.0, 0.0, 0.0], 1.33)
         test_vpar = VolumePar(
             [-250.0, 250.0],
             [-100.0, -100.0],
@@ -288,7 +294,6 @@ class TestFindCandidate(unittest.TestCase):
         expected.pnr = np.array([0, 1, 3, 4, 5])
         expected.corr = np.array([1156.0, 784.0, 421.0, 676.0, 264.0])
         expected.tol = np.array([0.0, 0.424264, 0.565685, 0.636396, 0.0])
-
 
         self.assertTrue(len(test_cand) == len(expected))
         for t, e in zip(test_cand, expected):

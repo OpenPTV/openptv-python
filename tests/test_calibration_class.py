@@ -6,7 +6,6 @@ import numpy as np
 from openptv_python.calibration import (
     Calibration,
     Exterior,
-    Glass,
     Interior,
     ap_52,
     mm_lut,
@@ -28,10 +27,7 @@ class TestCalibrationClass(unittest.TestCase):
 
     def test_glass_initialization(self):
         """Test glass parameters initialization."""
-        glass = self.cal.glass_par
-        assert glass.vec_x == 0.0
-        assert glass.vec_y == 0.0
-        assert glass.vec_z == 1.0
+        assert (np.all(self.cal.glass_par == np.array([0.0, 0.0, 1.0])))
 
     def test_ap_52_initialization(self):
         """Test ap_52 parameters initialization."""
@@ -59,7 +55,7 @@ class TestCalibrationClass(unittest.TestCase):
         """Test calibration parameters initialization."""
         assert isinstance(self.cal.ext_par, Exterior)
         assert isinstance(self.cal.int_par, Interior)
-        assert isinstance(self.cal.glass_par, Glass)
+        assert isinstance(self.cal.glass_par, np.ndarray)
         assert isinstance(self.cal.added_par, ap_52)
         assert isinstance(self.cal.mmlut, mm_lut)
 

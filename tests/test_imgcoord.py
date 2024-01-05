@@ -1,6 +1,13 @@
 import unittest
 
-from openptv_python.calibration import Calibration, Exterior, Glass, Interior, ap_52
+import numpy as np
+
+from openptv_python.calibration import (
+    Calibration,
+    Exterior,
+    Interior,
+    ap_52,
+)
 from openptv_python.imgcoord import flat_image_coord
 from openptv_python.parameters import MultimediaPar
 from openptv_python.vec_utils import vec_set
@@ -15,7 +22,7 @@ class TestFlatCenteredCam(unittest.TestCase):
         cal = Calibration(
             ext_par=Exterior(0, 0, 40, 0, 0, 0, [[1, 0, 0], [0, 1, 0], [0, 0, 1]]),
             int_par=Interior(0, 0, 10),
-            glass_par=Glass(0, 0, 20),
+            glass_par=np.array((0., 0., 20.)),
             added_par=ap_52(0, 0, 0, 0, 0, 1, 0),
         )
         mm = MultimediaPar(  # All in air, simplest case.

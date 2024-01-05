@@ -50,7 +50,7 @@ def ray_tracing(
             _type_: _description_
     """
     primary_point = np.r_[cal.ext_par.x0, cal.ext_par.y0, cal.ext_par.z0]
-    glass = np.r_[cal.glass_par.vec_x, cal.glass_par.vec_y, cal.glass_par.vec_z]
+    glass = cal.glass_par
     return fast_ray_tracing(
         x,
         y,

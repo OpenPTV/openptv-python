@@ -2,7 +2,13 @@ import unittest
 
 import numpy as np
 
-from openptv_python.calibration import Calibration, Exterior, Glass, Interior, ap_52
+from openptv_python.calibration import (
+    Calibration,
+    Exterior,
+    Glass_dtype,
+    Interior,
+    ap_52,
+)
 from openptv_python.multimed import multimed_r_nlay
 from openptv_python.parameters import MultimediaPar
 
@@ -23,7 +29,7 @@ class TestMultimedRnlay(unittest.TestCase):
         )
 
         test_I = Interior(0.0, 0.0, 100.0)
-        test_G = Glass(0.0001, 0.00001, 1.0)
+        test_G = np.array([(0.0001, 0.00001, 1.0)], dtype=Glass_dtype).view(np.recarray)
         test_addp = ap_52(0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
         test_cal = Calibration(
             test_Ex, test_I, test_G, test_addp
