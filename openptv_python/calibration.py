@@ -100,27 +100,6 @@ class Interior:
         """Set the back focal distance of the camera."""
         self.cc = cc
 
-
-# class Glass:
-#     """Glass data structure."""
-
-#     def __init__(self, vec_x=0.0, vec_y=0.0, vec_z=1.0):
-#         self.vec_x = vec_x
-#         self.vec_y = vec_y
-#         self.vec_z = vec_z
-
-#     def set_glass_vec(self, vec: np.ndarray) -> None:
-#         """Set the glass vector."""
-#         self.vec_x, self.vec_y, self.vec_z = vec
-
-Glass_dtype = np.dtype(
-    [
-        ("vec_x", np.float64),
-        ("vec_y", np.float64),
-        ("vec_z", np.float64),
-    ]
-)
-
 def default_glass_vec() -> np.ndarray:
     """Return default glass vector."""
     return vec_set(0.0, 0.0, 1.0)
@@ -174,7 +153,7 @@ class Calibration:
         if int_par is None:
             int_par = Interior()
         if glass_par is None:
-            glass_par = default_glass_vec()
+            glass_par = np.array([0.0, 0.0, 1.0])
         if added_par is None:
             added_par = ap_52()
         if mmlut is None:
@@ -418,7 +397,7 @@ class Calibration:
         self.glass_par = gvec
 
     def get_glass_vec(self) -> np.ndarray:
-        """Return the glass vector, a 3-element array of Glass_dtype."""
+        """Return the glass vector, a 3-element array of float."""
         return self.glass_par
 
     def set_added_par(self, listpar: np.ndarray | list):
@@ -518,8 +497,8 @@ def compare_glass(g1: np.ndarray, g2: np.ndarray) -> bool:
 
     Args:
     ----
-        g1 (Glass_dtype): vector pointing from the 3D origin to the surface of the glass
-        g2 (Glass_dtype): another vector for comparison
+        g1 (float array): vector pointing from the 3D origin to the surface of the glass
+        g2 (float array): another vector for comparison
 
     Returns
     -------
