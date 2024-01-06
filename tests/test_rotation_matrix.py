@@ -1,84 +1,87 @@
 import numpy as np
 import pytest
 
-from openptv_python.calibration import Exterior
+from openptv_python.calibration import Exterior, rotation_matrix
 
 
 # Define some test fixtures
 @pytest.fixture
 def exterior():
     """Create an exterior object with all angles set to zero."""
-    return Exterior(
-        x0=0,
-        y0=0,
-        z0=0,
-        phi=0,
-        omega=0,
-        kappa=0,
-        dm=np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]),
-    )
+    return Exterior.copy()
 
 
 # Define some test cases
 def test_rotation_matrix_0(exterior):
     """Test when all angles are zero."""
     # Test when all angles are zero
-    exterior.update_rotation_matrix()
+    rotation_matrix(exterior)
     # rotation_matrix(exterior)
-    assert np.all(exterior.dm == [[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+    assert np.allclose(exterior[0]['dm'], np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]))
 
 
 def test_rotation_matrix_pi_2(exterior):
-    # Test when all angles are pi/2
-    exterior.phi = np.pi / 2
-    exterior.omega = np.pi / 2
-    exterior.kappa = np.pi / 2
-    exterior.update_rotation_matrix()
+    """Test when all angles are pi/2."""
+    exterior["phi"] = np.pi / 2
+    exterior["omega"] = np.pi / 2
+    exterior["kappa"] = np.pi / 2
+    rotation_matrix(exterior)
     # rotation_matrix(exterior)
-    assert np.allclose(exterior.dm, np.array([[0, 0, 1], [0, -1, 0], [1, 0, 0]]))
+    assert np.allclose(exterior[0]["dm"], np.array([[0, 0, 1], [0, -1, 0], [1, 0, 0]]))
 
 
 def test_rotation_matrix_pi(exterior):
-    # Test when all angles are pi
-    exterior.phi = np.pi
-    exterior.omega = np.pi
-    exterior.kappa = np.pi
-    exterior.update_rotation_matrix()
-    assert np.allclose(exterior.dm, np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]))
+    """Test when all angles are pi."""
+    exterior['phi'] = np.pi
+    exterior['omega'] = np.pi
+    exterior['kappa'] = np.pi
+    rotation_matrix(exterior)
+    assert np.allclose(exterior[0]['dm'], np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]))
 
 
 def test_opposite_rotation():
-    ex = Exterior(
-        phi=np.pi, omega=np.pi, kappa=np.pi, dm=[[-1, 0, 0], [0, -1, 0], [0, 0, 1]]
-    )
-    # Rotate the matrix using the rotation_matrix function
-    ex.update_rotation_matrix()
-    assert np.allclose(ex.dm, np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]))
+    ex = Exterior.copy()
+    ex['omega'] = np.pi/2
+    rotation_matrix(ex)
+    assert np.allclose(ex[0]['dm'], np.array([[1, 0, 0], [0, 0, -1], [0, 1, 0]]))
+
+    ex = Exterior.copy()
+    ex['phi'] = np.pi/2
+    rotation_matrix(ex)
+    assert np.allclose(ex[0]['dm'], np.array([[0, 0, 1], [0, 1, 0], [-1, 0, 0]]))
+
+    ex = Exterior.copy()
+    ex['kappa'] = np.pi/2
+    rotation_matrix(ex)
+    assert np.allclose(ex[0]['dm'], np.array([[0, -1, 0], [1, 0, 0], [0, 0, 1]]))
 
 
 def test_manual_rotation_pi():
-    Ex = Exterior(
-        phi=np.pi, omega=np.pi, kappa=np.pi, dm=[[1, 0, 0], [0, 1, 0], [0, 0, 1]]
-    )
+    """Test when all angles are pi."""
+    Ex = Exterior.copy()
+    Ex['phi'] = np.pi
+    Ex['omega'] = np.pi
+    Ex['kappa'] = np.pi
 
-    cp = np.cos(Ex.phi)
-    sp = np.sin(Ex.phi)
-    co = np.cos(Ex.omega)
-    so = np.sin(Ex.omega)
-    ck = np.cos(Ex.kappa)
-    sk = np.sin(Ex.kappa)
+    rotation_matrix(Ex)
 
-    # Modify the Exterior Ex with the new Dmatrix
-    Ex.dm[0][0] = cp * ck
-    Ex.dm[0][1] = -cp * sk
-    Ex.dm[0][2] = sp
-    Ex.dm[1][0] = co * sk + so * sp * ck
-    Ex.dm[1][1] = co * ck - so * sp * sk
-    Ex.dm[1][2] = -so * cp
-    Ex.dm[2][0] = so * sk - co * sp * ck
-    Ex.dm[2][1] = so * ck + co * sp * sk
-    Ex.dm[2][2] = co * cp
+    assert np.allclose(Ex[0]['dm'], np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]))
 
-    Ex.dm = np.round(Ex.dm, 7)
+def test_rotation_matrix():
+    """Test rotation_matrix()."""
+    ext = np.zeros(1, dtype=Exterior.dtype)
+    # set angles from the original test in liboptv (see check_calibration.c)
+    ext['omega'] = -0.2383291
+    ext['phi'] = 0.2442810
+    ext['kappa'] = 0.0552577
 
-    assert np.allclose(Ex.dm, np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]))
+    # update rotation matrix
+    rotation_matrix(ext) #ext['dm'] is updated
+
+    expected_dm = np.array([
+        [0.9688305, -0.0535899, 0.2418587],
+    [-0.0033422, 0.9734041, 0.2290704],
+    [-0.2477021, -0.2227387, 0.9428845],
+    ])
+
+    assert np.allclose(ext[0]['dm'], expected_dm)

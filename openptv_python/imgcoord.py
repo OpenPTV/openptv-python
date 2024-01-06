@@ -9,7 +9,6 @@ from .calibration import Calibration
 from .multimed import back_trans_point, multimed_nlay, trans_cam_point
 from .parameters import MultimediaPar
 from .trafo import flat_to_dist
-from .vec_utils import vec_set
 
 
 def flat_image_coord(
@@ -46,43 +45,18 @@ def flat_image_coord(
     x_t, y_t = multimed_nlay(cal_t, mm, pos_t)
     # print(f"x_t {x_t}, y_t {y_t}")
 
-    pos_t = vec_set(x_t, y_t, pos_t[2])
+    pos_t = np.r_[x_t, y_t, pos_t[2]]
     pos = back_trans_point(pos_t, mm, cal.glass_par, cross_p, cross_c)
 
-    # print(f"pos {pos}")
+    dm = cal.ext_par[0].dm
+    origin = np.r_[cal.ext_par.x0, cal.ext_par.y0, cal.ext_par.z0]
 
-    deno = (
-        cal.ext_par.dm[0][2] * (pos[0] - cal.ext_par.x0)
-        + cal.ext_par.dm[1][2] * (pos[1] - cal.ext_par.y0)
-        + cal.ext_par.dm[2][2] * (pos[2] - cal.ext_par.z0)
-    )
-
-    # print(f"deno {deno}")
-
+    deno = np.dot(dm[:,2], (pos - origin))
     if deno == 0:
         deno = 1
 
-    x = (
-        -cal.int_par.cc
-        * (
-            cal.ext_par.dm[0][0] * (pos[0] - cal.ext_par.x0)
-            + cal.ext_par.dm[1][0] * (pos[1] - cal.ext_par.y0)
-            + cal.ext_par.dm[2][0] * (pos[2] - cal.ext_par.z0)
-        )
-        / deno
-    )
-
-    y = (
-        -cal.int_par.cc
-        * (
-            cal.ext_par.dm[0][1] * (pos[0] - cal.ext_par.x0)
-            + cal.ext_par.dm[1][1] * (pos[1] - cal.ext_par.y0)
-            + cal.ext_par.dm[2][1] * (pos[2] - cal.ext_par.z0)
-        )
-        / deno
-    )
-
-    # print(f"x {x}, y {y}")
+    x = (-cal.int_par.cc * np.dot(dm[:, 0], (pos - origin)) / deno)
+    y = (-cal.int_par.cc * np.dot(dm[:, 1], (pos - origin)) / deno)
 
     return x, y
 

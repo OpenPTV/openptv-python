@@ -43,7 +43,14 @@ class TestCalibration(unittest.TestCase):
         affine = decent * 1.5
         glass = pos * 7
 
-        Ext = Exterior(x0=1.0, y0=3.0, z0=5.0, omega=2.0, phi=4.0, kappa=6.0)
+        ext = Exterior.copy()
+        ext['x0'] = 1.0
+        ext['y0'] = 3.0
+        ext['z0'] = 5.0
+        ext['omega'] = 2.0
+        ext['phi'] = 4.0
+        ext['kappa'] = 6.0
+
         In = Interior(xh=3.0, yh=9.0, cc=15.0)
         G = np.array(glass)
         addpar = ap_52(
@@ -57,7 +64,7 @@ class TestCalibration(unittest.TestCase):
         )
 
         cal = Calibration()
-        cal.ext_par = Ext
+        cal.ext_par = ext
         cal.int_par = In
         cal.glass_par = G
         cal.added_par = addpar
@@ -106,10 +113,10 @@ class TestCalibration(unittest.TestCase):
     def test_set_angles(self):
         """Set angles correctly."""
         dmatrix_before = self.cal.get_rotation_matrix()  # dmatrix before setting angles
-        angles_np = [0.1111, 0.2222, 0.3333]
+        angles_np = np.array([0.1111, 0.2222, 0.3333])
         self.cal.set_angles(angles_np)
         # rotate the dmatrix by the angles_np
-        self.cal.ext_par.update_rotation_matrix()
+        self.cal.update_rotation_matrix()
 
         dmatrix_after = self.cal.get_rotation_matrix()  # dmatrix after setting angles
         np.testing.assert_array_equal(self.cal.get_angles(), angles_np)
@@ -126,7 +133,7 @@ class TestCalibration(unittest.TestCase):
 
     def test_set_primary(self):
         """Set primary point (interior) position, only for admissible values."""
-        new_pp = [111.1111, 222.2222, 333.3333]
+        new_pp = np.array([111.1111, 222.2222, 333.3333])
         self.cal.set_primary_point(new_pp)
 
         np.testing.assert_array_equal(new_pp, self.cal.get_primary_point())
@@ -144,7 +151,7 @@ class TestCalibration(unittest.TestCase):
 
     def test_set_decentering(self):
         """Set radial distortion, only for admissible values."""
-        new_de = [111.1111, 222.2222]
+        new_de = np.array([111.1111, 222.2222])
         self.cal.set_decentering(new_de)
 
         np.testing.assert_array_equal(new_de, self.cal.get_decentering())

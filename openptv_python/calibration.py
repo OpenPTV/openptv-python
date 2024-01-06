@@ -6,20 +6,35 @@ from typing import Optional
 import numpy as np
 from numba import njit
 
-from openptv_python.vec_utils import vec_set
-
 
 @njit
-def rotation_matrix(phi: float, omega: float, kappa: float) -> np.ndarray:
-    """Calculate the necessary trigonometric functions to rotate the Dmatrix of Exterior ext_par."""
-    cp = np.cos(phi)
-    sp = np.sin(phi)
+def rotation_matrix(ext: np.ndarray) -> None:
+    """Calculate the necessary trigonometric functions to rotate the Dmatrix of Exterior ext_par.
+
+    Rotation is performed by multiplication of three rotation matrices,
+    rotation around X axis is performed first, then around Y axis, and finally around Z axis.
+    rotation around X axis does not change values along X axis, i.e. X_omega = X
+
+    Maas, H.G., Gruen, A. & Papantoniou, D. Particle tracking velocimetry in
+    three-dimensional flows. Experiments in Fluids 15, 133–146 (1993).
+    https://doi.org/10.1007/BF00190953
+
+    """
+    omega, phi, kappa = ext[0]['omega'], ext[0]['phi'], ext[0]['kappa']
+
+
     co = np.cos(omega)
     so = np.sin(omega)
+
+    cp = np.cos(phi)
+    sp = np.sin(phi)
+
     ck = np.cos(kappa)
     sk = np.sin(kappa)
 
-    dm = np.zeros((3, 3), dtype=np.float64)
+    # dm = np.zeros((3, 3), dtype=np.float64)
+    dm = ext[0]['dm'] # shortcut to the dm field of the first element of the array
+
     dm[0, 0] = cp * ck
     dm[0, 1] = -cp * sk
     dm[0, 2] = sp
@@ -29,59 +44,39 @@ def rotation_matrix(phi: float, omega: float, kappa: float) -> np.ndarray:
     dm[2, 0] = so * sk - co * sp * ck
     dm[2, 1] = so * ck + co * sp * sk
     dm[2, 2] = co * cp
-    return dm
+
+    # print(dm)
+
+    return None
+
+exterior_dtype = np.dtype([
+    ('x0', np.float64),
+    ('y0', np.float64),
+    ('z0', np.float64),
+    ('omega', np.float64),
+    ('phi', np.float64),
+    ('kappa', np.float64),
+    ('dm', np.float64, (3, 3))
+    ])
+Exterior = np.zeros(1, dtype=exterior_dtype).view(np.recarray) # initialize memory
+rotation_matrix(Exterior)             # rotation should be a unit matrix
+assert np.allclose(np.eye(3), Exterior[0]['dm'])
 
 
-class Exterior:
-    """Exterior orientation data structure."""
+# rotation_matrix(exterior) # inplace update of the rotation matrix
 
-    def __init__(self, x0=0.0, y0=0.0, z0=0.0, omega=0.0, phi=0.0, kappa=0.0, dm=None):
-        self.x0 = x0
-        self.y0 = y0
-        self.z0 = z0
-        self.omega = omega
-        self.phi = phi
-        self.kappa = kappa
-        self.dm = dm if dm is not None else np.identity(3, dtype=np.float64)
 
-    def update_rotation_matrix(self) -> None:
-        """Create rotation matrix using three angles of the camera."""
-        self.dm = rotation_matrix(self.phi, self.omega, self.kappa)
+    # def increment_attribute(self, attr_name, increment_value):
+    #     """Update the value of an attribute by increment_value."""
+    #     if hasattr(self, attr_name):
+    #         setattr(self, attr_name, getattr(
+    #             self, attr_name) + increment_value)
 
-    def set_rotation_matrix(self, dm: np.ndarray) -> None:
-        """Set the rotation matrix of the camera."""
-        self.dm = dm
-
-    def set_pos(self, pos: np.ndarray) -> None:
-        """Set the position of the camera."""
-        pos = np.array(pos, dtype = np.float64)
-
-        if pos.shape != (3,):
-            raise ValueError(
-                "Illegal array argument "
-                + str(pos)
-                + " for x, y, z. Expected array/list of 3 numbers"
-            )
-        self.x0, self.y0, self.z0 = pos
-
-    def set_angles(self, angles: np.ndarray) -> None:
-        """Set the angles of the camera."""
-        self.omega, self.phi, self.kappa = angles
-
-        # adjust rotation matrix
-        self.update_rotation_matrix()
-
-    def increment_attribute(self, attr_name, increment_value):
-        """Update the value of an attribute by increment_value."""
-        if hasattr(self, attr_name):
-            setattr(self, attr_name, getattr(
-                self, attr_name) + increment_value)
-
-    def __repr__(self) -> str:
-        """Return a string representation of the Exterior object."""
-        output = f"Exterior: x0={self.x0}, y0={self.y0}, z0={self.z0}\n"
-        output += f"omega={self.omega}, phi={self.phi}, kappa={self.kappa}\n"
-        return output
+    # def __repr__(self) -> str:
+    #     """Return a string representation of the Exterior object."""
+    #     output = f"Exterior: x0={self['x0']}, y0={self['y0']}, z0={self['z0']}\n"
+    #     output += f"omega={self['omega']}, phi={self['phi']}, kappa={self['kappa']}\n"
+    #     return output
 
 
 class Interior:
@@ -99,10 +94,6 @@ class Interior:
     def set_back_focal_distance(self, cc: float) -> None:
         """Set the back focal distance of the camera."""
         self.cc = cc
-
-def default_glass_vec() -> np.ndarray:
-    """Return default glass vector."""
-    return vec_set(0.0, 0.0, 1.0)
 
 class ap_52:
     """Additional parameters for distortion correction."""
@@ -149,7 +140,7 @@ class Calibration:
 
     def __init__(self, ext_par=None, int_par=None, glass_par=None, added_par=None, mmlut=None):
         if ext_par is None:
-            ext_par = Exterior()
+            ext_par = Exterior.copy()
         if int_par is None:
             int_par = Interior()
         if glass_par is None:
@@ -164,6 +155,7 @@ class Calibration:
         self.glass_par = glass_par
         self.added_par = added_par
         self.mmlut = mmlut
+
 
     @classmethod
     def from_file(cls, ori_file: str, add_file: str):
@@ -197,7 +189,7 @@ class Calibration:
             # skip line
             fp.readline()
 
-            # read 3 lines and set a rotation matrix
+            # read 3 lines of rotation matrix, but recalculate it from angles
             _ = [[float(x) for x in fp.readline().split()] for _ in range(3)]
 
             # I skip reading rotation matrix as it's set up by set_angles.
@@ -254,23 +246,42 @@ class Calibration:
         if not success:
             raise IOError("Failed to write ori file")
 
+
+    def increment_attribute(self, attr_name, increment_value):
+        """Update the value of an attribute by increment_value."""
+        if hasattr(self, attr_name):
+            setattr(self, attr_name, getattr(
+                self, attr_name) + increment_value)
+
+    def update_rotation_matrix(self) -> None:
+        """Update the rotation matrix of the exterior orientation."""
+        rotation_matrix(self.ext_par)
+
     def set_rotation_matrix(self, dm: np.ndarray) -> None:
         """Set exterior rotation matrix."""
         if dm.shape != (3, 3):
             raise ValueError("Illegal argument for exterior rotation matrix")
-        self.ext_par.set_rotation_matrix(dm)
+        self.ext_par[0]['dm'] = dm
 
-    def set_pos(self, x_y_z_np: np.ndarray) -> None:
+    def set_pos(self, pos: np.ndarray) -> None:
         """
         Set exterior position.
 
         Parameter: x_y_z_np - numpy array of 3 elements for x, y, z.
         """
-        self.ext_par.set_pos(x_y_z_np)
+        pos = np.array(pos, dtype = np.float64)
 
-    def get_pos(self):
+        if pos.shape != (3,):
+            raise ValueError(
+                "Illegal array argument "
+                + str(pos)
+                + " for x, y, z. Expected array/list of 3 numbers"
+            )
+        self.ext_par['x0'], self.ext_par['y0'], self.ext_par['z0'] = pos
+
+    def get_pos(self) -> np.ndarray:
         """Return array of 3 elements representing exterior's x, y, z."""
-        return np.r_[self.ext_par.x0, self.ext_par.y0, self.ext_par.z0]
+        return np.r_[self.ext_par['x0'], self.ext_par['y0'], self.ext_par['z0']]
 
     def set_angles(self, o_p_k_np: np.ndarray) -> None:
         """
@@ -285,15 +296,16 @@ class Calibration:
                 f"Illegal array argument {o_p_k_np} for "
                 "omega, phi, kappa. Expected array or list of 3 float"
             )
-        self.ext_par.set_angles(o_p_k_np)
+        self.ext_par['omega'], self.ext_par['phi'], self.ext_par['kappa'] = o_p_k_np
+        self.update_rotation_matrix()
 
-    def get_angles(self):
+    def get_angles(self) -> np.ndarray:
         """Return an array of 3 elements representing omega, phi, kappa."""
-        return np.r_[self.ext_par.omega, self.ext_par.phi, self.ext_par.kappa]
+        return np.r_[self.ext_par['omega'], self.ext_par['phi'], self.ext_par['kappa']]
 
-    def get_rotation_matrix(self):
+    def get_rotation_matrix(self) -> np.ndarray:
         """Return a 3x3 numpy array that represents Exterior's rotation matrix."""
-        return self.ext_par.dm
+        return self.ext_par['dm'].copy()
 
     def set_primary_point(self, prim_point_pos: np.ndarray) -> None:
         """
@@ -418,7 +430,7 @@ class Calibration:
 
 
 def write_ori(
-    ext_par: Exterior,
+    ext_par: np.ndarray,
     int_par: Interior,
     glass: np.ndarray,
     added_par: ap_52,
@@ -429,9 +441,9 @@ def write_ori(
     success = False
 
     with open(filename, "w", encoding="utf-8") as fp:
-        fp.write(f"{ext_par.x0:.8f} {ext_par.y0:.8f} {ext_par.z0:.8f}\n")
-        fp.write(f"{ext_par.omega:.8f} {ext_par.phi:.8f} {ext_par.kappa:.8f}\n\n")
-        for row in ext_par.dm:
+        fp.write(f"{ext_par[0]['x0']:.8f} {ext_par[0]['y0']:.8f} {ext_par[0]['z0']:.8f}\n")
+        fp.write(f"{ext_par[0]['omega']:.8f} {ext_par[0]['phi']:.8f} {ext_par[0]['kappa']:.8f}\n\n")
+        for row in ext_par[0]['dm']:
             fp.write(f"{row[0]:.7f} {row[1]:.7f} {row[2]:.7f}\n")
         fp.write(f"\n{int_par.xh:.4f} {int_par.yh:.4f}\n{int_par.cc:.4f}\n")
         fp.write(
@@ -470,16 +482,16 @@ def read_ori(ori_file: str, add_file: str) -> Calibration:
     return ret
 
 
-def compare_exterior(e1: Exterior, e2: Exterior) -> bool:
+def compare_exterior(e1: np.ndarray, e2: np.ndarray) -> bool:
     """Compare exterior orientation parameters."""
     return (
-        np.allclose(e1.dm, e2.dm, atol=1e-6)
-        and (e1.x0 == e2.x0)
-        and (e1.y0 == e2.y0)
-        and (e1.z0 == e2.z0)
-        and (e1.omega == e2.omega)
-        and (e1.phi == e2.phi)
-        and (e1.kappa == e2.kappa)
+        np.allclose(e1['dm'], e2['dm'], atol=1e-6)
+        and (e1['x0'] == e2['x0'])
+        and (e1['y0'] == e2['y0'])
+        and (e1['z0'] == e2['z0'])
+        and (e1['omega'] == e2['omega'])
+        and (e1['phi'] == e2['phi'])
+        and (e1['kappa'] == e2['kappa'])
     )
 
 
