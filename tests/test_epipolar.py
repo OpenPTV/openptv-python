@@ -86,7 +86,10 @@ class TestEpipolarCurve(unittest.TestCase):
 
     def test_epi_mm_2D(self):
         """Test the epi_mm_2D function."""
-        test_Ex = Exterior(0.0, 0.0, 100.0, 0.0, 0.0, 0.0)
+        test_Ex = Exterior.copy()
+        test_Ex.z0 = 100.0
+
+
         test_I = Interior(0.0, 0.0, 100.0)
         test_G = np.array((0.0, 0.0, 50.0))
         test_addp = ap_52(0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
@@ -124,13 +127,20 @@ class TestEpipolarCurve(unittest.TestCase):
 
     def test_epi_mm(self):
         """Test the epi_mm function."""
-        test_Ex = Exterior(10.0, 0.0, 100.0, 0.0, -0.01, 0.0)
+        test_Ex = Exterior.copy()
+        test_Ex.x0 = 10.0
+        test_Ex.z0 = 100.0
+        test_Ex.phi = -.01
+
         test_I = Interior(0.0, 0.0, 100.0)
         test_G = np.array((0.0, 0.0, 50.0))
         test_addp = ap_52(0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
         test_cal_1 = Calibration(test_Ex, test_I, test_G, test_addp)
 
-        test_Ex_2 = Exterior(-10.0, 0.0, 100.0, 0.0, 0.01, 0.0)
+        test_Ex_2 = Exterior.copy()
+        test_Ex_2.x0 = -10.0
+        test_Ex_2.z0 = 100.0
+        test_Ex_2.phi = .01
         test_cal_2 = Calibration(test_Ex_2, test_I, test_G, test_addp)
 
         test_mm = MultimediaPar(1, 1.0, [1.49, 0.0, 0.0], [
@@ -155,13 +165,16 @@ class TestEpipolarCurve(unittest.TestCase):
 
     def test_epi_mm_perpendicular(self):
         """Test the epi_mm function."""
-        test_Ex = Exterior(0.0, 0.0, 100.0, 0.0, 0.0, 0.0)
+        test_Ex = Exterior.copy()
+        test_Ex.z0 = 100.0
         test_I = Interior(0.0, 0.0, 100.0)
         test_G = np.array((0.0, 0.0, 50.0))
         test_addp = ap_52(0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
         test_cal_1 = Calibration(test_Ex, test_I, test_G, test_addp)
 
-        test_Ex_2 = Exterior(100.0, 0.0, 0.0, 0.0, 1.57, 0.0)
+        test_Ex_2 = Exterior.copy()
+        test_Ex_2.x0 = 100.0
+        test_Ex_2.phi = 1.57
         test_cal_2 = Calibration(test_Ex_2, test_I, test_G, test_addp)
 
         test_mm = MultimediaPar(1, 1.0, [1.0, 0.0, 0.0], [1.0, 0.0, 0.0], 1.0)
@@ -232,7 +245,9 @@ class TestFindCandidate(unittest.TestCase):
         ny = 3
         sumg = 100
 
-        test_Ex = Exterior(0.0, 0.0, 100.0, 0.0, 0.0, 0.0)
+        test_Ex = Exterior.copy()
+        test_Ex.z0 = 100.
+
         test_I = Interior(0.0, 0.0, 100.0)
         test_G = np.array((0.0, 0.0, 50.0))
         test_addp = ap_52(0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)

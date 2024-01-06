@@ -34,15 +34,9 @@ class TestRayTracing(unittest.TestCase):
         y = 100.0
 
         # The exterior parameters
-        test_Ex = Exterior(
-            x0=0.0,
-            y0=0.0,
-            z0=100.0,
-            omega=0.0,
-            phi=0.0,
-            kappa=0.0,
-            dm=np.array(((1.0, 0.2, -0.3), (0.2, 1.0, 0.0), (-0.3, 0.0, 1.0))),
-        )
+        test_Ex = Exterior.copy()
+        test_Ex.z0 = 100.
+        test_Ex.dm=np.array(((1.0, 0.2, -0.3), (0.2, 1.0, 0.0), (-0.3, 0.0, 1.0)))
 
         # The interior parameters
         test_I = Interior(0.0, 0.0, 100.0)

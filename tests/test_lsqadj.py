@@ -20,15 +20,9 @@ class TestMatmul(unittest.TestCase):
         f = np.array([0, 0, 0])
         expected = np.array([68, 167, 266])
 
-        test_Ex = Exterior(
-            0.0,
-            0.0,
-            100.0,
-            0.0,
-            0.0,
-            0.0,
-            np.array([[1.0, 0.2, -0.3], [0.2, 1.0, 0.0], [-0.3, 0.0, 1.0]]),
-        )
+        test_Ex = Exterior.copy()
+        test_Ex.z0 = 100.0
+        test_Ex.dm = np.array([[1.0, 0.2, -0.3], [0.2, 1.0, 0.0], [-0.3, 0.0, 1.0]])
 
         b = np.array([[1.0, 0.2, -0.3], [0.2, 1.0, 0.0], [-0.3, 0.0, 1.0]])
         c = np.array([1, 1, 1])

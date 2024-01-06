@@ -1,4 +1,3 @@
-import math
 from typing import List, Tuple
 
 import numpy as np
@@ -12,7 +11,7 @@ from .parameters import (
 )
 from .ray_tracing import ray_tracing
 from .trafo import correct_brown_affine, pixel_to_metric
-from .vec_utils import norm, vec_set
+from .vec_utils import vec_norm
 
 
 def multimed_nlay(
@@ -64,9 +63,9 @@ def fast_multimed_r_nlay(
     n2: np.ndarray,
     n3: float,
     d: np.ndarray,
-    x0,
-    y0,
-    z0,
+    x0: float,
+    y0: float,
+    z0: float,
     pos: np.ndarray
 ) -> float:
     """Calculate the radial shift for the multimedia model.
@@ -87,7 +86,8 @@ def fast_multimed_r_nlay(
     for i in range(1, nlay):
         zout += d[i]
 
-    r = norm(X-x0, Y-y0, 0)
+
+    r = vec_norm(np.array([X-x0, Y-y0, 0]))
     rq = r
 
     it = 0
@@ -95,14 +95,14 @@ def fast_multimed_r_nlay(
         zdiff = z0 - Z
         if zdiff == 0:
             zdiff = 1.0
-        beta1 = math.atan(rq / zdiff)
+        beta1 = np.arctan(rq / zdiff)
         for i in range(nlay):
-            beta2[i] = math.asin(math.sin(beta1) * n1 / n2[i])
-        beta3 = math.asin(math.sin(beta1) * n1 / n3)
+            beta2[i] = np.arcsin(np.sin(beta1) * n1 / n2[i])
+        beta3 = np.arcsin(np.sin(beta1) * n1 / n3)
 
-        rbeta = (z0 - d[0]) * math.tan(beta1) - zout * math.tan(beta3)
+        rbeta = (z0 - d[0]) * np.tan(beta1) - zout * np.tan(beta3)
         for i in range(nlay):
-            rbeta += d[i] * math.tan(beta2[i])
+            rbeta += d[i] * np.tan(beta2[i])
 
         rdiff = r - rbeta
         rq += rdiff
@@ -127,14 +127,14 @@ def trans_cam_point(
 
     pos_t, cross_p, cross_c = trans_cam_point(ex, mm, glass, pos, ex_t)
     """
-    origin = np.r_[ex.x0, ex.y0, ex.z0]
+    origin = np.r_[ex.x0, ex.y0, ex.z0] # type: ignore
     pos = pos.astype(np.float64)
 
     return fast_trans_cam_point(
         origin, mm.d[0], glass_dir, pos)
 
 
-# @njit(fastmath=True)
+@njit(fastmath=True)
 def fast_trans_cam_point(
     primary_point: np.ndarray,
     d: float,
@@ -266,8 +266,8 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibrati
     z_min = min(vpar.z_min_lay)
     z_max = max(vpar.z_max_lay)
 
-    z_min -= math.fmod(z_min, rw)
-    z_max += rw - math.fmod(z_max, rw)
+    z_min -= np.fmod(z_min, rw)
+    z_max += rw - np.fmod(z_max, rw)
 
     z_min_t = z_min
     z_max_t = z_max
@@ -292,8 +292,11 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibrati
             if xyz_t[2] > z_max_t:
                 z_max_t = xyz_t[2]
 
-            R = norm(xyz_t[0] - cal_t.ext_par.x0,
-                     xyz_t[1] - cal_t.ext_par.y0, 0)
+            R = vec_norm(
+                np.r_[xyz_t[0] - cal_t.ext_par.x0,
+                     xyz_t[1] - cal_t.ext_par.y0,
+                     0]
+                )
 
             if R > Rmax:
                 Rmax = R
@@ -308,14 +311,14 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibrati
             if xyz_t[2] > z_max_t:
                 z_max_t = xyz_t[2]
 
-            R = norm(xyz_t[0] - cal_t.ext_par.x0,
-                     xyz_t[1] - cal_t.ext_par.y0, 0)
+            R = vec_norm(np.r_[xyz_t[0] - cal_t.ext_par.x0,
+                     xyz_t[1] - cal_t.ext_par.y0, 0])
 
             if R > Rmax:
                 Rmax = R
 
     # round values (-> enlarge)
-    Rmax += rw - math.fmod(Rmax, rw)
+    Rmax += rw - np.fmod(Rmax, rw)
 
     # get # of rasterlines in r, z
     nr = int(Rmax / rw + 1)
@@ -334,11 +337,11 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibrati
 
         for i in range(nr):
             for j in range(nz):
-                xyz = vec_set(Ri[i] + cal_t.ext_par.x0,
-                              cal_t.ext_par.y0, Zi[j])
+                xyz = np.r_[Ri[i] + cal_t.ext_par.x0,
+                              cal_t.ext_par.y0, Zi[j]]
                 data.flat[i * nz + j] = multimed_r_nlay(cal_t, cpar.mm, xyz)
 
-        print("filled mmlut data with {data}")
+        # print(f"filled mmlut data with {data}")
         cal.mmlut.data = data
 
     return cal

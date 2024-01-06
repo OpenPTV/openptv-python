@@ -20,7 +20,9 @@ class TestFlatCenteredCam(unittest.TestCase):
         # gleaned from simple geometry.
         pos = vec_set(10, 5, -20)
         cal = Calibration(
-            ext_par=Exterior(0, 0, 40, 0, 0, 0, [[1, 0, 0], [0, 1, 0], [0, 0, 1]]),
+            ext_par = np.array((0, 0, 40, 0, 0, 0,
+                                [[1, 0, 0], [0, 1, 0], [0, 0, 1]]),
+                               dtype = Exterior.dtype).view(np.recarray),
             int_par=Interior(0, 0, 10),
             glass_par=np.array((0., 0., 20.)),
             added_par=ap_52(0, 0, 0, 0, 0, 1, 0),

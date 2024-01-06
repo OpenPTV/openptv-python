@@ -13,25 +13,23 @@ class TestTransformFunctions(unittest.TestCase):
         """Test back trans point."""
         pos = np.r_[100.0, 100.0, 0.0]
 
-        test_Ex = Exterior(
-            x0=0.0,
-            y0=0.0,
-            z0=100.0,
-            omega=0.0,
-            phi=0.0,
-            kappa=0.0,
-            dm=np.array([[1.0, 0.2, -0.3], [0.2, 1.0, 0.0], [-0.3, 0.0, 1.0]]),
-        )
+        test_Ex = Exterior.copy()
+        test_Ex.z0 = 100.
+        test_Ex.dm=np.array([[1.0, 0.2, -0.3], [0.2, 1.0, 0.0], [-0.3, 0.0, 1.0]])
 
-        correct_Ex_t = Exterior(
-            x0=0.0,
-            y0=0.0,
-            z0=99.0,
-            omega=-0.0,
-            phi=0.0,
-            kappa=0.0,
-            dm=np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]),
-        )
+
+        correct_Ex_t = Exterior.copy()
+        correct_Ex_t.z0 = 99.0
+
+        # (
+        #     x0=0.0,
+        #     y0=0.0,
+        #     z0=99.0,
+        #     omega=-0.0,
+        #     phi=0.0,
+        #     kappa=0.0,
+        #     dm=np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]),
+        # )
 
         # test_I = Interior(0.0, 0.0, 100.0)
         test_G = np.array((0.0001, 0.00001, 1.0))
@@ -41,7 +39,7 @@ class TestTransformFunctions(unittest.TestCase):
         #
         test_mm = MultimediaPar(1, 1.0, [1.49, 0.0, 0.0], [5.0, 0.0, 0.0], 1.33)
 
-        Ex_t = Exterior()
+        Ex_t = Exterior.copy()
 
         pos_t, cross_p, cross_c, Ex_t.z0 = trans_cam_point(test_Ex, test_mm, test_G, pos)
 
@@ -58,24 +56,14 @@ class TestTransformFunctions(unittest.TestCase):
         pos = vec_set(100.0, 100.0, 0.0)
         sep_norm = vec_norm(pos)
 
-        test_Ex = Exterior(
-            x0=0.0,
-            y0=0.0,
-            z0=100.0,
-            omega=0.0,
-            phi=0.0,
-            kappa=0.0,
-            dm=np.array([[1.0, 0.2, -0.3], [0.2, 1.0, 0.0], [-0.3, 0.0, 1.0]]),
-        )
-        correct_Ex_t = Exterior(
-            x0=0.0,
-            y0=0.0,
-            z0=50.0,
-            omega=0.0,
-            phi=0.0,
-            kappa=0.0,
-            dm=np.array([[1.0, 0.2, -0.3], [0.2, 1.0, 0.0], [-0.3, 0.0, 1.0]]),
-        )
+        test_Ex = Exterior.copy()
+        test_Ex.z0 = 100.0
+        test_Ex.dm = np.array([[1.0, 0.2, -0.3], [0.2, 1.0, 0.0], [-0.3, 0.0, 1.0]])
+
+        correct_Ex_t = Exterior.copy()
+        correct_Ex_t.z0 = 50.0
+        correct_Ex_t.dm = np.array([[1.0, 0.2, -0.3], [0.2, 1.0, 0.0], [-0.3, 0.0, 1.0]])
+
 
         test_G = np.array((0.0, 0.0, 50.0))
         # ap_52 test_addp = {0., 0., 0., 0., 0., 1., 0.};
@@ -83,7 +71,7 @@ class TestTransformFunctions(unittest.TestCase):
 
         test_mm = MultimediaPar(1, 1.0, [1.49, 0.0, 0.0], [5.0, 0.0, 0.0], 1.33)
 
-        Ex_t = Exterior()
+        Ex_t = Exterior.copy()
         pos_t, cross_p, cross_c, Ex_t.z0 = trans_cam_point(test_Ex, test_mm, test_G, pos)
 
         self.assertTrue(np.allclose(pos_t, np.r_[sep_norm, 0.0, -test_G[2]]))

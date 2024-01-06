@@ -20,7 +20,7 @@ def rotation_matrix(ext: np.ndarray) -> None:
     https://doi.org/10.1007/BF00190953
 
     """
-    omega, phi, kappa = ext[0]['omega'], ext[0]['phi'], ext[0]['kappa']
+    omega, phi, kappa = ext['omega'], ext['phi'], ext['kappa']
 
 
     co = np.cos(omega)
@@ -33,7 +33,7 @@ def rotation_matrix(ext: np.ndarray) -> None:
     sk = np.sin(kappa)
 
     # dm = np.zeros((3, 3), dtype=np.float64)
-    dm = ext[0]['dm'] # shortcut to the dm field of the first element of the array
+    dm = ext['dm'] # shortcut to the dm field of the first element of the array
 
     dm[0, 0] = cp * ck
     dm[0, 1] = -cp * sk
@@ -58,9 +58,10 @@ exterior_dtype = np.dtype([
     ('kappa', np.float64),
     ('dm', np.float64, (3, 3))
     ])
-Exterior = np.zeros(1, dtype=exterior_dtype).view(np.recarray) # initialize memory
+# Exterior = np.zeros(1, dtype=exterior_dtype).view(np.recarray) # initialize memory
+Exterior = np.array((0, 0, 0, 0, 0, 0, np.eye(3)), dtype = exterior_dtype).view(np.recarray)
 rotation_matrix(Exterior)             # rotation should be a unit matrix
-assert np.allclose(np.eye(3), Exterior[0]['dm'])
+assert np.allclose(np.eye(3), Exterior['dm'])
 
 
 # rotation_matrix(exterior) # inplace update of the rotation matrix
@@ -249,9 +250,12 @@ class Calibration:
 
     def increment_attribute(self, attr_name, increment_value):
         """Update the value of an attribute by increment_value."""
-        if hasattr(self, attr_name):
-            setattr(self, attr_name, getattr(
-                self, attr_name) + increment_value)
+        if hasattr(self.ext_par, attr_name):
+            setattr(self.ext_par, attr_name, getattr(
+                self.ext_par, attr_name) + increment_value)
+        if hasattr(self.int_par, attr_name):
+            setattr(self.int_par, attr_name, getattr(
+                self.int_par, attr_name) + increment_value)
 
     def update_rotation_matrix(self) -> None:
         """Update the rotation matrix of the exterior orientation."""
@@ -441,9 +445,9 @@ def write_ori(
     success = False
 
     with open(filename, "w", encoding="utf-8") as fp:
-        fp.write(f"{ext_par[0]['x0']:.8f} {ext_par[0]['y0']:.8f} {ext_par[0]['z0']:.8f}\n")
-        fp.write(f"{ext_par[0]['omega']:.8f} {ext_par[0]['phi']:.8f} {ext_par[0]['kappa']:.8f}\n\n")
-        for row in ext_par[0]['dm']:
+        fp.write(f"{ext_par['x0']:.8f} {ext_par['y0']:.8f} {ext_par['z0']:.8f}\n")
+        fp.write(f"{ext_par['omega']:.8f} {ext_par['phi']:.8f} {ext_par['kappa']:.8f}\n\n")
+        for row in ext_par['dm']:
             fp.write(f"{row[0]:.7f} {row[1]:.7f} {row[2]:.7f}\n")
         fp.write(f"\n{int_par.xh:.4f} {int_par.yh:.4f}\n{int_par.cc:.4f}\n")
         fp.write(

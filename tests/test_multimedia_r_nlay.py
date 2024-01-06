@@ -17,15 +17,8 @@ class TestMultimedRnlay(unittest.TestCase):
 
     def test_multimedia_r_nlay(self):
         """Test the multimed_r_nlay function."""
-        test_Ex = Exterior(
-            0.0,
-            0.0,
-            100.0,
-            0.0,
-            0.0,
-            0.0,
-            np.array([[1.0, 0.2, -0.3], [0.2, 1.0, 0.0], [-0.3, 0.0, 1.0]]),
-        )
+        test_Ex = Exterior.copy()
+        test_Ex['z0'] = 100.0
 
         test_I = Interior(0.0, 0.0, 100.0)
         test_G = np.array((0.0001, 0.00001, 1.0))

@@ -48,7 +48,7 @@ def flat_image_coord(
     pos_t = np.r_[x_t, y_t, pos_t[2]]
     pos = back_trans_point(pos_t, mm, cal.glass_par, cross_p, cross_c)
 
-    dm = cal.ext_par[0].dm
+    dm = cal.ext_par.dm
     origin = np.r_[cal.ext_par.x0, cal.ext_par.y0, cal.ext_par.z0]
 
     deno = np.dot(dm[:,2], (pos - origin))
