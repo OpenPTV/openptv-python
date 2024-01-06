@@ -63,77 +63,80 @@ Exterior = np.array((0, 0, 0, 0, 0, 0, np.eye(3)), dtype = exterior_dtype).view(
 rotation_matrix(Exterior)             # rotation should be a unit matrix
 assert np.allclose(np.eye(3), Exterior['dm'])
 
+interior_dtype = np.dtype([
+    ('xh', np.float64),
+    ('yh', np.float64),
+    ('cc', np.float64)
+    ])
+Interior = np.array( (0, 0, 0), dtype = interior_dtype).view(np.recarray)
 
-# rotation_matrix(exterior) # inplace update of the rotation matrix
+# def set_primary_point(point: np.ndarray) -> None:
+#     """Set the primary point of the camera."""
+#     self.xh, self.yh, self.cc = point
 
+# def set_back_focal_distance(self, cc: float) -> None:
+#     """Set the back focal distance of the camera."""
+#     self.cc = cc
 
-    # def increment_attribute(self, attr_name, increment_value):
-    #     """Update the value of an attribute by increment_value."""
-    #     if hasattr(self, attr_name):
-    #         setattr(self, attr_name, getattr(
-    #             self, attr_name) + increment_value)
-
-    # def __repr__(self) -> str:
-    #     """Return a string representation of the Exterior object."""
-    #     output = f"Exterior: x0={self['x0']}, y0={self['y0']}, z0={self['z0']}\n"
-    #     output += f"omega={self['omega']}, phi={self['phi']}, kappa={self['kappa']}\n"
-    #     return output
-
-
-class Interior:
-    """Interior orientation data structure."""
-
-    def __init__(self, xh=0.0, yh=0.0, cc=0.0):
-        self.xh = xh
-        self.yh = yh
-        self.cc = cc
-
-    def set_primary_point(self, point: np.ndarray) -> None:
-        """Set the primary point of the camera."""
-        self.xh, self.yh, self.cc = point
-
-    def set_back_focal_distance(self, cc: float) -> None:
-        """Set the back focal distance of the camera."""
-        self.cc = cc
-
-class ap_52:
-    """Additional parameters for distortion correction."""
-
-    def __init__(self, k1=0.0, k2=0.0, k3=0.0, p1=0.0, p2=0.0, scx=1.0, she=0.0):
-        self.k1 = k1
-        self.k2 = k2
-        self.k3 = k3
-        self.p1 = p1
-        self.p2 = p2
-        self.scx = scx
-        self.she = she
-
-    def set_radial_distortion(self, dist_array: np.ndarray) -> None:
-        """Set the radial distortion parameters k1, k2, k3."""
-        self.k1, self.k2, self.k3 = dist_array
-
-    def set_decentering(self, decent: np.ndarray) -> None:
-        """Set the decentring parameters p1 and p2."""
-        self.p1, self.p2 = decent
-
-    def set_affine_distortion(self, affine: np.ndarray) -> None:
-        """Set the affine distortion parameters scx and she."""
-        self.scx, self.she = affine
+ap52_dtype = np.dtype([
+    ('k1', np.float64),
+    ('k2', np.float64),
+    ('k3', np.float64),
+    ('p1', np.float64),
+    ('p2', np.float64),
+    ('scx', np.float64),
+    ('she', np.float64)
+    ])
+ap_52 = np.array((0, 0, 0, 0, 0, 1, 0), dtype = ap52_dtype).view(np.recarray)
 
 
-class mm_lut:
-    """Multimedia lookup table data structure."""
+# class ap_52:
+#     """Additional parameters for distortion correction."""
 
-    def __init__(self, origin=None, nr=3, nz=3, rw=0, data=None):
-        if origin is None:
-            origin = np.zeros(3, dtype=np.float32)
-        # if data is None:
-        #     data = np.zeros((nr, nz), dtype=np.float32)  # Assuming data is a 2D array, adjust as needed
-        self.origin = origin
-        self.nr = nr
-        self.nz = nz
-        self.rw = rw
-        self.data = data
+#     def __init__(self, k1=0.0, k2=0.0, k3=0.0, p1=0.0, p2=0.0, scx=1.0, she=0.0):
+#         self.k1 = k1
+#         self.k2 = k2
+#         self.k3 = k3
+#         self.p1 = p1
+#         self.p2 = p2
+#         self.scx = scx
+#         self.she = she
+
+#     def set_radial_distortion(self, dist_array: np.ndarray) -> None:
+#         """Set the radial distortion parameters k1, k2, k3."""
+#         self.k1, self.k2, self.k3 = dist_array
+
+#     def set_decentering(self, decent: np.ndarray) -> None:
+#         """Set the decentring parameters p1 and p2."""
+#         self.p1, self.p2 = decent
+
+#     def set_affine_distortion(self, affine: np.ndarray) -> None:
+#         """Set the affine distortion parameters scx and she."""
+#         self.scx, self.she = affine
+
+mmlut_dtype = np.dtype([
+    ('origin', np.float64, 3),
+    ('nr', np.int32),
+    ('nz', np.int32),
+    ('rw', np.int32),
+    ('data', np.float64, (3, 3))
+    ])
+
+mm_lut = np.array((np.zeros(3), 0, 0, 0, np.zeros((3, 3))), dtype = mmlut_dtype).view(np.recarray)
+
+# class mm_lut:
+#     """Multimedia lookup table data structure."""
+
+#     def __init__(self, origin=None, nr=3, nz=3, rw=0, data=None):
+#         if origin is None:
+#             origin = np.zeros(3, dtype=np.float32)
+#         # if data is None:
+#         #     data = np.zeros((nr, nz), dtype=np.float32)  # Assuming data is a 2D array, adjust as needed
+#         self.origin = origin
+#         self.nr = nr
+#         self.nz = nz
+#         self.rw = rw
+#         self.data = data
 
 
 class Calibration:
@@ -143,13 +146,13 @@ class Calibration:
         if ext_par is None:
             ext_par = Exterior.copy()
         if int_par is None:
-            int_par = Interior()
+            int_par = Interior.copy()
         if glass_par is None:
             glass_par = np.array([0.0, 0.0, 1.0])
         if added_par is None:
-            added_par = ap_52()
+            added_par = ap_52.copy()
         if mmlut is None:
-            mmlut = mm_lut(np.zeros(3), 0, 0, 0, None)
+            mmlut = mm_lut.copy() # (np.zeros(3), 0, 0, 0, None)
 
         self.ext_par = ext_par
         self.int_par = int_par
@@ -418,10 +421,7 @@ class Calibration:
 
     def set_added_par(self, listpar: np.ndarray | list):
         """Set added par from an numpy array of parameters."""
-        if isinstance(listpar, list):
-            listpar = np.array(listpar)
-
-        self.added_par = ap_52(*listpar.tolist())
+        self.added_par = np.array(listpar, dtype=ap52_dtype).view(np.recarray)
 
     def copy(self, new_copy):
         """Copy the calibration data to a new object."""
@@ -434,10 +434,10 @@ class Calibration:
 
 
 def write_ori(
-    ext_par: np.ndarray,
-    int_par: Interior,
+    ext_par: np.recarray,
+    int_par: np.recarray,
     glass: np.ndarray,
-    added_par: ap_52,
+    added_par: np.recarray,
     filename: str,
     add_file: Optional[str],
 ) -> bool:
@@ -499,7 +499,7 @@ def compare_exterior(e1: np.ndarray, e2: np.ndarray) -> bool:
     )
 
 
-def compare_interior(i1: Interior, i2: Interior) -> bool:
+def compare_interior(i1: np.recarray, i2: np.recarray) -> bool:
     """Compare interior orientation parameters."""
     return i1.xh == i2.xh and i1.yh == i2.yh and i1.cc == i2.cc
 
