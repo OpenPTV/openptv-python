@@ -56,7 +56,7 @@ def multimed_r_nlay(cal: Calibration, mm: MultimediaPar, pos: np.ndarray) -> flo
     return mmf
 
 
-@njit
+@njit(fastmath=True, cache=True, nogil=True)
 def fast_multimed_r_nlay(
     nlay: int,
     n1: float,
@@ -134,7 +134,7 @@ def trans_cam_point(
         origin, mm.d[0], glass_dir, pos)
 
 
-@njit(fastmath=True)
+@njit(fastmath=True, cache=True, nogil=True)
 def fast_trans_cam_point(
     primary_point: np.ndarray,
     d: float,
@@ -195,7 +195,7 @@ def back_trans_point(
     """
     return fast_back_trans_point(glass, mm.d[0], cross_c, cross_p, pos_t)
 
-@njit
+@njit(fastmath=True, cache=True, nogil=True)
 def fast_back_trans_point(glass_direction: np.ndarray, d: float, cross_c, cross_p, pos_t) -> np.ndarray:
     """Run numba faster version of back projection."""
     # Calculate the glass direction vector
@@ -226,7 +226,7 @@ def fast_back_trans_point(glass_direction: np.ndarray, d: float, cross_c, cross_
 
     return pos
 
-@njit
+@njit(fastmath=True, cache=True, nogil=True)
 def move_along_ray(glob_z: float, vertex: np.ndarray, direct: np.ndarray) -> np.ndarray:
     """Move along the ray to the global z plane.
 

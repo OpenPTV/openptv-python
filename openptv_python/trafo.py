@@ -144,7 +144,7 @@ def fast_arr_metric_to_pixel(
 
     return pixel
 
-
+@njit(fastmath=True, cache=True, nogil=True)
 def distort_brown_affine(x: float,
                          y: float,
                          ap: np.recarray,
@@ -153,71 +153,28 @@ def distort_brown_affine(x: float,
     if x == 0 and y == 0:
         return 0, 0
 
-    tmp = fast_distort_brown_affine(x, y, ap.k1, ap.k2, ap.k3,
-                                     ap.p1, ap.p2, ap.she, ap.scx)
-    return tmp[0], tmp[1]
-
-    # print(f"x {x}, y {y}")
-
-
-# @njit(float64[:]
-# (float64,float64,float64,float64,float64,
-# float64,float64,float64,float64))
-def fast_distort_brown_affine(
-    x: float,
-    y: float,
-    k1: float,
-    k2: float,
-    k3: float,
-    p1: float,
-    p2: float,
-    she: float,
-    scx: float,
-) -> np.ndarray:
-    """Distort a point using the Brown affine model."""
     r = sqrt(x**2 + y**2)
 
     x += (
-        x * (k1 * r**2 + k2 * r**4 + k3 * r**6)
-        + p1 * (r**2 + 2 * x**2)
-        + 2 * p2 * x * y
+        x * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
+        + ap.p1 * (r**2 + 2 * x**2)
+        + 2 * ap.p2 * x * y
     )
     y += (
-        y * (k1 * r**2 + k2 * r**4 + k3 * r**6)
-        + p2 * (r**2 + 2 * y**2)
-        + 2 * p1 * x * y
+        y * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
+        + ap.p2 * (r**2 + 2 * y**2)
+        + 2 * ap.p1 * x * y
     )
 
-    # print(f"x {x}, y {y}")
-    # print(f"ap.she {ap.she} ap.scx {ap.scx}")
+    x1 = ap.scx * x - sin(ap.she) * y
+    y1 = cos(ap.she) * y
 
-    x1 = scx * x - sin(she) * y
-    y1 = cos(she) * y
+    return x1, y1
 
-    # print(f"x1 {x1}, y1 {y1}")
-
-    return np.array([x1, y1])
-
-
+@njit(fastmath=True, cache=True, nogil=True)
 def correct_brown_affine(
     x: float, y: float, ap: np.recarray, tol: float = 1e-5
 ) -> Tuple[float, float]:
-    """Correct a distorted point using the Brown affine model."""
-    return fast_correct_brown_affine(x, y, ap.k1, ap.k2, ap.k3, ap.p1, ap.p2, ap.she, ap.scx, tol)
-
-
-@njit
-def fast_correct_brown_affine(
-        x: float,
-        y: float,
-        k1: float,
-        k2: float,
-        k3: float,
-        p1: float,
-        p2: float,
-        she: float,
-        scx: float,
-        tol: float = 1e-5) -> Tuple[float, float]:
     """Correct a distorted point using the Brown affine model."""
     r, rq, xq, yq = 0.0, 0.0, x, y
     itnum = 0
@@ -230,17 +187,17 @@ def fast_correct_brown_affine(
     while True:
         r = rq
         xq = (
-            (x + yq * np.sin(she)) / scx
-            - xq * (k1 * r**2 + k2 * r**4 + k3 * r**6)
-            - p1 * (r**2 + 2 * xq**2)
-            - 2 * p2 * xq * yq
+            (x + yq * np.sin(ap.she)) / ap.scx
+            - xq * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
+            - ap.p1 * (r**2 + 2 * xq**2)
+            - 2 * ap.p2 * xq * yq
         )
 
         yq = (
-            y / np.cos(she)
-            - yq * (k1 * r**2 + k2 * r**4 + k3 * r**6)
-            - p2 * (r**2 + 2 * yq**2)
-            - 2 * p1 * xq * yq
+            y / np.cos(ap.she)
+            - yq * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
+            - ap.p2 * (r**2 + 2 * yq**2)
+            - 2 * ap.p1 * xq * yq
         )
 
         rq = np.sqrt(xq**2 + yq**2)
@@ -255,17 +212,17 @@ def fast_correct_brown_affine(
 
     r = rq
     x1 = (
-        (x + yq * np.sin(she)) / scx
-        - xq * (k1 * r**2 + k2 * r**4 + k3 * r**6)
-        - p1 * (r**2 + 2 * xq**2)
-        - 2 * p2 * xq * yq
+        (x + yq * np.sin(ap.she)) / ap.scx
+        - xq * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
+        - ap.p1 * (r**2 + 2 * xq**2)
+        - 2 * ap.p2 * xq * yq
     )
 
     y1 = (
-        y / np.cos(she)
-        - yq * (k1 * r**2 + k2 * r**4 + k3 * r**6)
-        - p2 * (r**2 + 2 * yq**2)
-        - 2 * p1 * xq * yq
+        y / np.cos(ap.she)
+        - yq * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
+        - ap.p2 * (r**2 + 2 * yq**2)
+        - 2 * ap.p1 * xq * yq
     )
 
     return x1, y1
