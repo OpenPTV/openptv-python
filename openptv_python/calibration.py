@@ -58,7 +58,6 @@ exterior_dtype = np.dtype([
     ('kappa', np.float64),
     ('dm', np.float64, (3, 3))
     ])
-# Exterior = np.zeros(1, dtype=exterior_dtype).view(np.recarray) # initialize memory
 Exterior = np.array((0, 0, 0, 0, 0, 0, np.eye(3)), dtype = exterior_dtype).view(np.recarray)
 rotation_matrix(Exterior)             # rotation should be a unit matrix
 assert np.allclose(np.eye(3), Exterior['dm'])
@@ -70,13 +69,6 @@ interior_dtype = np.dtype([
     ])
 Interior = np.array( (0, 0, 0), dtype = interior_dtype).view(np.recarray)
 
-# def set_primary_point(point: np.ndarray) -> None:
-#     """Set the primary point of the camera."""
-#     self.xh, self.yh, self.cc = point
-
-# def set_back_focal_distance(self, cc: float) -> None:
-#     """Set the back focal distance of the camera."""
-#     self.cc = cc
 
 ap52_dtype = np.dtype([
     ('k1', np.float64),
@@ -89,60 +81,27 @@ ap52_dtype = np.dtype([
     ])
 ap_52 = np.array((0, 0, 0, 0, 0, 1, 0), dtype = ap52_dtype).view(np.recarray)
 
-
-# class ap_52:
-#     """Additional parameters for distortion correction."""
-
-#     def __init__(self, k1=0.0, k2=0.0, k3=0.0, p1=0.0, p2=0.0, scx=1.0, she=0.0):
-#         self.k1 = k1
-#         self.k2 = k2
-#         self.k3 = k3
-#         self.p1 = p1
-#         self.p2 = p2
-#         self.scx = scx
-#         self.she = she
-
-#     def set_radial_distortion(self, dist_array: np.ndarray) -> None:
-#         """Set the radial distortion parameters k1, k2, k3."""
-#         self.k1, self.k2, self.k3 = dist_array
-
-#     def set_decentering(self, decent: np.ndarray) -> None:
-#         """Set the decentring parameters p1 and p2."""
-#         self.p1, self.p2 = decent
-
-#     def set_affine_distortion(self, affine: np.ndarray) -> None:
-#         """Set the affine distortion parameters scx and she."""
-#         self.scx, self.she = affine
-
 mmlut_dtype = np.dtype([
     ('origin', np.float64, 3),
     ('nr', np.int32),
     ('nz', np.int32),
     ('rw', np.int32),
-    ('data', np.float64, (3, 3))
     ])
 
-mm_lut = np.array((np.zeros(3), 0, 0, 0, np.zeros((3, 3))), dtype = mmlut_dtype).view(np.recarray)
-
-# class mm_lut:
-#     """Multimedia lookup table data structure."""
-
-#     def __init__(self, origin=None, nr=3, nz=3, rw=0, data=None):
-#         if origin is None:
-#             origin = np.zeros(3, dtype=np.float32)
-#         # if data is None:
-#         #     data = np.zeros((nr, nz), dtype=np.float32)  # Assuming data is a 2D array, adjust as needed
-#         self.origin = origin
-#         self.nr = nr
-#         self.nz = nz
-#         self.rw = rw
-#         self.data = data
+mm_lut = np.array((np.zeros(3), 0, 0, 0), dtype = mmlut_dtype).view(np.recarray)
+mm_lut_data = np.empty((mm_lut['nr'], mm_lut['nz']), dtype=np.float64)
 
 
 class Calibration:
     """Calibration data structure."""
 
-    def __init__(self, ext_par=None, int_par=None, glass_par=None, added_par=None, mmlut=None):
+    def __init__(self,
+                 ext_par=None,
+                 int_par=None,
+                 glass_par=None,
+                 added_par=None,
+                 mmlut=None,
+                 mmlut_data=None):
         if ext_par is None:
             ext_par = Exterior.copy()
         if int_par is None:
@@ -152,13 +111,17 @@ class Calibration:
         if added_par is None:
             added_par = ap_52.copy()
         if mmlut is None:
-            mmlut = mm_lut.copy() # (np.zeros(3), 0, 0, 0, None)
+            mmlut = mm_lut.copy() # (np.zeros(3), 0, 0, 0)
+        if mmlut_data is None:
+            mmlut_data = np.zeros((mmlut.nr, mmlut.nz), dtype=np.float64)
+
 
         self.ext_par = ext_par
         self.int_par = int_par
         self.glass_par = glass_par
         self.added_par = added_par
         self.mmlut = mmlut
+        self.mmlut_data = mmlut_data
 
 
     @classmethod
@@ -205,7 +168,7 @@ class Calibration:
 
             tmp = [float(x) for x in fp.readline().split()]  # xh,yh
             tmp += [float(x) for x in fp.readline().split()]  # cc
-            ret.int_par.set_primary_point(np.array(tmp))
+            ret.set_primary_point(np.array(tmp))
             # self.int_par.set_back_focal_distance(float(fp.readline()))
 
             # Glass
@@ -224,9 +187,9 @@ class Calibration:
             with open(add_file, "r", encoding="utf-8") as fp:
                 tmp = list(map(float, fp.readline().split()))
 
-                ret.added_par.set_radial_distortion(np.array(tmp[:3]))
-                ret.added_par.set_decentering(np.array(tmp[3:5]))
-                ret.added_par.set_affine_distortion(np.array(tmp[5:]))
+                ret.set_radial_distortion(np.array(tmp[:3]))
+                ret.set_decentering(np.array(tmp[3:5]))
+                ret.set_affine_distortion(np.array(tmp[5:]))
 
         except FileNotFoundError:
             print("no addpar fallback used")  # Waits for proper logging.
@@ -324,10 +287,11 @@ class Calibration:
             of point from sensor middle and sensor-point distance, int_par this
             order.
         """
-        if len(prim_point_pos) != 3:
-            raise ValueError("Expected a 3-element list")
+        if prim_point_pos.shape != (3,):
+            raise ValueError("Expected a 3-element array")
 
-        self.int_par.set_primary_point(prim_point_pos)
+        self.int_par.xh, self.int_par.yh, self.int_par.cc = prim_point_pos
+        # self.int_par.set_primary_point(prim_point_pos)
 
     def get_primary_point(self):
         """
@@ -349,10 +313,11 @@ class Calibration:
         ---------
         dist_coeffs - length-3 array, holding k_i.
         """
-        if len(dist_coeffs) != 3:
+        if dist_coeffs.shape != (3,):
             raise ValueError("Expected a 3-element array")
 
-        self.added_par.set_radial_distortion(dist_coeffs)
+        self.added_par.k1, self.added_par.k2, self.added_par.k3 = dist_coeffs
+
 
     def get_radial_distortion(self):
         """
@@ -370,19 +335,16 @@ class Calibration:
         ---------
         decent - array, holding p_i
         """
-        if len(decent) != 2:
+        if decent.shape != (2,):
             raise ValueError("Expected a 2-element list")
 
-        self.added_par.set_decentering(decent)
+        self.added_par.p1, self.added_par.p2 = decent
 
     def get_decentering(self):
         """Return the decentering parameters [1] as a 2 element array, (p_1, p_2)."""
-        ret = np.empty(2)
-        ret[0] = self.added_par.p1
-        ret[1] = self.added_par.p2
-        return ret
+        return np.r_[self.added_par.p1, self.added_par.p2]
 
-    def set_affine_trans(self, affine: np.ndarray) -> None:
+    def set_affine_distortion(self, affine: np.ndarray) -> None:
         """
         Set the affine transform parameters (x-scale, shear) of the image.
 
@@ -390,9 +352,10 @@ class Calibration:
         ---------
         affine - array, holding (x-scale, shear) int_par order.
         """
-        if len(affine) != 2:
+        if affine.shape != (2,):
             raise ValueError("Expected a 2-element list")
-        self.added_par.set_affine_distortion(affine)
+
+        self.added_par.scx, self.added_par.she = affine
 
     def get_affine(self):
         """Return the affine transform parameters [1] as a 2 element array, (scx, she)."""
@@ -419,9 +382,9 @@ class Calibration:
         """Return the glass vector, a 3-element array of float."""
         return self.glass_par
 
-    def set_added_par(self, listpar: np.ndarray | list):
+    def set_added_par(self, ap52_array: np.ndarray):
         """Set added par from an numpy array of parameters."""
-        self.added_par = np.array(listpar, dtype=ap52_dtype).view(np.recarray)
+        self.added_par = np.array(tuple(ap52_array.tolist()), dtype = ap52_dtype).view(np.recarray)
 
     def copy(self, new_copy):
         """Copy the calibration data to a new object."""
@@ -486,7 +449,7 @@ def read_ori(ori_file: str, add_file: str) -> Calibration:
     return ret
 
 
-def compare_exterior(e1: np.ndarray, e2: np.ndarray) -> bool:
+def compare_exterior(e1: np.recarray, e2: np.recarray) -> bool:
     """Compare exterior orientation parameters."""
     return (
         np.allclose(e1['dm'], e2['dm'], atol=1e-6)

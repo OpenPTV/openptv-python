@@ -61,10 +61,10 @@ class Test_Orientation(unittest.TestCase):
             target_array[i].set_pos((xy_img_pts_pixel[i][0], xy_img_pts_pixel[i][1]))
 
         # create randomized target array
-        indices = list(range(coords_count))
-        shuffled_indices = list(range(coords_count))
+        indices = np.arange(coords_count)
+        shuffled_indices = np.arange(coords_count)
 
-        while indices == shuffled_indices:
+        while np.all(indices == shuffled_indices):
             np.random.shuffle(shuffled_indices)
 
         rand_targ_array = TargetArray(coords_count)
@@ -344,6 +344,10 @@ class TestGradientDescent(unittest.TestCase):
         self.cal.set_pos(self.cal.get_pos() + np.r_[15.0, -15.0, 15.0])
         self.cal.set_angles(self.cal.get_angles() + np.r_[-0.5, 0.5, -0.5])
 
+
+        self.orient_par.ccflag=0
+        self.orient_par.xhflag=0
+        self.orient_par.yhflag=0
         print(f"Calibrating with the following flags: {self.orient_par}")
 
         _, _, _ = full_calibration(
@@ -361,6 +365,242 @@ class TestGradientDescent(unittest.TestCase):
             self.cal.get_pos(), self.orig_cal.get_pos(), decimal=3
         )
 
+        print(f"{self.cal.get_pos()}")
+        print(f"{self.cal.get_angles()}")
+        print(f"{self.cal.added_par}")
+
+        # Perturb the calibration object, then compore result to original.
+        self.cal.set_pos(self.cal.get_pos() + np.r_[1.0, -1.0, 1.0])
+        self.cal.set_angles(self.cal.get_angles() + np.r_[-0.1, 0.1, -0.1])
+
+        self.orient_par.ccflag=1
+        self.orient_par.xhflag=1
+        self.orient_par.yhflag=1
+        print(f"Calibrating with the following flags: {self.orient_par}")
+
+        _, _, _ = full_calibration(
+            self.cal,
+            ref_pts,
+            target_array,
+            self.control,
+            self.orient_par
+            )
+
+        np.testing.assert_array_almost_equal(
+            self.cal.get_angles(), self.orig_cal.get_angles(), decimal=4
+        )
+        np.testing.assert_array_almost_equal(
+            self.cal.get_pos(), self.orig_cal.get_pos(), decimal=3
+        )
+
+        print(f"{self.cal.get_pos()}")
+        print(f"{self.cal.get_angles()}")
+        print(f"{self.cal.added_par}")
+
+        # Perturb the calibration object, then compore result to original.
+        # self.cal.set_pos(self.cal.get_pos() + np.r_[1.0, -1.0, 1.0])
+        # self.cal.set_angles(self.cal.get_angles() + np.r_[-0.1, 0.1, -0.1])
+
+        self.orient_par.ccflag=0
+        self.orient_par.xhflag=0
+        self.orient_par.yhflag=0
+        self.orient_par.k1flag=0
+        self.orient_par.k2flag=0
+        self.orient_par.k3flag=0
+        self.orient_par.scxflag=0
+        self.orient_par.sheflag=1
+        print(f"Calibrating with the following flags: {self.orient_par}")
+
+        _, _, _ = full_calibration(
+            self.cal,
+            ref_pts,
+            target_array,
+            self.control,
+            self.orient_par
+            )
+
+        np.testing.assert_array_almost_equal(
+            self.cal.get_angles(), self.orig_cal.get_angles(), decimal=4
+        )
+        np.testing.assert_array_almost_equal(
+            self.cal.get_pos(), self.orig_cal.get_pos(), decimal=3
+        )
+        print(f"{self.cal.get_pos()}")
+        print(f"{self.cal.get_angles()}")
+        print(f"{self.cal.added_par}")
+
+        self.orient_par.ccflag=0
+        self.orient_par.xhflag=0
+        self.orient_par.yhflag=0
+        self.orient_par.k1flag=0
+        self.orient_par.k2flag=0
+        self.orient_par.k3flag=0
+        self.orient_par.scxflag=1
+        self.orient_par.sheflag=0
+        print(f"Calibrating with the following flags: {self.orient_par}")
+
+        _, _, _ = full_calibration(
+            self.cal,
+            ref_pts,
+            target_array,
+            self.control,
+            self.orient_par
+            )
+
+        np.testing.assert_array_almost_equal(
+            self.cal.get_angles(), self.orig_cal.get_angles(), decimal=4
+        )
+        np.testing.assert_array_almost_equal(
+            self.cal.get_pos(), self.orig_cal.get_pos(), decimal=3
+        )
+        print(f"{self.cal.get_pos()}")
+        print(f"{self.cal.get_angles()}")
+        print(f"{self.cal.added_par}")
+
+        self.orient_par.ccflag=0
+        self.orient_par.xhflag=0
+        self.orient_par.yhflag=0
+        self.orient_par.k1flag=0
+        self.orient_par.k2flag=0
+        self.orient_par.k3flag=1
+        self.orient_par.scxflag=0
+        self.orient_par.sheflag=0
+        print(f"Calibrating with the following flags: {self.orient_par}")
+
+        _, _, _ = full_calibration(
+            self.cal,
+            ref_pts,
+            target_array,
+            self.control,
+            self.orient_par
+            )
+
+        np.testing.assert_array_almost_equal(
+            self.cal.get_angles(), self.orig_cal.get_angles(), decimal=4
+        )
+        np.testing.assert_array_almost_equal(
+            self.cal.get_pos(), self.orig_cal.get_pos(), decimal=3
+        )
+        print(f"{self.cal.get_pos()}")
+        print(f"{self.cal.get_angles()}")
+        print(f"{self.cal.added_par}")
+
+        self.orient_par.ccflag=0
+        self.orient_par.xhflag=0
+        self.orient_par.yhflag=0
+        self.orient_par.k1flag=0
+        self.orient_par.k2flag=1
+        self.orient_par.k3flag=0
+        self.orient_par.scxflag=0
+        self.orient_par.sheflag=0
+        print(f"Calibrating with the following flags: {self.orient_par}")
+
+        _, _, _ = full_calibration(
+            self.cal,
+            ref_pts,
+            target_array,
+            self.control,
+            self.orient_par
+            )
+
+        np.testing.assert_array_almost_equal(
+            self.cal.get_angles(), self.orig_cal.get_angles(), decimal=4
+        )
+        np.testing.assert_array_almost_equal(
+            self.cal.get_pos(), self.orig_cal.get_pos(), decimal=3
+        )
+        print(f"{self.cal.get_pos()}")
+        print(f"{self.cal.get_angles()}")
+        print(f"{self.cal.added_par}")
+
+        self.orient_par.ccflag=0
+        self.orient_par.xhflag=0
+        self.orient_par.yhflag=0
+        self.orient_par.k1flag=1
+        self.orient_par.k2flag=0
+        self.orient_par.k3flag=0
+        self.orient_par.scxflag=0
+        self.orient_par.sheflag=0
+        print(f"Calibrating with the following flags: {self.orient_par}")
+
+        _, _, _ = full_calibration(
+            self.cal,
+            ref_pts,
+            target_array,
+            self.control,
+            self.orient_par
+            )
+
+        np.testing.assert_array_almost_equal(
+            self.cal.get_angles(), self.orig_cal.get_angles(), decimal=4
+        )
+        np.testing.assert_array_almost_equal(
+            self.cal.get_pos(), self.orig_cal.get_pos(), decimal=3
+        )
+        print(f"{self.cal.get_pos()}")
+        print(f"{self.cal.get_angles()}")
+        print(f"{self.cal.added_par}")
+
+        self.orient_par.ccflag=0
+        self.orient_par.xhflag=0
+        self.orient_par.yhflag=0
+        self.orient_par.k1flag=0
+        self.orient_par.k2flag=0
+        self.orient_par.k3flag=1
+        self.orient_par.scxflag=0
+        self.orient_par.sheflag=0
+        self.orient_par.p1flag=1
+        self.orient_par.p2floag=0
+
+        print(f"Calibrating with the following flags: {self.orient_par}")
+
+        _, _, _ = full_calibration(
+            self.cal,
+            ref_pts,
+            target_array,
+            self.control,
+            self.orient_par
+            )
+
+        np.testing.assert_array_almost_equal(
+            self.cal.get_angles(), self.orig_cal.get_angles(), decimal=4
+        )
+        np.testing.assert_array_almost_equal(
+            self.cal.get_pos(), self.orig_cal.get_pos(), decimal=3
+        )
+        print(f"{self.cal.get_pos()}")
+        print(f"{self.cal.get_angles()}")
+        print(f"{self.cal.added_par}")
+
+        self.orient_par.ccflag=0
+        self.orient_par.xhflag=0
+        self.orient_par.yhflag=0
+        self.orient_par.k1flag=0
+        self.orient_par.k2flag=0
+        self.orient_par.k3flag=0
+        self.orient_par.scxflag=0
+        self.orient_par.sheflag=0
+        self.orient_par.p1flag=1
+        self.orient_par.p2flag=1
+        print(f"Calibrating with the following flags: {self.orient_par}")
+
+        _, _, _ = full_calibration(
+            self.cal,
+            ref_pts,
+            target_array,
+            self.control,
+            self.orient_par
+            )
+
+        np.testing.assert_array_almost_equal(
+            self.cal.get_angles(), self.orig_cal.get_angles(), decimal=4
+        )
+        np.testing.assert_array_almost_equal(
+            self.cal.get_pos(), self.orig_cal.get_pos(), decimal=3
+        )
+        print(f"{self.cal.get_pos()}")
+        print(f"{self.cal.get_angles()}")
+        print(f"{self.cal.added_par}")
 
 if __name__ == "__main__":
     unittest.main()

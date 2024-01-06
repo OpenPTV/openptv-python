@@ -90,9 +90,10 @@ class TestEpipolarCurve(unittest.TestCase):
         test_Ex.z0 = 100.0
 
 
-        test_I = Interior(0.0, 0.0, 100.0)
+        test_I = Interior.copy()
+        test_I.cc = 100.0
         test_G = np.array((0.0, 0.0, 50.0))
-        test_addp = ap_52(0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
+        test_addp = ap_52.copy()# (0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
         test_cal = Calibration(test_Ex, test_I, test_G, test_addp)
 
         test_mm = MultimediaPar(1, 1.0, [1.49, 0.0, 0.0], [
@@ -132,9 +133,10 @@ class TestEpipolarCurve(unittest.TestCase):
         test_Ex.z0 = 100.0
         test_Ex.phi = -.01
 
-        test_I = Interior(0.0, 0.0, 100.0)
+        test_I = Interior.copy()
+        test_I.cc = 100.0
         test_G = np.array((0.0, 0.0, 50.0))
-        test_addp = ap_52(0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
+        test_addp = ap_52.copy()# (0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
         test_cal_1 = Calibration(test_Ex, test_I, test_G, test_addp)
 
         test_Ex_2 = Exterior.copy()
@@ -167,9 +169,10 @@ class TestEpipolarCurve(unittest.TestCase):
         """Test the epi_mm function."""
         test_Ex = Exterior.copy()
         test_Ex.z0 = 100.0
-        test_I = Interior(0.0, 0.0, 100.0)
+        test_I = Interior.copy()
+        test_I.cc = 100.0
         test_G = np.array((0.0, 0.0, 50.0))
-        test_addp = ap_52(0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
+        test_addp = ap_52.copy()#(0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
         test_cal_1 = Calibration(test_Ex, test_I, test_G, test_addp)
 
         test_Ex_2 = Exterior.copy()
@@ -248,9 +251,10 @@ class TestFindCandidate(unittest.TestCase):
         test_Ex = Exterior.copy()
         test_Ex.z0 = 100.
 
-        test_I = Interior(0.0, 0.0, 100.0)
+        test_I = Interior.copy()
+        test_I.cc =  100.0
         test_G = np.array((0.0, 0.0, 50.0))
-        test_addp = ap_52(0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
+        test_addp = ap_52.copy()# (0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
         test_cal = Calibration(test_Ex, test_I, test_G, test_addp)
         test_mm = MultimediaPar(1, 1.0, [1.49, 0.0, 0.0], [
                                 5.0, 0.0, 0.0], 1.33)

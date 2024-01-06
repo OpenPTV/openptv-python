@@ -23,9 +23,9 @@ class TestFlatCenteredCam(unittest.TestCase):
             ext_par = np.array((0, 0, 40, 0, 0, 0,
                                 [[1, 0, 0], [0, 1, 0], [0, 0, 1]]),
                                dtype = Exterior.dtype).view(np.recarray),
-            int_par=Interior(0, 0, 10),
+            int_par = np.array((0,0,10), dtype = Interior.dtype).view(np.recarray),
             glass_par=np.array((0., 0., 20.)),
-            added_par=ap_52(0, 0, 0, 0, 0, 1, 0),
+            added_par=ap_52.copy() # (0, 0, 0, 0, 0, 1, 0),
         )
         mm = MultimediaPar(  # All in air, simplest case.
             nlay=1, n1=1, n2=[1], n3=1, d=[1]

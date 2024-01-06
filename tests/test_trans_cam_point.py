@@ -21,20 +21,7 @@ class TestTransformFunctions(unittest.TestCase):
         correct_Ex_t = Exterior.copy()
         correct_Ex_t.z0 = 99.0
 
-        # (
-        #     x0=0.0,
-        #     y0=0.0,
-        #     z0=99.0,
-        #     omega=-0.0,
-        #     phi=0.0,
-        #     kappa=0.0,
-        #     dm=np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]),
-        # )
-
-        # test_I = Interior(0.0, 0.0, 100.0)
         test_G = np.array((0.0001, 0.00001, 1.0))
-        # test_addp = ap_52(0., 0., 0., 0., 0., 1., 0.)
-        # test_cal = Calibration(test_Ex, test_I, test_G, test_addp)
 
         #
         test_mm = MultimediaPar(1, 1.0, [1.49, 0.0, 0.0], [5.0, 0.0, 0.0], 1.33)

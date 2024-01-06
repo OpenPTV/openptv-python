@@ -34,7 +34,7 @@ def multimed_r_nlay(cal: Calibration, mm: MultimediaPar, pos: np.ndarray) -> flo
         return 1.0
 
     #  interpolation using the existing mmlut
-    if cal.mmlut.data is not None:
+    if cal.mmlut_data.shape != (0, 0):
         # print("going into get_mmf_from_mmlut\n")
         mmf = get_mmf_from_mmlut(cal, pos)
         if mmf > 0:
@@ -273,7 +273,7 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibrati
     z_max_t = z_max
 
     # intersect with image vertices rays
-    cal_t = Calibration(mmlut=cal.mmlut)
+    cal_t = Calibration(mmlut = cal.mmlut.copy())
 
     for i in range(2):
         for j in range(2):
@@ -330,8 +330,8 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibrati
     cal.mmlut.nz = nz
     cal.mmlut.rw = rw
 
-    if cal.mmlut.data is None:
-        data = np.empty((nr, nz), dtype=np.float64)
+    if cal.mmlut_data.shape == (0, 0):
+        cal.mmlut_data = np.empty((nr, nz), dtype=np.float64)
         Ri = np.arange(nr) * rw
         Zi = np.arange(nz) * rw + z_min_t
 
@@ -339,10 +339,10 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibrati
             for j in range(nz):
                 xyz = np.r_[Ri[i] + cal_t.ext_par.x0,
                               cal_t.ext_par.y0, Zi[j]]
-                data.flat[i * nz + j] = multimed_r_nlay(cal_t, cpar.mm, xyz)
+                cal.mmlut_data.flat[i * nz + j] = multimed_r_nlay(cal_t, cpar.mm, xyz)
 
         # print(f"filled mmlut data with {data}")
-        cal.mmlut.data = data
+        # cal.mmlut_data = data
 
     return cal
 
@@ -351,15 +351,13 @@ def get_mmf_from_mmlut(cal: Calibration, pos: np.ndarray) -> float:
     """Get the refractive index of the medium at a given position."""
     rw = cal.mmlut.rw
     origin = cal.mmlut.origin
-    data = cal.mmlut.data.flatten()  # type: ignore
+    data = cal.mmlut_data.flatten()  # type: ignore
     nz = cal.mmlut.nz
     nr = cal.mmlut.nr
 
     return fast_get_mmf_from_mmlut(rw, origin, data, nz, nr, pos)
 
 # @njit
-
-
 def fast_get_mmf_from_mmlut(
     rw: int,
     origin: np.ndarray,

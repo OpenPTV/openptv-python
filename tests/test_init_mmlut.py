@@ -1,6 +1,8 @@
 import unittest
 from pathlib import Path
 
+import numpy as np
+
 from openptv_python.calibration import mm_lut, read_calibration
 from openptv_python.multimed import init_mmlut
 from openptv_python.parameters import read_control_par, read_volume_par
@@ -27,12 +29,14 @@ class TestInitMmLut(unittest.TestCase):
         self.assertIsNotNone(cpar, "\n control parameter file reading failed\n ")
 
         # test_mmlut = [mmlut() for _ in range(cpar.num_cams)]
-        correct_mmlut = mm_lut(
-            origin=(0.0, 0.0, -250.00001105),
-            nr=130,
-            nz=177,
-            rw=2,
-        )
+        correct_mmlut = np.array((
+            (0.0, 0.0, -250.00001105),
+            130,
+            177,
+            2),
+        dtype = mm_lut.dtype)
+        correct_mmlut = correct_mmlut.view(np.recarray)
+
         # run init_mmLUT for one camera only
         cpar.num_cams = 1
 
@@ -40,7 +44,7 @@ class TestInitMmLut(unittest.TestCase):
 
         # Data[0] Is the radial shift of a point directly on the glass vector
 
-        data = cal.mmlut.data.flatten()
+        data = cal.mmlut_data.flatten()
 
         self.assertAlmostEqual(data[0], 1)
 

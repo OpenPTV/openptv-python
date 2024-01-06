@@ -714,9 +714,10 @@ class OrientPar(Parameters):
     @classmethod
     def from_file(cls, filename: str):
         """Read orientation parameters from file and returns orient_par object."""
+        ret = cls()
         try:
             with open(filename, "r", encoding="utf-8") as file:
-                ret = cls()
+
                 ret.useflag = int(file.readline().strip())  # /* use every point or every other pt */
                 ret.ccflag = int(file.readline().strip())   # /* change back focal distance */
                 ret.xhflag = int(file.readline().strip())   # /* change xh point, 1-yes, 0-no */
@@ -729,10 +730,11 @@ class OrientPar(Parameters):
                 ret.scxflag = int(file.readline().strip())  # /* scx - scaling  */
                 ret.sheflag = int(file.readline().strip())  # /* she - shearing  */
                 ret.interfflag = int(file.readline().strip())   # /* interface glass vector */
-                return ret
+
         except IOError:
             print(f"Could not open orientation parameters file {filename}.")
-            return None
+
+        return ret
 
 
 

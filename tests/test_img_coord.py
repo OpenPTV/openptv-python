@@ -46,12 +46,12 @@ class Test_image_coordinates(unittest.TestCase):
     def test_image_coord_regress(self):
         """Test image coordinates for a simple case."""
         self.calibration.set_pos(np.array([0, 0, 40]))
-        self.calibration.set_angles([0, 0, 0])
+        self.calibration.set_angles(np.array([0, 0, 0]))
         self.calibration.set_primary_point(np.array([0, 0, 10]))
         self.calibration.set_glass_vec(np.array([0, 0, 20]))
         self.calibration.set_radial_distortion(np.array([0, 0, 0]))
         self.calibration.set_decentering(np.array([0, 0]))
-        self.calibration.set_affine_trans(np.array([1, 0]))
+        self.calibration.set_affine_distortion(np.array([1, 0]))
 
         # self.mult = MultimediaPar(n1=1, n2=np.array([1]), n3=1, d=np.array([1]))
 

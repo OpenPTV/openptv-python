@@ -489,13 +489,13 @@ def orient(
         )
 
         # Interpret the results
-        print(
-            f"Coefficients (beta): {beta} \n \
-                Residuals: {residuals} \n \
-                singular_values: {singular_values} \n \
-                rank: {rank} \n \
-            "
-        )
+        # print(
+        #     f"Coefficients (beta): {beta} \n \
+        #         Residuals: {residuals} \n \
+        #         singular_values: {singular_values} \n \
+        #         rank: {rank} \n \
+        #     "
+        # )
 
         # stopflag
         stopflag = True

@@ -19,7 +19,8 @@ class TestGetMmfMmLUT(unittest.TestCase):
         self.vpar = read_volume_par(self.vol_file)
         self.cpar = read_control_par(self.ptv_file)
         self.correct_mmlut = [
-            mm_lut(origin=np.array([0.0, 0.0, -250.00001105]), nr=130, nz=177, rw=2)
+            np.array(( (0.0, 0.0, -250.00001105), 130, 177, 2),
+            dtype=mm_lut.dtype).view(np.recarray)
             for _ in range(4)
         ]
 

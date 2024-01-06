@@ -41,7 +41,7 @@ class TestMetricPixel(unittest.TestCase):
         output = arr_metric_to_pixel(
             np.array([[0.0, 0.0], [1.0, 0.0], [0.0, -1.0]]), cpar
         )
-        assert np.allclose(output, [[512, 504], [612, 504], [512, 604]])
+        assert np.allclose(output, np.array([[512, 504], [612, 504], [512, 604]]))
 
 
 class TestDistFlatRoundTrip(unittest.TestCase):
@@ -79,7 +79,8 @@ class TestDistFlatRoundTrip(unittest.TestCase):
     def test_shear_distortion(self):
         """Test the shear distortion parameter."""
         x, y = 1.0, 1.0
-        ap = ap_52(she=1.0)
+        ap = ap_52.copy()
+        ap.she=1.0
         xp, yp = distort_brown_affine(x, y, ap)
         self.assertAlmostEqual(xp, 0.158529)
         self.assertAlmostEqual(yp, 0.5403023)
@@ -136,7 +137,7 @@ class TestDistFlatRoundTrip(unittest.TestCase):
         """
         x, y = 1.0, 1.0
         eps = 1e-5
-        ap = ap_52()  # no distortion
+        ap = ap_52.copy()  # no distortion
 
         xres, yres = distort_brown_affine(x, y, ap)
         xres, yres = correct_brown_affine(xres, yres, ap)
@@ -152,7 +153,8 @@ class TestDistFlatRoundTrip(unittest.TestCase):
         """
         x, y = -1.0, 10.0
         eps = 1e-5
-        ap = ap_52(she=1.0)  # no distortion
+        ap = ap_52.copy()
+        # ap.she = 1.0  # no distortion
 
         xres, yres = distort_brown_affine(x, y, ap)
         xres, yres = correct_brown_affine(xres, yres, ap)
@@ -343,13 +345,13 @@ class Test_transforms(unittest.TestCase):
         """Distortion and correction of pixel coordinates."""
         # This is all based on values from liboptv/tests/check_imgcoord.c
         cal = Calibration()
-        cal.set_pos([0.0, 0.0, 40.0])
-        cal.set_angles([0.0, 0.0, 0.0])
+        cal.set_pos(np.array([0.0, 0.0, 40.0]))
+        cal.set_angles(np.array([0.0, 0.0, 0.0]))
         cal.set_primary_point(np.array([0.0, 0.0, 10.0]))
         cal.set_glass_vec(np.r_[0.0, 0.0, 20.0])
         cal.set_radial_distortion(np.zeros(3,))
         cal.set_decentering(np.zeros(2,))
-        cal.set_affine_trans(np.array([1,0]))
+        cal.set_affine_distortion(np.array([1,0]))
 
         # reference metric positions:
         ref_pos = np.array([[0.1, 0.1], [1.0, -1.0], [-10.0, 10.0]])
@@ -382,7 +384,7 @@ class Test_transforms(unittest.TestCase):
         cal.set_glass_vec(np.r_[0.0, 0.0, 20.0])
         cal.set_radial_distortion(np.zeros(3,))
         cal.set_decentering(np.zeros(2,))
-        cal.set_affine_trans(np.array([1, 0]))
+        cal.set_affine_distortion(np.array([1, 0]))
 
         # reference metric positions:
         # Note the last value is different than in test_brown_affine() because

@@ -39,13 +39,14 @@ class TestRayTracing(unittest.TestCase):
         test_Ex.dm=np.array(((1.0, 0.2, -0.3), (0.2, 1.0, 0.0), (-0.3, 0.0, 1.0)))
 
         # The interior parameters
-        test_I = Interior(0.0, 0.0, 100.0)
+        test_I = Interior.copy()
+        test_I.cc = 100.0
 
         # The glass parameters
         test_G = np.array((0.0001, 0.00001, 1.0))
 
         # The addp parameters
-        test_addp = ap_52(0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
+        test_addp = ap_52.copy() # (0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
 
         # The calibration parameters
         test_cal = Calibration(test_Ex, test_I, test_G, test_addp)

@@ -47,17 +47,20 @@ class TestCalibrationClass(unittest.TestCase):
         assert mml.nr == 0
         assert mml.nz == 0
         assert mml.rw == 0
-        assert mml.data is None
+        assert mml.data.shape == ()
         # assert isinstance(mml.data, np.ndarray)
         # assert mml.data.shape == (3,)
 
     def test_calibration_initialization(self):
         """Test calibration parameters initialization."""
         assert self.cal.ext_par.dtype == Exterior.dtype
-        assert isinstance(self.cal.int_par, Interior)
+        assert self.cal.int_par.dtype == Interior.dtype
         assert isinstance(self.cal.glass_par, np.ndarray)
-        assert isinstance(self.cal.added_par, ap_52)
-        assert isinstance(self.cal.mmlut, mm_lut)
+        assert self.cal.added_par.dtype == ap_52.dtype
+        assert self.cal.mmlut.dtype == mm_lut.dtype
+
+        assert isinstance(self.cal.added_par, np.recarray)
+        assert isinstance(self.cal.mmlut, np.recarray)
 
     def test_exterior_initialization(self):
         """Test exterior parameters initialization."""

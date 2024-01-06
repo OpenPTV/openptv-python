@@ -5,7 +5,7 @@ import numpy as np
 from numba import float64, int32, njit
 from numpy import cos, sin, sqrt
 
-from .calibration import Calibration, ap_52
+from .calibration import Calibration
 from .parameters import ControlPar
 
 
@@ -147,7 +147,7 @@ def fast_arr_metric_to_pixel(
 
 def distort_brown_affine(x: float,
                          y: float,
-                         ap: ap_52
+                         ap: np.recarray,
                          ) -> Tuple[float, float]:
     """Distort a point using the Brown affine model."""
     if x == 0 and y == 0:
@@ -160,7 +160,9 @@ def distort_brown_affine(x: float,
     # print(f"x {x}, y {y}")
 
 
-@njit(float64[:](float64,float64,float64,float64,float64,float64,float64,float64,float64))
+# @njit(float64[:]
+# (float64,float64,float64,float64,float64,
+# float64,float64,float64,float64))
 def fast_distort_brown_affine(
     x: float,
     y: float,
@@ -198,7 +200,7 @@ def fast_distort_brown_affine(
 
 
 def correct_brown_affine(
-    x: float, y: float, ap: ap_52, tol: float = 1e-5
+    x: float, y: float, ap: np.recarray, tol: float = 1e-5
 ) -> Tuple[float, float]:
     """Correct a distorted point using the Brown affine model."""
     return fast_correct_brown_affine(x, y, ap.k1, ap.k2, ap.k3, ap.p1, ap.p2, ap.she, ap.scx, tol)

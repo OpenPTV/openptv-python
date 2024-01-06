@@ -1,6 +1,8 @@
 import copy
 import unittest
 
+import numpy as np
+
 from openptv_python.calibration import Calibration, Interior
 from openptv_python.parameters import ControlPar
 from openptv_python.trafo import (
@@ -44,7 +46,7 @@ class TestFlatToDist(unittest.TestCase):
 
     def test_distortion(self):
         cal = copy.copy(self.cal)
-        cal.set_added_par([1e-5, 0, 0, 0, 0, 1, 0])
+        cal.set_added_par(np.array([1e-5, 0, 0, 0, 0, 1, 0]))
         dist_x, dist_y = flat_to_dist(100, 200, cal)
         self.assertAlmostEqual(dist_x, 150, places=3)
         self.assertAlmostEqual(dist_y, 300, places=3)
