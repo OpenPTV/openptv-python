@@ -2,10 +2,10 @@ from dataclasses import dataclass, field
 from typing import List
 
 import numpy as np
-from numba import njit
 from scipy.ndimage import center_of_mass, gaussian_filter, label, maximum_filter
 
-from .constants import CORRES_NONE, MAX_TARGETS
+from .constants import CORRES_NONE
+from .fast_targ_rec import fast_targ_rec
 from .parameters import ControlPar, TargetPar
 from .tracking_frame_buf import Target
 
@@ -69,172 +69,172 @@ def targ_rec(
     return out
 
 
-@njit(fastmath=True)
-def fast_targ_rec(img,
-                  thres,
-                  disco,
-                  nnmin,
-                  nnmax,
-                  nxmin,
-                  nxmax,
-                  nymin,
-                  nymax,
-                  sumg_min,
-                  xmin,
-                  xmax,
-                  ymin,
-                  ymax) -> List:
-    """Target recognition function."""
-    n = 0
-    n_wait = 0
-    n_targets = 0
-    sumg = 0
-    numpix = 0
+# @njit(fastmath=True, cache=True, nogil=True)
+# def fast_targ_rec(img,
+#                   thres,
+#                   disco,
+#                   nnmin,
+#                   nnmax,
+#                   nxmin,
+#                   nxmax,
+#                   nymin,
+#                   nymax,
+#                   sumg_min,
+#                   xmin,
+#                   xmax,
+#                   ymin,
+#                   ymax) -> List:
+#     """Target recognition function."""
+#     n = 0
+#     n_wait = 0
+#     n_targets = 0
+#     sumg = 0
+#     numpix = 0
 
-    img0 = img.copy()  # copy the original image
+#     img0 = img.copy()  # copy the original image
 
-    waitlist = [[0] * 2 for _ in range(MAX_TARGETS)]
+#     waitlist = [[0] * 2 for _ in range(MAX_TARGETS)]
 
-    xa = 0
-    ya = 0
-    xb = 0
-    yb = 0
-    x4 = [0] * 4
-    y4 = [0] * 4
+#     xa = 0
+#     ya = 0
+#     xb = 0
+#     yb = 0
+#     x4 = [0] * 4
+#     y4 = [0] * 4
 
-    pix = []
+#     pix = []
 
-    for i in range(ymin, ymax):
-        for j in range(xmin, xmax):
-            # note i=y = rows = top to bottom
-            # j=x = columns - left to right
-            gv = img0[i, j]
-            if gv > thres:
-                if (
-                    (gv >= img0[i, j - 1])
-                    and (gv >= img0[i, j + 1])
-                    and (gv >= img0[(i - 1), j])
-                    and (gv >= img0[(i + 1), j])
-                    and (gv >= img0[(i - 1), j - 1])
-                    and (gv >= img0[(i + 1), j - 1])
-                    and (gv >= img0[(i - 1), j + 1])
-                    and (gv >= img0[(i + 1), j + 1])
-                ):
-                    yn = i
-                    xn = j
+#     for i in range(ymin, ymax):
+#         for j in range(xmin, xmax):
+#             # note i=y = rows = top to bottom
+#             # j=x = columns - left to right
+#             gv = img0[i, j]
+#             if gv > thres:
+#                 if (
+#                     (gv >= img0[i, j - 1])
+#                     and (gv >= img0[i, j + 1])
+#                     and (gv >= img0[(i - 1), j])
+#                     and (gv >= img0[(i + 1), j])
+#                     and (gv >= img0[(i - 1), j - 1])
+#                     and (gv >= img0[(i + 1), j - 1])
+#                     and (gv >= img0[(i - 1), j + 1])
+#                     and (gv >= img0[(i + 1), j + 1])
+#                 ):
+#                     yn = i
+#                     xn = j
 
-                    sumg = int(gv)
-                    img0[i, j] = 0
+#                     sumg = int(gv)
+#                     img0[i, j] = 0
 
-                    xa = xn
-                    xb = xn
-                    ya = yn
-                    yb = yn
+#                     xa = xn
+#                     xb = xn
+#                     ya = yn
+#                     yb = yn
 
-                    gv -= thres  # intensity above the threshold
-                    x = (xn) * gv
-                    y = yn * gv
-                    numpix = 1
-                    waitlist[0][0] = j
-                    waitlist[0][1] = i
-                    n_wait = 1
+#                     gv -= thres  # intensity above the threshold
+#                     x = (xn) * gv
+#                     y = yn * gv
+#                     numpix = 1
+#                     waitlist[0][0] = j
+#                     waitlist[0][1] = i
+#                     n_wait = 1
 
-                    while n_wait > 0:
-                        gvref = img[waitlist[0][1], waitlist[0][0]]
+#                     while n_wait > 0:
+#                         gvref = img[waitlist[0][1], waitlist[0][0]]
 
-                        x4[0] = waitlist[0][0] - 1
-                        y4[0] = waitlist[0][1]
-                        x4[1] = waitlist[0][0] + 1
-                        y4[1] = waitlist[0][1]
-                        x4[2] = waitlist[0][0]
-                        y4[2] = waitlist[0][1] - 1
-                        x4[3] = waitlist[0][0]
-                        y4[3] = waitlist[0][1] + 1
+#                         x4[0] = waitlist[0][0] - 1
+#                         y4[0] = waitlist[0][1]
+#                         x4[1] = waitlist[0][0] + 1
+#                         y4[1] = waitlist[0][1]
+#                         x4[2] = waitlist[0][0]
+#                         y4[2] = waitlist[0][1] - 1
+#                         x4[3] = waitlist[0][0]
+#                         y4[3] = waitlist[0][1] + 1
 
-                        for n in range(4):
-                            xn = x4[n]
-                            yn = y4[n]
-                            if xn >= xmax or yn >= ymax or xn < 0 or yn < 0:
-                                continue
+#                         for n in range(4):
+#                             xn = x4[n]
+#                             yn = y4[n]
+#                             if xn >= xmax or yn >= ymax or xn < 0 or yn < 0:
+#                                 continue
 
-                            gv = img0[yn, xn]
+#                             gv = img0[yn, xn]
 
-                            if (
-                                (gv > thres)
-                                and (xn > xmin - 1)
-                                and (xn < xmax + 1)
-                                and (yn > ymin - 1)
-                                and (yn < ymax + 1)
-                                and (gv <= gvref + disco)
-                                and (gvref + disco >= img[yn - 1, xn])
-                                and (gvref + disco >= img[yn + 1, xn])
-                                and (gvref + disco >= img[yn, xn - 1])
-                                and (gvref + disco >= img[yn, xn + 1])
-                            ):
-                                # print(f"gv = {gv} sumg = {sumg}")
-                                sumg += gv
-                                # print(f"gv = {gv} sumg = {sumg}")
-                                img0[yn, xn] = 0
-                                if xn < xa:
-                                    xa = xn
-                                if xn > xb:
-                                    xb = xn
-                                if yn < ya:
-                                    ya = yn
-                                if yn > yb:
-                                    yb = yn
-                                waitlist[n_wait][0] = xn
-                                waitlist[n_wait][1] = yn
+#                             if (
+#                                 (gv > thres)
+#                                 and (xn > xmin - 1)
+#                                 and (xn < xmax + 1)
+#                                 and (yn > ymin - 1)
+#                                 and (yn < ymax + 1)
+#                                 and (gv <= gvref + disco)
+#                                 and (gvref + disco >= img[yn - 1, xn])
+#                                 and (gvref + disco >= img[yn + 1, xn])
+#                                 and (gvref + disco >= img[yn, xn - 1])
+#                                 and (gvref + disco >= img[yn, xn + 1])
+#                             ):
+#                                 # print(f"gv = {gv} sumg = {sumg}")
+#                                 sumg += gv
+#                                 # print(f"gv = {gv} sumg = {sumg}")
+#                                 img0[yn, xn] = 0
+#                                 if xn < xa:
+#                                     xa = xn
+#                                 if xn > xb:
+#                                     xb = xn
+#                                 if yn < ya:
+#                                     ya = yn
+#                                 if yn > yb:
+#                                     yb = yn
+#                                 waitlist[n_wait][0] = xn
+#                                 waitlist[n_wait][1] = yn
 
-                                # Coordinates are weighted by grey value, normed later.
-                                x += (xn) * (gv - thres)
-                                y += yn * (gv - thres)
+#                                 # Coordinates are weighted by grey value, normed later.
+#                                 x += (xn) * (gv - thres)
+#                                 y += yn * (gv - thres)
 
-                                numpix += 1
-                                n_wait += 1
+#                                 numpix += 1
+#                                 n_wait += 1
 
-                        n_wait -= 1
-                        for m in range(n_wait):
-                            waitlist[m][0] = waitlist[m + 1][0]
-                            waitlist[m][1] = waitlist[m + 1][1]
-                        waitlist[n_wait][0] = 0
-                        waitlist[n_wait][1] = 0
+#                         n_wait -= 1
+#                         for m in range(n_wait):
+#                             waitlist[m][0] = waitlist[m + 1][0]
+#                             waitlist[m][1] = waitlist[m + 1][1]
+#                         waitlist[n_wait][0] = 0
+#                         waitlist[n_wait][1] = 0
 
-                    if (
-                        xa == (xmin - 1)
-                        or ya == (ymin - 1)
-                        or xb == (xmax + 1)
-                        or yb == (ymax + 1)
-                    ):
-                        continue
+#                     if (
+#                         xa == (xmin - 1)
+#                         or ya == (ymin - 1)
+#                         or xb == (xmax + 1)
+#                         or yb == (ymax + 1)
+#                     ):
+#                         continue
 
-                    nx = xb - xa + 1
-                    ny = yb - ya + 1
+#                     nx = xb - xa + 1
+#                     ny = yb - ya + 1
 
-                    if (
-                        numpix >= nnmin
-                        and numpix <= nnmax
-                        and nx >= nxmin
-                        and nx <= nxmax
-                        and ny >= nymin
-                        and ny <= nymax
-                        and sumg > sumg_min
-                    ):
-                        sumg -= numpix * thres
-                        # finish the grey-value weighting:
-                        x /= sumg
-                        x += 0.5
-                        y /= sumg
-                        y += 0.5
-                        pix.append([x,y,CORRES_NONE, n_targets, numpix, nx, ny, sumg])
-                        n_targets += 1
-                        xn = x
-                        yn = y
+#                     if (
+#                         numpix >= nnmin
+#                         and numpix <= nnmax
+#                         and nx >= nxmin
+#                         and nx <= nxmax
+#                         and ny >= nymin
+#                         and ny <= nymax
+#                         and sumg > sumg_min
+#                     ):
+#                         sumg -= numpix * thres
+#                         # finish the grey-value weighting:
+#                         x /= sumg
+#                         x += 0.5
+#                         y /= sumg
+#                         y += 0.5
+#                         pix.append([x,y,CORRES_NONE, n_targets, numpix, nx, ny, sumg])
+#                         n_targets += 1
+#                         xn = x
+#                         yn = y
 
-    # t = TargetArray(num_targs=n_targets)
-    # t.num_targs = n_targets
-    # t.targs = pix
-    return pix
+#     # t = TargetArray(num_targs=n_targets)
+#     # t.num_targs = n_targets
+#     # t.targs = pix
+#     return pix
 
 
 def peak_fit(
