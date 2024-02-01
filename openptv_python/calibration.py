@@ -125,7 +125,7 @@ class Calibration:
 
 
     @classmethod
-    def from_file(cls, ori_file: str, add_file: str):
+    def from_file(cls, ori_file: str, add_file: str | None):
         """
         Read exterior and interior orientation, and if available, parameters for distortion corrections.
 
@@ -145,36 +145,18 @@ class Calibration:
         ret = cls()
 
         with open(ori_file, "r", encoding="utf-8") as fp:
-            # Exterior
-            ret.set_pos(np.array([float(x) for x in fp.readline().split()]))
-            ret.set_angles(np.array([float(x) for x in fp.readline().split()]))
+            data  = fp.read()
 
-            # ret.ext_par.set_pos(np.fromstring(fp.readline(), dtype=float, sep="\t"))
-            # ret.ext_par.set_angles(np.fromstring(fp.readline(), dtype=float, sep="\t"))
+        data = np.fromstring(data, dtype=float, sep=" ")
+        # print(data)
 
-            # Exterior rotation matrix
-            # skip line
-            fp.readline()
+        ret.set_pos(data[:3])
+        ret.set_angles(data[3:6])
+        # no need. set_angles updates rotation matrix automatically
+        # ret.set_rotation_matrix(data[6:15].reshape(3, 3))
+        ret.set_primary_point(data[15:18]) # xh, yh, cc
+        ret.glass_par = data[18:] # glass position vector from the water side
 
-            # read 3 lines of rotation matrix, but recalculate it from angles
-            _ = [[float(x) for x in fp.readline().split()] for _ in range(3)]
-
-            # I skip reading rotation matrix as it's set up by set_angles.
-            # self.set_rotation_matrix(np.array(float_list).reshape(3, 3))
-
-            # Interior
-            # skip
-            fp.readline()
-
-            tmp = [float(x) for x in fp.readline().split()]  # xh,yh
-            tmp += [float(x) for x in fp.readline().split()]  # cc
-            ret.set_primary_point(np.array(tmp))
-            # self.int_par.set_back_focal_distance(float(fp.readline()))
-
-            # Glass
-            # skip
-            fp.readline()
-            ret.glass_par = np.array([float(x) for x in fp.readline().split()])
 
         # double-check that we have the correct rotation matrix
         # self.ext_par.rotation_matrix()
@@ -183,7 +165,7 @@ class Calibration:
         # self.mmlut.data = None  # no multimedia data yet
 
         # Additional parameters
-        try:
+        if add_file is not None:
             with open(add_file, "r", encoding="utf-8") as fp:
                 tmp = list(map(float, fp.readline().split()))
 
@@ -191,8 +173,10 @@ class Calibration:
                 ret.set_decentering(np.array(tmp[3:5]))
                 ret.set_affine_distortion(np.array(tmp[5:]))
 
-        except FileNotFoundError:
-            print("no addpar fallback used")  # Waits for proper logging.
+        # except FileNotFoundError:
+        else:
+            # print("no addpar fallback used")  # Waits for proper logging.
+            print("No addpar file found. Using default values for radial distortion")
             ret.added_par.k1 = ret.added_par.k2 = ret.added_par.k3 \
                 = ret.added_par.p1 = ret.added_par.p2 = ret.added_par.she = 0.0
             ret.added_par.scx = 1.0
