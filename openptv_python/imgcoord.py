@@ -18,9 +18,9 @@ def flat_image_coord(
 
     Args:
     ----
-        orig_pos (_type_): _description_
-        cal (_type_): _description_
-        mm (_type_): _description_
+        orig_pos (np.ndarray): 3D position
+        cal (Calibration): camera calibration
+        mm (Multimedia): multimedia parameters
 
     Returns
     -------
@@ -76,7 +76,7 @@ def flat_image_coordinates(
 def img_coord(
     pos: np.ndarray, cal: Calibration, mm: MultimediaPar
 ) -> Tuple[float, float]:
-    """Image coordinate."""
+    """Estimate metric coordinates in image space (mm)."""
     # Estimate metric coordinates in image space using flat_image_coord()
     if pos.shape[0] != 3:
         raise ValueError("pos must be a 3D vector")
