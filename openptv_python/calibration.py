@@ -145,9 +145,9 @@ class Calibration:
         ret = cls()
 
         with open(ori_file, "r", encoding="utf-8") as fp:
-            data  = fp.read()
+            tmp  = fp.read()
 
-        data = np.fromstring(data, dtype=float, sep=" ")
+        data = np.fromstring(tmp, dtype=float, sep=" ")
         # print(data)
 
         ret.set_pos(data[:3])

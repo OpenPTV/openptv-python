@@ -3,7 +3,6 @@ from typing import Tuple
 
 import numpy as np
 from numba import float64, int32, njit
-from numpy import cos, sin, sqrt
 
 from .calibration import Calibration
 from .parameters import ControlPar
@@ -153,7 +152,7 @@ def distort_brown_affine(x: float,
     if x == 0 and y == 0:
         return 0, 0
 
-    r = sqrt(x**2 + y**2)
+    r = np.sqrt(x**2 + y**2)
 
     x += (
         x * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
@@ -166,15 +165,13 @@ def distort_brown_affine(x: float,
         + 2 * ap.p1 * x * y
     )
 
-    x1 = ap.scx * x - sin(ap.she) * y
-    y1 = cos(ap.she) * y
+    x1 = ap.scx * x - np.sin(ap.she) * y
+    y1 = np.cos(ap.she) * y
 
     return x1, y1
 
 @njit(fastmath=True, cache=True, nogil=True)
-def correct_brown_affine(
-    x: float, y: float, ap: np.recarray, tol: float = 1e-5
-) -> Tuple[float, float]:
+def correct_brown_affine(x: float, y: float, ap: np.recarray, tol: float = 1e-5) -> Tuple[float, float]:
     """Correct a distorted point using the Brown affine model."""
     r, rq, xq, yq = 0.0, 0.0, x, y
     itnum = 0
@@ -183,21 +180,29 @@ def correct_brown_affine(
         return xq, yq
 
     rq = np.sqrt(x**2 + y**2)
+    two_p1 = 2 * ap.p1
+    two_p2 = 2 * ap.p2
+    cos_she = np.cos(ap.she)
+    sin_she = np.sin(ap.she)
 
     while True:
         r = rq
+        common_term = (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
+        xq_common = xq * common_term
+        yq_common = yq * common_term
+
         xq = (
-            (x + yq * np.sin(ap.she)) / ap.scx
-            - xq * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
+            (x + yq * sin_she) / ap.scx
+            - xq_common
             - ap.p1 * (r**2 + 2 * xq**2)
-            - 2 * ap.p2 * xq * yq
+            - two_p2 * xq * yq
         )
 
         yq = (
-            y / np.cos(ap.she)
-            - yq * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
+            y / cos_she
+            - yq_common
             - ap.p2 * (r**2 + 2 * yq**2)
-            - 2 * ap.p1 * xq * yq
+            - two_p1 * xq * yq
         )
 
         rq = np.sqrt(xq**2 + yq**2)
@@ -207,26 +212,25 @@ def correct_brown_affine(
 
         itnum += 1
 
-        if itnum >= 201 or abs(rq - r) / r <= tol:
+        if itnum >= 201 or np.abs(rq - r) <= tol * r:
             break
 
     r = rq
     x1 = (
-        (x + yq * np.sin(ap.she)) / ap.scx
-        - xq * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
+        (x + yq * sin_she) / ap.scx
+        - xq * common_term
         - ap.p1 * (r**2 + 2 * xq**2)
-        - 2 * ap.p2 * xq * yq
+        - two_p2 * xq * yq
     )
 
     y1 = (
-        y / np.cos(ap.she)
-        - yq * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
+        y / cos_she
+        - yq * common_term
         - ap.p2 * (r**2 + 2 * yq**2)
-        - 2 * ap.p1 * xq * yq
+        - two_p1 * xq * yq
     )
 
     return x1, y1
-
 
 def flat_to_dist(flat_x: float, flat_y: float, cal: Calibration) -> Tuple[float, float]:
     """Convert flat-image coordinates to real-image coordinates.
