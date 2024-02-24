@@ -484,18 +484,22 @@ def orient(
         # contained both in the spatial intersection and the resection
         # see [1], eq. 23
 
-        beta, residuals, rank, singular_values = np.linalg.lstsq(
-            Xh[:, :numbers], yh, rcond=None
+        # beta, residuals, rank, singular_values = np.linalg.lstsq(
+        #     Xh[:, :numbers], yh, rcond=None
+        # )
+
+        beta, residuals, rank, singular_values = scipy.linalg.lstsq(
+            Xh[:, :numbers], yh, lapack_driver='gelsy'
         )
 
         # Interpret the results
-        # print(
-        #     f"Coefficients (beta): {beta} \n \
-        #         Residuals: {residuals} \n \
-        #         singular_values: {singular_values} \n \
-        #         rank: {rank} \n \
-        #     "
-        # )
+        print(
+            f"Coefficients (beta): {beta} \n \
+                Residuals: {residuals} \n \
+                singular_values: {singular_values} \n \
+                rank: {rank} \n \
+            "
+        )
 
         # stopflag
         stopflag = True
@@ -585,8 +589,14 @@ def raw_orient(
     pix: List[Target],
 ) -> bool:
     """Calculate orientation of the camera, updating its calibration."""
-    X = np.zeros((10, 6))
-    y = np.zeros(10)
+    # the original C file says nfix is typically 4, but why X is 10 x 6 and not 8?
+
+    # X = np.zeros((10, 6))
+    # y = np.zeros(10)
+
+    X = np.zeros((nfix * 2, 6))
+    y = np.zeros(nfix * 2)
+
     # XPX = np.zeros((6, 6))
     # XPy = np.zeros(6)
     beta = np.zeros(6)
@@ -633,10 +643,10 @@ def raw_orient(
         )  # , rcond=None)
 
         # Interpret the results
-        print("Coefficients (beta):", beta)
-        print("Residuals:", residuals)
-        print("rank:", rank)
-        print("singular_values:", singular_values)
+        # print("Coefficients (beta):", beta)
+        # print("Residuals:", residuals)
+        # print("rank:", rank)
+        # print("singular_values:", singular_values)
 
         stopflag = True
         for i in range(6):
@@ -824,6 +834,7 @@ def full_calibration(
 
     if residuals is None:
         # free(residuals)
+        print(f"Residuals = {residuals}")
         raise ValueError("Orientation iteration failed, need better setup.")
 
     ret = np.empty((len(img_pts), 2))
