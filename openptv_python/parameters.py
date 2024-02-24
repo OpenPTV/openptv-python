@@ -707,7 +707,7 @@ class OrientPar(Parameters):
     k3flag: int = 0
     p1flag: int = 0
     p2flag: int = 0
-    scxflag: int = 1
+    scxflag: int = 0
     sheflag: int = 0
     interfflag: int = 0
 
