@@ -639,14 +639,14 @@ def raw_orient(
 
         # Solve the linear system
         beta, residuals, rank, singular_values = scipy.linalg.lstsq(
-            X, y
+            X, y, lapack_driver='gelsy'
         )  # , rcond=None)
 
         # Interpret the results
-        # print("Coefficients (beta):", beta)
-        # print("Residuals:", residuals)
-        # print("rank:", rank)
-        # print("singular_values:", singular_values)
+        print("Coefficients (beta):", beta)
+        print("Residuals:", residuals)
+        print("rank:", rank)
+        print("singular_values:", singular_values)
 
         stopflag = True
         for i in range(6):
