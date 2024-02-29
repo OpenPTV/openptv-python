@@ -195,6 +195,8 @@ def orient(
     pix: List[Target],
     flags: OrientPar,
     sigmabeta: np.ndarray,
+    dm: float = 0.000001, 
+    drad: float = 0.000001
 ) -> Optional[np.ndarray]:
     """Calculate orientation of the camera, updating its calibration.
 
@@ -252,8 +254,8 @@ def orient(
     """
     maxsize = nfix * 2 + IDT
 
-    dm: float = 0.000001
-    drad: float = 0.0000001
+    # dm: float = 0.000001
+    # drad: float = 0.0000001
 
     # P, y, yh, Xbeta, resi are arrays of double
     P = np.ones(maxsize, dtype=float)
@@ -385,7 +387,7 @@ def orient(
             cal.update_rotation_matrix()
             xpd, ypd = img_coord(fix[i], cal, cpar.mm)
             X[n][6] = (xpd - xp) / dm
-            X[n + 1][6] = ypd - yp
+            X[n + 1][6] = (ypd - yp) / dm
             # for i in range(len(fix)):
             #     dm = 0.0001
             #     xp, yp = 0.0, 0.0
@@ -587,6 +589,8 @@ def raw_orient(
     nfix: int,
     fix: np.ndarray,
     pix: List[Target],
+    dm: float = 1e-4,
+    drad: float = 1e-4
 ) -> bool:
     """Calculate orientation of the camera, updating its calibration."""
     # the original C file says nfix is typically 4, but why X is 10 x 6 and not 8?
@@ -600,8 +604,6 @@ def raw_orient(
     # XPX = np.zeros((6, 6))
     # XPy = np.zeros(6)
     beta = np.zeros(6)
-    dm = 0.0001
-    drad = 0.0001
     pos = np.zeros(3)
 
     cal.added_par.k1 = 0
@@ -788,6 +790,8 @@ def full_calibration(
     img_pts: TargetArray,
     cparam: ControlPar,
     orient_par: OrientPar,
+    dm: float = 1e-6,
+    drad: float = 1e-6
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Perform a full calibration, affecting all calibration structs.
@@ -828,7 +832,7 @@ def full_calibration(
     ValueError if iteration did not converge.
     """
     err_est = np.empty((NPAR + 1), dtype=np.float64)
-    residuals = orient(cal, cparam, len(ref_pts), ref_pts, img_pts, orient_par, err_est)
+    residuals = orient(cal, cparam, len(ref_pts), ref_pts, img_pts, orient_par, err_est, dm=dm, drad=drad)
 
     # free(orip)
 
