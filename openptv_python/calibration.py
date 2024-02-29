@@ -167,11 +167,11 @@ class Calibration:
         # Additional parameters
         if add_file is not None:
             with open(add_file, "r", encoding="utf-8") as fp:
-                tmp = list(map(float, fp.readline().split()))
+                addtmp = list(map(float, fp.readline().split()))
 
-                ret.set_radial_distortion(np.array(tmp[:3]))
-                ret.set_decentering(np.array(tmp[3:5]))
-                ret.set_affine_distortion(np.array(tmp[5:]))
+                ret.set_radial_distortion(np.array(addtmp[:3]))
+                ret.set_decentering(np.array(addtmp[3:5]))
+                ret.set_affine_distortion(np.array(addtmp[5:]))
 
         # except FileNotFoundError:
         else:

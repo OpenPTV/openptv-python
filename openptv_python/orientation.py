@@ -195,7 +195,7 @@ def orient(
     pix: List[Target],
     flags: OrientPar,
     sigmabeta: np.ndarray,
-    dm: float = 0.000001, 
+    dm: float = 0.000001,
     drad: float = 0.000001
 ) -> Optional[np.ndarray]:
     """Calculate orientation of the camera, updating its calibration.
