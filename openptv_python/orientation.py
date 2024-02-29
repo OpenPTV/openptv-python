@@ -210,10 +210,10 @@ def orient(
         control parameters
     nfix : int
         number of 3D known points
-    fix : List[vec3d]
+    fix : np.array of shape (nfix, 3)
         each of nfix items is one 3D position of known point on
         the calibration object.
-    pix : List[target]
+    pix : np.array of shape (nfix,)
         image coordinates corresponding to each point in ``fix``.
         can be obtained from the set of detected 2D points using
         sortgrid(). The points which are associated with fix[] have real
