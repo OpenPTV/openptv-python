@@ -55,14 +55,17 @@ class TestCalibration(unittest.TestCase):
 
         G = np.array(glass)
 
-        addpar = np.array((
+        addpar = np.array(
+            [
             rad_dist[0],
             rad_dist[1],
             rad_dist[2],
             decent[0],
             decent[1],
             affine[0],
-            affine[1]),dtype=ap_52.dtype).view(np.recarray)
+            affine[1]
+            ]
+        )
 
 
         cal = Calibration()

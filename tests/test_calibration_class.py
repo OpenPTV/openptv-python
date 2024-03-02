@@ -31,14 +31,8 @@ class TestCalibrationClass(unittest.TestCase):
 
     def test_ap_52_initialization(self):
         """Test ap_52 parameters initialization."""
-        ap = self.cal.added_par
-        assert ap.k1 == 0.0
-        assert ap.k2 == 0.0
-        assert ap.k3 == 0.0
-        assert ap.p1 == 0.0
-        assert ap.p2 == 0.0
-        assert ap.scx == 1.0
-        assert ap.she == 0.0
+        assert np.array_equal(self.cal.added_par, \
+            np.array([0,0,0,0,0,1,0],dtype=np.float64))
 
     def test_mmlut_initialization(self):
         """Test mmlut parameters initialization."""
@@ -59,7 +53,7 @@ class TestCalibrationClass(unittest.TestCase):
         assert self.cal.added_par.dtype == ap_52.dtype
         assert self.cal.mmlut.dtype == mm_lut.dtype
 
-        assert isinstance(self.cal.added_par, np.recarray)
+        assert isinstance(self.cal.added_par, np.ndarray)
         assert isinstance(self.cal.mmlut, np.recarray)
 
     def test_exterior_initialization(self):

@@ -60,15 +60,7 @@ class TestDistFlatRoundTrip(unittest.TestCase):
 
         cal = Calibration()
         cal.int_par.xh, cal.int_par.yh, cal.int_par.cc = 1.5, 1.5, 60.0
-        (
-            cal.added_par.k1,
-            cal.added_par.k2,
-            cal.added_par.k3,
-            cal.added_par.p1,
-            cal.added_par.p2,
-            cal.added_par.scx,
-            cal.added_par.she,
-        ) = (1e-5, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
+        cal.added_par = np.array((1e-5, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0),dtype=np.float64)
 
         xdist, ydist = flat_to_dist(x, y, cal)
         xflat, yflat = dist_to_flat(xdist, ydist, cal, iter_eps)
@@ -79,8 +71,8 @@ class TestDistFlatRoundTrip(unittest.TestCase):
     def test_shear_distortion(self):
         """Test the shear distortion parameter."""
         x, y = 1.0, 1.0
-        ap = ap_52.copy()
-        ap.she=1.0
+        ap = ap_52[:]
+        ap[6]=1.0
         xp, yp = distort_brown_affine(x, y, ap)
         self.assertAlmostEqual(xp, 0.158529)
         self.assertAlmostEqual(yp, 0.5403023)
@@ -137,7 +129,7 @@ class TestDistFlatRoundTrip(unittest.TestCase):
         """
         x, y = 1.0, 1.0
         eps = 1e-5
-        ap = ap_52.copy()  # no distortion
+        ap = ap_52[:]  # no distortion
 
         xres, yres = distort_brown_affine(x, y, ap)
         xres, yres = correct_brown_affine(xres, yres, ap)
@@ -153,7 +145,7 @@ class TestDistFlatRoundTrip(unittest.TestCase):
         """
         x, y = -1.0, 10.0
         eps = 1e-5
-        ap = ap_52.copy()
+        ap = ap_52[:]
         # ap.she = 1.0  # no distortion
 
         xres, yres = distort_brown_affine(x, y, ap)

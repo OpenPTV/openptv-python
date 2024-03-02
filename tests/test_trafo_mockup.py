@@ -1,9 +1,9 @@
-import copy
+
 import unittest
 
 import numpy as np
 
-from openptv_python.calibration import Calibration, Interior
+from openptv_python.calibration import Calibration, interior_dtype
 from openptv_python.parameters import ControlPar
 from openptv_python.trafo import (
     dist_to_flat,
@@ -19,9 +19,6 @@ class TestFlatToDist(unittest.TestCase):
     """Test the flat_to_dist function."""
 
     def setUp(self):
-        self.cal = Calibration()
-        print(f" k1 = {self.cal.added_par.k1}")
-
         self.cpar = ControlPar()
         self.cpar.imx = 1024
         self.cpar.imy = 1008
@@ -29,31 +26,32 @@ class TestFlatToDist(unittest.TestCase):
         self.cpar.pix_y = 0.010
 
     def test_zero_coordinates(self):
-        dist_x, dist_y = flat_to_dist(0, 0, self.cal)
+        """Test the case when the input coordinates are zero."""
+        cal = Calibration()
+        dist_x, dist_y = flat_to_dist(0, 0, cal)
         self.assertEqual(dist_x, 0)
         self.assertEqual(dist_y, 0)
 
     def test_positive_coordinates(self):
-        cal = copy.copy(self.cal)
+        """Test the case when the input coordinates are positive."""
+        cal = Calibration()
         cal.int_par.xh = 100
         cal.int_par.yh = 50
-        print("inside test_positive_coordinates\n")
-        print(f"cal.added_par.k1 = {cal.added_par.k1}\n")
-        print(f"self.cal.added_par.k1 = {self.cal.added_par.k1}\n")
         dist_x, dist_y = flat_to_dist(50, 25, cal)
         self.assertEqual(dist_x, 150)
         self.assertEqual(dist_y, 75)
 
     def test_distortion(self):
-        cal = copy.copy(self.cal)
-        cal.set_added_par(np.array([1e-5, 0, 0, 0, 0, 1, 0]))
+        """Test the case when the distortion is not zero."""
+        cal = Calibration()
+        cal.set_added_par(np.array([1e-5, 0, 0, 0, 0, 1, 0], dtype=np.float64))
         dist_x, dist_y = flat_to_dist(100, 200, cal)
         self.assertAlmostEqual(dist_x, 150, places=3)
         self.assertAlmostEqual(dist_y, 300, places=3)
 
     def test_pixel_to_metric_and_back(self):
-        cpar = copy.copy(self.cpar)
-        cpar.from_file("tests/testing_folder/control_parameters/control.par")
+        """Test the pixel_to_metric and metric_to_pixel functions."""
+        cpar = ControlPar().from_file("tests/testing_folder/control_parameters/control.par")
 
         x, y = metric_to_pixel(1, 1, cpar)
         x, y = pixel_to_metric(x, y, cpar)
@@ -61,6 +59,7 @@ class TestFlatToDist(unittest.TestCase):
         self.assertTrue(abs(y - 1) < EPS)
 
     def test_0_0(self):
+        """Test the case when the input coordinates are zero."""
         xc = 0.0
         yc = 0.0
 
@@ -71,6 +70,7 @@ class TestFlatToDist(unittest.TestCase):
         self.assertTrue(abs(yc1 - yc) < EPS)
 
     def test_1_0(self):
+        """Test the case when the input coordinates are (1, 0)."""
         xc = 1.0
         yc = 0.0
 
@@ -81,6 +81,7 @@ class TestFlatToDist(unittest.TestCase):
         self.assertTrue(abs(yc1 - yc) < EPS)
 
     def test_0_neg1(self):
+        """Test the case when the input coordinates are (0, -1)."""
         xc = 0.0
         yc = -1.0
 
@@ -91,6 +92,7 @@ class TestFlatToDist(unittest.TestCase):
         self.assertTrue(abs(yc1 - yc) < EPS)
 
     def dist_flat_round_trip(self):
+        """Test the round trip from flat to distorted and back."""
         # /*  Cheks that the order of operations in converting metric flat image to
         #     distorted image coordinates and vice-versa is correct.
 
@@ -104,9 +106,9 @@ class TestFlatToDist(unittest.TestCase):
         y = 10.0
         iter_eps = 1e-5
 
-        cal = copy.copy(self.cal)
-        cal.int_par = Interior(1.5, 1.5, 60.0)
-        cal.set_added_par([0.0005, 0, 0, 0, 0, 1, 0])
+        cal = Calibration()
+        cal.int_par = np.array( (1.5, 1.5, 60.0), dtype = interior_dtype).view(np.recarray)
+        cal.set_added_par(np.array([0.0005, 0, 0, 0, 0, 1, 0], dtype=np.float64))
 
         xres, yres = flat_to_dist(x, y, cal)
         xres, yres = dist_to_flat(xres, yres, cal, 0.00001)

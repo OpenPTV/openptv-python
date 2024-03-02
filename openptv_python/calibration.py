@@ -1,5 +1,6 @@
 """Calibration data structures and functions."""
 
+import copy
 import pathlib
 from typing import Optional
 
@@ -104,15 +105,15 @@ class Calibration:
                  mmlut=None,
                  mmlut_data=None):
         if ext_par is None:
-            ext_par = Exterior.copy()
+            ext_par = copy.deepcopy(Exterior)
         if int_par is None:
-            int_par = Interior.copy()
+            int_par = copy.deepcopy(Interior)
         if glass_par is None:
             glass_par = np.array([0.0, 0.0, 1.0])
         if added_par is None:
-            added_par = ap_52.copy()
+            added_par = np.array((0, 0, 0, 0, 0, 1, 0), dtype = np.float64)
         if mmlut is None:
-            mmlut = mm_lut.copy() # (np.zeros(3), 0, 0, 0)
+            mmlut = copy.deepcopy(mm_lut) # (np.zeros(3), 0, 0, 0)
         if mmlut_data is None:
             mmlut_data = np.zeros((mmlut.nr, mmlut.nz), dtype=np.float64)
 
@@ -378,7 +379,7 @@ class Calibration:
     def set_added_par(self, ap52_array: np.ndarray):
         """Set added par from an numpy array of parameters."""
         # self.added_par = np.array(tuple(ap52_array.tolist()), dtype = ap52_dtype).view(np.recarray)
-        self.added_par = ap52_array
+        self.added_par = ap52_array.astype(np.float64)
 
     def copy(self, new_copy):
         """Copy the calibration data to a new object."""
@@ -415,8 +416,8 @@ def write_ori(
 
     with open(add_file, "w", encoding="utf-8") as fp:
         fp.write(
-            f"{added_par.k1:.8f} {added_par.k2:.8f} {added_par.k3:.8f} "
-            f"{added_par.p1:.8f} {added_par.p2:.8f} {added_par.scx:.8f} {added_par.she:.8f}\n"
+            f"{added_par[0]:.8f} {added_par[1]:.8f} {added_par[2]:.8f} "
+            f"{added_par[3]:.8f} {added_par[4]:.8f} {added_par[5]:.8f} {added_par[6]:.8f}\n"
         )
         success = True
 
@@ -491,15 +492,7 @@ def compare_calibration(c1: Calibration, c2: Calibration) -> bool:
 
 def compare_addpar(a1, a2):
     """Compare added parameters."""
-    return (
-        (a1.k1 == a2.k1)
-        and (a1.k2 == a2.k2)
-        and (a1.k3 == a2.k3)
-        and (a1.p1 == a2.p1)
-        and (a1.p2 == a2.p2)
-        and (a1.scx == a2.scx)
-        and (a1.she == a2.she)
-    )
+    return np.array_equal(a1, a2)
 
 
 def read_calibration(ori_file: str, addpar_file: str) -> Calibration:
