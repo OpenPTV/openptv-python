@@ -495,13 +495,13 @@ def orient(
         )
 
         # Interpret the results
-        print(
-            f"Coefficients (beta): {beta} \n \
-                Residuals: {residuals} \n \
-                singular_values: {singular_values} \n \
-                rank: {rank} \n \
-            "
-        )
+        # print(
+        #     f"Coefficients (beta): {beta} \n \
+        #         Residuals: {residuals} \n \
+        #         singular_values: {singular_values} \n \
+        #         rank: {rank} \n \
+        #     "
+        # )
 
         # stopflag
         stopflag = True
@@ -571,9 +571,19 @@ def orient(
     omega = np.sum(resi * P * resi)
     sigmabeta[NPAR] = np.sqrt(omega / (n_obs - numbers))
 
+
+    # if np.any(np.isnan(sigmabeta)):
+    #     pdb.set_trace()
+
+    # if np.any(np.isnan(X)):
+    #     pdb.set_trace()
+
     XPX = np.linalg.inv(np.dot(X[:, :numbers].T, X[:, :numbers]))
 
+
+    # import pdb; pdb.set_trace()
     for i in range(numbers):
+        # print(f"{i=}, {np.sqrt(XPX[i][i]) = }")
         sigmabeta[i] = sigmabeta[NPAR] * np.sqrt(XPX[i][i])
 
     if stopflag:
@@ -645,10 +655,10 @@ def raw_orient(
         )  # , rcond=None)
 
         # Interpret the results
-        print("Coefficients (beta):", beta)
-        print("Residuals:", residuals)
-        print("rank:", rank)
-        print("singular_values:", singular_values)
+        # print("Coefficients (beta):", beta)
+        # print("Residuals:", residuals)
+        # print("rank:", rank)
+        # print("singular_values:", singular_values)
 
         stopflag = True
         for i in range(6):

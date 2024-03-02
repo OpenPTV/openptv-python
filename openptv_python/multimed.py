@@ -109,7 +109,7 @@ def fast_multimed_r_nlay(
         it += 1
 
     if it >= n_iter:
-        print("multimed_r_nlay stopped after", n_iter, "iterations")
+        # print("multimed_r_nlay stopped after", n_iter, "iterations")
         return 1.0
 
     return 1.0 if r == 0 else float(rq / r)
