@@ -70,16 +70,17 @@ interior_dtype = np.dtype([
 Interior = np.array( (0, 0, 0), dtype = interior_dtype).view(np.recarray)
 
 
-ap52_dtype = np.dtype([
-    ('k1', np.float64),
-    ('k2', np.float64),
-    ('k3', np.float64),
-    ('p1', np.float64),
-    ('p2', np.float64),
-    ('scx', np.float64),
-    ('she', np.float64)
-    ])
-ap_52 = np.array((0, 0, 0, 0, 0, 1, 0), dtype = ap52_dtype).view(np.recarray)
+# ap52_dtype = np.dtype([
+#     ('k1', np.float64),
+#     ('k2', np.float64),
+#     ('k3', np.float64),
+#     ('p1', np.float64),
+#     ('p2', np.float64),
+#     ('scx', np.float64),
+#     ('she', np.float64)
+#     ])
+ap_52 = np.array((0, 0, 0, 0, 0, 1, 0), dtype = np.float64)
+# ap_52 = np.array((0, 0, 0, 0, 0, 1, 0), dtype = ap52_dtype).view(np.recarray)
 
 mmlut_dtype = np.dtype([
     ('origin', np.float64, 3),
@@ -177,9 +178,10 @@ class Calibration:
         else:
             # print("no addpar fallback used")  # Waits for proper logging.
             print("No addpar file found. Using default values for radial distortion")
-            ret.added_par.k1 = ret.added_par.k2 = ret.added_par.k3 \
-                = ret.added_par.p1 = ret.added_par.p2 = ret.added_par.she = 0.0
-            ret.added_par.scx = 1.0
+            # ret.added_par.k1 = ret.added_par.k2 = ret.added_par.k3 \
+            #     = ret.added_par.p1 = ret.added_par.p2 = ret.added_par.she = 0.0
+            # ret.added_par.scx = 1.0
+            ret.added_par = np.array([0,0,0,0,0,1,0], dtype=np.float64)
 
         return ret
         # print(f"Calibration data read from files {ori_file} and {add_file}")
@@ -300,7 +302,9 @@ class Calibration:
         if dist_coeffs.shape != (3,):
             raise ValueError("Expected a 3-element array")
 
-        self.added_par.k1, self.added_par.k2, self.added_par.k3 = dist_coeffs
+        self.added_par[:3] = dist_coeffs
+
+        # self.added_par.k1, self.added_par.k2, self.added_par.k3 = dist_coeffs
 
 
     def get_radial_distortion(self):
@@ -309,7 +313,8 @@ class Calibration:
 
         array, from lowest power to highest.
         """
-        return np.r_[self.added_par.k1, self.added_par.k2, self.added_par.k3]
+        # return np.r_[self.added_par.k1, self.added_par.k2, self.added_par.k3]
+        return self.added_par[:3]
 
     def set_decentering(self, decent: np.ndarray) -> None:
         """
@@ -322,11 +327,13 @@ class Calibration:
         if decent.shape != (2,):
             raise ValueError("Expected a 2-element list")
 
-        self.added_par.p1, self.added_par.p2 = decent
+        # self.added_par.p1, self.added_par.p2 = decent
+        self.added_par[3:5] = decent
 
     def get_decentering(self):
         """Return the decentering parameters [1] as a 2 element array, (p_1, p_2)."""
-        return np.r_[self.added_par.p1, self.added_par.p2]
+        # return np.r_[self.added_par.p1, self.added_par.p2]
+        return self.added_par[3:5]
 
     def set_affine_distortion(self, affine: np.ndarray) -> None:
         """
@@ -339,11 +346,13 @@ class Calibration:
         if affine.shape != (2,):
             raise ValueError("Expected a 2-element list")
 
-        self.added_par.scx, self.added_par.she = affine
+        # self.added_par.scx, self.added_par.she = affine
+        self.added_par[5:] = affine
 
     def get_affine(self):
         """Return the affine transform parameters [1] as a 2 element array, (scx, she)."""
-        return np.r_[self.added_par.scx, self.added_par.she]
+        # return np.r_[self.added_par.scx, self.added_par.she]
+        return self.added_par[5:]
 
     def set_glass_vec(self, gvec: np.ndarray):
         """
@@ -368,7 +377,8 @@ class Calibration:
 
     def set_added_par(self, ap52_array: np.ndarray):
         """Set added par from an numpy array of parameters."""
-        self.added_par = np.array(tuple(ap52_array.tolist()), dtype = ap52_dtype).view(np.recarray)
+        # self.added_par = np.array(tuple(ap52_array.tolist()), dtype = ap52_dtype).view(np.recarray)
+        self.added_par = ap52_array
 
     def copy(self, new_copy):
         """Copy the calibration data to a new object."""

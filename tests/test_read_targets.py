@@ -3,7 +3,6 @@ import unittest
 
 from openptv_python.tracking_frame_buf import (
     Target,
-    TargetArray,
     read_targets,
     write_targets,
 )
@@ -23,7 +22,9 @@ class TestTargets(unittest.TestCase):
 
     def test_fill_target_array(self):
         """Test filling a target array."""
-        tarr = TargetArray(num_targets=2)
+        # tarr = TargetArray(num_targets=2)
+        tarr = [Target() for _ in range(2)]
+
         tarr[0].set_pos((1.5, 2.5))
         tarr[1].set_pos((3.5, 4.5))
 

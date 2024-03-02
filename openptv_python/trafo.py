@@ -146,32 +146,37 @@ def fast_arr_metric_to_pixel(
 @njit(fastmath=True, cache=True, nogil=True)
 def distort_brown_affine(x: float,
                          y: float,
-                         ap: np.recarray,
+                         ap: np.ndarray,
                          ) -> Tuple[float, float]:
-    """Distort a point using the Brown affine model."""
+    """Distort a point using the Brown affine model.
+
+    ap: ap52_dtype: np.recarray with fields k1, k2, k3, p1, p2, scx, she
+        presented here as a np.array
+
+    """
     if x == 0 and y == 0:
         return 0, 0
 
     r = np.sqrt(x**2 + y**2)
 
     x += (
-        x * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
-        + ap.p1 * (r**2 + 2 * x**2)
-        + 2 * ap.p2 * x * y
+        x * (ap[0] * r**2 + ap[1] * r**4 + ap[2] * r**6)
+        + ap[3] * (r**2 + 2 * x**2)
+        + 2 * ap[4] * x * y
     )
     y += (
-        y * (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
-        + ap.p2 * (r**2 + 2 * y**2)
-        + 2 * ap.p1 * x * y
+        y * (ap[0] * r**2 + ap[1] * r**4 + ap[2] * r**6)
+        + ap[4] * (r**2 + 2 * y**2)
+        + 2 * ap[3] * x * y
     )
 
-    x1 = ap.scx * x - np.sin(ap.she) * y
-    y1 = np.cos(ap.she) * y
+    x1 = ap[5] * x - np.sin(ap[6]) * y
+    y1 = np.cos(ap[6]) * y
 
     return x1, y1
 
 @njit(fastmath=True, cache=True, nogil=True)
-def correct_brown_affine(x: float, y: float, ap: np.recarray, tol: float = 1e-5) -> Tuple[float, float]:
+def correct_brown_affine(x: float, y: float, ap: np.ndarray, tol: float = 1e-5) -> Tuple[float, float]:
     """Correct a distorted point using the Brown affine model."""
     r, rq, xq, yq = 0.0, 0.0, x, y
     itnum = 0
@@ -180,28 +185,28 @@ def correct_brown_affine(x: float, y: float, ap: np.recarray, tol: float = 1e-5)
         return xq, yq
 
     rq = np.sqrt(x**2 + y**2)
-    two_p1 = 2 * ap.p1
-    two_p2 = 2 * ap.p2
-    cos_she = np.cos(ap.she)
-    sin_she = np.sin(ap.she)
+    two_p1 = 2 * ap[3]
+    two_p2 = 2 * ap[4]
+    cos_she = np.cos(ap[6])
+    sin_she = np.sin(ap[6])
 
     while True:
         r = rq
-        common_term = (ap.k1 * r**2 + ap.k2 * r**4 + ap.k3 * r**6)
+        common_term = (ap[0] * r**2 + ap[1] * r**4 + ap[2] * r**6)
         xq_common = xq * common_term
         yq_common = yq * common_term
 
         xq = (
-            (x + yq * sin_she) / ap.scx
+            (x + yq * sin_she) / ap[5]
             - xq_common
-            - ap.p1 * (r**2 + 2 * xq**2)
+            - ap[3] * (r**2 + 2 * xq**2)
             - two_p2 * xq * yq
         )
 
         yq = (
             y / cos_she
             - yq_common
-            - ap.p2 * (r**2 + 2 * yq**2)
+            - ap[4] * (r**2 + 2 * yq**2)
             - two_p1 * xq * yq
         )
 
@@ -217,16 +222,16 @@ def correct_brown_affine(x: float, y: float, ap: np.recarray, tol: float = 1e-5)
 
     r = rq
     x1 = (
-        (x + yq * sin_she) / ap.scx
+        (x + yq * sin_she) / ap[5]
         - xq * common_term
-        - ap.p1 * (r**2 + 2 * xq**2)
+        - ap[3] * (r**2 + 2 * xq**2)
         - two_p2 * xq * yq
     )
 
     y1 = (
         y / cos_she
         - yq * common_term
-        - ap.p2 * (r**2 + 2 * yq**2)
+        - ap[4] * (r**2 + 2 * yq**2)
         - two_p1 * xq * yq
     )
 
