@@ -14,7 +14,7 @@ from openptv_python.orientation import (
     weighted_dumbbell_precision,
 )
 from openptv_python.parameters import ControlPar, OrientPar, VolumePar, read_control_par
-from openptv_python.tracking_frame_buf import TargetArray
+from openptv_python.tracking_frame_buf import Target
 from openptv_python.trafo import arr_metric_to_pixel
 
 
@@ -54,11 +54,15 @@ class Test_Orientation(unittest.TestCase):
         xy_img_pts_pixel = arr_metric_to_pixel(xy_img_pts_metric, self.control)
 
         # convert to TargetArray object
-        target_array = TargetArray(coords_count)
+        # targets = TargetArray(coords_count)
+        targets = [Target() for _ in range(coords_count)]
 
         for i in range(coords_count):
-            target_array[i].set_pnr(i)
-            target_array[i].set_pos((xy_img_pts_pixel[i][0], xy_img_pts_pixel[i][1]))
+            targets[i].pnr = i
+            targets[i].x = xy_img_pts_pixel[i][0]
+            targets[i].y = xy_img_pts_pixel[i][1]
+
+            # set_pos((xy_img_pts_pixel[i][0], xy_img_pts_pixel[i][1]))
 
         # create randomized target array
         indices = np.arange(coords_count)
@@ -67,10 +71,12 @@ class Test_Orientation(unittest.TestCase):
         while np.all(indices == shuffled_indices):
             np.random.shuffle(shuffled_indices)
 
-        rand_targ_array = TargetArray(coords_count)
+        # rand_targ_array = TargetArray(coords_count)
+        rand_targ_array = [Target() for _ in range(coords_count)]
         for i in range(coords_count):
-            rand_targ_array[shuffled_indices[i]].set_pos(target_array[i].pos())
-            rand_targ_array[shuffled_indices[i]].set_pnr(target_array[i].pnr)
+            rand_targ_array[shuffled_indices[i]].x = targets[i].x
+            rand_targ_array[shuffled_indices[i]].y = targets[i].y
+            rand_targ_array[shuffled_indices[i]].pnr = targets[i].pnr
 
         # match detection to reference
         matched_target_array = match_detection_to_ref(
@@ -82,10 +88,7 @@ class Test_Orientation(unittest.TestCase):
 
         # assert target array is as before
         for i in range(coords_count):
-            if (
-                matched_target_array[i].pos() != target_array[i].pos()
-                or matched_target_array[i].pnr != target_array[i].pnr
-            ):
+            if matched_target_array[i] != targets[i]:
                 self.fail()
 
         # pass ref_pts and img_pts with non-equal lengths
@@ -334,11 +337,11 @@ class TestGradientDescent(unittest.TestCase):
             self.control,
         )
 
-        # Full calibration works with TargetArray objects, not NumPy.
-        target_array = TargetArray(len(targets))
-        for i, trgt in enumerate(target_array):
-            trgt.set_pnr(i)
-            trgt.set_pos(targets[i])
+        # # Full calibration works with TargetArray objects, not NumPy.
+        # targets = TargetArray(len(targets))
+        # for i, trgt in enumerate(targets):
+        #     trgt.set_pnr(i)
+        #     trgt.set_pos(targets[i])
 
         # Perturb the calibration object, then compore result to original.
         self.cal.set_pos(self.cal.get_pos() + np.r_[15.0, -15.0, 15.0])
@@ -353,7 +356,7 @@ class TestGradientDescent(unittest.TestCase):
         _, _, _ = full_calibration(
             self.cal,
             ref_pts,
-            target_array,
+            targets,
             self.control,
             self.orient_par
             )
@@ -381,7 +384,7 @@ class TestGradientDescent(unittest.TestCase):
         _, _, _ = full_calibration(
             self.cal,
             ref_pts,
-            target_array,
+            targets,
             self.control,
             self.orient_par
             )
@@ -408,13 +411,13 @@ class TestGradientDescent(unittest.TestCase):
         self.orient_par.k2flag=0
         self.orient_par.k3flag=0
         self.orient_par.scxflag=0
-        self.orient_par.sheflag=1
+        self.orient_par.sheflag=0
         print(f"Calibrating with the following flags: {self.orient_par}")
 
         _, _, _ = full_calibration(
             self.cal,
             ref_pts,
-            target_array,
+            targets,
             self.control,
             self.orient_par
             )
@@ -442,7 +445,7 @@ class TestGradientDescent(unittest.TestCase):
         _, _, _ = full_calibration(
             self.cal,
             ref_pts,
-            target_array,
+            targets,
             self.control,
             self.orient_par
             )
@@ -470,7 +473,7 @@ class TestGradientDescent(unittest.TestCase):
         _, _, _ = full_calibration(
             self.cal,
             ref_pts,
-            target_array,
+            targets,
             self.control,
             self.orient_par
             )
@@ -498,7 +501,7 @@ class TestGradientDescent(unittest.TestCase):
         _, _, _ = full_calibration(
             self.cal,
             ref_pts,
-            target_array,
+            targets,
             self.control,
             self.orient_par
             )
@@ -526,7 +529,7 @@ class TestGradientDescent(unittest.TestCase):
         _, _, _ = full_calibration(
             self.cal,
             ref_pts,
-            target_array,
+            targets,
             self.control,
             self.orient_par
             )
@@ -550,14 +553,14 @@ class TestGradientDescent(unittest.TestCase):
         self.orient_par.scxflag=0
         self.orient_par.sheflag=0
         self.orient_par.p1flag=1
-        self.orient_par.p2floag=0
+        self.orient_par.p2flag=0
 
         print(f"Calibrating with the following flags: {self.orient_par}")
 
         _, _, _ = full_calibration(
             self.cal,
             ref_pts,
-            target_array,
+            targets,
             self.control,
             self.orient_par
             )
@@ -572,7 +575,7 @@ class TestGradientDescent(unittest.TestCase):
         print(f"{self.cal.get_angles()}")
         print(f"{self.cal.added_par}")
 
-        self.orient_par.ccflag=0
+        self.orient_par.ccflag=1
         self.orient_par.xhflag=0
         self.orient_par.yhflag=0
         self.orient_par.k1flag=0
@@ -587,7 +590,7 @@ class TestGradientDescent(unittest.TestCase):
         _, _, _ = full_calibration(
             self.cal,
             ref_pts,
-            target_array,
+            targets,
             self.control,
             self.orient_par
             )

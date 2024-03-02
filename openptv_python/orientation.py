@@ -16,7 +16,7 @@ from .imgcoord import img_coord
 from .parameters import ControlPar, MultimediaPar, OrientPar, VolumePar
 from .ray_tracing import ray_tracing
 from .sortgrid import sortgrid
-from .tracking_frame_buf import Target, TargetArray
+from .tracking_frame_buf import Target
 from .trafo import correct_brown_affine, pixel_to_metric
 from .vec_utils import unit_vector, vec_norm, vec_set
 
@@ -301,14 +301,14 @@ def orient(
         cal.int_par.cc,
         cal.int_par.xh,
         cal.int_par.yh,
-        cal.added_par.k1,
-        cal.added_par.k2,
-        cal.added_par.k3,
-        cal.added_par.p1,
-        cal.added_par.p2,
-        cal.added_par.scx,
-        cal.added_par.she,
-    ]
+        cal.added_par[0],
+        cal.added_par[1],
+        cal.added_par[2],
+        cal.added_par[3],
+        cal.added_par[4],
+        cal.added_par[5],
+        cal.added_par[6]
+        ]
 
     # backup for changing back and forth
     safety_x = cal.glass_par[0]
@@ -343,40 +343,40 @@ def orient(
             # derivatives of distortion parameters
             r = np.sqrt(xp * xp + yp * yp)
 
-            X[n][7] = cal.added_par.scx
-            X[n + 1][7] = np.sin(cal.added_par.she)
+            X[n][7] = cal.added_par[5] # cal.added_par[5]
+            X[n + 1][7] = np.sin(cal.added_par[6]) #np.sin(cal.added_par[6])
 
             X[n][8] = 0
             X[n + 1][8] = 1
 
-            X[n][9] = cal.added_par.scx * xp * r * r
+            X[n][9] = cal.added_par[5] * xp * r * r
             X[n + 1][9] = yp * r * r
 
-            X[n][10] = cal.added_par.scx * xp * pow(r, 4)
+            X[n][10] = cal.added_par[5] * xp * pow(r, 4)
             X[n + 1][10] = yp * pow(r, 4)
 
-            X[n][11] = cal.added_par.scx * xp * pow(r, 6)
+            X[n][11] = cal.added_par[5] * xp * pow(r, 6)
             X[n + 1][11] = yp * pow(r, 6)
 
-            X[n][12] = cal.added_par.scx * (2 * xp * xp + r * r)
+            X[n][12] = cal.added_par[5] * (2 * xp * xp + r * r)
             X[n + 1][12] = 2 * xp * yp
 
-            X[n][13] = 2 * cal.added_par.scx * xp * yp
+            X[n][13] = 2 * cal.added_par[5] * xp * yp
             X[n + 1][13] = 2 * yp * yp + r * r
 
-            qq = cal.added_par.k1 * r * r
-            qq += cal.added_par.k2 * pow(r, 4)
-            qq += cal.added_par.k3 * pow(r, 6)
+            qq = cal.added_par[0] * r * r
+            qq += cal.added_par[1] * pow(r, 4)
+            qq += cal.added_par[2] * pow(r, 6)
             qq += 1
             X[n][14] = (
                 xp * qq
-                + cal.added_par.p1 * (r * r + 2 * xp * xp)
-                + 2 * cal.added_par.p2 * xp * yp
+                + cal.added_par[3] * (r * r + 2 * xp * xp)
+                + 2 * cal.added_par[4] * xp * yp
             )
             X[n + 1][14] = 0
 
-            X[n][15] = -np.cos(cal.added_par.she) * yp
-            X[n + 1][15] = -np.sin(cal.added_par.she) * yp
+            X[n][15] = -np.cos(cal.added_par[6]) * yp
+            X[n + 1][15] = -np.sin(cal.added_par[6]) * yp
 
             # numeric derivatives of projection coordinates over external parameters,
             # 3D position and the angles
@@ -449,13 +449,13 @@ def orient(
         y[n_obs + 0] = ident[0] - cal.int_par.cc
         y[n_obs + 1] = ident[1] - cal.int_par.xh
         y[n_obs + 2] = ident[2] - cal.int_par.yh
-        y[n_obs + 3] = ident[3] - cal.added_par.k1
-        y[n_obs + 4] = ident[4] - cal.added_par.k2
-        y[n_obs + 5] = ident[5] - cal.added_par.k3
-        y[n_obs + 6] = ident[6] - cal.added_par.p1
-        y[n_obs + 7] = ident[7] - cal.added_par.p2
-        y[n_obs + 8] = ident[8] - cal.added_par.scx
-        y[n_obs + 9] = ident[9] - cal.added_par.she
+        y[n_obs + 3] = ident[3] - cal.added_par[0]
+        y[n_obs + 4] = ident[4] - cal.added_par[1]
+        y[n_obs + 5] = ident[5] - cal.added_par[2]
+        y[n_obs + 6] = ident[6] - cal.added_par[3]
+        y[n_obs + 7] = ident[7] - cal.added_par[4]
+        y[n_obs + 8] = ident[8] - cal.added_par[5]
+        y[n_obs + 9] = ident[9] - cal.added_par[6]
 
         # weights
         for i in range(n_obs):
@@ -540,13 +540,13 @@ def orient(
         cal.int_par.cc += beta[6]
         cal.int_par.xh += beta[7]
         cal.int_par.yh += beta[8]
-        cal.added_par.k1 += beta[9]
-        cal.added_par.k2 += beta[10]
-        cal.added_par.k3 += beta[11]
-        cal.added_par.p1 += beta[12]
-        cal.added_par.p2 += beta[13]
-        cal.added_par.scx += beta[14]
-        cal.added_par.she += beta[15]
+        cal.added_par[0] += beta[9]
+        cal.added_par[1] += beta[10]
+        cal.added_par[2] += beta[11]
+        cal.added_par[3] += beta[12]
+        cal.added_par[4] += beta[13]
+        cal.added_par[5] += beta[14]
+        cal.added_par[6] += beta[15]
 
         if flags.interfflag:
             cal.glass_par[0] += e1[0] * nGl * beta[16]
@@ -606,14 +606,14 @@ def raw_orient(
     beta = np.zeros(6)
     pos = np.zeros(3)
 
-    cal.added_par.k1 = 0
-    cal.added_par.k2 = 0
-    cal.added_par.k3 = 0
-    cal.added_par.p1 = 0
-    cal.added_par.p2 = 0
-    cal.added_par.scx = 1
-    cal.added_par.she = 0
-
+    # cal.added_par[0] = 0
+    # cal.added_par[1] = 0
+    # cal.added_par[2] = 0
+    # cal.added_par[3] = 0
+    # cal.added_par[4] = 0
+    # cal.added_par[5] = 1
+    # cal.added_par[6] = 0
+    cal.added_par = np.array([0, 0, 0, 0, 0, 1, 0], dtype=np.float64)
     itnum = 0
     stopflag = False
 
@@ -787,7 +787,7 @@ def external_calibration(
 def full_calibration(
     cal: Calibration,
     ref_pts: np.ndarray,
-    img_pts: TargetArray,
+    img_pts: np.ndarray,
     cparam: ControlPar,
     orient_par: OrientPar,
     dm: float = 1e-6,
@@ -832,7 +832,16 @@ def full_calibration(
     ValueError if iteration did not converge.
     """
     err_est = np.empty((NPAR + 1), dtype=np.float64)
-    residuals = orient(cal, cparam, len(ref_pts), ref_pts, img_pts, orient_par, err_est, dm=dm, drad=drad)
+
+    # convert numpy array to list of Target objects
+    targs = [Target() for _ in img_pts]
+
+    for ptx, pt in enumerate(img_pts):
+        targs[ptx].x = pt[0]
+        targs[ptx].y = pt[1]
+        targs[ptx].pnr = ptx
+
+    residuals = orient(cal, cparam, len(ref_pts), ref_pts, targs, orient_par, err_est, dm=dm, drad=drad)
 
     # free(orip)
 
@@ -844,7 +853,7 @@ def full_calibration(
     ret = np.empty((len(img_pts), 2))
     used = np.empty(len(img_pts), dtype=np.int_)
 
-    for ix, img_pt in enumerate(img_pts):
+    for ix, img_pt in enumerate(targs):
         ret[ix] = (residuals[2 * ix], residuals[2 * ix + 1])
         used[ix] = img_pt.pnr
 
@@ -855,7 +864,7 @@ def full_calibration(
 def match_detection_to_ref(
     cal: Calibration,
     ref_pts: np.ndarray,
-    img_pts: TargetArray,
+    img_pts: List[Target],
     cparam: ControlPar,
     eps: int = 25,
 ) -> List[Target]:

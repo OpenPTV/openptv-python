@@ -136,31 +136,31 @@ def sort_target_y(targets: List[Target]) -> List[Target]:
     """Sort targets by y coordinate."""
     return sorted(targets, key=lambda t: t.y)
 
-class TargetArray(list):
-    """Target array class."""
+# class TargetArray(list):
+#     """Target array class."""
 
-    def __init__(self, num_targets: int = 0):
-        super().__init__(Target() for item in range(num_targets))
+#     def __init__(self, num_targets: int = 0):
+#         super().__init__(Target() for item in range(num_targets))
 
-    def __setitem__(self, index, item):
-        super().__setitem__(index, item)
+#     def __setitem__(self, index, item):
+#         super().__setitem__(index, item)
 
-    def insert(self, index, item):
-        super().insert(index, item)
+#     def insert(self, index, item):
+#         super().insert(index, item)
 
-    def append(self, item):
-        super().append(str(item))
+#     def append(self, item):
+#         super().append(str(item))
 
-    def extend(self, other):
-        if isinstance(other, type(self)):
-            super().extend(other)
-        else:
-            super().extend(item for item in other)
+#     def extend(self, other):
+#         if isinstance(other, type(self)):
+#             super().extend(other)
+#         else:
+#             super().extend(item for item in other)
 
-    @property
-    def num_targs(self):
-        """Return the number of targets in the list."""
-        return len(self)
+#     @property
+#     def num_targs(self):
+#         """Return the number of targets in the list."""
+#         return len(self)
 
 
 def read_targets(file_base: str, frame_num: int) -> List[Target]:
