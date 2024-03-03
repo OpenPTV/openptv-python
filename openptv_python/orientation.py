@@ -21,6 +21,10 @@ from .trafo import correct_brown_affine, pixel_to_metric
 from .vec_utils import unit_vector, vec_norm, vec_set
 
 
+def is_singular(matrix):
+    rank = np.linalg.matrix_rank(matrix)
+    return rank < matrix.shape[0]
+
 @njit
 def skew_midpoint(
     vert1: np.ndarray, direct1: np.ndarray, vert2: np.ndarray, direct2: np.ndarray
@@ -578,13 +582,29 @@ def orient(
     # if np.any(np.isnan(X)):
     #     pdb.set_trace()
 
-    XPX = np.linalg.inv(np.dot(X[:, :numbers].T, X[:, :numbers]))
+    XTX = np.dot(X[:, :numbers].T, X[:, :numbers])
+    if is_singular(XTX):
+        XPX = np.linalg.pinv(XTX)
+    else:
+        XPX = np.linalg.inv(XTX)
+
+
+    # XPX = np.linalg.inv()
+
+    # def invert_singular_matrix(m):
+    # a, b = m.shape
+    # if a != b:
+    #     raise ValueError("Only square matrices are invertible.")
+    # identity_matrix = np.eye(a, a)
+    # return np.linalg.lstsq(m, identity_matrix)[0]
 
 
     # import pdb; pdb.set_trace()
-    for i in range(numbers):
-        # print(f"{i=}, {np.sqrt(XPX[i][i]) = }")
-        sigmabeta[i] = sigmabeta[NPAR] * np.sqrt(XPX[i][i])
+    # for i in range(numbers):
+    #     # print(f"{i=}, {np.sqrt(XPX[i][i]) = }")
+    #     sigmabeta[i] = sigmabeta[NPAR] * np.sqrt(XPX[i][i])
+
+    sigmabeta[:numbers] = sigmabeta[NPAR]*np.sqrt(np.diag(XPX))
 
     if stopflag:
         cal.update_rotation_matrix()
@@ -843,13 +863,16 @@ def full_calibration(
     """
     err_est = np.empty((NPAR + 1), dtype=np.float64)
 
-    # convert numpy array to list of Target objects
-    targs = [Target() for _ in img_pts]
+    if isinstance(img_pts, np.ndarray):
+        # convert numpy array to list of Target objects
+        targs = [Target() for _ in img_pts]
 
-    for ptx, pt in enumerate(img_pts):
-        targs[ptx].x = pt[0]
-        targs[ptx].y = pt[1]
-        targs[ptx].pnr = ptx
+        for ptx, pt in enumerate(img_pts):
+            targs[ptx].x = pt[0]
+            targs[ptx].y = pt[1]
+            targs[ptx].pnr = ptx
+    else:
+        targs = img_pts
 
     residuals = orient(cal, cparam, len(ref_pts), ref_pts, targs, orient_par, err_est, dm=dm, drad=drad)
 

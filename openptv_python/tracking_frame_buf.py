@@ -215,16 +215,15 @@ def write_targets(
     success = False
 
     # fix old-type names, that are like cam1.# or just cam1.
-    if "%" not in file_base:
-        file_base = file_base + "%05d"
     if '#' in file_base:
         file_base = file_base.replace('#', '%05d')
+    if "%" not in file_base:
+        file_base = file_base + "%05d"
 
-    file_name = (
-        file_base + "_targets"
-        if frame_num == 0
-        else file_base % frame_num + "_targets"
-    )
+    if frame_num == 0:
+        frame_num = 123456789
+
+    file_name =  file_base % frame_num + "_targets"
 
     try:
         # Convert targets to a 2D numpy array
