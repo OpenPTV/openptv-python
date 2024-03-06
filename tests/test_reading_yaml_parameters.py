@@ -1,5 +1,6 @@
 """Test the reading of the parameters from a yaml file."""
 from dataclasses import asdict
+from pathlib import Path
 from typing import Dict
 
 import yaml
@@ -17,13 +18,13 @@ from openptv_python.parameters import (
 )
 
 
-def read_parameters_from_yaml(file_path):
+def read_parameters_from_yaml(file_path: Path):
     """Read the parameters from a yaml file and returns a dictionary with the parameters."""
     with open(file_path, 'r', encoding='utf-8') as file:
         params = yaml.safe_load(file)
     return params
 
-def write_parameters_to_yaml(file_path, params: Dict):
+def write_parameters_to_yaml(file_path: Path, params: Dict):
     """Write the parameters to a yaml file."""
     with open(file_path, 'w', encoding='utf-8') as file:
         yaml.dump(params, file, default_flow_style=False)
@@ -45,7 +46,7 @@ par_dict = {'cal_ori': CalibrationPar,
 # par_dict
 
 
-parameters = read_parameters_from_yaml('tests/testing_fodder/parameters/merged_parameters.yaml')
+parameters = read_parameters_from_yaml(Path('tests/testing_fodder/parameters/merged_parameters.yaml'))
 
 for key in parameters:
     par_class = par_dict[key]

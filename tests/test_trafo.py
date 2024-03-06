@@ -1,4 +1,5 @@
 import unittest
+from pathlib import Path
 
 import numpy as np
 
@@ -236,13 +237,13 @@ class Test_transforms(unittest.TestCase):
 
     def setUp(self):
         """Set up the test fixtures."""
-        self.input_control_par_file_name = (
+        self.input_control_par_file_name = Path(
             "tests/testing_folder/control_parameters/control.par"
         )
         self.control = ControlPar().from_file(self.input_control_par_file_name)
 
-        self.input_ori_file_name = "tests/testing_folder/calibration/cam1.tif.ori"
-        self.input_add_file_name = "tests/testing_folder/calibration/cam2.tif.addpar"
+        self.input_ori_file_name = Path("tests/testing_folder/calibration/cam1.tif.ori")
+        self.input_add_file_name = Path("tests/testing_folder/calibration/cam2.tif.addpar")
 
         # self.calibration = Calibration()
         self.calibration = read_calibration(

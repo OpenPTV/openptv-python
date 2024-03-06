@@ -1,5 +1,6 @@
 """Unit tests for the correspondence code."""
 import unittest
+from pathlib import Path
 
 import numpy as np
 
@@ -33,12 +34,12 @@ from openptv_python.trafo import dist_to_flat, metric_to_pixel, pixel_to_metric
 def read_all_calibration(num_cams: int = 4) -> list[Calibration]:
     """Read all calibration files."""
     ori_tmpl = "tests/testing_fodder/cal/sym_cam%d.tif.ori"
-    added_name = "tests/testing_fodder/cal/cam1.tif.addpar"
+    added_name = Path("tests/testing_fodder/cal/cam1.tif.addpar")
 
     calib = []
 
     for cam in range(num_cams):
-        ori_name = ori_tmpl % (cam + 1)
+        ori_name = Path(ori_tmpl % (cam + 1))
         calib.append(read_calibration(ori_name, added_name))
 
     return calib
@@ -163,16 +164,16 @@ class TestReadControlPar(unittest.TestCase):
         expected.mm.n3 = 1.33
         expected.mm.d = [5.0]
 
-        result = read_control_par("tests/testing_folder/corresp/valid.par")
+        result = read_control_par(Path("tests/testing_folder/corresp/valid.par"))
         self.assertEqual(result, expected)
 
     def test_instantiate(self):
         """Creating a MatchedCoords object."""
         cal = Calibration().from_file(
-            "tests/testing_folder/calibration/cam1.tif.ori",
-            "tests/testing_folder/calibration/cam2.tif.addpar",
+            Path("tests/testing_folder/calibration/cam1.tif.ori"),
+            Path("tests/testing_folder/calibration/cam2.tif.addpar"),
         )
-        cpar = read_control_par("tests/testing_folder/corresp/control.par")
+        cpar = read_control_par(Path("tests/testing_folder/corresp/control.par"))
         targs = read_targets("tests/testing_folder/frame/cam1.%04d", 333)
 
         # mc = MatchedCoords(targs, cpar, cal)
@@ -189,8 +190,8 @@ class TestReadControlPar(unittest.TestCase):
 
     def test_full_corresp(self):
         """Full scene correspondences."""
-        cpar = read_control_par("tests/testing_fodder/parameters/ptv.par")
-        vpar = read_volume_par("tests/testing_fodder/parameters/criteria.par")
+        cpar = read_control_par(Path("tests/testing_fodder/parameters/ptv.par"))
+        vpar = read_volume_par(Path("tests/testing_fodder/parameters/criteria.par"))
 
         # Cameras are at so high angles that opposing cameras don't see each other
         # in the normal air-glass-water setting.
@@ -220,9 +221,9 @@ class TestReadControlPar(unittest.TestCase):
 
     def test_single_cam_corresp(self):
         """Single camera correspondence."""
-        cpar = read_control_par("tests/testing_folder/single_cam/parameters/ptv.par")
+        cpar = read_control_par(Path("tests/testing_folder/single_cam/parameters/ptv.par"))
         vpar = read_volume_par(
-            "tests/testing_folder/single_cam/parameters/criteria.par"
+            Path("tests/testing_folder/single_cam/parameters/criteria.par")
         )
 
         # Cameras are at so high angles that opposing cameras don't see each
@@ -235,8 +236,8 @@ class TestReadControlPar(unittest.TestCase):
         img_pts = []
 
         cal = Calibration().from_file(
-            "tests/testing_folder/single_cam/calibration/cam_1.tif.ori",
-            "tests/testing_folder/single_cam/calibration/cam_1.tif.addpar",
+            Path("tests/testing_folder/single_cam/calibration/cam_1.tif.ori"),
+            Path("tests/testing_folder/single_cam/calibration/cam_1.tif.addpar"),
         )
         cals.append(cal)
 
@@ -281,8 +282,8 @@ class TestReadControlPar(unittest.TestCase):
 
         two cameras to get 16 pairs.
         """
-        cpar = read_control_par("tests/testing_fodder/parameters/ptv.par")
-        vpar = read_volume_par("tests/testing_fodder/parameters/criteria.par")
+        cpar = read_control_par(Path("tests/testing_fodder/parameters/ptv.par"))
+        vpar = read_volume_par(Path("tests/testing_fodder/parameters/criteria.par"))
 
         cpar.num_cams = 2
         cpar.mm.n2[0] = 1.0001
@@ -341,8 +342,8 @@ class TestReadControlPar(unittest.TestCase):
 
     def test_correspondences(self):
         """Test correspondences function."""
-        cpar = read_control_par("tests/testing_fodder/parameters/ptv.par")
-        vpar = read_volume_par("tests/testing_fodder/parameters/criteria.par")
+        cpar = read_control_par(Path("tests/testing_fodder/parameters/ptv.par"))
+        vpar = read_volume_par(Path("tests/testing_fodder/parameters/criteria.par"))
 
         # Cameras are at so high angles that opposing cameras don't see each other
         # in the normal air-glass-water setting.
@@ -361,8 +362,8 @@ class TestReadControlPar(unittest.TestCase):
     def test_pairwise_matching(self):
         """Test pairwise matching function."""
         cand = 0
-        cpar = read_control_par("tests/testing_fodder/parameters/ptv.par")
-        vpar = read_volume_par("tests/testing_fodder/parameters/criteria.par")
+        cpar = read_control_par(Path("tests/testing_fodder/parameters/ptv.par"))
+        vpar = read_volume_par(Path("tests/testing_fodder/parameters/criteria.par"))
 
         # /* Cameras are at so high angles that opposing cameras don't see each other
         #    in the normal air-glass-water setting. */
@@ -410,8 +411,8 @@ class TestReadControlPar(unittest.TestCase):
 
     def test_three_camera_matching(self):
         """Test three camera matching function."""
-        cpar = read_control_par("tests/testing_fodder/parameters/ptv.par")
-        vpar = read_volume_par("tests/testing_fodder/parameters/criteria.par")
+        cpar = read_control_par(Path("tests/testing_fodder/parameters/ptv.par"))
+        vpar = read_volume_par(Path("tests/testing_fodder/parameters/criteria.par"))
 
         cpar.mm.n2[0] = 1.0001
         cpar.mm.n3 = 1.0001
@@ -446,8 +447,8 @@ class TestReadControlPar(unittest.TestCase):
 
     def test_four_camera_matching(self):
         """Test four camera matching function."""
-        cpar = read_control_par("tests/testing_fodder/parameters/ptv.par")
-        vpar = read_volume_par("tests/testing_fodder/parameters/criteria.par")
+        cpar = read_control_par(Path("tests/testing_fodder/parameters/ptv.par"))
+        vpar = read_volume_par(Path("tests/testing_fodder/parameters/criteria.par"))
 
         cpar.mm.n2[0] = 1.0001
         cpar.mm.n3 = 1.0001

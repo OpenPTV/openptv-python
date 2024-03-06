@@ -1,7 +1,7 @@
 """Calibration data structures and functions."""
 
 import copy
-import pathlib
+from pathlib import Path
 from typing import Optional
 
 import numpy as np
@@ -127,7 +127,7 @@ class Calibration:
 
 
     @classmethod
-    def from_file(cls, ori_file: str, add_file: str | None):
+    def from_file(cls, ori_file: Path, add_file: Path | None):
         """
         Read exterior and interior orientation, and if available, parameters for distortion corrections.
 
@@ -141,7 +141,7 @@ class Calibration:
         -------
         - ext_par, int_par, glass, addp: Calibration object parts without multimedia lookup table.
         """
-        if not pathlib.Path(ori_file).exists():
+        if not ori_file.exists():
             raise IOError(f"File {ori_file} does not exist")
 
         ret = cls()
@@ -166,6 +166,8 @@ class Calibration:
         # this is anyhow default
         # self.mmlut.data = None  # no multimedia data yet
 
+        ret.added_par = np.array([0,0,0,0,0,1,0], dtype=np.float64)
+
         # Additional parameters
         if add_file is not None:
             with open(add_file, "r", encoding="utf-8") as fp:
@@ -179,10 +181,6 @@ class Calibration:
         else:
             # print("no addpar fallback used")  # Waits for proper logging.
             print("No addpar file found. Using default values for radial distortion")
-            # ret.added_par.k1 = ret.added_par.k2 = ret.added_par.k3 \
-            #     = ret.added_par.p1 = ret.added_par.p2 = ret.added_par.she = 0.0
-            # ret.added_par.scx = 1.0
-            ret.added_par = np.array([0,0,0,0,0,1,0], dtype=np.float64)
 
         return ret
         # print(f"Calibration data read from files {ori_file} and {add_file}")
@@ -395,7 +393,7 @@ def write_ori(
     ext_par: np.recarray,
     int_par: np.recarray,
     glass: np.ndarray,
-    added_par: np.recarray,
+    added_par: np.ndarray,
     filename: str,
     add_file: Optional[str],
 ) -> bool:
@@ -424,7 +422,7 @@ def write_ori(
     return success
 
 
-def read_ori(ori_file: str, add_file: str) -> Calibration:
+def read_ori(ori_file: Path, add_file: Path) -> Calibration:
     """
     Read exterior and interior orientation, and if available, parameters for distortion corrections.
 
@@ -495,7 +493,7 @@ def compare_addpar(a1, a2):
     return np.array_equal(a1, a2)
 
 
-def read_calibration(ori_file: str, addpar_file: str) -> Calibration:
+def read_calibration(ori_file: Path, addpar_file: Path | None) -> Calibration:
     """Read the orientation file including the added parameters."""
     return Calibration().from_file(ori_file, addpar_file)
 

@@ -1,4 +1,5 @@
 import unittest
+from pathlib import Path
 
 import numpy as np
 
@@ -11,10 +12,11 @@ from openptv_python.vec_utils import vec_set
 
 class TestGetMmfMmLUT(unittest.TestCase):
     def setUp(self):
-        self.ori_file = "tests/testing_fodder/cal/cam2.tif.ori"
-        self.add_file = "tests/testing_fodder/cal/cam2.tif.addpar"
-        self.vol_file = "tests/testing_fodder/parameters/criteria.par"
-        self.ptv_file = "tests/testing_fodder/parameters/ptv.par"
+        filepath = Path("tests") / "testing_fodder"
+        self.ori_file = filepath / "cal"/ "cam2.tif.ori"
+        self.add_file = filepath / "cal/cam2.tif.addpar"
+        self.vol_file = filepath / "parameters/criteria.par"
+        self.ptv_file = filepath / "parameters/ptv.par"
         self.cal = read_calibration(self.ori_file, self.add_file)
         self.vpar = read_volume_par(self.vol_file)
         self.cpar = read_control_par(self.ptv_file)

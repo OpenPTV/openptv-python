@@ -56,7 +56,8 @@ class TestSortgrid(unittest.TestCase):
         """Test sorting the grid points according to the image coordinates."""
         nfix, eps, correct_eps = 5, 25, 25
 
-        eps = read_sortgrid_par("tests/testing_fodder/parameters/sortgrid.par")
+        test_path = Path("tests") / "testing_fodder"
+        eps = read_sortgrid_par(test_path / "parameters" / "sortgrid.par")
         self.assertEqual(eps, correct_eps)
 
         file_base = "tests/testing_fodder/sample_%04d"
@@ -65,12 +66,13 @@ class TestSortgrid(unittest.TestCase):
         targets = read_targets(file_base, frame_num)
         self.assertEqual(len(targets), 2)
 
-        ori_file = "tests/testing_fodder/cal/cam1.tif.ori"
-        add_file = "tests/testing_fodder/cal/cam1.tif.addpar"
+
+        ori_file = test_path / "cal"/ "cam1.tif.ori"
+        add_file = test_path / "cal" / "cam1.tif.addpar"
 
         cal = read_calibration(ori_file, add_file)
-        cpar = read_control_par("tests/testing_fodder/parameters/ptv.par")
-        cal_points = read_calblock("tests/testing_fodder/cal/calblock.txt")
+        cpar = read_control_par(test_path / "parameters/ptv.par")
+        cal_points = read_calblock(test_path / "cal/calblock.txt")
 
         self.assertEqual(nfix, 5)
 

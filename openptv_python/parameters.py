@@ -1,5 +1,4 @@
 """Parameters for OpenPTV-Python."""
-import os
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import List, Tuple
@@ -146,9 +145,9 @@ class SequencePar(Parameters):
         return self.last
 
     @classmethod
-    def from_file(cls, filename: str, num_cams: int):
+    def from_file(cls, filename: Path, num_cams: int):
         """Read sequence parameters from file."""
-        if not Path(filename).exists():
+        if not filename.exists():
             raise IOError("File {filename} does not exist.")
 
         ret = cls()
@@ -162,7 +161,7 @@ class SequencePar(Parameters):
         return ret
 
 
-def read_sequence_par(filename: str, num_cams: int = TR_MAX_CAMS) -> SequencePar:
+def read_sequence_par(filename: Path, num_cams: int = TR_MAX_CAMS) -> SequencePar:
     """Read sequence parameters from file and return SequencePar object."""
     return SequencePar().from_file(filename, num_cams)
 
@@ -213,7 +212,7 @@ class TrackPar(Parameters):
     #     }
 
     @classmethod
-    def from_file(cls, filename: str):
+    def from_file(cls, filename: Path):
         """Read tracking parameters from file and return TrackPar object.
 
         Note that the structure has 13 attributes, from which we read only 9
@@ -306,7 +305,7 @@ class TrackPar(Parameters):
         return self.dny
 
 
-def read_track_par(filename: str) -> TrackPar:
+def read_track_par(filename: Path) -> TrackPar:
     """Read tracking parameters from file and return TrackPar object."""
     return TrackPar().from_file(filename)
 
@@ -377,7 +376,7 @@ class VolumePar(Parameters):
         self.corrmin = corrmin
 
     @classmethod
-    def from_file(cls, filename: str):
+    def from_file(cls, filename: Path):
         """Read volume parameters from file.
 
         Args:
@@ -401,7 +400,7 @@ class VolumePar(Parameters):
         return cls(x_lay, z_min_lay, z_max_lay, cn, cnx, cny, csumg, eps0, corrmin)
 
 
-def read_volume_par(filename: str) -> VolumePar:
+def read_volume_par(filename: Path) -> VolumePar:
     """Read volume parameters from file and returns volume_par object.
 
     Args:
@@ -497,10 +496,10 @@ class ControlPar(Parameters):
         return self.tiff_flag
 
     @classmethod
-    def from_file(cls, filename: str):
+    def from_file(cls, filename: Path):
         """Read control parameters from file and return ControlPar object."""
         ret = cls()
-        if not os.path.isfile(filename):
+        if not filename.exists():
             raise FileNotFoundError(f"Could not open file {filename}")
 
         with open(filename, "r", encoding="utf-8") as par_file:
@@ -546,7 +545,7 @@ class ControlPar(Parameters):
         return control_par_dict
 
 
-def read_control_par(filename: str) -> ControlPar:
+def read_control_par(filename: Path) -> ControlPar:
     """Read control parameters from file and return ControlPar object."""
     return ControlPar().from_file(filename)
 
@@ -608,7 +607,7 @@ class TargetPar(Parameters):
     #     }
 
     @classmethod
-    def from_file(cls, filename: str):
+    def from_file(cls, filename: Path):
         """Read target parameters from file and returns target_par object.
 
         Reads target recognition parameters from a legacy detect_plate.par file,
@@ -673,7 +672,7 @@ class TargetPar(Parameters):
         """Return the sum grey bounds."""
         return self.sumg_min
 
-def read_target_par(filename: str) -> TargetPar:
+def read_target_par(filename: Path) -> TargetPar:
     """Read target parameters from file and returns target_par object."""
     tpar = TargetPar()
     return tpar.from_file(filename)
@@ -712,7 +711,7 @@ class OrientPar(Parameters):
     interfflag: int = 0
 
     @classmethod
-    def from_file(cls, filename: str):
+    def from_file(cls, filename: Path):
         """Read orientation parameters from file and returns orient_par object."""
         ret = cls()
         try:
@@ -777,7 +776,7 @@ class CalibrationPar(Parameters):
         return cls(fixp_name, img_name, img_ori0, tiff_flag, pair_flag, chfield)
 
 
-def read_cal_ori_parameters(file_path: str, num_cams: int) -> CalibrationPar:
+def read_cal_ori_parameters(file_path: Path, num_cams: int) -> CalibrationPar:
     """Read from cal_ori.par file."""
     with open(file_path, 'r', encoding="utf-8") as file:
         fixp_name = file.readline().strip()
@@ -799,7 +798,7 @@ class MultiPlanesPar(Parameters):
     filename: list = field(default_factory=list)
 
     @classmethod
-    def from_file(cls, file_path: str):
+    def from_file(cls, file_path: Path):
         """Read from multiplanes.par file."""
         with open(file_path, 'r', encoding="utf-8") as file:
             num_planes = int(file.readline().strip())
@@ -814,14 +813,14 @@ class ExaminePar(Parameters):
     combine_flag: bool = False
 
     @classmethod
-    def from_file(cls, file_path: str):
+    def from_file(cls, file_path: Path):
         """Read from examine.par file."""
         with open(file_path, 'r', encoding="utf-8") as file:
             examine_flag = bool(int(file.readline().strip()))
             combine_flag = bool(int(file.readline().strip()))
         return cls(examine_flag, combine_flag)
 
-def read_examine_par(file_path: str) -> ExaminePar:
+def read_examine_par(file_path: Path) -> ExaminePar:
     """Read from examine.par file."""
     with open(file_path, 'r', encoding="utf-8") as file:
         examine_flag = bool(int(file.readline().strip()))
@@ -835,14 +834,14 @@ class PftVersionPar(Parameters):
     existing_target_flag: bool = False
 
     @classmethod
-    def from_file(cls, file_path: str):
+    def from_file(cls, file_path: Path):
         """Read from pft_version.par file."""
         with open(file_path, 'r', encoding="utf-8") as file:
             pft_version = bool(int(file.readline().strip()))
         return cls(pft_version)
 
     @classmethod
-    def write(cls, file_path: str):
+    def write(cls, file_path: Path):
         """Write to pft_version.par file."""
         with open(file_path, 'w', encoding="utf-8") as file:
             file.write(f"{cls.existing_target_flag}\n")

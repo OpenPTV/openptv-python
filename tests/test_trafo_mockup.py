@@ -1,5 +1,5 @@
-
 import unittest
+from pathlib import Path
 
 import numpy as np
 
@@ -51,7 +51,7 @@ class TestFlatToDist(unittest.TestCase):
 
     def test_pixel_to_metric_and_back(self):
         """Test the pixel_to_metric and metric_to_pixel functions."""
-        cpar = ControlPar().from_file("tests/testing_folder/control_parameters/control.par")
+        cpar = ControlPar().from_file(Path("tests/testing_folder/control_parameters/control.par"))
 
         x, y = metric_to_pixel(1, 1, cpar)
         x, y = pixel_to_metric(x, y, cpar)

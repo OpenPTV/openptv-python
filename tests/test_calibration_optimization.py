@@ -3,6 +3,7 @@
 
 # %%
 import copy
+from pathlib import Path
 
 import numpy as np
 import scipy.optimize as opt
@@ -21,7 +22,7 @@ def print_cal(cal: Calibration):
     print(cal.get_primary_point())
     print(cal.added_par)
 
-control_file_name = "tests/testing_folder/corresp/control.par"
+control_file_name = Path("tests/testing_folder/corresp/control.par")
 # self.control = ControlPar(4)
 control = read_control_par(control_file_name)
 
@@ -29,12 +30,12 @@ control = read_control_par(control_file_name)
 # orient_par = OrientPar().from_file(orient_par_file_name)
 
 cal = Calibration().from_file(
-    "tests/testing_folder/calibration/cam1.tif.ori",
-    "tests/testing_folder/calibration/cam1.tif.addpar",
+    Path("tests/testing_folder/calibration/cam1.tif.ori"),
+    Path("tests/testing_folder/calibration/cam1.tif.addpar"),
 )
 orig_cal = Calibration().from_file(
-    "tests/testing_folder/calibration/cam1.tif.ori",
-    "tests/testing_folder/calibration/cam1.tif.addpar",
+    Path("tests/testing_folder/calibration/cam1.tif.ori"),
+    Path("tests/testing_folder/calibration/cam1.tif.addpar"),
 )
 
 

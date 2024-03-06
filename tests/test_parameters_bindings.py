@@ -1,6 +1,7 @@
 import os
 import shutil
 import unittest
+from pathlib import Path
 
 import numpy
 
@@ -22,7 +23,6 @@ class Test_SequenceParams(unittest.TestCase):
 
     def test_read_sequence_par(self):
         """Test read_sequence_par function."""
-        """Create a test SequencePar object and write it to a temporary file."""
         # Create the SequencePar object
         expected_sp = SequencePar(
             img_base_name=["img/cam1.", "img/cam2."],
@@ -30,7 +30,7 @@ class Test_SequenceParams(unittest.TestCase):
             last=10004,
         )
         # Write it to a temporary file
-        filename = "tests/testing_folder/sequence_parameters/test_sequence_par.txt"
+        filename = Path("tests/testing_folder/sequence_parameters/test_sequence_par.txt")
         with open(filename, "w", encoding="utf-8") as f:
             f.write("img/cam1.\nimg/cam2.\n10000\n10004\n")
         # Return the filename and the SequencePar object
@@ -118,7 +118,7 @@ class Test_TrackingParams(unittest.TestCase):
     """
 
     def setUp(self):
-        self.input_tracking_par_file_name = (
+        self.input_tracking_par_file_name = Path(
             "tests/testing_folder/tracking_parameters/track.par"
         )
 
@@ -137,8 +137,6 @@ class Test_TrackingParams(unittest.TestCase):
             dvzmin=7.7,
             dvzmax=8.8,
         )
-
-    # Testing getters according to the values passed in setUp
 
     def test_TrackingParams_getters(self):
         """Test getters."""
@@ -199,7 +197,7 @@ class Test_SequenceParamsC(unittest.TestCase):
     """Test SequenceParams class."""
 
     def setUp(self):
-        self.input_sequence_par_file_name = (
+        self.input_sequence_par_file_name = Path(
             "tests/testing_folder/sequence_parameters/sequence.par"
         )
 
@@ -265,10 +263,10 @@ class Test_VolumeParams(unittest.TestCase):
 
     def setUp(self):
         """Set up for testing VolumePar class."""
-        self.input_volume_par_file_name = (
+        self.input_volume_par_file_name = Path(
             "tests/testing_folder/volume_parameters/volume.par"
         )
-        self.temp_output_directory = (
+        self.temp_output_directory = Path(
             "tests/testing_folder/volume_parameters/testing_output"
         )
 
@@ -380,10 +378,10 @@ class Test_VolumeParams(unittest.TestCase):
 
 class Test_ControlPar(unittest.TestCase):
     def setUp(self):
-        self.input_control_par_file_name = (
+        self.input_control_par_file_name = Path(
             "tests/testing_folder/control_parameters/control.par"
         )
-        self.temp_output_directory = (
+        self.temp_output_directory = Path(
             "tests/testing_folder/control_parameters/testing_output"
         )
 
@@ -441,7 +439,7 @@ class Test_ControlPar(unittest.TestCase):
 class TestTargetPar(unittest.TestCase):
     def test_read(self):
         """Test reading of TargetPar class."""
-        inp_filename = "tests/testing_folder/target_parameters/targ_rec.par"
+        inp_filename = Path("tests/testing_folder/target_parameters/targ_rec.par")
         tp = read_target_par(inp_filename)
         if tp is None:
             print(inp_filename)

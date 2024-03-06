@@ -58,7 +58,7 @@ def read_all_calibration(num_cams: int = 4) -> list[Calibration]:
     for cam in range(num_cams):
         ori_name = ori_tmpl % (cam + 1)
         added_name = added_tmpl % (cam + 1)
-        calib.append(read_calibration(ori_name, added_name))
+        calib.append(read_calibration( Path(ori_name), Path(added_name) ))
 
     return calib
 
@@ -71,6 +71,7 @@ class TestBurgers(unittest.TestCase):
         current_directory = Path.cwd()
         print(f"working from {current_directory}")
         directory = Path("tests/testing_fodder/burgers")
+        parameters_path = (directory / "parameters").resolve(strict=True)
 
         os.chdir(directory)
 
@@ -86,7 +87,7 @@ class TestBurgers(unittest.TestCase):
         copy_directory("res_orig/", "res/")
         copy_directory("img_orig/", "img/")
 
-        cpar = read_control_par("parameters/ptv.par")
+        cpar = read_control_par(parameters_path / "ptv.par")
         self.assertIsNotNone(cpar)
 
         calib = read_all_calibration(cpar.num_cams)
@@ -95,10 +96,10 @@ class TestBurgers(unittest.TestCase):
         print("Test Burgers vortex case")
 
         run = tr_new(
-            "parameters/sequence.par",
-            "parameters/track.par",
-            "parameters/criteria.par",
-            "parameters/ptv.par",
+            parameters_path / "sequence.par",
+            parameters_path / "track.par",
+            parameters_path / "criteria.par",
+            parameters_path / "ptv.par",
             4,
             20000,
             "res/rt_is",
@@ -124,10 +125,10 @@ class TestBurgers(unittest.TestCase):
             run.nlinks, 17, f"Was expecting nlinks == 17 but found {run.nlinks}")
 
         run = tr_new(
-            "parameters/sequence.par",
-            "parameters/track.par",
-            "parameters/criteria.par",
-            "parameters/ptv.par",
+            parameters_path / "sequence.par",
+            parameters_path / "track.par",
+            parameters_path / "criteria.par",
+            parameters_path / "ptv.par",
             4,
             20000,
             "res/rt_is",

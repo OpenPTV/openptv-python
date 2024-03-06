@@ -75,7 +75,7 @@ def read_all_calibration(num_cams: int = 4) -> list[Calibration]:
     for cam in range(num_cams):
         ori_name = ori_tmpl % (cam + 1)
         added_name = added_tmpl % (cam + 1)
-        calib.append(read_calibration(ori_name, added_name))
+        calib.append(read_calibration(Path(ori_name), Path(added_name)))
 
     return calib
 
@@ -108,15 +108,15 @@ class TestTrackCorrNoAdd(unittest.TestCase):
 
         print("----------------------------")
         print("Test tracking multiple files 2 cameras, 1 particle")
-        cpar = read_control_par("parameters/ptv.par")
+        cpar = read_control_par(Path("parameters/ptv.par"))
 
         calib = read_all_calibration(cpar.num_cams)
 
         run = tr_new(
-            "parameters/sequence.par",
-            "parameters/track.par",
-            "parameters/criteria.par",
-            "parameters/ptv.par",
+            Path("parameters/sequence.par"),
+            Path("parameters/track.par"),
+            Path("parameters/criteria.par"),
+            Path("parameters/ptv.par"),
             4,
             20000,
             "res/rt_is",
@@ -177,16 +177,16 @@ class TestTrackCorrNoAdd(unittest.TestCase):
 
         print("----------------------------")
         print("Test tracking multiple files 2 cameras, 1 particle")
-        cpar = read_control_par("parameters/ptv.par")
+        cpar = read_control_par(Path("parameters/ptv.par"))
 
         calib = read_all_calibration(cpar.num_cams)
         # calib.append(Calibration())
 
         run = tr_new(
-            "parameters/sequence.par",
-            "parameters/track.par",
-            "parameters/criteria.par",
-            "parameters/ptv.par",
+            Path("parameters/sequence.par"),
+            Path("parameters/track.par"),
+            Path("parameters/criteria.par"),
+            Path("parameters/ptv.par"),
             4,
             20000,
             "res/rt_is",
@@ -253,16 +253,16 @@ class TestTrackback(unittest.TestCase):
 
         print("----------------------------")
         print("Test tracking multiple files 2 cameras, 1 particle")
-        cpar = read_control_par("parameters/ptv.par")
+        cpar = read_control_par(Path("parameters/ptv.par"))
 
         calib = read_all_calibration(cpar.num_cams)
         # calib.append(Calibration())
 
         run = tr_new(
-            "parameters/sequence.par",
-            "parameters/track.par",
-            "parameters/criteria.par",
-            "parameters/ptv.par",
+            Path("parameters/sequence.par"),
+            Path("parameters/track.par"),
+            Path("parameters/criteria.par"),
+            Path("parameters/ptv.par"),
             4,
             20000,
             "res/rt_is",
@@ -333,7 +333,7 @@ class TestNewParticle(unittest.TestCase):
         calib: List[Calibration] = []
         for cam in range(3):
             ori_name = ori_tmpl % (cam + 1)
-            cal = Calibration().from_file(ori_name, added_name)
+            cal = Calibration().from_file(Path(ori_name), Path(added_name))
             calib.append(cal)
 
         os.chdir("track/")
@@ -343,10 +343,10 @@ class TestNewParticle(unittest.TestCase):
         copy_directory("img_orig/", "img/")
 
         run = tr_new(
-            "parameters/sequence_newpart.par",
-            "parameters/track.par",
-            "parameters/criteria.par",
-            "parameters/control_newpart.par",
+            Path("parameters/sequence_newpart.par"),
+            Path("parameters/track.par"),
+            Path("parameters/criteria.par"),
+            Path("parameters/control_newpart.par"),
             4,
             MAX_TARGETS,
             "res/particles",

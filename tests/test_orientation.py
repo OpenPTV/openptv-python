@@ -1,4 +1,5 @@
 import unittest
+from pathlib import Path
 
 import numpy as np
 
@@ -23,11 +24,12 @@ class Test_Orientation(unittest.TestCase):
 
     def setUp(self):
         """Set up the test."""
-        self.input_ori_file_name = "tests/testing_folder/calibration/cam1.tif.ori"
-        self.input_add_file_name = "tests/testing_folder/calibration/cam2.tif.addpar"
-        self.control_file_name = "tests/testing_folder/control_parameters/control.par"
-        self.volume_file_name = "tests/testing_folder/corresp/criteria.par"
-        self.orient_par_file_name = "tests/testing_folder/corresp/orient.par"
+        filepath = Path("tests") / "testing_folder"
+        self.input_ori_file_name = filepath / "calibration/cam1.tif.ori"
+        self.input_add_file_name = filepath / "calibration/cam2.tif.addpar"
+        self.control_file_name = filepath / "control_parameters/control.par"
+        self.volume_file_name = filepath / "corresp/criteria.par"
+        self.orient_par_file_name = filepath / "corresp/orient.par"
 
         self.control = ControlPar(4).from_file(self.control_file_name)
         self.calibration = Calibration().from_file(self.input_ori_file_name, self.input_add_file_name)
@@ -114,7 +116,7 @@ class Test_Orientation(unittest.TestCase):
 
         num_cams = 4
         ori_tmpl = "tests/testing_folder/calibration/sym_cam{cam_num}.tif.ori"
-        add_file = "tests/testing_folder/calibration/cam1.tif.addpar"
+        add_file = Path("tests/testing_folder/calibration/cam1.tif.addpar")
         calibs = []
         targs_plain = []
         targs_jigged = []
@@ -123,7 +125,7 @@ class Test_Orientation(unittest.TestCase):
 
         # read calibration for each camera from files
         for cam in range(num_cams):
-            ori_name = ori_tmpl.format(cam_num=cam + 1)
+            ori_name = Path(ori_tmpl.format(cam_num=cam + 1))
             new_cal = Calibration().from_file(ori_file=ori_name, add_file=add_file)
             calibs.append(new_cal)
 
@@ -169,15 +171,15 @@ class Test_Orientation(unittest.TestCase):
         """Point positions for a single camera case."""
         num_cams = 1
         # prepare MultimediaParams
-        cpar_file = "tests/testing_folder/single_cam/parameters/ptv.par"
-        vpar_file = "tests/testing_folder/single_cam/parameters/criteria.par"
+        cpar_file = Path("tests/testing_folder/single_cam/parameters/ptv.par")
+        vpar_file = Path("tests/testing_folder/single_cam/parameters/criteria.par")
         cpar = ControlPar(num_cams).from_file(cpar_file)
         # mm_params = cpar.get_multimedia_params()
 
         vpar = VolumePar().from_file(vpar_file)
 
-        ori_name = "tests/testing_folder/single_cam/calibration/cam_1.tif.ori"
-        add_name = "tests/testing_folder/single_cam/calibration/cam_1.tif.addpar"
+        ori_name = Path("tests/testing_folder/single_cam/calibration/cam_1.tif.ori")
+        add_name = Path("tests/testing_folder/single_cam/calibration/cam_1.tif.addpar")
         calibs = []
 
         # read calibration for each camera from files
@@ -237,13 +239,13 @@ class Test_Orientation(unittest.TestCase):
 
         num_cams = 4
         ori_tmpl = "tests/testing_folder/dumbbell/cam{cam_num}.tif.ori"
-        add_file = "tests/testing_folder/calibration/cam1.tif.addpar"
+        add_file = Path("tests/testing_folder/calibration/cam1.tif.addpar")
         calibs = []
         targs_plain = []
 
         # read calibration for each camera from files
         for cam in range(num_cams):
-            ori_name = ori_tmpl.format(cam_num=cam + 1)
+            ori_name = Path(ori_tmpl.format(cam_num=cam + 1))
             new_cal = Calibration().from_file(ori_file=ori_name, add_file=add_file)
             calibs.append(new_cal)
 
@@ -277,7 +279,7 @@ class TestGradientDescent(unittest.TestCase):
     # Based on the C tests in liboptv/tests/check_orientation.c
 
     def setUp(self):
-        control_file_name = "tests/testing_folder/corresp/control.par"
+        control_file_name = Path("tests/testing_folder/corresp/control.par")
         # self.control = ControlPar(4)
         self.control = read_control_par(control_file_name)
 
@@ -285,12 +287,12 @@ class TestGradientDescent(unittest.TestCase):
         self.orient_par = OrientPar().from_file(self.orient_par_file_name)
 
         self.cal = Calibration().from_file(
-            "tests/testing_folder/calibration/cam1.tif.ori",
-            "tests/testing_folder/calibration/cam1.tif.addpar",
+            Path("tests/testing_folder/calibration/cam1.tif.ori"),
+            Path("tests/testing_folder/calibration/cam1.tif.addpar"),
         )
         self.orig_cal = Calibration().from_file(
-            "tests/testing_folder/calibration/cam1.tif.ori",
-            "tests/testing_folder/calibration/cam1.tif.addpar",
+            Path("tests/testing_folder/calibration/cam1.tif.ori"),
+            Path("tests/testing_folder/calibration/cam1.tif.addpar"),
         )
 
 

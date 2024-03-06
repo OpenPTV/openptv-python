@@ -65,7 +65,7 @@ def read_all_calibration(num_cams: int = 4) -> list[Calibration]:
     for cam in range(num_cams):
         ori_name = ori_tmpl % (cam + 1)
         added_name = added_tmpl % (cam + 1)
-        calib.append(read_calibration(ori_name, added_name))
+        calib.append(read_calibration(Path(ori_name), Path(added_name)))
 
     return calib
 
@@ -348,7 +348,7 @@ class TestSort(unittest.TestCase):
 
 class TestSearchQuader(unittest.TestCase):
     def setUp(self):
-        self.cpar = ControlPar().from_file("tests/testing_fodder/track/parameters/ptv.par")
+        self.cpar = ControlPar().from_file(Path("tests/testing_fodder/track/parameters/ptv.par"))
         self.cpar.mm.n2[0] = 1.0
         self.cpar.mm.n3 = 1.0
 

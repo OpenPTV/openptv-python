@@ -1,4 +1,5 @@
 import unittest
+from pathlib import Path
 
 import numpy as np
 
@@ -9,16 +10,17 @@ from openptv_python.parameters import read_control_par, read_volume_par
 
 class TestMultimedRnlay(unittest.TestCase):
     def setUp(self):
-        ori_file = "tests/testing_fodder/cal/cam1.tif.ori"
-        add_file = "tests/testing_fodder/cal/cam1.tif.addpar"
+        filepath = Path("tests") / "testing_fodder"
+        ori_file = filepath / "cal" / "cam1.tif.ori"
+        add_file = filepath / "cal" / "cam1.tif.addpar"
         self.cal = read_calibration(ori_file, add_file)
         self.assertIsNotNone(self.cal, "ORI or ADDPAR file reading failed")
 
-        vol_file = "tests/testing_fodder/parameters/criteria.par"
+        vol_file = filepath / "parameters" / "criteria.par"
         self.vpar = read_volume_par(vol_file)
         self.assertIsNotNone(self.vpar, "volume parameter file reading failed")
 
-        filename = "tests/testing_fodder/parameters/ptv.par"
+        filename = filepath / "parameters" / "ptv.par"
         self.cpar = read_control_par(filename)
         self.assertIsNotNone(self.cpar, "control parameter file reading failed")
 

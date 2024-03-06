@@ -1,6 +1,7 @@
 """Tracking frame buffer."""
 from collections import deque
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Deque, List, Tuple
 
 import numpy as np
@@ -172,10 +173,11 @@ def read_targets(file_base: str, frame_num: int) -> List[Target]:
 
     if frame_num > 0:
         # filename = f"{file_base}{frame_num:04d}_targets"
-        filename = file_base % frame_num + '_targets'
+        fname = file_base % frame_num + '_targets'
     else:
-        filename = f"{file_base}_targets"
+        fname = f"{file_base}_targets"
 
+    filename = Path(fname)
     print(f" filename: {filename}")
 
     try:

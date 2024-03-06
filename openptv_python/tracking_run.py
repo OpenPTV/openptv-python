@@ -1,6 +1,7 @@
 """Tracking run module."""
 import math
 from dataclasses import dataclass
+from pathlib import Path
 from typing import List
 
 from openptv_python.calibration import Calibration
@@ -97,10 +98,10 @@ class TrackingRun:
 
 
 def tr_new(
-    seq_par_fname: str,
-    tpar_fname: str,
-    vpar_fname: str,
-    cpar_fname: str,
+    seq_par_fname: Path,
+    tpar_fname: Path,
+    vpar_fname: Path,
+    cpar_fname: Path,
     buf_len: int,
     max_targets: int,
     corres_file_base: str,

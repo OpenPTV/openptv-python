@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import List
 
 import numpy as np
@@ -119,7 +120,7 @@ def read_sortgrid_par(filename) -> int:
     return eps
 
 
-def read_calblock(filename: str) -> np.recarray: #List[Coord3d]:
+def read_calblock(filename: Path) -> np.recarray: #List[Coord3d]:
     """
     Read the calibration block file into the structure of 3D positions and pointers.
 

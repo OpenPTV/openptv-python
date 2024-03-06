@@ -10,6 +10,7 @@ Created on Thu Mar 23 16:12:21 2017
 
 import unittest
 from math import isclose
+from pathlib import Path
 
 import numpy as np
 
@@ -43,13 +44,14 @@ class TestEpipolarCurve(unittest.TestCase):
     def test_two_cameras(self):
         """Test the epipolar curve code for two cameras."""
         cam_num = 1
-        ori_tmpl = f"tests/testing_folder/calibration/sym_cam{cam_num}.tif.ori"
-        add_file = "tests/testing_folder/calibration/cam1.tif.addpar"
+        filepath = Path("tests") / "testing_folder" / "calibration"
+        ori_tmpl = filepath / f"sym_cam{cam_num}.tif.ori"
+        add_file = filepath / "cam1.tif.addpar"
 
         orig_cal = Calibration().from_file(ori_tmpl, add_file)
 
         cam_num = 3
-        ori_tmpl = f"tests/testing_folder/calibration/sym_cam{cam_num}.tif.ori"
+        ori_tmpl = filepath / f"sym_cam{cam_num}.tif.ori"
         proj_cal = Calibration().from_file(ori_tmpl, add_file)
 
         # reorient cams:
@@ -57,10 +59,10 @@ class TestEpipolarCurve(unittest.TestCase):
         proj_cal.set_angles(np.r_[0.0, 3 * np.pi / 4.0, 0.0])
 
         cpar = ControlPar(4)
-        cpar = read_control_par("tests/testing_folder/corresp/control.par")
+        cpar = read_control_par(Path("tests/testing_folder/corresp/control.par"))
         sens_size = cpar.get_image_size()
 
-        vpar = read_volume_par("tests/testing_folder/corresp/criteria.par")
+        vpar = read_volume_par(Path("tests/testing_folder/corresp/criteria.par"))
         vpar.set_z_min_lay([-10, -10])
         vpar.set_z_max_lay([10, 10])
 

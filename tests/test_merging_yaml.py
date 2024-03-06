@@ -1,6 +1,4 @@
-# %%
-import glob
-import os
+import pathlib
 from dataclasses import asdict
 
 import yaml
@@ -31,13 +29,13 @@ par_dict = {'cal_ori': CalibrationPar,
 # print(par_dict)
 
 # Define the directory containing the .par files
-directory_path = 'tests/testing_fodder/parameters'
+directory_path = pathlib.Path('tests/testing_fodder/parameters')
 output_yaml_file = 'tests/testing_fodder/parameters/merged_parameters.yaml'
 
 # Initialize an empty dictionary to store the merged data
 merged_data = {}
 
-ptv_par = glob.glob(os.path.join(directory_path, 'ptv.par'))[0]
+ptv_par = directory_path / 'ptv.par'
 par_class = par_dict['ptv']
 par_content = par_class().from_file(ptv_par)
 num_cams = par_content.num_cams
@@ -45,13 +43,13 @@ num_cams = par_content.num_cams
 
 
 # Find all .par files in the specified directory
-par_files = glob.glob(os.path.join(directory_path, '*.par'))
+par_files = directory_path.glob('*.par')
 # print(par_files)
 
 # Iterate through each .par file
 for file_path in par_files:
     # Extract the title from the file name (assuming the file name is something like "title.par")
-    title = os.path.splitext(os.path.basename(file_path))[0]
+    title = file_path.name
     # print(title)
 
     # Read the content of the .par file and convert it to a dictionary

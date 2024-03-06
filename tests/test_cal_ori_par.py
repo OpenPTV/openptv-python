@@ -1,4 +1,5 @@
 import unittest
+from pathlib import Path
 
 from openptv_python.parameters import read_cal_ori_parameters
 
@@ -7,7 +8,7 @@ class TestCalibrationParameters(unittest.TestCase):
     """Tests for the read_cal_ori_parameters function."""
 
     def setUp(self):
-        self.temp_file = 'tests/testing_fodder/parameters/cal_ori.par'
+        self.temp_file = Path('tests/testing_fodder/parameters/cal_ori.par')
 
 
     # def tearDown(self):
@@ -36,7 +37,7 @@ class TestCalibrationParameters(unittest.TestCase):
     def test_read_parameters_nonexistent_file(self):
         """Test that the function raises FileNotFoundError when the file does not exist."""
         with self.assertRaises(FileNotFoundError):
-            read_cal_ori_parameters("nonexistent_file.par", 4)
+            read_cal_ori_parameters(Path("nonexistent_file.par"), 4)
 
     # def test_read_parameters_invalid_file(self):
     #     with open(self.temp_file, 'w') as invalid_file:

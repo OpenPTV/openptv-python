@@ -3,17 +3,18 @@ from pathlib import Path
 
 import numpy as np
 
-from openptv_python.calibration import mm_lut, read_calibration
+from openptv_python.calibration import mmlut_dtype, read_calibration
 from openptv_python.multimed import init_mmlut
 from openptv_python.parameters import read_control_par, read_volume_par
 
 
 class TestInitMmLut(unittest.TestCase):
     def test_init_mmLUT(self):
-        ori_file = "tests/testing_fodder/cal/cam2.tif.ori"
-        add_file = "tests/testing_fodder/cal/cam2.tif.addpar"
-        vol_file = "tests/testing_fodder/parameters/criteria.par"
-        filename = "tests/testing_fodder/parameters/ptv.par"
+        filepath = Path("tests") / "testing_fodder"
+        ori_file = filepath/"cal"/"cam2.tif.ori"
+        add_file = filepath/"cal"/"cam2.tif.addpar"
+        vol_file = filepath / "parameters" / "criteria.par"
+        filename = filepath / "parameters" / "ptv.par"
 
         self.assertTrue(Path(ori_file).exists, f"File {ori_file} does not exist")
         self.assertTrue(Path(add_file).exists, f"File {add_file} does not exist")
@@ -34,7 +35,7 @@ class TestInitMmLut(unittest.TestCase):
             130,
             177,
             2),
-        dtype = mm_lut.dtype)
+        dtype = mmlut_dtype)
         correct_mmlut = correct_mmlut.view(np.recarray)
 
         # run init_mmLUT for one camera only
