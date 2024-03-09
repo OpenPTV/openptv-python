@@ -817,7 +817,7 @@ def external_calibration(
 def full_calibration(
     cal: Calibration,
     ref_pts: np.ndarray,
-    img_pts: np.ndarray,
+    img_pts: np.ndarray | List[Target],
     cparam: ControlPar,
     orient_par: OrientPar,
     dm: float = 1e-6,
