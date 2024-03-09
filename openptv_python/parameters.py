@@ -761,7 +761,7 @@ class CalibrationPar(Parameters):
     #     }
 
     @classmethod
-    def from_file(cls, file_path: str, num_cams: int):
+    def from_file(cls, file_path: Path, num_cams: int):
         """Read from cal_ori.par file."""
         with open(file_path, 'r', encoding="utf-8") as file:
             fixp_name = file.readline().strip()
