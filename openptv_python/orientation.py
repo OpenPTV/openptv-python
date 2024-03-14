@@ -60,7 +60,7 @@ def point_position(
 
     Arguments:
     ---------
-    targets - for each camera, the 2D metric, flat, centred coordinates
+    targets - for each camera, the 2D metric, flat, centered coordinates
         of the identified point projection.
     multimed_pars - multimedia parameters struct for ray tracing through
         several layers.
