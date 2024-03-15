@@ -36,7 +36,7 @@ class TestInitMmLut(unittest.TestCase):
             177,
             2),
         dtype = mmlut_dtype)
-        correct_mmlut = correct_mmlut
+        # correct_mmlut = correct_mmlut
 
         # run init_mmLUT for one camera only
         cpar.num_cams = 1
@@ -50,18 +50,15 @@ class TestInitMmLut(unittest.TestCase):
         self.assertAlmostEqual(data[0], 1)
 
         # Radial shift grows with radius
-        self.assertLess(data[0], data[correct_mmlut.nz])
-        self.assertLess(
-            data[correct_mmlut.nz],
-            data[2 * correct_mmlut.nz],
-        )
+        self.assertLess(data[0], data[correct_mmlut['nz']])
+        self.assertLess(data[correct_mmlut['nz']], data[2 * correct_mmlut['nz']]) # type: ignore
 
-        self.assertAlmostEqual(cal.mmlut.origin[0], correct_mmlut.origin[0], places=5)
-        self.assertAlmostEqual(cal.mmlut.origin[1], correct_mmlut.origin[1], places=5)
-        self.assertAlmostEqual(cal.mmlut.origin[2], correct_mmlut.origin[2], places=5)
+        self.assertAlmostEqual(cal.mmlut['origin'][0], correct_mmlut['origin'][0], places=5)
+        self.assertAlmostEqual(cal.mmlut['origin'][1], correct_mmlut['origin'][1], places=5)
+        self.assertAlmostEqual(cal.mmlut['origin'][2], correct_mmlut['origin'][2], places=5)
         self.assertEqual(cal.mmlut['nr'], correct_mmlut['nr'])
-        self.assertEqual(cal.mmlut.nz, correct_mmlut.nz)
-        self.assertEqual(cal.mmlut.rw, correct_mmlut.rw)
+        self.assertEqual(cal.mmlut['nz'], correct_mmlut['nz'])
+        self.assertEqual(cal.mmlut['rw'], correct_mmlut['rw'])
 
 
 if __name__ == "__main__":

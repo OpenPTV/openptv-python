@@ -57,12 +57,12 @@ class Test_Orientation(unittest.TestCase):
 
         # convert to TargetArray object
         # targets = TargetArray(coords_count)
-        targets = [Target() for _ in range(coords_count)]
+        targets = np.tile(Target, coords_count)
 
         for i in range(coords_count):
             targets[i]['pnr'] = i
-            targets[i].x = xy_img_pts_pixel[i][0]
-            targets[i].y = xy_img_pts_pixel[i][1]
+            targets[i]['x'] = xy_img_pts_pixel[i][0]
+            targets[i]['y'] = xy_img_pts_pixel[i][1]
 
             # set_pos((xy_img_pts_pixel[i][0], xy_img_pts_pixel[i][1]))
 
@@ -74,10 +74,11 @@ class Test_Orientation(unittest.TestCase):
             np.random.shuffle(shuffled_indices)
 
         # rand_targ_array = TargetArray(coords_count)
-        rand_targ_array = [Target() for _ in range(coords_count)]
+
+        rand_targ_array = np.tile(Target, coords_count)
         for i in range(coords_count):
-            rand_targ_array[shuffled_indices[i]].x = targets[i].x
-            rand_targ_array[shuffled_indices[i]].y = targets[i].y
+            rand_targ_array[shuffled_indices[i]]['x'] = targets[i]['x']
+            rand_targ_array[shuffled_indices[i]]['y'] = targets[i]['y']
             rand_targ_array[shuffled_indices[i]]['pnr'] = targets[i]['pnr']
 
         # match detection to reference

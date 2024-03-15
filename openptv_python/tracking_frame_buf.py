@@ -222,7 +222,7 @@ def write_targets(
         # Save the target array to file using savetxt
         np.savetxt(
             file_name,
-            targets,
+            targets.flatten(),
             fmt="%4d %9.4f %9.4f %5d %5d %5d %5d %5d",
             header=f"{num_targets}",
             comments="",

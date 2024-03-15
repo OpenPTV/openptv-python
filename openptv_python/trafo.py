@@ -2,8 +2,8 @@
 from typing import Tuple
 
 import numpy as np
-from numba import float64, int32, njit
 
+# from numba import float64, int32, njit
 from .calibration import Calibration
 from .parameters import ControlPar
 
@@ -29,7 +29,7 @@ def pixel_to_metric(
     )
 
 
-@njit
+# @njit
 def fast_pixel_to_metric(x_pixel, y_pixel, imx, imy, pix_x, pix_y) -> Tuple[np.float64, np.float64]:
     """Convert pixel coordinates to metric coordinates."""
     x_metric = (x_pixel - float(imx) / 2.0) * pix_x
@@ -37,7 +37,7 @@ def fast_pixel_to_metric(x_pixel, y_pixel, imx, imy, pix_x, pix_y) -> Tuple[np.f
 
     return (x_metric, y_metric)
 
-@njit(float64[:,:](int32[:,:],int32,int32,float64,float64))
+# @njit(float64[:,:](int32[:,:],int32,int32,float64,float64))
 def arr_pixel_to_metric(pixel: np.ndarray,
                         imx: np.int32,
                         imy: np.int32,
@@ -88,7 +88,7 @@ def metric_to_pixel(
     )
 
 
-@njit
+# @njit
 def fast_metric_to_pixel(
     x_metric: np.float64,
     y_metric: np.float64,
@@ -128,7 +128,7 @@ def arr_metric_to_pixel(metric: np.ndarray,
     )
 
 
-@njit(float64[:,:](float64[:,:],int32,int32,float64,float64))
+# @njit(float64[:,:](float64[:,:],int32,int32,float64,float64))
 def fast_arr_metric_to_pixel(
     metric: np.ndarray,
     imx: np.int32,
@@ -143,7 +143,7 @@ def fast_arr_metric_to_pixel(
 
     return pixel
 
-@njit(fastmath=True, cache=True, nogil=True)
+# @njit(fastmath=True, cache=True, nogil=True)
 def distort_brown_affine(x: np.float64,
                          y: np.float64,
                          ap: np.ndarray,

@@ -5,7 +5,7 @@ import numpy as np
 
 from openptv_python.constants import POSI
 from openptv_python.tracking_frame_buf import (
-    Corres_dtype,
+    Corres,
     Pathinfo,
     Target,
     compare_corres,
@@ -77,8 +77,8 @@ class TestWriteTargets(unittest.TestCase):
         -------
         None
         """
-        t1 = Target(0, 1127.0000, 796.0000, 13320, 111, 120, 828903, 1)
-        t2 = Target(1, 796.0000, 809.0000, 13108, 113, 116, 658928, 0)
+        t1 = np.array([(0, 1127.0000, 796.0000, 13320, 111, 120, 828903, 1)],dtype=Target.dtype)
+        t2 = np.array([(1, 796.0000, 809.0000, 13108, 113, 116, 658928, 0)],dtype=Target.dtype)
 
         file_base = "tests/testing_fodder/test_%04d"
         frame_num = 42
@@ -87,6 +87,7 @@ class TestWriteTargets(unittest.TestCase):
         tbuf = []
         tbuf.append(t1)
         tbuf.append(t2)
+        tbuf = np.array(tbuf)
 
         # Write targets to a file
         self.assertTrue(write_targets(tbuf, num_targets, file_base, frame_num))
@@ -109,8 +110,8 @@ class TestReadPathFrame(unittest.TestCase):
         Reads a path frame without links and checks the correctness of corres and path information.
         Then, reads a path frame with links and checks again.
         """
-        cor_buf = np.ndarray((80,), dtype=Corres_dtype)
-        path_buf = [Pathinfo()] * 80
+        cor_buf = np.tile(Corres, 80)
+        path_buf = np.tile(Pathinfo, 80)
 
         # Correct values for particle 3
         tmp = {
@@ -123,9 +124,20 @@ class TestReadPathFrame(unittest.TestCase):
             "decis": [0.0] * POSI,
             "linkdecis": [-999] * POSI,
         }
-        path_correct = Pathinfo(**tmp)
+        path_correct = Pathinfo
+        path_correct['x'] = tmp['x']
+        path_correct['prio'] = tmp['prio']
+        path_correct['prev_frame'] = tmp['prev_frame']
+        path_correct['next_frame'] = tmp['next_frame']
+        path_correct['finaldecis'] = tmp['finaldecis']
+        path_correct['inlist'] = tmp['inlist']
+        path_correct['decis'] = tmp['decis']
+        path_correct['linkdecis'] = tmp['linkdecis']
 
-        c_correct = np.ndarray(1, dtype=Corres_dtype)
+
+
+
+        c_correct = np.ndarray(1, dtype=Corres.dtype)
         c_correct['nr'] = 3
         c_correct['p'] = np.array([96, 66, 26, 26])
 
