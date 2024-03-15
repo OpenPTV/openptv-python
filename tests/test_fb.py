@@ -10,7 +10,6 @@ from openptv_python.tracking_frame_buf import (
     Target,
     compare_corres,
     compare_path_info,
-    compare_targets,
     read_path_frame,
     read_targets,
     write_targets,
@@ -23,8 +22,8 @@ class TestReadTargets(unittest.TestCase):
     def test_read_targets(self):
         """Test the read_targets function."""
         tbuf = [None, None]  # Two targets in the sample target file
-        t1 = Target(0, 1127.0000, 796.0000, 13320, 111, 120, 828903, 1)
-        t2 = Target(1, 796.0000, 809.0000, 13108, 113, 116, 658928, 0)
+        t1 = np.array([(0, 1127.0000, 796.0000, 13320, 111, 120, 828903, 1)],dtype=Target.dtype)
+        t2 = np.array([(1, 796.0000, 809.0000, 13108, 113, 116, 658928, 0)],dtype=Target.dtype)
 
         file_base = "tests/testing_fodder/sample_%04d"
         frame_num = 42
@@ -36,8 +35,8 @@ class TestReadTargets(unittest.TestCase):
         # print(tbuf)
 
         self.assertEqual(targets_read, 2)
-        self.assertTrue(compare_targets(tbuf[0], t1))
-        self.assertTrue(compare_targets(tbuf[1], t2))
+        self.assertTrue(tbuf[0] == t1)
+        self.assertTrue(tbuf[1] == t2)
 
 
 class TestZeroTargets(unittest.TestCase):
@@ -96,8 +95,8 @@ class TestWriteTargets(unittest.TestCase):
         tbuf = []
         tbuf = read_targets(file_base, frame_num)
         self.assertEqual(len(tbuf), 2)
-        self.assertTrue(compare_targets(tbuf[0], t1))
-        self.assertTrue(compare_targets(tbuf[1], t2))
+        self.assertTrue(tbuf[0] == t1)
+        self.assertTrue(tbuf[1] == t2)
 
         # Clean up the test directory
         os.remove(file_base % frame_num +"_targets")
@@ -152,9 +151,9 @@ class TestReadPathFrame(unittest.TestCase):
         self.assertTrue(compare_path_info(path_buf[2], path_correct))
 
         # Test frame with links
-        path_correct.prev_frame = 0
-        path_correct.next_frame = 0
-        path_correct.prio = 0
+        path_correct['prev_frame'] = 0
+        path_correct['next_frame'] = 0
+        path_correct['prio'] = 0
 
         cor_buf, path_buf = read_path_frame(
             file_base, linkage_base, prio_base, frame_num

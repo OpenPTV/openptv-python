@@ -365,8 +365,8 @@ class TestNewParticle(unittest.TestCase):
         trackcorr_c_loop(run, 10004)
 
         run.fb.fb_prev()  # because each loop step moves the FB forward
-        self.assertEqual(run.fb.buf[3].path_info[0].next_frame, -2)
-        print("next is", run.fb.buf[3].path_info[0].next_frame)
+        self.assertEqual(run.fb.buf[3].path_info[0]['next_frame'], -2)
+        print("next is", run.fb.buf[3].path_info[0]['next_frame'])
 
         # run = tr_new(
         #     "parameters/sequence_newpart.par",
@@ -391,8 +391,8 @@ class TestNewParticle(unittest.TestCase):
 
 
         run.fb.fb_prev()  # because each loop step moves the FB forward
-        # self.assertEqual(run.fb.buf[3].path_info[0].next_frame, 0)
-        print("next is", run.fb.buf[3].path_info[0].next_frame)
+        # self.assertEqual(run.fb.buf[3].path_info[0]['next_frame'], 0)
+        print("next is", run.fb.buf[3].path_info[0]['next_frame'])
 
         remove_directory("res/")
         remove_directory("img/")

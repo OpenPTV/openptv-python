@@ -3,6 +3,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import List, Tuple
 
+import numpy as np
 import yaml
 
 from openptv_python.constants import TR_MAX_CAMS
@@ -431,10 +432,10 @@ class ControlPar(Parameters):
     hp_flag: int = field(default=1)
     all_cam_flag: int = field(default=0)
     tiff_flag: int = field(default=1)
-    imx: int = field(default_factory=int)
-    imy: int = field(default_factory=int)
-    pix_x: float = field(default_factory=float)
-    pix_y: float = field(default_factory=float)
+    imx: np.int32 = field(default_factory=np.int32)
+    imy: np.int32 = field(default_factory=np.int32)
+    pix_x: np.float64 = field(default_factory=np.float64)
+    pix_y: np.float64 = field(default_factory=np.float64)
     chfield: int = field(default_factory=int)
     mm: MultimediaPar = field(default_factory=MultimediaPar)
 
@@ -445,21 +446,21 @@ class ControlPar(Parameters):
         data['mm'] = MultimediaPar.from_dict(mm_data)
         return cls(**data)
 
-    def set_image_size(self, imsize: Tuple[int, int]):
+    def set_image_size(self, imsize: Tuple[np.int32, np.int32]):
         """Set image size in pixels."""
         self.imx = imsize[0]
         self.imy = imsize[1]
 
-    def get_image_size(self) -> Tuple[int, int]:
+    def get_image_size(self) -> Tuple[np.int32, np.int32]:
         """Set image size in pixels."""
         return (self.imx, self.imy)
 
-    def set_pixel_size(self, pixsize: Tuple[float, float]):
+    def set_pixel_size(self, pixsize: Tuple[np.float64, np.float64]):
         """Set pixel size in mm."""
         self.pix_x = pixsize[0]
         self.pix_y = pixsize[1]
 
-    def get_pixel_size(self) -> Tuple[float, float]:
+    def get_pixel_size(self) -> Tuple[np.float64, np.float64]:
         """Set pixel size in mm."""
         return (self.pix_x, self.pix_y)
 
@@ -512,10 +513,10 @@ class ControlPar(Parameters):
             ret.hp_flag = int(par_file.readline().strip())
             ret.all_cam_flag = int(par_file.readline().strip())
             ret.tiff_flag = int(par_file.readline().strip())
-            ret.imx = int(par_file.readline().strip())
-            ret.imy = int(par_file.readline().strip())
-            ret.pix_x = float(par_file.readline().strip())
-            ret.pix_y = float(par_file.readline().strip())
+            ret.imx = np.int32(par_file.readline().strip())
+            ret.imy = np.int32(par_file.readline().strip())
+            ret.pix_x = np.float64(par_file.readline().strip())
+            ret.pix_y = np.float64(par_file.readline().strip())
             ret.chfield = int(par_file.readline().strip())
             ret.mm.n1 = float(par_file.readline().strip())
             ret.mm.n2[0] = float(par_file.readline().strip())
@@ -689,7 +690,7 @@ def write_target_par(targ: TargetPar, filename: str) -> None:
     """Write target_par object to file."""
     with open(filename, "w", encoding="utf-8") as file:
         file.write(
-            f"{targ.gvthresh[0]}\n{targ.gvthresh[1]}\n{targ.gvthresh[2]}\n{targ.gvthresh[3]}\n{targ.discont}\n{targ.nnmin}\n{targ.nnmax}\n{targ.nxmin}\n{targ.nxmax}\n{targ.nymin}\n{targ.nymax}\n{targ.sumg_min}\n{targ.cr_sz}"
+            f"{targ.gvthresh[0]}\n{targ.gvthresh[1]}\n{targ.gvthresh[2]}\n{targ.gvthresh[3]}\n{targ.discont}\n{targ.nnmin}\n{targ.nnmax}\n{targ.nxmin}\n{targ.nymax}\n{targ.nymin}\n{targ.nymax}\n{targ.sumg_min}\n{targ.cr_sz}"
         )
 
 

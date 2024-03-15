@@ -18,7 +18,7 @@ from openptv_python.parameters import ControlPar, read_control_par, read_volume_
 from openptv_python.tracking_frame_buf import (
     Frame,
     Target,
-    n_tupel_dtype,
+    n_tupel,
 )
 from openptv_python.trafo import dist_to_flat, metric_to_pixel, pixel_to_metric
 
@@ -61,13 +61,13 @@ def correct_frame(
 
         for part in range(frm.num_targets[cam]):
             x, y = pixel_to_metric(
-                frm.targets[cam][part].x, frm.targets[cam][part].y, cpar
+                frm.targets[cam][part]['x'], frm.targets[cam][part]['y'], cpar
             )
             x, y = dist_to_flat(x, y, calib[cam], tol)
 
             row[part]['pnr'] = frm.targets[cam][part]['pnr']
-            row[part].x = x
-            row[part].y = y
+            row[part]['x'] = x
+            row[part]['y'] = y
 
         # This is expected by find_candidate()
         row.sort(order="x")
@@ -88,7 +88,9 @@ def generate_test_set(calib: list[Calibration], cpar: ControlPar) -> Frame:
     for cam in range(cpar.num_cams):
         # fill in only what's needed
         frm.num_targets[cam] = 16
-        frm.targets[cam] = [Target() for _ in range(frm.num_targets[cam])]
+        # frm.targets[cam] = [Target() for _ in range(frm.num_targets[cam])]
+        frm.targets[cam] = np.tile(Target, frm.num_targets[cam])
+
 
         # print(f"\n cpar = {cpar}")
 
@@ -107,19 +109,19 @@ def generate_test_set(calib: list[Calibration], cpar: ControlPar) -> Frame:
                 # if ((cpt_ix % 4) == 0):
                 #     print(f"cam {cam}, cpt {cpt_ix}, {tmp} mm")
 
-                targ.x, targ.y = img_coord(tmp, calib[cam], cpar.mm)
+                targ['x'], targ['y'] = img_coord(tmp, calib[cam], cpar.mm)
 
                 # if ((cpt_ix % 4) == 0):
-                #     print(f"cam {cam}, cpt {cpt_ix} {targ.x} {targ.y} sensor \n")
+                #     print(f"cam {cam}, cpt {cpt_ix} {targ['x']} {targ['y']} sensor \n")
 
-                targ.x, targ.y = metric_to_pixel(targ.x, targ.y, cpar)
+                targ['x'], targ['y'] = metric_to_pixel(targ['x'], targ['y'], cpar)
                 # if ((cpt_ix % 4) == 0):
-                #     print(f"cam {cam}, cpt {cpt_ix} {targ.x} {targ.y} pix \n")
+                #     print(f"cam {cam}, cpt {cpt_ix} {targ['x']} {targ['y']} pix \n")
 
                 # These values work in check_epi, so used here too
-                targ.n = 25
-                targ.nx = targ.ny = 5
-                targ.sumg = 10
+                targ['n'] = 25
+                targ['nx'] = targ['ny'] = 5
+                targ['sumg'] = 10
                 # print(targ)
 
     return frm
@@ -161,8 +163,8 @@ class TestTwoCameraMatching(unittest.TestCase):
 
         # for i in range(len(corrected)):
         #     for col in corrected[i]:
-        #         ax[i].scatter(col.x, col.y, c="r", marker=markers[i])
-        #         ax[i].text(col.x, col.y, str(col['pnr']))
+        #         ax[i].scatter(col['x'], col['y'], c="r", marker=markers[i])
+        #         ax[i].text(col['x'], col['y'], str(col['pnr']))
 
         # plt.show()
 
@@ -179,9 +181,9 @@ class TestTwoCameraMatching(unittest.TestCase):
             for subcam in range(cam + 1, cpar.num_cams):
                 for part in range(frm.num_targets[cam]):
                     correct_pnr = (
-                        corrected[cam][corr_lists[cam][subcam][part].p1]['pnr']
+                        corrected[cam][corr_lists[cam][subcam][part]['p1']]['pnr']
                         if (subcam - cam) % 2 == 0
-                        else 15 - corrected[cam][corr_lists[cam][subcam][part].p1]['pnr']
+                        else 15 - corrected[cam][corr_lists[cam][subcam][part]['p1']]['pnr']
                     )
 
                     # print(
@@ -190,18 +192,18 @@ class TestTwoCameraMatching(unittest.TestCase):
 
                     for cand in range(MAXCAND):
                         found_correct_pnr = False
-                        # print(cand, corr_lists[cam][subcam][part].p2[cand],
-                        #  corrected[subcam][corr_lists[cam][subcam][part].p2[cand]]['pnr'])
+                        # print(cand, corr_lists[cam][subcam][part]['p2'][cand],
+                        #  corrected[subcam][corr_lists[cam][subcam][part]['p2'][cand]]['pnr'])
                         if (
                             corrected[subcam][
-                                corr_lists[cam][subcam][part].p2[cand]
+                                corr_lists[cam][subcam][part]['p2'][cand]
                             ]['pnr']
                             == correct_pnr
                         ):
                             # print("found")
                             # print(
                             #     corrected[subcam][
-                            #         corr_lists[cam][subcam][part].p2[cand]
+                            #         corr_lists[cam][subcam][part]['p2'][cand]
                             #     ]['pnr']
                             # )
                             found_correct_pnr = True
@@ -210,9 +212,10 @@ class TestTwoCameraMatching(unittest.TestCase):
                     self.assertTrue(found_correct_pnr)
 
         # # continue to the consistent_pair matching test
-        con = np.ndarray((4 * 16), dtype=n_tupel_dtype)
-        con['p'] = np.zeros(4,)
-        con.corr = 0.0
+        # con = np.ndarray((4 * 16), dtype=n_tupel.dtype)
+        con = np.tile(n_tupel, 4 * 16)
+        # con['p'] = np.zeros(4,)
+        # con['corr'] = 0.0
 
         tusage = safely_allocate_target_usage_marks(cpar.num_cams)
 

@@ -68,7 +68,8 @@ interior_dtype = np.dtype([
     ('yh', np.float64),
     ('cc', np.float64)
     ])
-Interior = np.array( (0, 0, 0), dtype = interior_dtype)
+# Interior = np.zeros(1, dtype = interior_dtype)
+Interior = np.array((0.,0.,0.), dtype = interior_dtype)
 
 
 # ap52_dtype = np.dtype([
@@ -105,9 +106,9 @@ class Calibration:
                  mmlut=None,
                  mmlut_data=None):
         if ext_par is None:
-            ext_par = copy.deepcopy(Exterior)
+            ext_par = Exterior.copy()
         if int_par is None:
-            int_par = copy.deepcopy(Interior)
+            int_par = Interior.copy()
         if glass_par is None:
             glass_par = np.array([0.0, 0.0, 1.0])
         if added_par is None:

@@ -16,13 +16,13 @@ from pathlib import Path
 import numpy as np
 
 from openptv_python.calibration import Calibration, read_calibration
-from openptv_python.constants import MAX_CANDS, TR_MAX_CAMS, TR_UNUSED
+from openptv_python.constants import MAX_CANDS
 from openptv_python.parameters import (
     ControlPar,
     TrackPar,
 )
 from openptv_python.track import (
-    Foundpix_dtype,
+    Foundpix,
     angle_acc,
     candsearch_in_pix,
     candsearch_in_pix_rest,
@@ -315,30 +315,31 @@ class TestSort(unittest.TestCase):
 
     def test_copy_foundpix_array(self):
         """Test the copy_foundpix_array function."""
-        src = np.rec.array([(1, 1, [1, 0, -999, -999]), (2, 5, [1, 1, 0, 0])], dtype=Foundpix_dtype)
+        src = np.array([(1, 1, [1, 0, -999, -999]), (2, 5, [1, 1, 0, 0])], dtype=Foundpix.dtype)
         arr_len = 2
         num_cams = 2
 
-        one_element = np.array([(TR_UNUSED,0,[-999]*TR_MAX_CAMS)],dtype=Foundpix_dtype)
-        dest = np.tile(one_element, num_cams * MAX_CANDS)
+        # one_element = np.array([(TR_UNUSED,0,[-999]*TR_MAX_CAMS)],dtype=Foundpix_dtype)
+
+        dest = np.tile(Foundpix, num_cams * MAX_CANDS)
 
 
         reset_foundpix_array(dest, arr_len, num_cams)
 
         self.assertEqual(
-            dest[1].ftnr, -1, f"Expected dest[1].ftnr == -1 but found {dest[1].ftnr}"
+            dest[1]['ftnr'], -1, f"Expected dest[1].ftnr == -1 but found {dest[1]['ftnr']}"
         )
         self.assertEqual(
-            dest[0].freq, 0, f"Expected dest[0].freq == 0 but found {dest[0].freq}"
+            dest[0]['freq'], 0, f"Expected dest[0].freq == 0 but found {dest[0]['freq']}"
         )
         self.assertEqual(
-            dest[1].whichcam[0], 0, f"Expected 0 but found {dest[1].whichcam[0]}"
+            dest[1]['whichcam'][0], 0, f"Expected 0 but found {dest[1]['whichcam'][0]}"
         )
 
         dest = copy.deepcopy(src)
 
         self.assertEqual(
-            dest[1].ftnr, 2, f"Expected dest[1].ftnr == 2 but found {dest[1].ftnr}"
+            dest[1]['ftnr'], 2, f"Expected dest[1].ftnr == 2 but found {dest[1]['ftnr']}"
         )
 
         # print("Destination foundpix array:")
@@ -427,12 +428,13 @@ class TestSortCandidatesByFreq(unittest.TestCase):
     def test_sort_candidates_by_freq(self):
         """Test the sort_candidates_by_freq function."""
         src = [(1, 0, [1, 0, 0, 0]), (2, 0, [1, 1, 0, 0])]
-        src = np.array(src, dtype=Foundpix_dtype)
+        src = np.array(src, dtype=Foundpix.dtype)
+
 
         num_cams = 2
 
-        one_element = np.array([(TR_UNUSED,0,[0]*TR_MAX_CAMS)],dtype=Foundpix_dtype)
-        dest = np.tile(one_element, num_cams * MAX_CANDS)
+        # one_element = np.array([(TR_UNUSED,0,[0]*TR_MAX_CAMS)],dtype=Foundpix.dtype)
+        dest = np.tile(Foundpix, num_cams * MAX_CANDS)
 
         # sortwhatfound freaks out if the array is not reset before
         # reset_foundpix_array(dest, 2, 2)

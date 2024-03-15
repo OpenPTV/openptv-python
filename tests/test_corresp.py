@@ -117,13 +117,13 @@ def generate_test_set(calib: list[Calibration], cpar: ControlPar) -> Frame:
                 targ['pnr'] = cpt_ix
 
                 tmp = np.r_[cpt_vert * 10, cpt_horz * 10, 0]
-                targ.x, targ.y = img_coord(tmp, calib[cam], cpar.mm)
-                targ.x, targ.y = metric_to_pixel(targ.x, targ.y, cpar)
+                targ['x'], targ['y'] = img_coord(tmp, calib[cam], cpar.mm)
+                targ['x'], targ['y'] = metric_to_pixel(targ['x'], targ['y'], cpar)
 
                 # These values work in check_epi, so used here too
-                targ.n = 25
-                targ.nx = targ.ny = 5
-                targ.sumg = 10
+                targ['n'] = 25
+                targ['nx'] = targ['ny'] = 5
+                targ['sumg'] = 10
 
     return frm
 
@@ -424,9 +424,9 @@ class TestReadControlPar(unittest.TestCase):
         # Darken one camera.
         for part in range(frm.num_targets[1]):
             targ = frm.targets[1][part]
-            targ.n = 0
-            targ.nx = targ.ny = 0
-            targ.sumg = 0
+            targ['n'] = 0
+            targ['nx'] = targ['ny'] = 0
+            targ['sumg'] = 0
 
         # Correct the frame and match pairs.
         corrected = correct_frame(frm, calib, cpar, 0.0001)

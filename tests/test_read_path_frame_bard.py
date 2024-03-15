@@ -38,7 +38,7 @@ class TestReadPathFrame(unittest.TestCase):
             inlist=0,
         )
         for alt_link in range(POSI):
-            path_correct.decis[alt_link] = 0.0
+            path_correct['decis'][alt_link] = 0.0
             path_correct.linkdecis[alt_link] = -999
 
         corres_correct = np.array([(3, [96, 66, 26, 26])], dtype = Corres_dtype)
@@ -67,9 +67,9 @@ class TestReadPathFrame(unittest.TestCase):
         # .assertEqual(path_buf[2], path_correct)
 
         # Test frame with links:
-        path_correct.prev_frame = 0
-        path_correct.next_frame = 0
-        path_correct.prio = 0
+        path_correct['prev_frame'] = 0
+        path_correct['next_frame'] = 0
+        path_correct['prio'] = 0
 
         # Create a buffer for the path info structures.
         cor_buf = np.ndarray(POSI, dtype=Corres_dtype)
@@ -109,7 +109,7 @@ class TestReadPathFrame(unittest.TestCase):
             finaldecis=1000000.0,
             inlist=0,
         )
-        path_correct.decis = [0.0] * POSI
+        path_correct['decis'] = [0.0] * POSI
         path_correct.linkdecis = [-999] * POSI
         c_correct = np.array([(3, [96, 66, 26, 26])],dtype=Corres_dtype)
 
@@ -136,9 +136,9 @@ class TestReadPathFrame(unittest.TestCase):
         self.assertTrue(compare_path_info(path_buf[2], path_correct))
 
         # Test frame with links
-        path_correct.prev_frame = 0
-        path_correct.next_frame = 0
-        path_correct.prio = 0
+        path_correct['prev_frame'] = 0
+        path_correct['next_frame'] = 0
+        path_correct['prio'] = 0
         linkage_base = "tests/testing_fodder/ptv_is"
         prio_base = "tests/testing_fodder/added"
 

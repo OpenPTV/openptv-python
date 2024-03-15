@@ -4,6 +4,8 @@ from typing import Tuple
 import numpy as np
 
 # from numba import float64, int32
+from openptv_python.constants import PT_UNUSED
+
 from .calibration import Calibration
 from .imgcoord import flat_image_coord, img_coord
 from .multimed import move_along_ray
@@ -17,11 +19,17 @@ Candidate_dtype = np.dtype([
     ('corr', np.float64),
 ])
 
+Candidate = np.zeros(1, dtype=Candidate_dtype)
+Candidate['pnr'] = PT_UNUSED
+
 Coord2d_dtype = np.dtype([
     ('pnr', np.int32),
     ('x', np.float64),
     ('y', np.float64),
 ])
+
+Coord2d = np.zeros(1, dtype=Coord2d_dtype)
+Coord2d['pnr'] = PT_UNUSED
 
 Coord3d_dtype = np.dtype([
     ('pnr', np.int32),
@@ -30,7 +38,8 @@ Coord3d_dtype = np.dtype([
     ('z', np.float64),
 ])
 
-
+Coord3d = np.zeros(1, dtype=Coord3d_dtype)
+Coord3d['pnr'] = PT_UNUSED
 
 def sort_coord2d_x(crd: np.ndarray) -> np.ndarray:
     """Quicksort for coordinates by x ."""
@@ -99,7 +108,7 @@ def epi_mm(xl, yl, cal1, cal2, mmp, vpar) -> Tuple[float, float, float, float]:
 
 
 def epi_mm_2D(
-    xl: float, yl: float, cal1: Calibration, mmp: MultimediaPar, vpar: VolumePar
+    xl: np.float64, yl: np.float64, cal1: Calibration, mmp: MultimediaPar, vpar: VolumePar
 ) -> np.ndarray:
     """Return the position of the point in the 3D space.
 

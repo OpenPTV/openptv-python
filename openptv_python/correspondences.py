@@ -57,7 +57,7 @@ from .tracking_frame_buf import Frame, n_tupel
 #                 targ['pnr'] = tnum
 
 #             self.buf[tnum]['x'], self.buf[tnum]['y'] = pixel_to_metric(
-#                 targ.x, targ.y,  cpar)
+#                 targ['x'], targ['y'],  cpar)
 
 #             self.buf[tnum]['x'], self.buf[tnum]['y'] = dist_to_flat(
 #                 self.buf[tnum]['x'], self.buf[tnum]['y'], cal, tol
@@ -111,6 +111,8 @@ Correspond_dtype = np.dtype([
     ('dist', (np.float64, MAXCAND))  # np.zeros
 ])
 
+Correspond = np.zeros(1, dtype=Correspond_dtype)
+Correspond['p1'] = PT_UNUSED
 
 def safely_allocate_target_usage_marks(
     num_cams: int, nmax: int = NMAX
@@ -154,18 +156,14 @@ def safely_allocate_adjacency_lists(
         #     for c1 in range(num_cams)
         # ]
 
-        lists = np.ndarray((num_cams, num_cams, max(
-            target_counts)), dtype=Correspond_dtype)
+        # lists = np.ndarray((num_cams, num_cams, max(
+        #     target_counts)), dtype=Correspond_dtype)
+
+        lists = np.tile(Correspond, (num_cams, num_cams, max(target_counts)))
+
 
     except MemoryError as exc:
         raise MemoryError("Failed to allocate adjacency lists.") from exc
-        # lists = [[[one_element]]]
-
-    lists.p1 = PT_UNUSED
-    lists.n = 0
-    lists.p2 = np.zeros(MAXCAND)
-    lists.corr = np.zeros(MAXCAND)
-    lists.dist = np.zeros(MAXCAND)
 
     return lists
 
@@ -182,48 +180,48 @@ def four_camera_matching(
     # print(" Four camera matching ")
 
     for i in range(base_target_count):
-        p1 = corr_list[0][1][i].p1
-        for j in range(corr_list[0][1][i].n):
-            p2 = corr_list[0][1][i].p2[j]
-            for k in range(corr_list[0][2][i].n):
-                p3 = corr_list[0][2][i].p2[k]
-                for ll in range(corr_list[0][3][i].n):
-                    p4 = corr_list[0][3][i].p2[ll]
+        p1 = corr_list[0][1][i]['p1']
+        for j in range(corr_list[0][1][i]['n']):
+            p2 = corr_list[0][1][i]['p2'][j]
+            for k in range(corr_list[0][2][i]['n']):
+                p3 = corr_list[0][2][i]['p2'][k]
+                for ll in range(corr_list[0][3][i]['n']):
+                    p4 = corr_list[0][3][i]['p2'][ll]
 
-                    for m in range(corr_list[1][2][p2].n):
-                        p31 = corr_list[1][2][p2].p2[m]
+                    for m in range(corr_list[1][2][p2]['n']):
+                        p31 = corr_list[1][2][p2]['p2'][m]
                         # print(f" p31 {p31} p3 {p3}")
 
                         if p3 != p31:
                             continue
 
-                        for n in range(corr_list[1][3][p2].n):
-                            p41 = corr_list[1][3][p2].p2[n]
+                        for n in range(corr_list[1][3][p2]['n']):
+                            p41 = corr_list[1][3][p2]['p2'][n]
                             # print(f" p41 {p41} p4 {p4}")
                             if p4 != p41:
                                 continue
 
-                            for o in range(corr_list[2][3][p3].n):
-                                p42 = corr_list[2][3][p3].p2[o]
+                            for o in range(corr_list[2][3][p3]['n']):
+                                p42 = corr_list[2][3][p3]['p2'][o]
 
                                 # print(f" p42 {p42} p4 {p4}")
                                 if p4 != p42:
                                     continue
 
                                 corr = (
-                                    corr_list[0][1][i].corr[j]
-                                    + corr_list[0][2][i].corr[k]
-                                    + corr_list[0][3][i].corr[ll]
-                                    + corr_list[1][2][p2].corr[m]
-                                    + corr_list[1][3][p2].corr[n]
-                                    + corr_list[2][3][p3].corr[o]
+                                    corr_list[0][1][i]['x'][j]
+                                    + corr_list[0][2][i]['x'][k]
+                                    + corr_list[0][3][i]['x'][ll]
+                                    + corr_list[1][2][p2]['x'][m]
+                                    + corr_list[1][3][p2]['x'][n]
+                                    + corr_list[2][3][p3]['x'][o]
                                 ) / (
-                                    corr_list[0][1][i].dist[j]
-                                    + corr_list[0][2][i].dist[k]
-                                    + corr_list[0][3][i].dist[ll]
-                                    + corr_list[1][2][p2].dist[m]
-                                    + corr_list[1][3][p2].dist[n]
-                                    + corr_list[2][3][p3].dist[o]
+                                    corr_list[0][1][i]['dist'][j]
+                                    + corr_list[0][2][i]['dist'][k]
+                                    + corr_list[0][3][i]['dist'][ll]
+                                    + corr_list[1][2][p2]['dist'][m]
+                                    + corr_list[1][3][p2]['dist'][n]
+                                    + corr_list[2][3][p3]['dist'][o]
                                 )
 
                                 # print(f" corr {corr}")
@@ -235,7 +233,7 @@ def four_camera_matching(
                                 scratch[matched]['p'][1] = p2
                                 scratch[matched]['p'][2] = p3
                                 scratch[matched]['p'][3] = p4
-                                scratch[matched].corr = corr
+                                scratch[matched]['x'] = corr
 
                                 matched += 1
                                 # print(f" matched {matched} [{p1, p2, p3, p4}]")
@@ -262,32 +260,32 @@ def three_camera_matching(
     for i1 in range(num_cams - 2):
         for i in range(target_counts[i1]):
             for i2 in range(i1 + 1, num_cams - 1):
-                p1 = corr_list[i1][i2][i].p1
+                p1 = corr_list[i1][i2][i]['p1']
                 if p1 >= nmax or tusage[i1][p1] > 0:
                     continue
 
-                # print(f"p1 {p1} candidates {corr_list[i1][i2][i].n } ")
+                # print(f"p1 {p1} candidates {corr_list[i1][i2][i]['n'] } ")
 
-                for j in range(corr_list[i1][i2][i].n):
-                    p2 = corr_list[i1][i2][i].p2[j]
+                for j in range(corr_list[i1][i2][i]['n']):
+                    p2 = corr_list[i1][i2][i]['p2'][j]
                     if p2 > nmax or tusage[i2][p2] > 0:
                         continue
 
                     # print(f"p2 {p2}")
 
                     for i3 in range(i2 + 1, num_cams):
-                        for k in range(corr_list[i1][i3][i].n):
-                            p3 = corr_list[i1][i3][i].p2[k]
+                        for k in range(corr_list[i1][i3][i]['n']):
+                            p3 = corr_list[i1][i3][i]['p2'][k]
                             if p3 > nmax or tusage[i3][p3] > 0:
                                 continue
 
                             # print(f"p3 {p3}")
 
-                            # corr_list[i2][i3][p2].p2 is a list
+                            # corr_list[i2][i3][p2]['p2'] is a list
                             # we want to find indices, we have to either
                             # modify it to numpy array or use
                             # indices
-                            p2array = np.atleast_1d(corr_list[i2][i3][p2].p2)
+                            p2array = np.atleast_1d(corr_list[i2][i3][p2]['p2'])
                             indices = np.where(p2array == p3)[0]
                             if indices.size == 0:
                                 continue
@@ -297,13 +295,13 @@ def three_camera_matching(
 
                             m = indices[0]
                             corr = (
-                                corr_list[i1][i2][i].corr[j]
-                                + corr_list[i1][i3][i].corr[k]
-                                + corr_list[i2][i3][p2].corr[m]
+                                corr_list[i1][i2][i]['x'][j]
+                                + corr_list[i1][i3][i]['x'][k]
+                                + corr_list[i2][i3][p2]['x'][m]
                             ) / (
-                                corr_list[i1][i2][i].dist[j]
-                                + corr_list[i1][i3][i].dist[k]
-                                + corr_list[i2][i3][p2].dist[m]
+                                corr_list[i1][i2][i]['dist'][j]
+                                + corr_list[i1][i3][i]['dist'][k]
+                                + corr_list[i2][i3][p2]['dist'][m]
                             )
 
                             # print(f"corr {corr}")
@@ -314,7 +312,7 @@ def three_camera_matching(
                             p = np.full(num_cams, -2)
                             p[i1], p[i2], p[i3] = p1, p2, p3
                             scratch[matched]['p'] = p
-                            scratch[matched].corr = corr
+                            scratch[matched]['x'] = corr
 
                             matched += 1
                             # print(f"matched: {matched} p: {p}")
@@ -341,19 +339,19 @@ def consistent_pair_matching(
     for i1 in range(num_cams - 1):
         for i2 in range(i1 + 1, num_cams):
             for i in range(target_counts[i1]):
-                p1 = corr_list[i1][i2][i].p1
+                p1 = corr_list[i1][i2][i]['p1']
                 if p1 >= nmax or tusage[i1][p1] > 0:
                     continue
 
-                if corr_list[i1][i2][i].n != 1:
+                if corr_list[i1][i2][i]['n'] != 1:
                     continue
 
-                p2 = corr_list[i1][i2][i].p2[0]
+                p2 = corr_list[i1][i2][i]['p2'][0]
                 if p2 >= nmax or tusage[i2][p2] > 0:
                     continue
 
-                corr = corr_list[i1][i2][i].corr[0] / \
-                    corr_list[i1][i2][i].dist[0]
+                corr = corr_list[i1][i2][i]['corr'][0] / \
+                    corr_list[i1][i2][i]['dist'][0]
                 if corr <= accept_corr:
                     continue
 
@@ -362,7 +360,7 @@ def consistent_pair_matching(
 
                 scratch[matched]['p'][i1] = p1
                 scratch[matched]['p'][i2] = p2
-                scratch[matched].corr = corr
+                scratch[matched]['corr'] = corr
 
                 matched += 1
                 if matched == scratch_size:
@@ -423,12 +421,12 @@ def match_pairs(
     for i1 in range(cpar.num_cams - 1):
         for i2 in range(i1 + 1, cpar.num_cams):
             for i in range(frm.num_targets[i1]):
-                # if corrected[i1][i].x == PT_UNUSED: # no idea why it's here
+                # if corrected[i1][i]['x'] == PT_UNUSED: # no idea why it's here
                 #     continue
 
                 xa12, ya12, xb12, yb12 = epi_mm(
-                    corrected[i1][i].x,
-                    corrected[i1][i].y,
+                    corrected[i1][i]['x'],
+                    corrected[i1][i]['y'],
                     calib[i1],
                     calib[i2],
                     cpar.mm,
@@ -438,7 +436,7 @@ def match_pairs(
                 # print(f" xa12: {xa12}, ya12: {ya12}, xb12: {xb12}, yb12: {yb12} ")
 
                 # origin point in the corr_list
-                corr_lists[i1][i2][i].p1 = i
+                corr_lists[i1][i2][i]['p1'] = i
                 pt1 = corrected[i1][i]['pnr']
 
                 # search for a conjugate point in corrected[i2]
@@ -452,10 +450,10 @@ def match_pairs(
                     ya12,
                     xb12,
                     yb12,
-                    frm.targets[i1][pt1].n,
-                    frm.targets[i1][pt1].nx,
-                    frm.targets[i1][pt1].ny,
-                    frm.targets[i1][pt1].sumg,
+                    frm.targets[i1][pt1]['n'],
+                    frm.targets[i1][pt1]['nx'],
+                    frm.targets[i1][pt1]['ny'],
+                    frm.targets[i1][pt1]['sumg'],
                     vpar,
                     cpar,
                     calib[i2],
@@ -466,11 +464,11 @@ def match_pairs(
                 count = min(len(cand), MAXCAND)
 
                 for j in range(count):
-                    corr_lists[i1][i2][i].p2[j] = cand[j]['pnr']
-                    corr_lists[i1][i2][i].corr[j] = cand[j].corr
-                    corr_lists[i1][i2][i].dist[j] = cand[j].tol
+                    corr_lists[i1][i2][i]['p2'][j] = cand[j]['pnr']
+                    corr_lists[i1][i2][i]['corr'][j] = cand[j]['corr']
+                    corr_lists[i1][i2][i]['dist'][j] = cand[j]['tol']
 
-                corr_lists[i1][i2][i].n = count
+                corr_lists[i1][i2][i]['n'] = count
 
 
 def take_best_candidates(
@@ -517,7 +515,7 @@ def take_best_candidates(
     """
     taken = 0
 
-    # Sort candidates by match quality (.corr)
+    # Sort candidates by match quality (['x'])
     src.sort(order='corr')  # by corr
     src = src[::-1]  # reverse order
 
@@ -653,8 +651,8 @@ def py_correspondences(
 
                 if p1 > -1:
                     targ = img_pts[cam][p1]
-                    clique_targs[cam, pt, 0] = targ.x
-                    clique_targs[cam, pt, 1] = targ.y
+                    clique_targs[cam, pt, 0] = targ['x']
+                    clique_targs[cam, pt, 1] = targ['y']
 
         last_count += num_points
         sorted_pos.append(clique_targs)
@@ -715,12 +713,12 @@ def correspondences(
     # con0 = np.ndarray((nmax * cpar.num_cams,), dtype=np.ndarray)
     con0 = np.tile(n_tupel, nmax * cpar.num_cams)
     con0['p'] = 0
-    con0.corr = 0.0
+    con0['x'] = 0.0
 
     # con = np.ndarray((nmax * cpar.num_cams,), dtype=np.ndarray)
     con = np.tile(n_tupel, nmax * cpar.num_cams)
     con['p'] = 0
-    con.corr = 0.0
+    con['x'] = 0.0
 
     tim = safely_allocate_target_usage_marks(cpar.num_cams, nmax)
 
@@ -833,10 +831,10 @@ def single_cam_correspondences(
 
         if p1 > -1:
             targ = img_pts[p1]
-            clique_targs[0, pt, 0] = targ.x
-            clique_targs[0, pt, 1] = targ.y
+            clique_targs[0, pt, 0] = targ['x']
+            clique_targs[0, pt, 1] = targ['y']
             # we also update the tnr, see docstring of correspondences
-            targ.tnr = pt
+            targ['tnr'] = pt
 
     sorted_pos = [clique_targs]
     sorted_corresp = [clique_ids]

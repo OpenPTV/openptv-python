@@ -149,11 +149,12 @@ print_cal(cal)
 # targets[:, 1] -= 0.1
 
 # # %%
-targs = [Target() for _ in targets]
+# targs = [Target() for _ in targets]
+targs = np.tile(Target, len(targets))
 
 for ptx, pt in enumerate(targets):
-    targs[ptx].x = pt[0]
-    targs[ptx].y = pt[1]
+    targs[ptx]['x'] = pt[0]
+    targs[ptx]['y'] = pt[1]
     targs[ptx]['pnr'] = ptx
 
 def added_par_residual(added_par_array, ref_pts, targs, control, cal):
@@ -175,16 +176,15 @@ np.seterr(all='raise')
 x0 = np.array(cal.added_par.tolist())
 sol = opt.minimize(added_par_residual, x0, args=(ref_pts, targs, control, cal), \
     method='Nelder-Mead', tol=1e-6)
-print(f"{sol.x=}")
-# print(sol.x - np.hstack([orig_cal.get_pos(), orig_cal.get_angles()]))
+print(f"{sol['x']=}")
+# print(sol[['y']'] - np.hstack([orig_cal.get_pos(), orig_cal.get_angles(['y']))
 
 
 
 # # # %%
-# # # print(sol.x)
-# # print(cal.added_par)
-cal.set_added_par(sol.x)
-print_cal(cal)
+# # # print(sol['x'])
+# # print(cal.a['y']ed_par)
+cal.set_added_par(sol['x'])
 # # print(cal.added_par)
 
 full_calibration(cal, ref_pts, targets, control, tmp_orient_par)

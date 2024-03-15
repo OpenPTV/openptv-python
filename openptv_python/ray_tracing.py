@@ -2,8 +2,8 @@
 from typing import Tuple
 
 import numpy as np
-from numba import njit
 
+# from numba import njit
 from .calibration import Calibration
 from .lsqadj import matmul
 from .parameters import MultimediaPar
@@ -18,7 +18,7 @@ from .vec_utils import (
 
 
 def ray_tracing(
-    x: float, y: float, cal: Calibration, mm: MultimediaPar
+    x: np.float64, y: np.float64, cal: Calibration, mm: MultimediaPar
 ) -> Tuple[np.ndarray, np.ndarray]:
     """Ray tracing.
 
@@ -64,11 +64,11 @@ def ray_tracing(
         mm.n3,
     )
 
-@njit
+# @njit
 def fast_ray_tracing(
-    camera_x: float,
-    camera_y: float,
-    camera_cc: float,
+    camera_x: np.float64,
+    camera_y: np.float64,
+    camera_cc: np.float64,
     distortion_matrix: np.ndarray,
     primary_point: np.ndarray,
     glass_vector: np.ndarray,

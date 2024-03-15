@@ -1,6 +1,5 @@
 """Tracking frame buffer."""
 from collections import deque
-from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Deque, List, Tuple
 
@@ -27,7 +26,7 @@ n_tupel_dtype = np.dtype([
     ("corr", np.float64)
 ])
 
-n_tupel = np.array([(TR_UNUSED, TR_UNUSED, TR_UNUSED, TR_UNUSED, 0.0)], dtype=n_tupel_dtype)
+n_tupel = np.zeros(1, dtype=n_tupel_dtype)
 
 def quicksort_n_tupel(arr: np.ndarray) -> np.ndarray:
     """
@@ -54,7 +53,7 @@ Corres_dtype = np.dtype([
     ("p", np.int32, (4,)) # -1 for no correspondence
 ])
 
-
+Corres = np.array([(0, [-1, -1, -1, -1])], dtype=Corres_dtype)
 
     # def __eq__(self, other):
     #     return self['nr'] == other['nr'] and np.all(self['p'] == other['p'])
@@ -191,34 +190,10 @@ def read_targets(file_base: str, frame_num: int) -> np.ndarray:
 
     filename = Path(fname)
     print(f" filename: {filename}")
+    if not filename.exists():
+        raise FileNotFoundError(f"Can't open ascii file: {filename}")
 
-    try:
-        with open(filename, "r", encoding="utf-8") as file:
-            num_targets = int(file.readline().strip())
-            # buffer = np.empty((num_targets), dtype=Target_dtype)
-            buffer = np.tile(Target, num_targets)
-
-            for n in range(num_targets):
-                line = file.readline().strip().split()
-
-                if len(line) != 8:
-                    raise ValueError(f"Bad format for file: {filename}")
-
-                buffer[n]['pnr'] = int(line[0])
-                buffer[n]['x'] = float(line[1])
-                buffer[n]['y'] = float(line[2])
-                buffer[n]['n'] = int(line[3])
-                buffer[n]['nx'] = int(line[4])
-                buffer[n]['ny'] = int(line[5])
-                buffer[n]['sumg'] = int(line[6])
-                buffer[n]['tnr'] = int(line[7])
-
-
-    except IOError as err:
-        print(f"Can't open ascii file: {filename}")
-        raise err
-
-    # print(f" read {len(buffer)} targets from {filename}")
+    buffer = np.loadtxt(filename, dtype=Target_dtype, skiprows=1)
     return buffer
 
 
@@ -243,11 +218,11 @@ def write_targets(
         # target_arr = np.array(
         #     [(t['pnr'], t['x'], t['y'], t['n'], t['nx'], t['ny'], t['sumg'], t.tnr) for t in targets]
         # )
-        target_arr = np.array(targets.tolist())
+        # target_arr = np.array(targets.tolist())
         # Save the target array to file using savetxt
         np.savetxt(
             file_name,
-            target_arr,
+            targets,
             fmt="%4d %9.4f %9.4f %5d %5d %5d %5d %5d",
             header=f"{num_targets}",
             comments="",
@@ -272,48 +247,62 @@ def write_targets(
 #     """
 #     return t1 == t2
 
+Pathinfo_dtype = np.dtype([
+        ('x', np.float64, 3),
+        ('prev_frame', np.int32),
+        ('next_frame', np.int32),
+        ('prio', np.int32),
+        ('decis', np.float64, POSI),
+        ('finaldecis', np.float64),
+        ('linkdecis', np.int32, POSI),
+        ('inlist', np.int32)
+    ])
+Pathinfo = np.array([(np.zeros(3), PREV_NONE, NEXT_NONE, PRIO_DEFAULT,
+                         [0.0] * POSI, 1000000.0, [0] * POSI, 0)], dtype=Pathinfo_dtype)
 
-@dataclass
-class Pathinfo:
-    """Pathinfo structure for tracking."""
+# @dataclass
+# class Pathinfo:
+#     """Pathinfo structure for tracking."""
 
-    x: np.ndarray = field(default_factory=lambda: np.zeros(3))
-    prev_frame: int = PREV_NONE
-    next_frame: int = NEXT_NONE
-    prio: int = PRIO_DEFAULT
-    decis: List[float] = field(default_factory=lambda: [0.0] * POSI)
-    finaldecis: float = 0.0
-    linkdecis: List[int] = field(default_factory=lambda: [0] * POSI)
-    inlist: int = 0
+#     x: np.ndarray = field(default_factory=lambda: np.zeros(3))
+#     prev_frame: int = PREV_NONE
+#     next_frame: int = NEXT_NONE
+#     prio: int = PRIO_DEFAULT
+#     decis: List[float] = field(default_factory=lambda: [0.0] * POSI)
+#     finaldecis: float = 0.0
+#     linkdecis: List[int] = field(default_factory=lambda: [0] * POSI)
+#     inlist: int = 0
 
-    def __eq__(self, other):
-        if not isinstance(other, Pathinfo):
-            return False
-        return (
-            (self.x == other.x).all()
-            and self.prev_frame == other.prev_frame
-            and self.next_frame == other.next_frame
-            and self.prio == other.prio
-            and (self.decis == other.decis)
-            and self.finaldecis == other.finaldecis
-            and (self.linkdecis == other.linkdecis)
-            and self.inlist == other.inlist
-        )
+#     def __eq__(self, other):
+#         if not isinstance(other, Pathinfo):
+#             return False
+#         return (
+#             (self.x == other.x).all()
+#             and self['prev_frame'] == other['prev_frame']
+#             and self['next_frame'] == other['next_frame']
+#             and self['prio'] == other['prio']
+#             and (self['decis'] == other['decis'])
+#             and self['finaldecis'] == other['finaldecis']
+#             and (self.linkdecis == other.linkdecis)
+#             and self['inlist'] == other['inlist']
+#         )
 
-    def register_link_candidate(self, fitness: float, cand: int) -> None:
-        """Register link candidate."""
-        self.decis[self.inlist] = fitness
-        self.linkdecis[self.inlist] = cand
-        self.inlist += 1
+def register_link_candidate(pathinfo: np.ndarray, fitness: float, cand: int) -> np.ndarray:
+    """Register link candidate."""
+    pathinfo['decis'][pathinfo['inlist']] = fitness
+    pathinfo['linkdecis'][pathinfo['inlist']] = cand
+    pathinfo['inlist'] += 1
+    return pathinfo
 
-    def reset_links(self) -> None:
-        """Reset links."""
-        self.prev_frame = PREV_NONE
-        self.next_frame = NEXT_NONE
-        self.prio = PRIO_DEFAULT
+def reset_links(pathinfo: np.ndarray) -> np.ndarray:
+    """Reset links."""
+    pathinfo['prev_frame'] = PREV_NONE
+    pathinfo['next_frame'] = NEXT_NONE
+    pathinfo['prio'] = PRIO_DEFAULT
+    return pathinfo
 
 
-def compare_path_info(path_info1: Pathinfo, path_info2: Pathinfo) -> bool:
+def compare_path_info(path_info1: np.ndarray, path_info2: np.ndarray) -> bool:
     """Compare path info."""
     return path_info1 == path_info2
 
@@ -331,18 +320,12 @@ class Frame:
         max_targets - number of elements to allocate for the different buffers
             held by a frame.
         """
-        self.path_info = [Pathinfo() for _ in range(max_targets)]
-
-        self.correspond = np.ndarray((max_targets), dtype=Corres_dtype)
+        self.path_info = np.tile(Pathinfo, max_targets)
+        self.correspond = np.tile(Corres, max_targets)
         self.correspond['p'] = TR_UNUSED
         self.correspond['nr'] = 0
 
-        # self.targets = [[Target() for _ in range(max_targets)] for _ in range(num_cams)]
-
-        # self.targets = np.empty((num_cams, max_targets), dtype=Target_dtype)
         self.targets = np.tile(Target, (num_cams, max_targets))
-
-        # self.targets = [[] for _ in range(num_cams)]
         self.num_targets = [0] * num_cams
 
         self.num_cams = num_cams
@@ -374,7 +357,8 @@ class Frame:
             return False
 
         for cam in range(self.num_cams):
-            self.targets[cam] = read_targets( target_file_base[cam], frame_num )
+            tmp = read_targets( target_file_base[cam], frame_num )
+            self.targets[cam][:len(tmp)] = tmp
             self.num_targets[cam] = len(self.targets[cam])
 
             if self.num_targets[cam] == -1:
@@ -419,7 +403,7 @@ class Frame:
 
     def positions(self) -> np.ndarray:
         """Return an (n,3) array 3D positions on n particles in the frame."""
-        pos3d = np.empty((self.num_parts, 3))
+        pos3d = np.zeros((self.num_parts, 3))
         for pt in range(self.num_parts):
             pos3d[pt] = self.path_info[pt].x
 
@@ -711,7 +695,7 @@ def read_path_frame(
     linkage_file_base: str,
     prio_file_base: str,
     frame_num: int,
-) -> Tuple[np.ndarray, List[Pathinfo]]: #List[Corres]
+) -> Tuple[np.ndarray, np.ndarray]: #List[Corres]
     """Read a rt_is frames from the disk.
 
         /* Reads rt_is files. these files contain both the path info and the
@@ -741,16 +725,12 @@ def read_path_frame(
         filein = open(fname, "r", encoding="utf-8")
     except IOError:
         print(f"Can't open ascii file: {fname}")
-        return np.ndarray(0, dtype=Corres_dtype), []
+        return Corres, Pathinfo
 
     # we do not need number of particles, reading till EOF
     n_particles = int(filein.readline())
-    # print(f"Reading {n_particles} particles from {fname}")
-    # cor_buf = [Corres() for _ in range(n_particles)] # we do not want empty lists
-
-    cor_buf = np.ndarray((n_particles), dtype=Corres_dtype) # we do not want empty lists
-
-    path_buf = [Pathinfo() for _ in range(n_particles)]
+    cor_buf = np.tile(Corres, n_particles)
+    path_buf = np.tile(Pathinfo, n_particles)
 
     if linkage_file_base != "":
         fname = f"{linkage_file_base}.{frame_num}"
@@ -758,7 +738,7 @@ def read_path_frame(
             linkagein = open(fname, "r", encoding="utf-8")
         except IOError:
             print(f"Can't open linkage file: {fname}")
-            return np.ndarray(0, dtype=Corres_dtype), []
+            return Corres, Pathinfo
 
         linkagein.readline()
     else:
@@ -770,7 +750,7 @@ def read_path_frame(
             prioin = open(fname, "r", encoding="utf-8")
         except IOError:
             print(f"Can't open prio file: {fname}")
-            return np.ndarray(0, dtype=Corres_dtype), []
+            return Corres, Pathinfo
 
         prioin.readline()
     else:
@@ -785,20 +765,20 @@ def read_path_frame(
         if linkagein is not None:
             linkage_line = linkagein.readline()
             linkage_vals = np.fromstring(linkage_line, dtype=float, sep=" ")
-            path_buf[targets].prev_frame = linkage_vals[0].astype(int)
-            path_buf[targets].next_frame = linkage_vals[1].astype(int)
+            path_buf[targets]['prev_frame'] = linkage_vals[0].astype(int)
+            path_buf[targets]['next_frame'] = linkage_vals[1].astype(int)
             # path_buf[targets].x = linkage_vals[2:]
 
         if prioin is not None:
             prio_line = prioin.readline()
             prio_vals = np.fromstring(prio_line, dtype=float, sep=" ")
-            path_buf[targets].prio = prio_vals[-1].astype(int)
+            path_buf[targets]['prio'] = prio_vals[-1].astype(int)
         else:
-            path_buf[targets].prio = 4
+            path_buf[targets]['prio'] = 4
 
-        path_buf[targets].inlist = 0
-        path_buf[targets].finaldecis = 1000000.0
-        path_buf[targets].decis = [0] * POSI  # type: ignore
+        path_buf[targets]['inlist'] = 0
+        path_buf[targets]['finaldecis'] = 1000000.0
+        path_buf[targets]['decis'] = [0] * POSI  # type: ignore
         path_buf[targets].linkdecis = [-999] * POSI
 
         vals = np.fromstring(line, dtype=float, sep=" ")
@@ -821,7 +801,7 @@ def read_path_frame(
 
 def write_path_frame(
     cor_buf: np.ndarray, #List[Corres],
-    path_buf: List[Pathinfo],
+    path_buf: np.ndarray,
     num_parts: int,
     corres_file_base: str,
     linkage_file_base: str,
@@ -867,23 +847,23 @@ def write_path_frame(
 
         for pix in range(num_parts):
             linkage_file.write(
-                f"{path_buf[pix].prev_frame} {path_buf[pix].next_frame} "
-                f"{path_buf[pix].x[0]:.3f} {path_buf[pix].x[1]:.3f} "
-                f"{path_buf[pix].x[2]:.3f}\n"
+                f"{path_buf[pix]['prev_frame']} {path_buf[pix]['next_frame']} "
+                f"{path_buf[pix]['x'][0]:.3f} {path_buf[pix]['x'][1]:.3f} "
+                f"{path_buf[pix]['x'][2]:.3f}\n"
             )
 
             corres_file.write(
-                f"{pix + 1} {path_buf[pix].x[0]:.3f} "
-                f"{path_buf[pix].x[1]:.3f} {path_buf[pix].x[2]:.3f} "
+                f"{pix + 1} {path_buf[pix]['x'][0]:.3f} "
+                f"{path_buf[pix]['x'][1]:.3f} {path_buf[pix]['x'][2]:.3f} "
                 f"{cor_buf[pix]['p'][0]} {cor_buf[pix]['p'][1]} "
                 f"{cor_buf[pix]['p'][2]} {cor_buf[pix]['p'][3]}\n"
             )
 
             if prio_file_base is not None:
                 prio_file.write(
-                    f"{path_buf[pix].prev_frame} {path_buf[pix].next_frame} "
-                    f"{path_buf[pix].x[0]:.3f} {path_buf[pix].x[1]:.3f} "
-                    f"{path_buf[pix].x[2]:.3f} {path_buf[pix].prio}\n"
+                    f"{path_buf[pix]['prev_frame']} {path_buf[pix]['next_frame']} "
+                    f"{path_buf[pix]['x'][0]:.3f} {path_buf[pix]['x'][1]:.3f} "
+                    f"{path_buf[pix]['x'][2]:.3f} {path_buf[pix]['prio']}\n"
                 )
 
         corres_file.close()

@@ -1,5 +1,7 @@
 import unittest
 
+import numpy as np
+
 from openptv_python.tracking_frame_buf import Target, sort_target_y
 
 
@@ -15,18 +17,17 @@ class TestQsTargetY(unittest.TestCase):
             [5, 10.4, 0.1, 10, 3, 3, 70, -999],
         ]
 
-        targs = []
-        for t in test_pix:
-            targs.append(Target(*t))
+        targs = np.array([np.array(tuple(row), dtype=Target.dtype) for row in test_pix])
+
 
         # sorting test_pix vertically by 'y'
         targs = sort_target_y(targs)
 
 
         # first point should be -1.1 and the last 0.8
-        self.assertAlmostEqual(targs[0].y, -1.1, places=6)
-        self.assertAlmostEqual(targs[1].y, -0.2, places=6)
-        self.assertAlmostEqual(targs[6].y, 0.8, places=6)
+        self.assertAlmostEqual(targs[0]['y'], -1.1, places=6)
+        self.assertAlmostEqual(targs[1]['y'], -0.2, places=6)
+        self.assertAlmostEqual(targs[6]['y'], 0.8, places=6)
 
 
 if __name__ == "__main__":

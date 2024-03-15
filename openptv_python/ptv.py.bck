@@ -218,8 +218,8 @@ def _correspondences(img_pts: List[np.ndarray],
 
                 if p1 > -1:
                     targ = img_pts[cam][p1]
-                    clique_targs[cam, pt, 0] = targ._targ.x
-                    clique_targs[cam, pt, 1] = targ._targ.y
+                    clique_targs[cam, pt, 0] = targ._targ['x']
+                    clique_targs[cam, pt, 1] = targ._targ['y']
 
         last_count += num_points
         sorted_pos[clique_type] = clique_targs

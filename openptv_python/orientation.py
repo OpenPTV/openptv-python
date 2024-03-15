@@ -337,7 +337,7 @@ def orient(
                 continue
 
             # get metric flat-image coordinates of the detected point
-            xc, yc = pixel_to_metric(pix[i].x, pix[i].y, cpar)
+            xc, yc = pixel_to_metric(pix[i]['x'], pix[i]['y'], cpar)
             xc, yc = correct_brown_affine(xc, yc, cal.added_par)
 
             # Projected 2D position on sensor of corresponding known point
@@ -651,7 +651,7 @@ def raw_orient(
         itnum += 1
         n = 0
         for i in range(nfix):
-            xc, yc = pixel_to_metric(pix[i].x, pix[i].y, cpar)
+            xc, yc = pixel_to_metric(pix[i]['x'], pix[i]['y'], cpar)
             pos = fix[i]
             cal.update_rotation_matrix()
             xp, yp = img_coord(pos, cal, cpar.mm)
@@ -801,11 +801,12 @@ def external_calibration(
 
     # Convert pixel coords to metric coords:
     # targs = <target *>calloc(len(img_pts), sizeof(target))
-    targs = [Target() for _ in img_pts]
+    # targs = [Target() for _ in img_pts]
+    targs = np.tile(Target, len(img_pts))
 
     for ptx, pt in enumerate(img_pts):
-        targs[ptx].x = pt[0]
-        targs[ptx].y = pt[1]
+        targs[ptx]['x'] = pt[0]
+        targs[ptx]['y'] = pt[1]
 
     success = raw_orient(cal, cparam, len(ref_pts), ref_pts, targs)
 
@@ -865,11 +866,12 @@ def full_calibration(
 
     if isinstance(img_pts, np.ndarray):
         # convert numpy array to list of Target objects
-        targs = [Target() for _ in img_pts]
+        # targs = [Target() for _ in img_pts]
+        targs = np.tile(Target, len(img_pts))
 
         for ptx, pt in enumerate(img_pts):
-            targs[ptx].x = pt[0]
-            targs[ptx].y = pt[1]
+            targs[ptx]['x'] = pt[0]
+            targs[ptx]['y'] = pt[1]
             targs[ptx]['pnr'] = ptx
     else:
         targs = img_pts

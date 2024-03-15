@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 
 from openptv_python.correspondences import take_best_candidates
-from openptv_python.tracking_frame_buf import n_tupel_dtype
+from openptv_python.tracking_frame_buf import n_tupel
 
 
 class TestTakeBestCandidates(unittest.TestCase):
@@ -14,15 +14,14 @@ class TestTakeBestCandidates(unittest.TestCase):
             ([1, 2, 3, 7], 0.95),
         ]
 
-        src = np.array(src, dtype=n_tupel_dtype)
+        src = np.array(src, dtype=n_tupel.dtype)
 
         num_cams = 4
         max_targets = 8  # Maximum number of targets in tusage
         tusage = np.zeros((num_cams, max_targets), dtype=np.int32)
 
-        dst = np.ndarray(len(src), dtype=n_tupel_dtype)
-        dst['p'] = np.zeros(4)
-        dst.corr = 0.0
+        # dst = np.ndarray(len(src), dtype=n_tupel_dtype)
+        dst = np.tile(n_tupel, len(src))
 
         taken = take_best_candidates(src, dst, num_cams, tusage)
 
@@ -46,14 +45,15 @@ class TestTakeBestCandidates(unittest.TestCase):
             ([1, 2, 3, 5], 0.9),
             ([-1, -1, -1, 6], 0.7),
         ]
-        src = np.array(src, dtype=n_tupel_dtype)
+        src = np.array(src, dtype=n_tupel.dtype)
 
         num_cams = 4
         max_targets = 8  # Maximum number of targets in tusage
         tusage = np.zeros((num_cams, max_targets), dtype=np.int32)
         tusage[0][1] = 1
 
-        dst = np.ndarray(len(src), dtype=n_tupel_dtype)
+        # dst = np.ndarray(len(src), dtype=n_tupel_dtype)
+        dst = np.tile(n_tupel, len(src))
         taken = take_best_candidates(src, dst, num_cams, tusage)
 
         self.assertEqual(taken, 2)

@@ -6,7 +6,7 @@ from numba import float64, int32, njit
 
 from .calibration import Calibration
 from .constants import MAXCAND
-from .epi import Candidate_dtype
+from .epi import Candidate
 from .parameters import ControlPar, VolumePar
 from .trafo import correct_brown_affine
 
@@ -36,7 +36,7 @@ def find_candidate(
     ----
         crd: A list of `coord_2d` objects. Each object corresponds to the corrected
                 coordinates of a target in an image.
-        pix: A list of `target` objects. Each object corresponds to the target information
+        pix: An array of `target` objects. Each object corresponds to the target information
                 (size, grey value, etc.) of a target.
         num: The number of targets in the image.
         xa: The x-coordinate of the start point of the epipolar line.
@@ -90,7 +90,7 @@ def find_candidate(
     # If epipolar line out of sensor area, give up.
     if xb <= xmin or xa >= xmax or yb <= ymin or ya >= ymax:
         # return np.array(cand)
-        return np.ndarray((0,), dtype=Candidate_dtype)
+        return Candidate
 
     j0 = find_start_point(crd, num, xa, vpar)
 
@@ -99,19 +99,19 @@ def find_candidate(
     for j in range(j0, num):
         # Since the list is x-sorted, an out of x-bound candidate is after the
         # last possible candidate, so stop.
-        if crd[j].x > xb + vpar.eps0:
+        if crd[j]['x'] > xb + vpar.eps0:
             out = np.array(cand).flatten()
             return out  # type: ignore
 
         # Candidate should at the very least be in the epipolar search window
         # to be considered.
-        if crd[j].y <= ya - vpar.eps0 or crd[j].y >= yb + vpar.eps0:
+        if crd[j]['y'] <= ya - vpar.eps0 or crd[j]['y'] >= yb + vpar.eps0:
             continue
-        if crd[j].x <= xa - vpar.eps0 or crd[j].x >= xb + vpar.eps0:
+        if crd[j]['x'] <= xa - vpar.eps0 or crd[j]['x'] >= xb + vpar.eps0:
             continue
 
         # Only take candidates within a predefined distance from epipolar line.
-        d = math.fabs((crd[j].y - m * crd[j].x - b) / math.sqrt(m * m + 1))
+        d = math.fabs((crd[j]['y'] - m * crd[j]['x'] - b) / math.sqrt(m * m + 1))
         if d >= vpar.eps0:
             continue
 
@@ -121,10 +121,10 @@ def find_candidate(
 
         # Quality of each parameter is a ratio of the values of the
         # size n, nx, ny and sum of grey values sumg.
-        qn = quality_ratio(n, pix[p2].n)
-        qnx = quality_ratio(nx, pix[p2].nx)
-        qny = quality_ratio(ny, pix[p2].ny)
-        qsumg = quality_ratio(sumg, pix[p2].sumg)
+        qn = quality_ratio(n, pix[p2]['n'])
+        qnx = quality_ratio(nx, pix[p2]['nx'])
+        qny = quality_ratio(ny, pix[p2]['ny'])
+        qsumg = quality_ratio(sumg, pix[p2]['sumg'])
 
         # Enforce minimum quality values and maximum candidates.
         if qn < vpar.cn or qnx < vpar.cnx or qny < vpar.cny or qsumg <= vpar.csumg:
@@ -139,10 +139,11 @@ def find_candidate(
         corr = 4 * qsumg + 2 * qn + qnx + qny
 
         # Prefer matches with brighter targets.
-        corr *= sumg + pix[p2].sumg
+        corr *= sumg + pix[p2]['sumg']
 
         # cand.append(Candidate(pnr=j, tol=d, corr=corr))
-        cand.append(np.array([(j, d, corr)], dtype=Candidate_dtype)) # type: ignore
+        cand.append(np.array([(j, d, corr)], dtype=Candidate.dtype)) # type: ignore
+
 
 
     out = np.array(cand).flatten()
@@ -177,8 +178,8 @@ def find_start_point(crd: np.ndarray, num: int, xa: float, vpar: VolumePar) -> i
     -------
         The start point of the candidate search.
     """
-    # x = np.array([_.x for _ in crd])
-    out = find_start_point_binary(crd.x, num, xa, vpar.eps0)
+    # x = np.array([_['x'] for _ in crd])
+    out = find_start_point_binary(crd['x'], num, xa, vpar.eps0)
     return out
 
 @njit(int32(float64[:], int32, float64, float64))
