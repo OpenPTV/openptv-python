@@ -22,8 +22,8 @@ def multimed_nlay(
     using radial shift from the multimedia model
     """
     radial_shift = multimed_r_nlay(cal, mm, pos)
-    Xq = cal.ext_par.x0 + (pos[0] - cal.ext_par.x0) * radial_shift
-    Yq = cal.ext_par.y0 + (pos[1] - cal.ext_par.y0) * radial_shift
+    Xq = cal.ext_par['x0'] + (pos[0] - cal.ext_par['x0']) * radial_shift
+    Yq = cal.ext_par['y0'] + (pos[1] - cal.ext_par['y0']) * radial_shift
     return Xq, Yq
 
 
@@ -47,9 +47,9 @@ def multimed_r_nlay(cal: Calibration, mm: MultimediaPar, pos: np.ndarray) -> flo
         np.array(mm.n2),
         mm.n3,
         np.array(mm.d),
-        cal.ext_par.x0,
-        cal.ext_par.y0,
-        cal.ext_par.z0,
+        cal.ext_par['x0'],
+        cal.ext_par['y0'],
+        cal.ext_par['z0'],
         pos)
     # print(f"mmf from a loop = {mmf}")
 
@@ -127,7 +127,7 @@ def trans_cam_point(
 
     pos_t, cross_p, cross_c = trans_cam_point(ex, mm, glass, pos, ex_t)
     """
-    origin = np.r_[ex.x0, ex.y0, ex.z0] # type: ignore
+    origin = np.r_[ex['x0'], ex['y0'], ex['z0']] # type: ignore
     pos = pos.astype(np.float64)
 
     return fast_trans_cam_point(
@@ -278,12 +278,12 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibrati
     for i in range(2):
         for j in range(2):
             x, y = pixel_to_metric(xc[i], yc[j], cpar)
-            x -= cal.int_par.xh
-            y -= cal.int_par.yh
+            x -= cal.int_par['xh']
+            y -= cal.int_par['yh']
             x, y = correct_brown_affine(x, y, cal.added_par)
             pos, a = ray_tracing(x, y, cal, cpar.mm)
             xyz = move_along_ray(z_min, pos, a)
-            xyz_t, _, _, cal_t.ext_par.z0 = trans_cam_point(
+            xyz_t, _, _, cal_t.ext_par['z0'] = trans_cam_point(
                 cal.ext_par, cpar.mm, cal.glass_par, xyz
             )
 
@@ -293,8 +293,8 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibrati
                 z_max_t = xyz_t[2]
 
             R = vec_norm(
-                np.r_[xyz_t[0] - cal_t.ext_par.x0,
-                     xyz_t[1] - cal_t.ext_par.y0,
+                np.r_[xyz_t[0] - cal_t.ext_par['x0'],
+                     xyz_t[1] - cal_t.ext_par['y0'],
                      0]
                 )
 
@@ -302,7 +302,7 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibrati
                 Rmax = R
 
             xyz = move_along_ray(z_max, pos, a)
-            xyz_t, _, _, cal_t.ext_par.z0 = trans_cam_point(
+            xyz_t, _, _, cal_t.ext_par['z0'] = trans_cam_point(
                 cal.ext_par, cpar.mm, cal.glass_par, xyz
             )
 
@@ -311,8 +311,8 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibrati
             if xyz_t[2] > z_max_t:
                 z_max_t = xyz_t[2]
 
-            R = vec_norm(np.r_[xyz_t[0] - cal_t.ext_par.x0,
-                     xyz_t[1] - cal_t.ext_par.y0, 0])
+            R = vec_norm(np.r_[xyz_t[0] - cal_t.ext_par['x0'],
+                     xyz_t[1] - cal_t.ext_par['y0'], 0])
 
             if R > Rmax:
                 Rmax = R
@@ -325,8 +325,8 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibrati
     nz = int((z_max_t - z_min_t) / rw + 1)
 
     # create two dimensional mmlut structure
-    cal.mmlut.origin = np.r_[cal_t.ext_par.x0, cal_t.ext_par.y0, z_min_t]
-    cal.mmlut.nr = nr
+    cal.mmlut.origin = np.r_[cal_t.ext_par['x0'], cal_t.ext_par['y0'], z_min_t]
+    cal.mmlut['nr'] = nr
     cal.mmlut.nz = nz
     cal.mmlut.rw = rw
 
@@ -337,8 +337,8 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibrati
 
         for i in range(nr):
             for j in range(nz):
-                xyz = np.r_[Ri[i] + cal_t.ext_par.x0,
-                              cal_t.ext_par.y0, Zi[j]]
+                xyz = np.r_[Ri[i] + cal_t.ext_par['x0'],
+                              cal_t.ext_par['y0'], Zi[j]]
                 cal.mmlut_data.flat[i * nz + j] = multimed_r_nlay(cal_t, cpar.mm, xyz)
 
         # print(f"filled mmlut data with {data}")
@@ -353,7 +353,7 @@ def get_mmf_from_mmlut(cal: Calibration, pos: np.ndarray) -> float:
     origin = cal.mmlut.origin
     data = cal.mmlut_data.flatten()  # type: ignore
     nz = cal.mmlut.nz
-    nr = cal.mmlut.nr
+    nr = cal.mmlut['nr']
 
     return fast_get_mmf_from_mmlut(rw, origin, data, nz, nr, pos)
 
@@ -436,8 +436,8 @@ def volumedimension(
             for j in range(2):
                 x, y = pixel_to_metric(xc[i], yc[j], cpar)
 
-                x -= cal[i_cam].int_par.xh
-                y -= cal[i_cam].int_par.yh
+                x -= cal[i_cam].int_par['xh']
+                y -= cal[i_cam].int_par['yh']
 
                 x, y = correct_brown_affine(x, y, cal[i_cam].added_par)
 

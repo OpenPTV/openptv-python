@@ -18,7 +18,7 @@ class TestFrame(unittest.TestCase):
         max_targets: int = MAX_TARGETS
         path_info: Pathinfo | None = None
         correspond: Correspond | None = None
-        targets: List[List[Target]] | None = None
+        targets: List[np.ndarray] | None = None
         num_parts: int = 0
         num_targets: List[int] | None = None
 

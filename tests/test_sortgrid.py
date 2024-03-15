@@ -81,11 +81,11 @@ class TestSortgrid(unittest.TestCase):
         fix = np.c_[cal_points.x, cal_points.y, cal_points.z]
 
         sorted_pix = sortgrid(cal, cpar, nfix, fix, eps, targets)
-        self.assertEqual(sorted_pix[0].pnr, -999)
-        self.assertEqual(sorted_pix[1].pnr, -999)
+        self.assertEqual(sorted_pix[0]['pnr'], -999)
+        self.assertEqual(sorted_pix[1]['pnr'], -999)
 
         sorted_pix = sortgrid(cal, cpar, nfix, fix, 120, targets)
-        self.assertEqual(sorted_pix[1].pnr, 1)
+        self.assertEqual(sorted_pix[1]['pnr'], 1)
         self.assertEqual(sorted_pix[1].x, 796)
 
 

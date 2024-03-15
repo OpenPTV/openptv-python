@@ -38,7 +38,7 @@ def targ_rec(
     ymax: int,
     cpar: ControlPar,
     num_cam,
-) -> List[Target]:
+) -> np.ndarray:
     """Target recognition function."""
     thres = targ_par.gvthresh[num_cam]
     disco = targ_par.discont
@@ -246,7 +246,7 @@ def peak_fit(
     ymax: int,
     cpar: ControlPar,
     num_cam: int,
-) -> List[Target]:
+) -> np.ndarray:
     """Fit the peaks in the image to a gaussian."""
     imx, imy = cpar.imx, cpar.imy
     n_peaks = 0
@@ -265,7 +265,7 @@ def peak_fit(
     label_img = [0] * (imx * imy)
     peaks: List[Peak] = []
     waitlist: List[List[int]] = [[]]
-    pix: List[Target] = []
+    pix: np.ndarray = []
     n_target = 0
 
     for i in range(ymin, ymax - 1):
@@ -502,7 +502,7 @@ def peak_fit(
             pix[n_target].nx = peaks[i].xmax - peaks[i].xmin + 1
             pix[n_target].ny = peaks[i].ymax - peaks[i].ymin + 1
             pix[n_target].tnr = CORRES_NONE
-            pix[n_target].pnr = n_target
+            pix[n_target]['pnr'] = n_target
             n_target += 1
 
     # t = TargetArray(num_targets=n_target)
@@ -573,7 +573,7 @@ def target_recognition(
     cparam: ControlPar,
     subrange_x=None,
     subrange_y=None,
-) -> List[Target]:
+) -> np.ndarray:
     """
     Detect targets (contiguous bright blobs) in an image.
 

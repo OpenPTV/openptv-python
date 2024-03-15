@@ -22,7 +22,7 @@ class TestGetMmfMmLUT(unittest.TestCase):
         self.cpar = read_control_par(self.ptv_file)
         self.correct_mmlut = [
             np.array(( (0.0, 0.0, -250.00001105), 130, 177, 2),
-            dtype=mm_lut.dtype).view(np.recarray)
+            dtype=mm_lut.dtype)
             for _ in range(4)
         ]
 

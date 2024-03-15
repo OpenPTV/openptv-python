@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import List
 
 import numpy as np
 
@@ -18,8 +17,8 @@ def sortgrid(
     nfix: int,
     fix: np.ndarray,
     eps: float,
-    pix: List[Target],
-) -> List[Target]:
+    pix: np.ndarray,
+) -> np.ndarray:
     """Sorts the grid points according to the image coordinates.
 
     /* sortgrid () is sorting detected target points by back-projection. Three dimensional
@@ -46,7 +45,9 @@ def sortgrid(
     the pnr pointer is the row number of the dot in the calibration block file
 
     """
-    sorted_pix = [Target() for _ in range(nfix)]
+    # sorted_pix = [Target() for _ in range(nfix)]
+    # sorted_pix = np.empty(nfix, dtype=Target_dtype)
+    sorted_pix = np.tile(Target, nfix)
 
     for i in range(nfix):
         xp, yp = img_coord(fix[i], cal, cpar.mm)
@@ -63,12 +64,12 @@ def sortgrid(
 
             if j != -999:
                 sorted_pix[i] = pix[j]
-                sorted_pix[i].pnr = i
+                sorted_pix[i]['pnr'] = i
 
     return sorted_pix
 
 
-def nearest_neighbour_pix(pix: List[Target], x: float, y: float, eps: float):
+def nearest_neighbour_pix(pix: np.ndarray, x: float, y: float, eps: float):
     """Find the nearest neighbour pixel to the given point.
 
     Args:
@@ -89,8 +90,8 @@ def nearest_neighbour_pix(pix: List[Target], x: float, y: float, eps: float):
     xmin, xmax, ymin, ymax = x - eps, x + eps, y - eps, y + eps
 
     for count, t in enumerate(pix):
-        if ymin < t.y < ymax and xmin < t.x < xmax:
-            d = np.sqrt((x - t.x) ** 2 + (y - t.y) ** 2)
+        if ymin < t['y'] < ymax and xmin < t['x'] < xmax:
+            d = np.sqrt((x - t['x']) ** 2 + (y - t['y']) ** 2)
             if d < dmin:
                 dmin = d
                 pnr = count
@@ -120,7 +121,7 @@ def read_sortgrid_par(filename) -> int:
     return eps
 
 
-def read_calblock(filename: Path) -> np.recarray: #List[Coord3d]:
+def read_calblock(filename: Path) -> np.ndarray: #List[Coord3d]:
     """
     Read the calibration block file into the structure of 3D positions and pointers.
 
@@ -148,9 +149,9 @@ def read_calblock(filename: Path) -> np.recarray: #List[Coord3d]:
                 coords.append(coord)
     except FileNotFoundError:
         print(f"Can't open calibration block file: {filename}")
-        return np.recarray(0, dtype=Coord3d_dtype)
+        return np.ndarray(0, dtype=Coord3d_dtype)
     except ValueError:
         print(f"Empty or badly formatted file: {filename}")
-        return np.recarray(0, dtype = Coord3d_dtype)
+        return np.ndarray(0, dtype = Coord3d_dtype)
 
-    return np.array(coords).view(np.recarray)
+    return np.array(coords)

@@ -150,7 +150,7 @@ def distort_brown_affine(x: float,
                          ) -> Tuple[float, float]:
     """Distort a point using the Brown affine model.
 
-    ap: ap52_dtype: np.recarray with fields k1, k2, k3, p1, p2, scx, she
+    ap: ap52_dtype: np.ndarray with fields k1, k2, k3, p1, p2, scx, she
         presented here as a np.array
 
     """
@@ -244,9 +244,9 @@ def flat_to_dist(flat_x: float, flat_y: float, cal: Calibration) -> Tuple[float,
     image coordinates, because distortion formula assumes it, [1] p.180.
     """
     # print(f"flat_x {flat_x}, flat_y {flat_y}")
-    # print(f"cal.int {cal.int_par.xh}, {cal.int_par.yh}")
-    flat_x += cal.int_par.xh
-    flat_y += cal.int_par.yh
+    # print(f"cal.int {cal.int_par['xh']}, {cal.int_par['yh']}")
+    flat_x += cal.int_par['xh']
+    flat_y += cal.int_par['yh']
 
     # print(f"flat_x {flat_x}, flat_y {flat_y}")
 
@@ -259,6 +259,6 @@ def flat_to_dist(flat_x: float, flat_y: float, cal: Calibration) -> Tuple[float,
 def dist_to_flat(dist_x: float, dist_y: float, cal: Calibration, tol: float = 1e-5):
     """Convert real-image coordinates to flat-image coordinates."""
     flat_x, flat_y = correct_brown_affine(dist_x, dist_y, cal.added_par, tol)
-    flat_x -= cal.int_par.xh
-    flat_y -= cal.int_par.yh
+    flat_x -= cal.int_par['xh']
+    flat_y -= cal.int_par['yh']
     return flat_x, flat_y

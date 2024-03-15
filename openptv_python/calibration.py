@@ -59,7 +59,7 @@ exterior_dtype = np.dtype([
     ('kappa', np.float64),
     ('dm', np.float64, (3, 3))
     ])
-Exterior = np.array((0, 0, 0, 0, 0, 0, np.eye(3)), dtype = exterior_dtype).view(np.recarray)
+Exterior = np.array((0, 0, 0, 0, 0, 0, np.eye(3)), dtype = exterior_dtype)
 rotation_matrix(Exterior)             # rotation should be a unit matrix
 assert np.allclose(np.eye(3), Exterior['dm'])
 
@@ -68,7 +68,7 @@ interior_dtype = np.dtype([
     ('yh', np.float64),
     ('cc', np.float64)
     ])
-Interior = np.array( (0, 0, 0), dtype = interior_dtype).view(np.recarray)
+Interior = np.array( (0, 0, 0), dtype = interior_dtype)
 
 
 # ap52_dtype = np.dtype([
@@ -81,7 +81,7 @@ Interior = np.array( (0, 0, 0), dtype = interior_dtype).view(np.recarray)
 #     ('she', np.float64)
 #     ])
 ap_52 = np.array((0, 0, 0, 0, 0, 1, 0), dtype = np.float64)
-# ap_52 = np.array((0, 0, 0, 0, 0, 1, 0), dtype = ap52_dtype).view(np.recarray)
+# ap_52 = np.array((0, 0, 0, 0, 0, 1, 0), dtype = ap52_dtype)
 
 mmlut_dtype = np.dtype([
     ('origin', np.float64, 3),
@@ -90,7 +90,7 @@ mmlut_dtype = np.dtype([
     ('rw', np.int32),
     ])
 
-mm_lut = np.array((np.zeros(3), 0, 0, 0), dtype = mmlut_dtype).view(np.recarray)
+mm_lut = np.array((np.zeros(3), 0, 0, 0), dtype = mmlut_dtype)
 mm_lut_data = np.empty((mm_lut['nr'], mm_lut['nz']), dtype=np.float64)
 
 
@@ -115,7 +115,7 @@ class Calibration:
         if mmlut is None:
             mmlut = copy.deepcopy(mm_lut) # (np.zeros(3), 0, 0, 0)
         if mmlut_data is None:
-            mmlut_data = np.zeros((mmlut.nr, mmlut.nz), dtype=np.float64)
+            mmlut_data = np.zeros((mmlut['nr'], mmlut['nz']), dtype=np.float64)
 
 
         self.ext_par = ext_par
@@ -275,7 +275,7 @@ class Calibration:
         if prim_point_pos.shape != (3,):
             raise ValueError("Expected a 3-element array")
 
-        self.int_par.xh, self.int_par.yh, self.int_par.cc = prim_point_pos
+        self.int_par['xh'], self.int_par['yh'], self.int_par['cc'] = prim_point_pos
         # self.int_par.set_primary_point(prim_point_pos)
 
     def get_primary_point(self):
@@ -285,7 +285,7 @@ class Calibration:
         element array holding the values of x and y shift of point from sensor
         middle and sensor-point distance, int_par this order.
         """
-        return np.r_[self.int_par.xh, self.int_par.yh, self.int_par.cc]
+        return np.r_[self.int_par['xh'], self.int_par['yh'], self.int_par['cc']]
 
     def set_radial_distortion(self, dist_coeffs: np.ndarray) -> None:
         """
@@ -376,7 +376,7 @@ class Calibration:
 
     def set_added_par(self, ap52_array: np.ndarray):
         """Set added par from an numpy array of parameters."""
-        # self.added_par = np.array(tuple(ap52_array.tolist()), dtype = ap52_dtype).view(np.recarray)
+        # self.added_par = np.array(tuple(ap52_array.tolist()), dtype = ap52_dtype)
         self.added_par = ap52_array.astype(np.float64)
 
     def copy(self, new_copy):
@@ -390,8 +390,8 @@ class Calibration:
 
 
 def write_ori(
-    ext_par: np.recarray,
-    int_par: np.recarray,
+    ext_par: np.ndarray,
+    int_par: np.ndarray,
     glass: np.ndarray,
     added_par: np.ndarray,
     filename: str,
@@ -405,7 +405,7 @@ def write_ori(
         fp.write(f"{ext_par['omega']:.8f} {ext_par['phi']:.8f} {ext_par['kappa']:.8f}\n\n")
         for row in ext_par['dm']:
             fp.write(f"{row[0]:.7f} {row[1]:.7f} {row[2]:.7f}\n")
-        fp.write(f"\n{int_par.xh:.4f} {int_par.yh:.4f}\n{int_par.cc:.4f}\n")
+        fp.write(f"\n{int_par['xh']:.4f} {int_par['yh']:.4f}\n{int_par['cc']:.4f}\n")
         fp.write(
             f"\n{glass[0]:.15f} {glass[1]:.15f} {glass[2]:.15f}\n")
 
@@ -442,7 +442,7 @@ def read_ori(ori_file: Path, add_file: Path) -> Calibration:
     return ret
 
 
-def compare_exterior(e1: np.recarray, e2: np.recarray) -> bool:
+def compare_exterior(e1: np.ndarray, e2: np.ndarray) -> bool:
     """Compare exterior orientation parameters."""
     return (
         np.allclose(e1['dm'], e2['dm'], atol=1e-6)
@@ -455,9 +455,9 @@ def compare_exterior(e1: np.recarray, e2: np.recarray) -> bool:
     )
 
 
-def compare_interior(i1: np.recarray, i2: np.recarray) -> bool:
+def compare_interior(i1: np.ndarray, i2: np.ndarray) -> bool:
     """Compare interior orientation parameters."""
-    return i1.xh == i2.xh and i1.yh == i2.yh and i1.cc == i2.cc
+    return i1['xh'] == i2['xh'] and i1['yh'] == i2['yh'] and i1['cc'] == i2['cc']
 
 
 def compare_glass(g1: np.ndarray, g2: np.ndarray) -> bool:

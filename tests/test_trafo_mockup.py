@@ -35,8 +35,8 @@ class TestFlatToDist(unittest.TestCase):
     def test_positive_coordinates(self):
         """Test the case when the input coordinates are positive."""
         cal = Calibration()
-        cal.int_par.xh = 100
-        cal.int_par.yh = 50
+        cal.int_par['xh'] = 100
+        cal.int_par['yh'] = 50
         dist_x, dist_y = flat_to_dist(50, 25, cal)
         self.assertEqual(dist_x, 150)
         self.assertEqual(dist_y, 75)
@@ -107,7 +107,7 @@ class TestFlatToDist(unittest.TestCase):
         iter_eps = 1e-5
 
         cal = Calibration()
-        cal.int_par = np.array( (1.5, 1.5, 60.0), dtype = interior_dtype).view(np.recarray)
+        cal.int_par = np.array( (1.5, 1.5, 60.0), dtype = interior_dtype)
         cal.set_added_par(np.array([0.0005, 0, 0, 0, 0, 1, 0], dtype=np.float64))
 
         xres, yres = flat_to_dist(x, y, cal)

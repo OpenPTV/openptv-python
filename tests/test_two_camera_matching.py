@@ -41,7 +41,7 @@ def read_all_calibration(num_cams: int = 4) -> list[Calibration]:
 
 def correct_frame(
     frm: Frame, calib: list[Calibration], cpar: ControlPar, tol: float
-) -> np.recarray:
+) -> np.ndarray:
     """
     Perform the transition from pixel to metric to flat coordinates.
 
@@ -54,7 +54,7 @@ def correct_frame(
     tol - tolerance parameter for iterative flattening phase, see
         trafo.h:correct_brown_affine_exact().
     """
-    corrected = np.recarray((cpar.num_cams, frm.num_targets[0]), dtype=Coord2d_dtype)
+    corrected = np.ndarray((cpar.num_cams, frm.num_targets[0]), dtype=Coord2d_dtype)
 
     for cam in range(cpar.num_cams):
         row = corrected[cam]
@@ -65,7 +65,7 @@ def correct_frame(
             )
             x, y = dist_to_flat(x, y, calib[cam], tol)
 
-            row[part].pnr = frm.targets[cam][part].pnr
+            row[part]['pnr'] = frm.targets[cam][part]['pnr']
             row[part].x = x
             row[part].y = y
 
@@ -101,7 +101,7 @@ def generate_test_set(calib: list[Calibration], cpar: ControlPar) -> Frame:
                     cpt_ix = 15 - cpt_ix  # Avoid symmetric case
 
                 targ = frm.targets[cam][cpt_ix]
-                targ.pnr = cpt_ix
+                targ['pnr'] = cpt_ix
 
                 tmp = np.r_[cpt_vert * 10, cpt_horz * 10, 0]
                 # if ((cpt_ix % 4) == 0):
@@ -162,7 +162,7 @@ class TestTwoCameraMatching(unittest.TestCase):
         # for i in range(len(corrected)):
         #     for col in corrected[i]:
         #         ax[i].scatter(col.x, col.y, c="r", marker=markers[i])
-        #         ax[i].text(col.x, col.y, str(col.pnr))
+        #         ax[i].text(col.x, col.y, str(col['pnr']))
 
         # plt.show()
 
@@ -179,9 +179,9 @@ class TestTwoCameraMatching(unittest.TestCase):
             for subcam in range(cam + 1, cpar.num_cams):
                 for part in range(frm.num_targets[cam]):
                     correct_pnr = (
-                        corrected[cam][corr_lists[cam][subcam][part].p1].pnr
+                        corrected[cam][corr_lists[cam][subcam][part].p1]['pnr']
                         if (subcam - cam) % 2 == 0
-                        else 15 - corrected[cam][corr_lists[cam][subcam][part].p1].pnr
+                        else 15 - corrected[cam][corr_lists[cam][subcam][part].p1]['pnr']
                     )
 
                     # print(
@@ -191,18 +191,18 @@ class TestTwoCameraMatching(unittest.TestCase):
                     for cand in range(MAXCAND):
                         found_correct_pnr = False
                         # print(cand, corr_lists[cam][subcam][part].p2[cand],
-                        #  corrected[subcam][corr_lists[cam][subcam][part].p2[cand]].pnr)
+                        #  corrected[subcam][corr_lists[cam][subcam][part].p2[cand]]['pnr'])
                         if (
                             corrected[subcam][
                                 corr_lists[cam][subcam][part].p2[cand]
-                            ].pnr
+                            ]['pnr']
                             == correct_pnr
                         ):
                             # print("found")
                             # print(
                             #     corrected[subcam][
                             #         corr_lists[cam][subcam][part].p2[cand]
-                            #     ].pnr
+                            #     ]['pnr']
                             # )
                             found_correct_pnr = True
                             break
@@ -210,8 +210,8 @@ class TestTwoCameraMatching(unittest.TestCase):
                     self.assertTrue(found_correct_pnr)
 
         # # continue to the consistent_pair matching test
-        con = np.recarray((4 * 16), dtype=n_tupel_dtype)
-        con.p = np.zeros(4,)
+        con = np.ndarray((4 * 16), dtype=n_tupel_dtype)
+        con['p'] = np.zeros(4,)
         con.corr = 0.0
 
         tusage = safely_allocate_target_usage_marks(cpar.num_cams)

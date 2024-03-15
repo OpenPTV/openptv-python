@@ -21,8 +21,8 @@ class TestMatmul(unittest.TestCase):
         expected = np.array([68, 167, 266])
 
         test_Ex = Exterior.copy()
-        test_Ex.z0 = 100.0
-        test_Ex.dm = np.array([[1.0, 0.2, -0.3], [0.2, 1.0, 0.0], [-0.3, 0.0, 1.0]])
+        test_Ex['z0'] = 100.0
+        test_Ex['dm'] = np.array([[1.0, 0.2, -0.3], [0.2, 1.0, 0.0], [-0.3, 0.0, 1.0]])
 
         b = np.array([[1.0, 0.2, -0.3], [0.2, 1.0, 0.0], [-0.3, 0.0, 1.0]])
         c = np.array([1, 1, 1])
@@ -35,7 +35,7 @@ class TestMatmul(unittest.TestCase):
         assert np.allclose(a, [0.9, 1.2, 0.7])
 
         a = np.array([1.0, 1.0, 1.0])
-        matmul(b, test_Ex.dm, a, 3, 3, 1, 3, 3)
+        matmul(b, test_Ex['dm'], a, 3, 3, 1, 3, 3)
 
         self.assertTrue(
             abs(b[0, 0] - 0.9) < EPS

@@ -1,4 +1,4 @@
-# environment.yml: Mandatory dependencies only.
+# environment['y']ml: Mandatory dependencies only.
 channels:
 - conda-forge
 - nodefaults

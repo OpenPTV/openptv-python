@@ -28,14 +28,14 @@ class TestMultimedRnlay(unittest.TestCase):
 
     def test_multimed_r_nlay(self):
         """Test the non-recursive version of multimed_r_nlay."""
-        pos = np.array([self.cal.ext_par.x0, self.cal.ext_par.y0, 0.0])
+        pos = np.array([self.cal.ext_par['x0'], self.cal.ext_par['y0'], 0.0])
         tmp = multimed_r_nlay(self.cal, self.cpar.mm, pos)
         self.assertAlmostEqual(tmp, 1.0)
 
         self.cal = init_mmlut(self.vpar, self.cpar, self.cal)
 
         # print("finished with init_mmlut \n")
-        # print(self.cal.mmlut.nr, self.cal.mmlut.nz, self.cal.mmlut.rw)
+        # print(self.cal.mmlut['nr'], self.cal.mmlut.nz, self.cal.mmlut.rw)
 
         # Set up input position and expected output values
         pos = np.array([1.23, 1.23, 1.23])
@@ -47,8 +47,8 @@ class TestMultimedRnlay(unittest.TestCase):
         # print(f"radial shift is {radial_shift}")
 
         # /* if radial_shift == 1.0, this degenerates to Xq = X, Yq = Y  */
-        # Xq = self.cal.ext_par.x0 + (pos[0] - self.cal.ext_par.x0) * radial_shift
-        # Yq = self.cal.ext_par.y0 + (pos[1] - self.cal.ext_par.y0) * radial_shift
+        # Xq = self.cal.ext_par['x0'] + (pos[0] - self.cal.ext_par['x0']) * radial_shift
+        # Yq = self.cal.ext_par['y0'] + (pos[1] - self.cal.ext_par['y0']) * radial_shift
 
         # print("\n Xq = %f, Yq = %f \n" % (Xq, Yq));
 

@@ -23,7 +23,7 @@ from .constants import (
 from .imgcoord import img_coord
 from .orientation import point_position
 from .parameters import ControlPar, SequencePar, TrackPar, VolumePar
-from .tracking_frame_buf import Frame, Pathinfo, Target
+from .tracking_frame_buf import Frame, Pathinfo
 from .tracking_run import TrackingRun
 from .trafo import dist_to_flat, metric_to_pixel, pixel_to_metric
 from .vec_utils import vec_copy, vec_diff_norm, vec_subt
@@ -54,7 +54,7 @@ Foundpix_dtype = np.dtype([
 ])
 
 # Create an instance of the recarray
-#  foundpix = np.recarray((1,), dtype=Foundpix_dtype)
+#  foundpix = np.ndarray((1,), dtype=Foundpix_dtype)
 
 # Initialize the recarray with the values from the class
 # foundpix['ftnr'] = TR_UNUSED
@@ -96,7 +96,7 @@ def copy_foundpix_array(dest: np.ndarray, src: np.ndarray, arr_len: int, num_cam
     return None
 
 def register_closest_neighbs(
-    targets: List[Target],
+    targets: np.ndarray,
     num_targets: int,
     cam: int,
     cent_x: float,
@@ -294,7 +294,7 @@ def angle_acc(
 
 
 def candsearch_in_pix(
-    next_frame: List[Target],
+    next_frame: np.ndarray,
     num_targets: int,
     cent_x: float,
     cent_y: float,
@@ -378,7 +378,7 @@ def candsearch_in_pix(
 
 
 def candsearch_in_pix_rest(
-    next_frame: List[Target],
+    next_frame: np.ndarray,
     num_targets: int,
     cent_x: float,
     cent_y: float,
@@ -609,7 +609,7 @@ def sorted_candidates_in_volume(
     # points = [Foundpix() for _ in range(frm.num_cams * MAX_CANDS)]
     points = np.array(
         [(TR_UNUSED, 0, [0]*TR_MAX_CAMS)]*(frm.num_cams*MAX_CANDS),
-        dtype=Foundpix_dtype).view(np.recarray)
+        dtype=Foundpix_dtype)
     reset_foundpix_array(points, frm.num_cams * MAX_CANDS, frm.num_cams)
 
     # Search limits in image space
@@ -638,7 +638,7 @@ def sorted_candidates_in_volume(
         # points[-1] = np.ndarray((1,), dtype = Foundpix_dtype)
         # points[-1].ftnr = TR_UNUSED
     else:
-        points = np.array([(TR_UNUSED, 0, [0]*TR_MAX_CAMS)], dtype = Foundpix_dtype).view(np.recarray)
+        points = np.array([(TR_UNUSED, 0, [0]*TR_MAX_CAMS)], dtype = Foundpix_dtype)
 
     return points
 
@@ -732,14 +732,14 @@ def assess_new_position(
 #     ref_targets = frm.targets
 
 #     for cam in range(frm.num_cams):
-#         ref_corres.p[cam] = CORRES_NONE
+#         ref_corres['p'][cam] = CORRES_NONE
 
 #         # We always take the 1st candidate, apparently. Why did we fetch 4?
 #         if cand_inds[cam][0] != PT_UNUSED:
 #             _ix = cand_inds[cam][0]
 #             ref_targets[cam][_ix].tnr = frm.num_parts
-#             ref_corres.p[cam] = _ix
-#             ref_corres.nr = frm.num_parts
+#             ref_corres['p'][cam] = _ix
+#             ref_corres['nr'] = frm.num_parts
 
 #     frm.correspond.append(ref_corres)
 #     frm.num_parts += 1
@@ -760,8 +760,8 @@ def add_particle(frm: Frame, pos: np.ndarray, cand_inds: np.ndarray) -> None:
     else:
         ref_path_inf = Pathinfo()
         frm.path_info.append(ref_path_inf)
-        frm.correspond = np.resize(frm.correspond, frm.correspond.shape[0] + 1).view(np.recarray)
-        ref_corres = frm.correspond.view(np.recarray)
+        frm.correspond = np.resize(frm.correspond, frm.correspond.shape[0] + 1)
+        ref_corres = frm.correspond
 
     ref_path_inf.x = vec_copy(pos)
     ref_path_inf.reset_links()
@@ -769,14 +769,14 @@ def add_particle(frm: Frame, pos: np.ndarray, cand_inds: np.ndarray) -> None:
     ref_targets = frm.targets
 
     for cam in range(frm.num_cams):
-        ref_corres.p[cam] = CORRES_NONE
+        ref_corres['p'][cam] = CORRES_NONE
 
         # We always take the 1st candidate, apparently. Why did we fetch 4?
         if cand_inds[cam][0] != PT_UNUSED:
             _ix = cand_inds[cam][0]
             ref_targets[cam][_ix].tnr = num_parts
-            ref_corres.p[cam] = _ix
-            ref_corres.nr = num_parts
+            ref_corres['p'][cam] = _ix
+            ref_corres['nr'] = num_parts
 
     frm.num_parts += 1
 
@@ -854,10 +854,10 @@ def trackcorr_c_loop(run_info, step):
         else:
             X[2] = vec_copy(X[1])
             for j in range(fb.num_cams):
-                if curr_corres.p[j] == CORRES_NONE:
+                if curr_corres['p'][j] == CORRES_NONE:
                     v1[j] = point_to_pixel(X[2], cal[j], cpar)
                 else:
-                    _ix = curr_corres.p[j]
+                    _ix = curr_corres['p'][j]
                     v1[j] = np.r_[curr_targets[j][_ix].x, curr_targets[j][_ix].y]
                     # print(f"v1[{j}], {v1[j]}")
 

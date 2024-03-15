@@ -34,7 +34,7 @@ def flat_image_coord(
     # This block calculate 3D position in an imaginary air-filled space,
     # i.e. where the point will have been seen in the absence of refractive
     # layers between it and the camera.
-    pos_t, cross_p, cross_c, cal_t.ext_par.z0 = trans_cam_point(
+    pos_t, cross_p, cross_c, cal_t.ext_par['z0'] = trans_cam_point(
         cal.ext_par, mm, cal.glass_par, orig_pos
     )
 
@@ -48,15 +48,15 @@ def flat_image_coord(
     pos_t = np.r_[x_t, y_t, pos_t[2]]
     pos = back_trans_point(pos_t, mm, cal.glass_par, cross_p, cross_c)
 
-    dm = cal.ext_par.dm
-    origin = np.r_[cal.ext_par.x0, cal.ext_par.y0, cal.ext_par.z0]
+    dm = cal.ext_par['dm']
+    origin = np.r_[cal.ext_par['x0'], cal.ext_par['y0'], cal.ext_par['z0']]
 
     deno = np.dot(dm[:,2], (pos - origin))
     if deno == 0:
         deno = 1
 
-    x = (-cal.int_par.cc * np.dot(dm[:, 0], (pos - origin)) / deno)
-    y = (-cal.int_par.cc * np.dot(dm[:, 1], (pos - origin)) / deno)
+    x = (-cal.int_par['cc'] * np.dot(dm[:, 0], (pos - origin)) / deno)
+    y = (-cal.int_par['cc'] * np.dot(dm[:, 1], (pos - origin)) / deno)
 
     return x, y
 

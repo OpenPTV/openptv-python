@@ -320,7 +320,7 @@ class TestSort(unittest.TestCase):
         num_cams = 2
 
         one_element = np.array([(TR_UNUSED,0,[-999]*TR_MAX_CAMS)],dtype=Foundpix_dtype)
-        dest = np.tile(one_element, num_cams * MAX_CANDS).view(np.recarray)
+        dest = np.tile(one_element, num_cams * MAX_CANDS)
 
 
         reset_foundpix_array(dest, arr_len, num_cams)
@@ -427,12 +427,12 @@ class TestSortCandidatesByFreq(unittest.TestCase):
     def test_sort_candidates_by_freq(self):
         """Test the sort_candidates_by_freq function."""
         src = [(1, 0, [1, 0, 0, 0]), (2, 0, [1, 1, 0, 0])]
-        src = np.array(src, dtype=Foundpix_dtype).view(np.recarray)
+        src = np.array(src, dtype=Foundpix_dtype)
 
         num_cams = 2
 
         one_element = np.array([(TR_UNUSED,0,[0]*TR_MAX_CAMS)],dtype=Foundpix_dtype)
-        dest = np.tile(one_element, num_cams * MAX_CANDS).view(np.recarray)
+        dest = np.tile(one_element, num_cams * MAX_CANDS)
 
         # sortwhatfound freaks out if the array is not reset before
         # reset_foundpix_array(dest, 2, 2)

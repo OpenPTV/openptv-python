@@ -27,8 +27,9 @@ n_tupel_dtype = np.dtype([
     ("corr", np.float64)
 ])
 
+n_tupel = np.array([(TR_UNUSED, TR_UNUSED, TR_UNUSED, TR_UNUSED, 0.0)], dtype=n_tupel_dtype)
 
-def quicksort_n_tupel(arr: np.recarray) -> np.recarray:
+def quicksort_n_tupel(arr: np.ndarray) -> np.ndarray:
     """
     Quicksorts a list of n_tupel instances based on the corr attribute.
 
@@ -43,8 +44,7 @@ def quicksort_n_tupel(arr: np.recarray) -> np.recarray:
       A list of n_tupel instances, sorted by the corr attribute.
     """
     # inline sorting
-    arr.sort(order="corr")
-    return arr
+    return np.sort(arr, order = 'corr')
 
 
 
@@ -57,10 +57,10 @@ Corres_dtype = np.dtype([
 
 
     # def __eq__(self, other):
-    #     return self.nr == other.nr and np.all(self.p == other.p)
+    #     return self['nr'] == other['nr'] and np.all(self['p'] == other['p'])
 
 
-def compare_corres(c1: np.recarray, c2: np.recarray) -> bool:
+def compare_corres(c1: np.ndarray, c2: np.ndarray) -> bool:
     """
     Compare two Corres instances.
 
@@ -76,66 +76,80 @@ def compare_corres(c1: np.recarray, c2: np.recarray) -> bool:
     return (c1 == c2).all()
 
 
-@dataclass
-class Target:
-    """Target structure for tracking."""
 
-    pnr: int = PT_UNUSED  # target number
-    x: float = 0.0  # pixel position
-    y: float = 0.0  # pixel position
-    n: int = 0  # number of pixels
-    nx: int = 0  # in x
-    ny: int = 0  # in y
-    sumg: int = 0  # sum of grey values
-    tnr: int = -1  # used in tracking
+Target_dtype = np.dtype([
+    ("pnr", np.int32), # PT_UNUSED
+    ("x", np.float64),
+    ("y", np.float64),
+    ("n", np.int32),
+    ("nx", np.int32),
+    ("ny", np.int32),
+    ("sumg", np.int32),
+    ("tnr", np.int32) # TR_UNUSED
+    ])
 
-    def set_pos(self, pos: Tuple[float, float]) -> None:
-        """Set target position."""
-        self.x, self.y = pos
+Target = np.array([(PT_UNUSED, 0., 0., 0, 0, 0, 0, TR_UNUSED)], dtype=Target_dtype)
 
-    def set_pnr(self, pnr):
-        """Set target number."""
-        self.pnr = pnr
+# @dataclass
+# class Target:
+#     """Target structure for tracking."""
 
-    def set_pixel_counts(self, n, nx, ny):
-        """Set number of pixels and number of pixels in x and y."""
-        self.n = n
-        self.nx = nx
-        self.ny = ny
+#     pnr: int = PT_UNUSED  # target number
+#     x: float = 0.0  # pixel position
+#     y: float = 0.0  # pixel position
+#     n: int = 0  # number of pixels
+#     nx: int = 0  # in x
+#     ny: int = 0  # in y
+#     sumg: int = 0  # sum of grey values
+#     tnr: int = -1  # used in tracking
 
-    def set_sum_grey_value(self, sumg):
-        """Set sum of grey values."""
-        self.sumg = sumg
+# def set_pos(target: np.ndarray, pos: Tuple[float, float]) -> np.ndarray:
+#     """Set target position."""
+#     target['x'], target['y'] = pos
 
-    def sum_grey_value(self):
-        """Return sum of grey values."""
-        return self.sumg
+# def set_pnr(target: np.ndarray, pnr: int) -> np.ndarray:
+#     """Set target number."""
+#     target['pnr'] = pnr
 
-    def pos(self):
-        """Return target position."""
-        # return Coord2d(self.x, self.y)
-        return (self.x, self.y)
+# def set_pixel_counts(self, n, nx, ny):
+#     """Set number of pixels and number of pixels in x and y."""
+#     self.n = n
+#     self.nx = nx
+#     self.ny = ny
 
-    def count_pixels(self):
-        """Return number of pixels."""
-        return (self.n, self.nx, self.ny)
+# def set_sum_grey_value(self, sumg):
+#     """Set sum of grey values."""
+#     self.sumg = sumg
 
-    def __eq__(self, __value) -> bool:
-        return (
-            self.pnr == __value.pnr  # type: ignore
-            and self.x == __value.x  # type: ignore
-            and self.y == __value.y  # type: ignore
-            and self.n == __value.n  # type: ignore
-            and self.nx == __value.nx  # type: ignore
-            and self.ny == __value.ny  # type: ignore
-            and self.sumg == __value.sumg  # type: ignore
-            and self.tnr == __value.tnr  # type: ignore
-        )
+# def sum_grey_value(self):
+#     """Return sum of grey values."""
+#     return self.sumg
+
+# def pos(target: np.ndarray) -> Tuple[float, float]:
+#     """Return target position."""
+#     # return Coord2d(self.x, self.y)
+#     return target['x'], target['y']
+
+# def count_pixels(self):
+#     """Return number of pixels."""
+#     return (self.n, self.nx, self.ny)
+
+#     def __eq__(self, __value) -> bool:
+#         return (
+#             self['pnr'] == __value['pnr']  # type: ignore
+#             and self.x == __value.x  # type: ignore
+#             and self.y == __value.y  # type: ignore
+#             and self.n == __value.n  # type: ignore
+#             and self.nx == __value.nx  # type: ignore
+#             and self.ny == __value.ny  # type: ignore
+#             and self.sumg == __value.sumg  # type: ignore
+#             and self.tnr == __value.tnr  # type: ignore
+#         )
 
 
-def sort_target_y(targets: List[Target]) -> List[Target]:
+def sort_target_y(targets: np.ndarray) -> np.ndarray:
     """Sort targets by y coordinate."""
-    return sorted(targets, key=lambda t: t.y)
+    return np.sort(targets, order='y')
 
 # class TargetArray(list):
 #     """Target array class."""
@@ -164,10 +178,8 @@ def sort_target_y(targets: List[Target]) -> List[Target]:
 #         return len(self)
 
 
-def read_targets(file_base: str, frame_num: int) -> List[Target]:
+def read_targets(file_base: str, frame_num: int) -> np.ndarray:
     """Read targets from a file."""
-    buffer = []
-
     # # if file_base has an extension, remove it
     # file_base = file_base.split(".")[0]
 
@@ -183,25 +195,24 @@ def read_targets(file_base: str, frame_num: int) -> List[Target]:
     try:
         with open(filename, "r", encoding="utf-8") as file:
             num_targets = int(file.readline().strip())
+            # buffer = np.empty((num_targets), dtype=Target_dtype)
+            buffer = np.tile(Target, num_targets)
 
-            for _ in range(num_targets):
+            for n in range(num_targets):
                 line = file.readline().strip().split()
 
                 if len(line) != 8:
                     raise ValueError(f"Bad format for file: {filename}")
 
-                targ = Target(
-                    pnr=int(line[0]),
-                    x=float(line[1]),
-                    y=float(line[2]),
-                    n=int(line[3]),
-                    nx=int(line[4]),
-                    ny=int(line[5]),
-                    sumg=int(line[6]),
-                    tnr=int(line[7]),
-                )
+                buffer[n]['pnr'] = int(line[0])
+                buffer[n]['x'] = float(line[1])
+                buffer[n]['y'] = float(line[2])
+                buffer[n]['n'] = int(line[3])
+                buffer[n]['nx'] = int(line[4])
+                buffer[n]['ny'] = int(line[5])
+                buffer[n]['sumg'] = int(line[6])
+                buffer[n]['tnr'] = int(line[7])
 
-                buffer.append(targ)
 
     except IOError as err:
         print(f"Can't open ascii file: {filename}")
@@ -212,7 +223,7 @@ def read_targets(file_base: str, frame_num: int) -> List[Target]:
 
 
 def write_targets(
-    targets: List[Target], num_targets: int, file_base: str, frame_num: int) -> bool:
+    targets: np.ndarray, num_targets: int, file_base: str, frame_num: int) -> bool:
     """Write targets to a file."""
     success = False
 
@@ -229,9 +240,10 @@ def write_targets(
 
     try:
         # Convert targets to a 2D numpy array
-        target_arr = np.array(
-            [(t.pnr, t.x, t.y, t.n, t.nx, t.ny, t.sumg, t.tnr) for t in targets]
-        )
+        # target_arr = np.array(
+        #     [(t['pnr'], t['x'], t['y'], t['n'], t['nx'], t['ny'], t['sumg'], t.tnr) for t in targets]
+        # )
+        target_arr = np.array(targets.tolist())
         # Save the target array to file using savetxt
         np.savetxt(
             file_name,
@@ -247,18 +259,18 @@ def write_targets(
     return success
 
 
-def compare_targets(t1: Target, t2: Target):
-    """Check that target t1 is equal to target t2, i.e., all their fields are equal.
+# def compare_targets(t1: Target, t2: Target):
+#     """Check that target t1 is equal to target t2, i.e., all their fields are equal.
 
-    Arguments:
-    ---------
-    t1, t2 (tuple): the target structures to compare.
+#     Arguments:
+#     ---------
+#     t1, t2 (tuple): the target structures to compare.
 
-    Returns
-    -------
-    bool: True if all fields are equal, False otherwise.
-    """
-    return t1 == t2
+#     Returns
+#     -------
+#     bool: True if all fields are equal, False otherwise.
+#     """
+#     return t1 == t2
 
 
 @dataclass
@@ -321,11 +333,15 @@ class Frame:
         """
         self.path_info = [Pathinfo() for _ in range(max_targets)]
 
-        self.correspond = np.recarray((max_targets), dtype=Corres_dtype)
-        self.correspond.p = TR_UNUSED
-        self.correspond.nr = 0
+        self.correspond = np.ndarray((max_targets), dtype=Corres_dtype)
+        self.correspond['p'] = TR_UNUSED
+        self.correspond['nr'] = 0
 
-        self.targets = [[Target() for _ in range(max_targets)] for _ in range(num_cams)]
+        # self.targets = [[Target() for _ in range(max_targets)] for _ in range(num_cams)]
+
+        # self.targets = np.empty((num_cams, max_targets), dtype=Target_dtype)
+        self.targets = np.tile(Target, (num_cams, max_targets))
+
         # self.targets = [[] for _ in range(num_cams)]
         self.num_targets = [0] * num_cams
 
@@ -428,7 +444,7 @@ class Frame:
         """
         pos2d = np.empty((self.num_parts, 2))
         for pt in range(self.num_parts):
-            tix = self.correspond[pt].p[cam]
+            tix = self.correspond[pt]['p'][cam]
 
             if tix == CORRES_NONE:
                 pos2d[pt] = np.nan
@@ -695,7 +711,7 @@ def read_path_frame(
     linkage_file_base: str,
     prio_file_base: str,
     frame_num: int,
-) -> Tuple[np.recarray, List[Pathinfo]]: #List[Corres]
+) -> Tuple[np.ndarray, List[Pathinfo]]: #List[Corres]
     """Read a rt_is frames from the disk.
 
         /* Reads rt_is files. these files contain both the path info and the
@@ -725,14 +741,14 @@ def read_path_frame(
         filein = open(fname, "r", encoding="utf-8")
     except IOError:
         print(f"Can't open ascii file: {fname}")
-        return np.recarray(0, dtype=Corres_dtype), []
+        return np.ndarray(0, dtype=Corres_dtype), []
 
     # we do not need number of particles, reading till EOF
     n_particles = int(filein.readline())
     # print(f"Reading {n_particles} particles from {fname}")
     # cor_buf = [Corres() for _ in range(n_particles)] # we do not want empty lists
 
-    cor_buf = np.recarray((n_particles), dtype=Corres_dtype) # we do not want empty lists
+    cor_buf = np.ndarray((n_particles), dtype=Corres_dtype) # we do not want empty lists
 
     path_buf = [Pathinfo() for _ in range(n_particles)]
 
@@ -742,7 +758,7 @@ def read_path_frame(
             linkagein = open(fname, "r", encoding="utf-8")
         except IOError:
             print(f"Can't open linkage file: {fname}")
-            return np.recarray(0, dtype=Corres_dtype), []
+            return np.ndarray(0, dtype=Corres_dtype), []
 
         linkagein.readline()
     else:
@@ -754,7 +770,7 @@ def read_path_frame(
             prioin = open(fname, "r", encoding="utf-8")
         except IOError:
             print(f"Can't open prio file: {fname}")
-            return np.recarray(0, dtype=Corres_dtype), []
+            return np.ndarray(0, dtype=Corres_dtype), []
 
         prioin.readline()
     else:
@@ -786,11 +802,11 @@ def read_path_frame(
         path_buf[targets].linkdecis = [-999] * POSI
 
         vals = np.fromstring(line, dtype=float, sep=" ")
-        cor_buf[targets].nr = targets + 1
-        cor_buf[targets].p = vals[-4:].astype(int)
+        cor_buf[targets]['nr'] = targets + 1
+        cor_buf[targets]['p'] = vals[-4:].astype(int)
         path_buf[targets].x = vals[1:-4]
 
-        # print(cor_buf[targets].nr, cor_buf[targets].p, path_buf[targets].x)
+        # print(cor_buf[targets]['nr'], cor_buf[targets]['p'], path_buf[targets].x)
 
         targets += 1
 
@@ -804,7 +820,7 @@ def read_path_frame(
 
 
 def write_path_frame(
-    cor_buf: np.recarray, #List[Corres],
+    cor_buf: np.ndarray, #List[Corres],
     path_buf: List[Pathinfo],
     num_parts: int,
     corres_file_base: str,
@@ -859,8 +875,8 @@ def write_path_frame(
             corres_file.write(
                 f"{pix + 1} {path_buf[pix].x[0]:.3f} "
                 f"{path_buf[pix].x[1]:.3f} {path_buf[pix].x[2]:.3f} "
-                f"{cor_buf[pix].p[0]} {cor_buf[pix].p[1]} "
-                f"{cor_buf[pix].p[2]} {cor_buf[pix].p[3]}\n"
+                f"{cor_buf[pix]['p'][0]} {cor_buf[pix]['p'][1]} "
+                f"{cor_buf[pix]['p'][2]} {cor_buf[pix]['p'][3]}\n"
             )
 
             if prio_file_base is not None:
@@ -884,12 +900,12 @@ def write_path_frame(
 
 
 def match_coords(
-    targs: List[Target],
+    targs: np.ndarray,
     cpar: ControlPar,
     cal: Calibration,
     tol: float = 1e-5,
     reset_numbers: bool = False,
-) -> np.recarray:
+) -> np.ndarray:
     """Match coordinates from all cameras into a single block.
 
     replaces MatchedCoords class in Cython
@@ -904,16 +920,16 @@ def match_coords(
     is a low priority.
 
     """
-    matched_coords = np.recarray(len(targs), dtype=Coord2d_dtype)
+    matched_coords = np.ndarray(len(targs), dtype=Coord2d_dtype)
 
     for tnum, targ in enumerate(targs):
         # targ = targs[tnum]
         if reset_numbers:
-            targ.pnr = tnum
+            targ['pnr'] = tnum
 
-        x, y = pixel_to_metric(targ.x, targ.y, cpar)
-        matched_coords[tnum].x, matched_coords[tnum].y = dist_to_flat(x, y, cal, tol)
-        matched_coords[tnum].pnr = targ.pnr
+        x, y = pixel_to_metric(targ['x'], targ['y'], cpar)
+        matched_coords[tnum]['x'], matched_coords[tnum]['y'] = dist_to_flat(x, y, cal, tol)
+        matched_coords[tnum]['pnr'] = targ['pnr']
 
     matched_coords.sort(order='x')
 
@@ -921,7 +937,7 @@ def match_coords(
 
 
 def matched_coords_as_arrays(
-    matched_coords: np.recarray, #Coord2d
+    matched_coords: np.ndarray, #Coord2d
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Return the data associated with the object (the matched coordinates.
@@ -940,12 +956,12 @@ def matched_coords_as_arrays(
     for pt, mc in enumerate(matched_coords):
         pos[pt, 0] = mc.x
         pos[pt, 1] = mc.y
-        pnr[pt] = mc.pnr
+        pnr[pt] = mc['pnr']
 
     return pos, pnr
 
 
-def get_by_pnrs(matched_coords: List[np.recarray], pnrs: np.ndarray) -> np.ndarray: #Coord2d
+def get_by_pnrs(matched_coords: List[np.ndarray], pnrs: np.ndarray) -> np.ndarray: #Coord2d
     """
     Return the flat positions of points whose pnr property is given, as an.
 
@@ -954,10 +970,10 @@ def get_by_pnrs(matched_coords: List[np.recarray], pnrs: np.ndarray) -> np.ndarr
     """
     pos = np.full((len(pnrs), 2), COORD_UNUSED, dtype=np.float64)
     for pt in matched_coords:
-        which = np.flatnonzero(pt.pnr == pnrs)
+        which = np.flatnonzero(pt['pnr'] == pnrs)
         if len(which) > 0:
             which = which[0]
-            pos[which, 0] = pt.x
-            pos[which, 1] = pt.y
+            pos[which, 0] = pt['x']
+            pos[which, 1] = pt['y']
 
     return pos

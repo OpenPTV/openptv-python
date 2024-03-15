@@ -126,7 +126,7 @@ class Tracker:
                            # parameter structs.
 
 
-def _correspondences(img_pts: List[List[Target]],
+def _correspondences(img_pts: List[np.ndarray],
                      flat_coords: List[Coord2d],
                      cals: List[Calibration],
                      vparam: VolumePar,
@@ -209,11 +209,11 @@ def _correspondences(img_pts: List[List[Target]],
         # intermediary that's x-sorted.
         for cam in range(num_cams):
             for pt in range(num_points):
-                geo_id = corresp_buf[pt + last_count].p[cam]
+                geo_id = corresp_buf[pt + last_count]['p'][cam]
                 if geo_id < 0:
                     continue
 
-                p1 = corrected[cam][geo_id].pnr
+                p1 = corrected[cam][geo_id]['pnr']
                 clique_ids[cam, pt] = p1
 
                 if p1 > -1:
@@ -304,7 +304,7 @@ def py_detection_proc_c(list_of_images, cpar, tpar, cals):
         else:
             targs = target_recognition(img, tpar, i_cam, cpar)
 
-        targs.sort(key=lambda t: t.y)
+        targs.sort(key=lambda t: t['y'])
         detections.append(targs)
         mc = MatchedCoords(targs, cpar, cals[i_cam])
         corrected.append(mc)
@@ -445,7 +445,7 @@ def py_sequence_loop(
                 high_pass = simple_highpass(img)
                 targs = target_recognition(high_pass, tpar, i_cam, cpar)
 
-            targs.sort(key=lambda t: t.y)
+            targs.sort(key=lambda t: t['y'])
 
             detections.append(targs)
             masked_coords = MatchedCoords(targs, cpar, cals[i_cam])
@@ -600,9 +600,9 @@ def py_multiplanecalibration(n_cams: int):
             "shear",
         ]
         op_names = [
-            op.cc,
-            op.xh,
-            op.yh,
+            op['cc'],
+            op['xh'],
+            op['yh'],
             op.k1,
             op.k2,
             op.k3,
@@ -664,12 +664,12 @@ def save_point_sets(i_cam):
     detected, known = [], []
     targs = sorted_targs[i_cam]
     for i, t in enumerate(targs):
-        if t.pnr() != -999:
+        if t['pnr']() != -999:
             detected.append(t.pos())
             known.append(cal_points["pos"][i])
     nums = np.arange(len(detected))
     # for pnr in nums:
-    #     print(targs[pnr].pnr())
+    #     print(targs[pnr]['pnr']())
     #     print(targs[pnr].pos())
     #   detected[pnr] = targs[pnr].pos()
 

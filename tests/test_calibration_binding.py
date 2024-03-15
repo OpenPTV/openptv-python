@@ -53,7 +53,7 @@ class TestCalibration(unittest.TestCase):
         ext['phi'] = 4.0
         ext['kappa'] = 6.0
 
-        In = np.array((3.0, 9.0, 15.0),dtype=Interior.dtype).view(np.recarray)
+        In = np.array((3.0, 9.0, 15.0),dtype=Interior.dtype)
 
         G = np.array(glass)
 
@@ -180,11 +180,11 @@ class TestCompareAddpar(unittest.TestCase):
 
     def test_compare_addpar(self):
         """Test compare_addpar() function."""
-        a1 = np.array((1, 2, 3, 4, 5, 6, 7),dtype=ap_52.dtype).view(np.recarray)
-        a2 = np.array((1, 2, 3, 4, 5, 6, 7),dtype=ap_52.dtype).view(np.recarray)
+        a1 = np.array((1, 2, 3, 4, 5, 6, 7),dtype=ap_52.dtype)
+        a2 = np.array((1, 2, 3, 4, 5, 6, 7),dtype=ap_52.dtype)
         self.assertTrue(compare_addpar(a1, a2))
 
-        a3 = np.array((1, 2, 3, 4, 6, 6, 7),dtype=ap_52.dtype).view(np.recarray)
+        a3 = np.array((1, 2, 3, 4, 6, 6, 7),dtype=ap_52.dtype)
         self.assertFalse(compare_addpar(a1, a3))
 
 

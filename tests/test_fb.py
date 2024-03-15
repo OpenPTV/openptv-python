@@ -110,7 +110,7 @@ class TestReadPathFrame(unittest.TestCase):
         Reads a path frame without links and checks the correctness of corres and path information.
         Then, reads a path frame with links and checks again.
         """
-        cor_buf = np.recarray((80,), dtype=Corres_dtype)
+        cor_buf = np.ndarray((80,), dtype=Corres_dtype)
         path_buf = [Pathinfo()] * 80
 
         # Correct values for particle 3
@@ -126,9 +126,9 @@ class TestReadPathFrame(unittest.TestCase):
         }
         path_correct = Pathinfo(**tmp)
 
-        c_correct = np.recarray(1, dtype=Corres_dtype)
-        c_correct.nr = 3
-        c_correct.p = np.array([96, 66, 26, 26])
+        c_correct = np.ndarray(1, dtype=Corres_dtype)
+        c_correct['nr'] = 3
+        c_correct['p'] = np.array([96, 66, 26, 26])
 
 
         file_base = "tests/testing_fodder/rt_is"
@@ -141,13 +141,13 @@ class TestReadPathFrame(unittest.TestCase):
         targets_read = len(cor_buf)
 
         # for row in cor_buf:
-        #     print(row.nr, row.p)
+        #     print(row['nr'], row['p'])
 
         self.assertEqual(targets_read, 80)
 
         self.assertTrue(
             compare_corres(cor_buf[2], c_correct),
-            f"Got corres: {cor_buf[2].nr}, {cor_buf[2].p}",
+            f"Got corres: {cor_buf[2]['nr']}, {cor_buf[2]['p']}",
         )
         self.assertTrue(compare_path_info(path_buf[2], path_correct))
 
@@ -163,7 +163,7 @@ class TestReadPathFrame(unittest.TestCase):
         self.assertEqual(targets_read, 80)
         self.assertTrue(
             compare_corres(cor_buf[2], c_correct),
-            f"Got corres: {cor_buf[2].nr}, {cor_buf[2].p}",
+            f"Got corres: {cor_buf[2]['nr']}, {cor_buf[2]['p']}",
         )
         self.assertTrue(compare_path_info(path_buf[2], path_correct))
 

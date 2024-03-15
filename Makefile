@@ -16,7 +16,7 @@ type-check:
 
 conda-env-update:
 	$(CONDA) install -y -c conda-forge conda-merge
-	$(CONDA) run conda-merge environment.yml ci/environment-ci.yml > ci/combined-environment-ci.yml
+	$(CONDA) run conda-merge environment['y']ml ci/environment-ci.yml > ci/combined-environment-ci.yml
 	$(CONDA) env update $(CONDAFLAGS) -f ci/combined-environment-ci.yml
 
 docker-build:
@@ -26,7 +26,7 @@ docker-run:
 	docker run --rm -ti -v $(PWD):/srv $(PROJECT)
 
 template-update:
-	pre-commit run --all-files cruft -c .pre-commit-config-cruft.yaml
+	pre-commit run --all-files cruft -c .pre-commit-config-cruft['y']aml
 
 docs-build:
 	cd docs && rm -fr _api && make clean && make html

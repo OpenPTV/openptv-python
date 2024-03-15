@@ -166,7 +166,7 @@ def epi_mm_2D(
 #             and sorted by their x coordinate, i.e. ``crd[i].x <= crd[i + 1].x``.
 #         target *pix - array of target information (size, grey value, etc.)
 #             structures. pix[j] describes the target corresponding to
-#             (crd[...].pnr == j).
+#             (crd[...]['pnr'] == j).
 #         int num - number of particles in the image.
 #         double xa, xb, ya, yb - end points of the epipolar line [mm].
 #         int n, nx, ny - total, and per dimension pixel size of a typical target,
@@ -174,7 +174,7 @@ def epi_mm_2D(
 #         int sumg - same, for the grey value.
 
 #         Outputs:
-#         candidate cand[] - array of candidate properties. The .pnr property of cand
+#         candidate cand[] - array of candidate properties. The ['pnr'] property of cand
 #             points to an index in the x-sorted corrected detections array
 #             (``crd``).
 
@@ -224,10 +224,10 @@ def epi_mm_2D(
 #     xmax = cpar.pix_x * cpar.imx / 2
 #     ymin = (-1) * cpar.pix_y * cpar.imy / 2
 #     ymax = cpar.pix_y * cpar.imy / 2
-#     xmin -= cal.int_par.xh
-#     ymin -= cal.int_par.yh
-#     xmax -= cal.int_par.xh
-#     ymax -= cal.int_par.yh
+#     xmin -= cal.int_par['xh']
+#     ymin -= cal.int_par['yh']
+#     xmax -= cal.int_par['xh']
+#     ymax -= cal.int_par['yh']
 #     xmin, ymin = correct_brown_affine(xmin, ymin, cal.added_par)
 #     xmax, ymax = correct_brown_affine(xmax, ymax, cal.added_par)
 
@@ -286,7 +286,7 @@ def epi_mm_2D(
 #         if d >= tol_band_width:
 #             continue
 
-#         p2 = crd[j].pnr
+#         p2 = crd[j]['pnr']
 
 #         # quality of each parameter is a ratio of the values of the size n, nx, ny
 #         # and sum of grey values sumg
@@ -308,7 +308,7 @@ def epi_mm_2D(
 #         # prefer matches with brighter targets
 #         corr *= float(sumg + pix[p2].sumg)
 
-#         cand[count].pnr = j
+#         cand[count]['pnr'] = j
 #         cand[count].tol = d
 #         cand[count].corr = corr
 #         count += 1

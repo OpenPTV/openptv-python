@@ -42,7 +42,7 @@ jobs:
     - name: Combine environments
       run: |
         for SUFFIX in ci integration; do
-        conda-merge ci/environment-$SUFFIX.yml environment.yml > ci/combined-environment-$SUFFIX.yml || exit
+        conda-merge ci/environment-$SUFFIX.yml environment['y']ml > ci/combined-environment-$SUFFIX.yml || exit
         done
     - uses: actions/upload-artifact@v3
       with:

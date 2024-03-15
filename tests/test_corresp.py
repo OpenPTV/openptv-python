@@ -47,7 +47,7 @@ def read_all_calibration(num_cams: int = 4) -> list[Calibration]:
 
 def correct_frame(
     frm: Frame, calib: list[Calibration], cpar: ControlPar, tol: float
-) -> np.recarray: # num_cams, num_targets
+) -> np.ndarray: # num_cams, num_targets
     """
     Perform the transition from pixel to metric to flat coordinates.
 
@@ -60,8 +60,8 @@ def correct_frame(
     tol - tolerance parameter for iterative flattening phase, see
         trafo.h:correct_brown_affine_exact().
     """
-    corrected = np.recarray((cpar.num_cams,max(frm.num_targets)), dtype=Coord2d_dtype)
-    corrected.pnr = PT_UNUSED
+    corrected = np.ndarray((cpar.num_cams,max(frm.num_targets)), dtype=Coord2d_dtype)
+    corrected['pnr'] = PT_UNUSED
 
     for cam in range(cpar.num_cams):
         row = corrected[cam]
@@ -76,7 +76,7 @@ def correct_frame(
             )
             x, y = dist_to_flat(x, y, calib[cam], tol)
 
-            row[part].pnr = frm.targets[cam][part].pnr
+            row[part]['pnr'] = frm.targets[cam][part]['pnr']
             row[part].x = x
             row[part].y = y
 
@@ -85,7 +85,7 @@ def correct_frame(
         # corrected.append(row)
 
         # transform to arrya
-        # out = np.array(corrected).view(np.recarray)
+        # out = np.array(corrected)
 
     return corrected
 
@@ -114,7 +114,7 @@ def generate_test_set(calib: list[Calibration], cpar: ControlPar) -> Frame:
                     cpt_ix = 15 - cpt_ix  # Avoid symmetric case
 
                 targ = frm.targets[cam][cpt_ix]
-                targ.pnr = cpt_ix
+                targ['pnr'] = cpt_ix
 
                 tmp = np.r_[cpt_vert * 10, cpt_horz * 10, 0]
                 targ.x, targ.y = img_coord(tmp, calib[cam], cpar.mm)
@@ -258,7 +258,7 @@ class TestReadControlPar(unittest.TestCase):
 
         img_pts.append(targs)
         corrected = match_coords(targs, cpar, cal)
-        corrected = np.atleast_2d(corrected).view(np.recarray)
+        corrected = np.atleast_2d(corrected)
 
         # Note that py_correspondences expects List[List(Coord2d)]
         # so we send [img_pts] and [corrected]
@@ -308,9 +308,9 @@ class TestReadControlPar(unittest.TestCase):
             for subcam in range(cam + 1, cpar.num_cams):
                 for part in range(frm.num_targets[cam]):
                     correct_pnr = (
-                        corrected[cam][corr_lists[cam][subcam][part].p1].pnr
+                        corrected[cam][corr_lists[cam][subcam][part].p1]['pnr']
                         if (subcam - cam) % 2 == 0
-                        else 15 - corrected[cam][corr_lists[cam][subcam][part].p1].pnr
+                        else 15 - corrected[cam][corr_lists[cam][subcam][part].p1]['pnr']
                     )
 
                     found_correct_pnr = False
@@ -318,7 +318,7 @@ class TestReadControlPar(unittest.TestCase):
                         if (
                             corrected[subcam][
                                 corr_lists[cam][subcam][part].p2[cand]
-                            ].pnr
+                            ]['pnr']
                             == correct_pnr
                         ):
                             found_correct_pnr = True
@@ -328,7 +328,8 @@ class TestReadControlPar(unittest.TestCase):
 
         # continue to the consistent_pair matching test
         # con = [n_tupel() for _ in range(4 * 16)]
-        con = np.zeros((4 * 16,), dtype=n_tupel_dtype).view(np.recarray)
+        con = np.zeros((4 * 16,), dtype=n_tupel_dtype)
+
         tusage = safely_allocate_target_usage_marks(cpar.num_cams)
 
         # high accept corr bcz of closeness to epipolar lines.
@@ -392,17 +393,17 @@ class TestReadControlPar(unittest.TestCase):
                     if (subcam - cam) % 2 == 0:
                         correct_pnr = corrected[cam][
                             corr_lists[cam][subcam][part].p1
-                        ].pnr
+                        ]['pnr']
                     else:
                         correct_pnr = (
-                            15 - corrected[cam][corr_lists[cam][subcam][part].p1].pnr
+                            15 - corrected[cam][corr_lists[cam][subcam][part].p1]['pnr']
                         )
 
                     for cand in range(MAXCAND):
                         if (
                             corrected[subcam][
                                 corr_lists[cam][subcam][part].p2[cand]
-                            ].pnr
+                            ]['pnr']
                             == correct_pnr
                         ):
                             break
@@ -434,7 +435,7 @@ class TestReadControlPar(unittest.TestCase):
 
         # Allocate the con and tusage arrays.
         # continue to the consistent_pair matching test
-        con = np.zeros((4 * 16,), dtype=n_tupel_dtype).view(np.recarray)
+        con = np.zeros((4 * 16,), dtype=n_tupel_dtype)
         tusage = safely_allocate_target_usage_marks(cpar.num_cams)
 
         # Perform three-camera matching.
@@ -461,7 +462,7 @@ class TestReadControlPar(unittest.TestCase):
         corr_lists = safely_allocate_adjacency_lists(cpar.num_cams, frm.num_targets)
         match_pairs(corr_lists, corrected, frm, vpar, cpar, calib)
 
-        con = np.recarray((4 * 16,), dtype=n_tupel_dtype)
+        con = np.ndarray((4 * 16,), dtype=n_tupel_dtype)
         # there is a good question about this test, not sure I understand
         # why it has to stop at 16 candidates and not 64 ?
 

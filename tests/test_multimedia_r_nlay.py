@@ -21,7 +21,7 @@ class TestMultimedRnlay(unittest.TestCase):
         test_Ex['z0'] = 100.0
 
         test_I = Interior.copy()
-        test_I.cc = 100.0
+        test_I['cc'] = 100.0
         test_G = np.array((0.0001, 0.00001, 1.0))
         test_addp = ap_52.copy() #(0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
         test_cal = Calibration(

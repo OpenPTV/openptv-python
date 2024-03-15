@@ -154,7 +154,7 @@ targs = [Target() for _ in targets]
 for ptx, pt in enumerate(targets):
     targs[ptx].x = pt[0]
     targs[ptx].y = pt[1]
-    targs[ptx].pnr = ptx
+    targs[ptx]['pnr'] = ptx
 
 def added_par_residual(added_par_array, ref_pts, targs, control, cal):
     c = copy.deepcopy(cal)
@@ -162,7 +162,7 @@ def added_par_residual(added_par_array, ref_pts, targs, control, cal):
 
     residual = 0
     for i, t in enumerate(targs):
-        xc, yc = pixel_to_metric(t.x, t.y, control)
+        xc, yc = pixel_to_metric(t['x'], t['y'], control)
         xp, yp = img_coord(ref_pts[i], c, control.mm)
         residual += ((xc - xp)**2 + (yc - yp)**2)
 

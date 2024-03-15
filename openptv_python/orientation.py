@@ -196,7 +196,7 @@ def orient(
     cpar: ControlPar,
     nfix: int,
     fix: np.ndarray,
-    pix: List[Target],
+    pix: np.ndarray,
     flags: OrientPar,
     sigmabeta: np.ndarray,
     dm: float = 0.000001,
@@ -221,7 +221,7 @@ def orient(
         image coordinates corresponding to each point in ``fix``.
         can be obtained from the set of detected 2D points using
         sortgrid(). The points which are associated with fix[] have real
-        pointer (.pnr attribute), others have -999.
+        pointer (['pnr'] attribute), others have -999.
     flags : OrientPar object
         structure of all the flags of the parameters to be (un)changed, read
         from orient.par parameter file using read_orient_par(), defaults
@@ -302,9 +302,9 @@ def orient(
 
     # init identities
     ident = [
-        cal.int_par.cc,
-        cal.int_par.xh,
-        cal.int_par.yh,
+        cal.int_par['cc'],
+        cal.int_par['xh'],
+        cal.int_par['yh'],
         cal.added_par[0],
         cal.added_par[1],
         cal.added_par[2],
@@ -326,7 +326,7 @@ def orient(
         itnum += 1
         n = 0
         for i in range(nfix):
-            if pix[i].pnr != i:  # we need to check this point here
+            if pix[i]['pnr'] != i:  # we need to check this point here
                 continue
 
             if flags.useflag == 1 and i % 2 == 0:
@@ -387,7 +387,7 @@ def orient(
             X[n][:6], X[n + 1][:6] = num_deriv_exterior(cal, cpar, dm, drad, fix[i])
 
             # Num. deriv. of projection coords over sensor distance from PP
-            cal.int_par.cc += dm
+            cal.int_par['cc'] += dm
             cal.update_rotation_matrix()
             xpd, ypd = img_coord(fix[i], cal, cpar.mm)
             X[n][6] = (xpd - xp) / dm
@@ -400,7 +400,7 @@ def orient(
             #     safety_x, safety_y, safety_z = cal.glass_par[0], cal.glass_par[1], cal.glass_par[2]
             #     nGl = cal.glass_par.n / cal.air_par.n
 
-            cal.int_par.cc -= dm
+            cal.int_par['cc'] -= dm
 
             # al += dm
             cal.glass_par[0] += e1[0] * nGl * dm
@@ -450,9 +450,9 @@ def orient(
         for i in range(IDT):
             X[n_obs + i][6 + i] = 1
 
-        y[n_obs + 0] = ident[0] - cal.int_par.cc
-        y[n_obs + 1] = ident[1] - cal.int_par.xh
-        y[n_obs + 2] = ident[2] - cal.int_par.yh
+        y[n_obs + 0] = ident[0] - cal.int_par['cc']
+        y[n_obs + 1] = ident[1] - cal.int_par['xh']
+        y[n_obs + 2] = ident[2] - cal.int_par['yh']
         y[n_obs + 3] = ident[3] - cal.added_par[0]
         y[n_obs + 4] = ident[4] - cal.added_par[1]
         y[n_obs + 5] = ident[5] - cal.added_par[2]
@@ -535,15 +535,15 @@ def orient(
         if not flags.sheflag:
             beta[15] = 0.0
 
-        cal.ext_par.x0 += beta[0]
-        cal.ext_par.y0 += beta[1]
-        cal.ext_par.z0 += beta[2]
-        cal.ext_par.omega += beta[3]
-        cal.ext_par.phi += beta[4]
-        cal.ext_par.kappa += beta[5]
-        cal.int_par.cc += beta[6]
-        cal.int_par.xh += beta[7]
-        cal.int_par.yh += beta[8]
+        cal.ext_par['x0'] += beta[0]
+        cal.ext_par['y0'] += beta[1]
+        cal.ext_par['z0'] += beta[2]
+        cal.ext_par['omega'] += beta[3]
+        cal.ext_par['phi'] += beta[4]
+        cal.ext_par['kappa'] += beta[5]
+        cal.int_par['cc'] += beta[6]
+        cal.int_par['xh'] += beta[7]
+        cal.int_par['yh'] += beta[8]
         cal.added_par[0] += beta[9]
         cal.added_par[1] += beta[10]
         cal.added_par[2] += beta[11]
@@ -618,7 +618,7 @@ def raw_orient(
     cpar: ControlPar,
     nfix: int,
     fix: np.ndarray,
-    pix: List[Target],
+    pix: np.ndarray,
     dm: float = 1e-4,
     drad: float = 1e-4
 ) -> bool:
@@ -685,12 +685,12 @@ def raw_orient(
             if abs(beta[i]) > 0.1:
                 stopflag = False
 
-        cal.ext_par.x0 += beta[0]
-        cal.ext_par.y0 += beta[1]
-        cal.ext_par.z0 += beta[2]
-        cal.ext_par.omega += beta[3]
-        cal.ext_par.phi += beta[4]
-        cal.ext_par.kappa += beta[5]
+        cal.ext_par['x0'] += beta[0]
+        cal.ext_par['y0'] += beta[1]
+        cal.ext_par['z0'] += beta[2]
+        cal.ext_par['omega'] += beta[3]
+        cal.ext_par['phi'] += beta[4]
+        cal.ext_par['kappa'] += beta[5]
 
     if stopflag:
         cal.update_rotation_matrix()
@@ -870,7 +870,7 @@ def full_calibration(
         for ptx, pt in enumerate(img_pts):
             targs[ptx].x = pt[0]
             targs[ptx].y = pt[1]
-            targs[ptx].pnr = ptx
+            targs[ptx]['pnr'] = ptx
     else:
         targs = img_pts
 
@@ -888,7 +888,7 @@ def full_calibration(
 
     for ix, img_pt in enumerate(targs):
         ret[ix] = (residuals[2 * ix], residuals[2 * ix + 1])
-        used[ix] = img_pt.pnr
+        used[ix] = img_pt['pnr']
 
     # free(residuals)
     return ret, used, err_est
@@ -897,10 +897,10 @@ def full_calibration(
 def match_detection_to_ref(
     cal: Calibration,
     ref_pts: np.ndarray,
-    img_pts: List[Target],
+    img_pts: np.ndarray,
     cparam: ControlPar,
     eps: int = 25,
-) -> List[Target]:
+) -> np.ndarray:
     """
     Create a TargetArray where the targets are those for which a point in the.
 

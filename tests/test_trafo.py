@@ -60,7 +60,7 @@ class TestDistFlatRoundTrip(unittest.TestCase):
         iter_eps = 1e-5
 
         cal = Calibration()
-        cal.int_par.xh, cal.int_par.yh, cal.int_par.cc = 1.5, 1.5, 60.0
+        cal.int_par['xh'], cal.int_par['yh'], cal.int_par['cc'] = 1.5, 1.5, 60.0
         cal.added_par = np.array((1e-5, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0),dtype=np.float64)
 
         xdist, ydist = flat_to_dist(x, y, cal)

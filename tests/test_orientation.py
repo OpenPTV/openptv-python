@@ -60,7 +60,7 @@ class Test_Orientation(unittest.TestCase):
         targets = [Target() for _ in range(coords_count)]
 
         for i in range(coords_count):
-            targets[i].pnr = i
+            targets[i]['pnr'] = i
             targets[i].x = xy_img_pts_pixel[i][0]
             targets[i].y = xy_img_pts_pixel[i][1]
 
@@ -78,7 +78,7 @@ class Test_Orientation(unittest.TestCase):
         for i in range(coords_count):
             rand_targ_array[shuffled_indices[i]].x = targets[i].x
             rand_targ_array[shuffled_indices[i]].y = targets[i].y
-            rand_targ_array[shuffled_indices[i]].pnr = targets[i].pnr
+            rand_targ_array[shuffled_indices[i]]['pnr'] = targets[i]['pnr']
 
         # match detection to reference
         matched_target_array = match_detection_to_ref(

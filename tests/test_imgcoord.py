@@ -22,8 +22,8 @@ class TestFlatCenteredCam(unittest.TestCase):
         cal = Calibration(
             ext_par = np.array((0, 0, 40, 0, 0, 0,
                                 [[1, 0, 0], [0, 1, 0], [0, 0, 1]]),
-                               dtype = Exterior.dtype).view(np.recarray),
-            int_par = np.array((0,0,10), dtype = Interior.dtype).view(np.recarray),
+                               dtype = Exterior.dtype),
+            int_par = np.array((0,0,10), dtype = Interior.dtype),
             glass_par=np.array((0., 0., 20.)),
             added_par=ap_52.copy() # (0, 0, 0, 0, 0, 1, 0),
         )

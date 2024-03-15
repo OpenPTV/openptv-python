@@ -20,7 +20,7 @@ class TestReadPathFrame(unittest.TestCase):
         """Tests the read_path_frame() function."""
         # Create a buffer for the corres structures.
         # cor_buf = [Corres() for _ in range(POSI)]
-        cor_buf = np.recarray(POSI, dtype=Corres_dtype)
+        cor_buf = np.ndarray(POSI, dtype=Corres_dtype)
 
         # Create a buffer for the path info structures.
         path_buf = [P() for _ in range(POSI)]
@@ -41,7 +41,7 @@ class TestReadPathFrame(unittest.TestCase):
             path_correct.decis[alt_link] = 0.0
             path_correct.linkdecis[alt_link] = -999
 
-        corres_correct = np.array([(3, [96, 66, 26, 26])], dtype = Corres_dtype).view(np.recarray)
+        corres_correct = np.array([(3, [96, 66, 26, 26])], dtype = Corres_dtype)
 
 
         # The base name of the correspondence file.
@@ -72,7 +72,7 @@ class TestReadPathFrame(unittest.TestCase):
         path_correct.prio = 0
 
         # Create a buffer for the path info structures.
-        cor_buf = np.recarray(POSI, dtype=Corres_dtype)
+        cor_buf = np.ndarray(POSI, dtype=Corres_dtype)
         path_buf = [P() for _ in range(POSI)]
 
         # The base name of the linkage file.
@@ -97,7 +97,7 @@ class TestReadPathFrame(unittest.TestCase):
 
     def test_read_path_frame_chatgpt(self):
         """Tests the read_path_frame() function."""
-        cor_buf = np.recarray(POSI, dtype=Corres_dtype)
+        cor_buf = np.ndarray(POSI, dtype=Corres_dtype)
         path_buf = [P() for _ in range(POSI)]
 
         # Correct values for particle 3
@@ -111,7 +111,7 @@ class TestReadPathFrame(unittest.TestCase):
         )
         path_correct.decis = [0.0] * POSI
         path_correct.linkdecis = [-999] * POSI
-        c_correct = np.array([(3, [96, 66, 26, 26])],dtype=Corres_dtype).view(np.recarray)
+        c_correct = np.array([(3, [96, 66, 26, 26])],dtype=Corres_dtype)
 
 
 
@@ -126,11 +126,11 @@ class TestReadPathFrame(unittest.TestCase):
             compare_corres(cor_buf[2], c_correct),
             "Got corres: %d, [%d %d %d %d]"
             % (
-                cor_buf[2].nr,
-                cor_buf[2].p[0],
-                cor_buf[2].p[1],
-                cor_buf[2].p[2],
-                cor_buf[2].p[3],
+                cor_buf[2]['nr'],
+                cor_buf[2]['p'][0],
+                cor_buf[2]['p'][1],
+                cor_buf[2]['p'][2],
+                cor_buf[2]['p'][3],
             ),
         )
         self.assertTrue(compare_path_info(path_buf[2], path_correct))
@@ -151,11 +151,11 @@ class TestReadPathFrame(unittest.TestCase):
             compare_corres(cor_buf[2], c_correct),
             "Got corres: %d, [%d %d %d %d]"
             % (
-                cor_buf[2].nr,
-                cor_buf[2].p[0],
-                cor_buf[2].p[1],
-                cor_buf[2].p[2],
-                cor_buf[2].p[3],
+                cor_buf[2]['nr'],
+                cor_buf[2]['p'][0],
+                cor_buf[2]['p'][1],
+                cor_buf[2]['p'][2],
+                cor_buf[2]['p'][3],
             ),
         )
         self.assertTrue(compare_path_info(path_buf[2], path_correct))

@@ -21,9 +21,9 @@ class TestCalibrationClass(unittest.TestCase):
     def test_interior_initialization(self):
         """Test interior parameters initialization."""
         intr = self.cal.int_par
-        assert intr.xh == 0.0
-        assert intr.yh == 0.0
-        assert intr.cc == 0.0
+        assert intr['xh'] == 0.0
+        assert intr['yh'] == 0.0
+        assert intr['cc'] == 0.0
 
     def test_glass_initialization(self):
         """Test glass parameters initialization."""
@@ -38,7 +38,7 @@ class TestCalibrationClass(unittest.TestCase):
         """Test mmlut parameters initialization."""
         mml = self.cal.mmlut
         assert np.all(mml.origin == np.zeros(3))
-        assert mml.nr == 0
+        assert mml['nr'] == 0
         assert mml.nz == 0
         assert mml.rw == 0
         assert mml.data.shape == ()
@@ -54,18 +54,18 @@ class TestCalibrationClass(unittest.TestCase):
         assert self.cal.mmlut.dtype == mm_lut.dtype
 
         assert isinstance(self.cal.added_par, np.ndarray)
-        assert isinstance(self.cal.mmlut, np.recarray)
+        assert isinstance(self.cal.mmlut, np.ndarray)
 
     def test_exterior_initialization(self):
         """Test exterior parameters initialization."""
         self.cal.update_rotation_matrix()
-        ext = self.cal.ext_par.view(np.recarray)
-        assert np.allclose(ext.dm, np.identity(3, dtype=np.float64))
-        assert ext.omega == 0.0
-        assert ext.phi == 0.0
-        assert ext.kappa == 0.0
-        assert ext.x0 == 0.0
-        assert ext.y0 == 0.0
+        ext = self.cal.ext_par
+        assert np.allclose(ext['dm'], np.identity(3, dtype=np.float64))
+        assert ext['omega'] == 0.0
+        assert ext['phi'] == 0.0
+        assert ext['kappa'] == 0.0
+        assert ext['x0'] == 0.0
+        assert ext['y0'] == 0.0
 
 
 if __name__ == "__main__":

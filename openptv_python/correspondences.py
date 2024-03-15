@@ -5,7 +5,6 @@ import numpy as np
 
 from .calibration import Calibration
 from .constants import (
-    COORD_UNUSED,
     CORRES_NONE,
     MAX_TARGETS,
     MAXCAND,
@@ -15,95 +14,93 @@ from .constants import (
 from .epi import epi_mm
 from .find_candidate import find_candidate
 from .parameters import ControlPar, VolumePar
-from .tracking_frame_buf import Frame, Target, n_tupel_dtype
-from .trafo import dist_to_flat, pixel_to_metric
+from .tracking_frame_buf import Frame, n_tupel
 
+# class MatchedCoords:
+#     """Keep a block of 2D flat coordinates.
 
-class MatchedCoords:
-    """Keep a block of 2D flat coordinates.add().
+#     each with a "point number", the same
+#     as the number on one ``target`` from the block to which this block is kept
+#     matched. This block is x-sorted.
 
-    each with a "point number", the same
-    as the number on one ``target`` from the block to which this block is kept
-    matched. This block is x-sorted.
+#     NB: the data is not meant to be directly manipulated at this point. The
+#     coord_2d arrays are most useful as intermediate objects created and
+#     manipulated only by other liboptv functions. Although one can imagine a
+#     use case for direct manipulation in Python, it is rare and supporting it
+#     is a low priority.
+#     """
 
-    NB: the data is not meant to be directly manipulated at this point. The
-    coord_2d arrays are most useful as intermediate objects created and
-    manipulated only by other liboptv functions. Although one can imagine a
-    use case for direct manipulation in Python, it is rare and supporting it
-    is a low priority.
-    """
+#     def __init__(self, targs, cpar, cal, tol=0.00001, reset_numbers=True):
+#         """Allocate and initialize the memory.
 
-    def __init__(self, targs, cpar, cal, tol=0.00001, reset_numbers=True):
-        """Allocate and initialize the memory.add().
+#         including coordinate conversion and sorting.
 
-        including coordinate conversion and sorting.
+#         Arguments:
+#         TargetArray targs - the TargetArray to be converted and matched.
+#         ControlParams cpar - parameters of image size etc. for conversion.
+#         Calibration cal - representation of the camera parameters to use in
+#             the flat/distorted transforms.
+#         double tol - optional tolerance for the lens distortion correction
+#             phase, see ``optv.transforms``.
+#         reset_numbers - if True (default) numbers the targets too, in their
+#             current order. This shouldn't be necessary since all TargetArray
+#             creators number the targets, but this gets around cases where they
+#             don't.
+#         """
+#         self._num_pts = len(targs)
+#         self.buf = np.empty(self._num_pts,
+#                             dtype=np.dtype([('x', np.float64), ('y', np.float64), ('pnr', np.int32)]))
 
-        Arguments:
-        TargetArray targs - the TargetArray to be converted and matched.
-        ControlParams cpar - parameters of image size etc. for conversion.
-        Calibration cal - representation of the camera parameters to use in
-            the flat/distorted transforms.
-        double tol - optional tolerance for the lens distortion correction
-            phase, see ``optv.transforms``.
-        reset_numbers - if True (default) numbers the targets too, in their
-            current order. This shouldn't be necessary since all TargetArray
-            creators number the targets, but this gets around cases where they
-            don't.
-        """
-        self._num_pts = len(targs)
-        self.buf = np.empty(self._num_pts,
-                            dtype=np.dtype([('x', np.float64), ('y', np.float64), ('pnr', np.int32)]))
+#         for tnum, targ in enumerate(targs):
+#             targ = targs[tnum]
+#             if reset_numbers:
+#                 targ['pnr'] = tnum
 
-        for tnum, targ in enumerate(targs):
-            targ = targs[tnum]
-            if reset_numbers:
-                targ.pnr = tnum
+#             self.buf[tnum]['x'], self.buf[tnum]['y'] = pixel_to_metric(
+#                 targ.x, targ.y,  cpar)
 
-            self.buf[tnum]['x'], self.buf[tnum]['y'] = pixel_to_metric(
-                targ.x, targ.y,  cpar)
+#             self.buf[tnum]['x'], self.buf[tnum]['y'] = dist_to_flat(
+#                 self.buf[tnum]['x'], self.buf[tnum]['y'], cal, tol
+#             )
+#             self.buf[tnum]['pnr'] = targ['pnr']
 
-            self.buf[tnum]['x'], self.buf[tnum]['y'] = dist_to_flat(
-                self.buf[tnum]['x'], self.buf[tnum]['y'], cal, tol
-            )
-            self.buf[tnum]['pnr'] = targ.pnr
+#         self.buf.sort(order='x')
 
-        self.buf.sort(order='x')
+#     def as_arrays(self):
+#         """Return the matched coordinates as NumPy arrays.
 
-    def as_arrays(self):
-        """Return the matched coordinates as NumPy arrays.
+#         Returns
+#         -------
+#         pos - (n,2) array, the (x,y) flat-coordinates position of n targets.
+#         pnr - n-length array, the corresponding target number for each point.
+#         """
+#         pos = np.empty((self._num_pts, 2))
+#         pnr = np.empty(self._num_pts, dtype=np.int_)
 
-        Returns
-        -------
-        pos - (n,2) array, the (x,y) flat-coordinates position of n targets.
-        pnr - n-length array, the corresponding target number for each point.
-        """
-        pos = np.empty((self._num_pts, 2))
-        pnr = np.empty(self._num_pts, dtype=np.int_)
+#         for pt in range(self._num_pts):
+#             pos[pt, 0] = self.buf[pt]['x']
+#             pos[pt, 1] = self.buf[pt]['y']
+#             pnr[pt] = self.buf[pt]['pnr']
 
-        for pt in range(self._num_pts):
-            pos[pt, 0] = self.buf[pt]['x']
-            pos[pt, 1] = self.buf[pt]['y']
-            pnr[pt] = self.buf[pt]['pnr']
+#         return pos, pnr
 
-        return pos, pnr
+#     def get_by_pnrs(self, pnrs):
+#         """Return the flat positions of points whose pnr property is given.
 
-    def get_by_pnrs(self, pnrs):
-        """Return the flat positions of points whose pnr property is given.
+#         as an (n,2) flat position array. Assumes all pnrs are to be found, otherwise
+#         there will be garbage at the end of the position array.
+#         """
+#         pos = np.full((len(pnrs), 2), COORD_UNUSED, dtype=np.float64)
+#         for pt in range(self._num_pts):
+#             which = np.flatnonzero(self.buf[pt]['pnr'] == pnrs)
+#             if len(which) > 0:
+#                 which = which[0]
+#                 pos[which, 0] = self.buf[pt]['x']
+#                 pos[which, 1] = self.buf[pt]['y']
+#         return pos
 
-        as an (n,2) flat position array. Assumes all pnrs are to be found, otherwise
-        there will be garbage at the end of the position array.
-        """
-        pos = np.full((len(pnrs), 2), COORD_UNUSED, dtype=np.float64)
-        for pt in range(self._num_pts):
-            which = np.flatnonzero(self.buf[pt]['pnr'] == pnrs)
-            if len(which) > 0:
-                which = which[0]
-                pos[which, 0] = self.buf[pt]['x']
-                pos[which, 1] = self.buf[pt]['y']
-        return pos
-
-    def __del__(self):
-        del self.buf
+#     def __del__(self):
+#         del self.buf
 
 
 Correspond_dtype = np.dtype([
@@ -145,11 +142,11 @@ def safely_allocate_target_usage_marks(
 
 def safely_allocate_adjacency_lists(
     num_cams: int, target_counts: List[int]
-) -> np.recarray:
+) -> np.ndarray:
     """Allocate space for the adjacency lists."""
     # one_element = np.array(
     #     [(PT_UNUSED, 0, np.zeros(MAXCAND), np.zeros(MAXCAND), np.zeros(MAXCAND))],
-    #     dtype=Correspond_dtype).view(np.recarray)
+    #     dtype=Correspond_dtype)
 
     try:
         # lists = [
@@ -157,7 +154,7 @@ def safely_allocate_adjacency_lists(
         #     for c1 in range(num_cams)
         # ]
 
-        lists = np.recarray((num_cams, num_cams, max(
+        lists = np.ndarray((num_cams, num_cams, max(
             target_counts)), dtype=Correspond_dtype)
 
     except MemoryError as exc:
@@ -174,7 +171,7 @@ def safely_allocate_adjacency_lists(
 
 
 def four_camera_matching(
-    corr_list: np.recarray,
+    corr_list: np.ndarray,
     base_target_count,
     accept_corr,
     scratch,
@@ -234,10 +231,10 @@ def four_camera_matching(
                                     continue
 
                                 # accept as preliminary match
-                                scratch[matched].p[0] = p1
-                                scratch[matched].p[1] = p2
-                                scratch[matched].p[2] = p3
-                                scratch[matched].p[3] = p4
+                                scratch[matched]['p'][0] = p1
+                                scratch[matched]['p'][1] = p2
+                                scratch[matched]['p'][2] = p3
+                                scratch[matched]['p'][3] = p4
                                 scratch[matched].corr = corr
 
                                 matched += 1
@@ -250,7 +247,7 @@ def four_camera_matching(
 
 
 def three_camera_matching(
-    corr_list: np.recarray,  # num_cam, num_cam, num_targets
+    corr_list: np.ndarray,  # num_cam, num_cam, num_targets
     num_cams,
     target_counts,
     accept_corr,
@@ -316,7 +313,7 @@ def three_camera_matching(
 
                             p = np.full(num_cams, -2)
                             p[i1], p[i2], p[i3] = p1, p2, p3
-                            scratch[matched].p = p
+                            scratch[matched]['p'] = p
                             scratch[matched].corr = corr
 
                             matched += 1
@@ -329,11 +326,11 @@ def three_camera_matching(
 
 
 def consistent_pair_matching(
-    corr_list: np.recarray,
+    corr_list: np.ndarray,
     num_cams: int,
     target_counts: List[int],
     accept_corr: float,
-    scratch: np.recarray,
+    scratch: np.ndarray,
     scratch_size: int,
     tusage: np.ndarray,
 ) -> int:
@@ -361,10 +358,10 @@ def consistent_pair_matching(
                     continue
 
                 for n in range(num_cams):
-                    scratch[matched].p[n] = -2
+                    scratch[matched]['p'][n] = -2
 
-                scratch[matched].p[i1] = p1
-                scratch[matched].p[i2] = p2
+                scratch[matched]['p'][i1] = p1
+                scratch[matched]['p'][i2] = p2
                 scratch[matched].corr = corr
 
                 matched += 1
@@ -376,8 +373,8 @@ def consistent_pair_matching(
 
 
 def match_pairs(
-    corr_lists: np.recarray,  # num_cam, num_cam, num_targets
-    corrected: np.recarray,  # List[List[Coord2d]],
+    corr_lists: np.ndarray,  # num_cam, num_cam, num_targets
+    corrected: np.ndarray,  # List[List[Coord2d]],
     frm: Frame,
     vpar: VolumePar,
     cpar: ControlPar,
@@ -442,7 +439,7 @@ def match_pairs(
 
                 # origin point in the corr_list
                 corr_lists[i1][i2][i].p1 = i
-                pt1 = corrected[i1][i].pnr
+                pt1 = corrected[i1][i]['pnr']
 
                 # search for a conjugate point in corrected[i2]
                 # cand = [Correspond() for _ in range(MAXCAND)]
@@ -469,7 +466,7 @@ def match_pairs(
                 count = min(len(cand), MAXCAND)
 
                 for j in range(count):
-                    corr_lists[i1][i2][i].p2[j] = cand[j].pnr
+                    corr_lists[i1][i2][i].p2[j] = cand[j]['pnr']
                     corr_lists[i1][i2][i].corr[j] = cand[j].corr
                     corr_lists[i1][i2][i].dist[j] = cand[j].tol
 
@@ -478,7 +475,7 @@ def match_pairs(
 
 def take_best_candidates(
     # List[n_tupel]
-    src: np.recarray, dst: np.recarray, num_cams: int, tusage: np.ndarray
+    src: np.ndarray, dst: np.ndarray, num_cams: int, tusage: np.ndarray
 ):
     """
     Take the best candidates from the candidate list based on their correlation measure.
@@ -529,7 +526,7 @@ def take_best_candidates(
     for cand in src:
         has_used_target = False
         for cam in range(num_cams):
-            tnum = cand.p[cam]
+            tnum = cand['p'][cam]
 
             # If any correspondence in this camera, check if the target is free
             if tnum > -1 and tusage[cam][tnum] > 0:
@@ -541,7 +538,7 @@ def take_best_candidates(
 
         # Mark the targets as used
         for cam in range(num_cams):
-            tnum = cand.p[cam]
+            tnum = cand['p'][cam]
             if tnum > -1:
                 tusage[cam][tnum] += 1
 
@@ -552,8 +549,8 @@ def take_best_candidates(
 
 
 def py_correspondences(
-    img_pts: List[List[Target]],  # num_cams * num_targets[cam]
-    flat_coords: np.recarray,
+    img_pts: List[np.ndarray],  # num_cams * num_targets[cam]
+    flat_coords: np.ndarray,
     calib: List[Calibration],
     vparam: VolumePar,
     cparam: ControlPar,
@@ -647,11 +644,11 @@ def py_correspondences(
         # intermediary that's x-sorted.
         for cam in range(num_cams):
             for pt in range(num_points):
-                geo_id = corresp_buf[pt + last_count].p[cam]
+                geo_id = corresp_buf[pt + last_count]['p'][cam]
                 if geo_id < 0:
                     continue
 
-                p1 = flat_coords[cam][geo_id].pnr
+                p1 = flat_coords[cam][geo_id]['pnr']
                 clique_ids[cam, pt] = p1
 
                 if p1 > -1:
@@ -673,12 +670,12 @@ def py_correspondences(
 
 def correspondences(
     frm: Frame,
-    corrected: np.recarray,  # List[List[Coord2d]],
+    corrected: np.ndarray,  # List[List[Coord2d]],
     vpar: VolumePar,
     cpar: ControlPar,
     calib: List[Calibration],
     match_counts: List[int],
-) -> np.recarray:  # n_tupel_dtype
+) -> np.ndarray:  # np.ndarray
     """Find correspondences between cameras.
 
     /*  correspondences() generates a list of tuple target numbers (one for each
@@ -691,7 +688,7 @@ def correspondences(
         frame *frm - a frame struct holding the observed targets and their number
             for each camera.
         coord_2d **corrected - for each camera, an array of the flat-image
-            coordinates corresponding to the targets in frm (the .pnr property
+            coordinates corresponding to the targets in frm (the ['pnr'] property
             says which is which), sorted by the X coordinate.
         volume_par *vpar - epipolar search zone and criteria for correspondence.
         control_par *cpar - general scene parameters s.a. image size.
@@ -715,12 +712,14 @@ def correspondences(
     nmax = NMAX
 
     # Allocation of scratch buffers for internal tasks and return-value space
-    con0 = np.recarray((nmax * cpar.num_cams,), dtype=n_tupel_dtype)
-    con0.p = 0
+    # con0 = np.ndarray((nmax * cpar.num_cams,), dtype=np.ndarray)
+    con0 = np.tile(n_tupel, nmax * cpar.num_cams)
+    con0['p'] = 0
     con0.corr = 0.0
 
-    con = np.recarray((nmax * cpar.num_cams,), dtype=n_tupel_dtype)
-    con.p = 0
+    # con = np.ndarray((nmax * cpar.num_cams,), dtype=np.ndarray)
+    con = np.tile(n_tupel, nmax * cpar.num_cams)
+    con['p'] = 0
     con.corr = 0.0
 
     tim = safely_allocate_target_usage_marks(cpar.num_cams, nmax)
@@ -771,10 +770,10 @@ def correspondences(
     for i in range(match_counts[3]):
         for j in range(cpar.num_cams):
             # Skip cameras without a correspondence obviously.
-            if con[i].p[j] < 0:
+            if con[i]['p'][j] < 0:
                 continue
 
-            p1 = corrected[j][con[i].p[j]].pnr
+            p1 = corrected[j][con[i]['p'][j]]['pnr']
             if p1 > -1 and p1 < 1202590843:
                 frm.targets[j][p1].tnr = i
 
@@ -787,7 +786,7 @@ def correspondences(
 
 
 def single_cam_correspondences(
-    img_pts: List[Target], corrected: np.recarray  # List[Coord2d]
+    img_pts: np.ndarray, corrected: np.ndarray  # List[Coord2d]
 ) -> Tuple[List[np.ndarray], List[np.ndarray], int]:
     """
     Single camera correspondence is not a real correspondence, it will be only a projection.
@@ -827,9 +826,9 @@ def single_cam_correspondences(
     # Trace back the pixel target properties through the flat metric
     # intermediary that's x-sorted.
     for pt in range(num_points):
-        # From Beat code (issue #118) pix[0][geo[0][i].pnr].tnr=i;
+        # From Beat code (issue #118) pix[0][geo[0][i]['pnr']].tnr=i;
 
-        p1 = corrected[pt].pnr
+        p1 = corrected[pt]['pnr']
         clique_ids[0, pt] = p1
 
         if p1 > -1:
