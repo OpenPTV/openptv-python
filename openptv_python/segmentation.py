@@ -2,7 +2,8 @@ from dataclasses import dataclass, field
 from typing import List
 
 import numpy as np
-from numba import njit
+
+# from numba import njit
 from scipy.ndimage import center_of_mass, gaussian_filter, label, maximum_filter
 
 from .constants import CORRES_NONE, MAX_TARGETS
@@ -32,10 +33,10 @@ class Peak:
 def targ_rec(
     img: np.ndarray,
     targ_par: TargetPar,
-    xmin: int,
-    xmax: int,
-    ymin: int,
-    ymax: int,
+    xmin: np.int32,
+    xmax: np.int32,
+    ymin: np.int32,
+    ymax: np.int32,
     cpar: ControlPar,
     num_cam,
 ) -> np.ndarray:
@@ -46,9 +47,9 @@ def targ_rec(
     # Make sure the min/max coordinates don't cause us to access memory
     # outside the image memory.
     if xmin <= 0:
-        xmin = 1
+        xmin = np.int32(1)
     if ymin <= 0:
-        ymin = 1
+        ymin = np.int32(1)
     if xmax >= cpar.imx:
         xmax = cpar.imx - 1
     if ymax >= cpar.imy:
@@ -62,14 +63,16 @@ def targ_rec(
     pix = fast_targ_rec(img, thres, disco, nnmin, nnmax,
                         nxmin, nxmax, nymin, nymax, sumg_min, xmin, xmax, ymin, ymax)
 
-    out = [Target(x=x, y=y, tnr=CORRES_NONE,
-                  pnr=pnr, n=numpix, nx=nx,
-                  ny=ny, sumg=sumg) for x, y, _,
-           pnr, numpix, nx, ny, sumg in pix]
-    return out
+    # out = [Target(x=x, y=y, tnr=CORRES_NONE,
+    #               pnr=pnr, n=numpix, nx=nx,
+    #               ny=ny, sumg=sumg) for x, y, _,
+    #        pnr, numpix, nx, ny, sumg in pix]
+
+    # out = np.array([(x, y, tnr, pnr, n, nx, ny, sumg)], dtype=Target)
+    return pix
 
 
-@njit(fastmath=True)
+# @njit(fastmath=True)
 def fast_targ_rec(img,
                   thres,
                   disco,
@@ -83,7 +86,7 @@ def fast_targ_rec(img,
                   xmin,
                   xmax,
                   ymin,
-                  ymax) -> List:
+                  ymax) -> np.ndarray:
     """Target recognition function."""
     n = 0
     n_wait = 0
@@ -226,7 +229,17 @@ def fast_targ_rec(img,
                         x += 0.5
                         y /= sumg
                         y += 0.5
-                        pix.append([x,y,CORRES_NONE, n_targets, numpix, nx, ny, sumg])
+                        tmp = Target
+                        tmp['x'] = x
+                        tmp['y'] = y
+                        tmp['tnr'] = CORRES_NONE
+                        tmp['pnr'] = n_targets
+                        tmp['n'] = numpix
+                        tmp['nx'] = nx
+                        tmp['ny'] = ny
+                        tmp['sumg'] = sumg
+                        pix.append(tmp)
+
                         n_targets += 1
                         xn = x
                         yn = y
@@ -234,7 +247,7 @@ def fast_targ_rec(img,
     # t = TargetArray(num_targs=n_targets)
     # t.num_targs = n_targets
     # t.targs = pix
-    return pix
+    return np.array(pix)
 
 
 def peak_fit(

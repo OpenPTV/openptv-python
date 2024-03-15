@@ -325,10 +325,10 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibrati
     nz = int((z_max_t - z_min_t) / rw + 1)
 
     # create two dimensional mmlut structure
-    cal.mmlut.origin = np.r_[cal_t.ext_par['x0'], cal_t.ext_par['y0'], z_min_t]
+    cal.mmlut['origin'] = np.r_[cal_t.ext_par['x0'], cal_t.ext_par['y0'], z_min_t]
     cal.mmlut['nr'] = nr
-    cal.mmlut.nz = nz
-    cal.mmlut.rw = rw
+    cal.mmlut['nz'] = nz
+    cal.mmlut['rw'] = rw
 
     if cal.mmlut_data.shape == (0, 0):
         cal.mmlut_data = np.empty((nr, nz), dtype=np.float64)
@@ -349,21 +349,21 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibrati
 
 def get_mmf_from_mmlut(cal: Calibration, pos: np.ndarray) -> float:
     """Get the refractive index of the medium at a given position."""
-    rw = cal.mmlut.rw
-    origin = cal.mmlut.origin
+    rw = cal.mmlut['rw']
+    origin = cal.mmlut['origin']
     data = cal.mmlut_data.flatten()  # type: ignore
-    nz = cal.mmlut.nz
+    nz = cal.mmlut['nz']
     nr = cal.mmlut['nr']
 
     return fast_get_mmf_from_mmlut(rw, origin, data, nz, nr, pos)
 
 # @njit
 def fast_get_mmf_from_mmlut(
-    rw: int,
+    rw: np.int32,
     origin: np.ndarray,
     data: np.ndarray,
-    nz: int,
-    nr: int,
+    nz: np.int32,
+    nr: np.int32,
     pos: np.ndarray
 ) -> float:
     """Get the refractive index of the medium at a given position."""

@@ -209,12 +209,12 @@ def four_camera_matching(
                                     continue
 
                                 corr = (
-                                    corr_list[0][1][i]['x'][j]
-                                    + corr_list[0][2][i]['x'][k]
-                                    + corr_list[0][3][i]['x'][ll]
-                                    + corr_list[1][2][p2]['x'][m]
-                                    + corr_list[1][3][p2]['x'][n]
-                                    + corr_list[2][3][p3]['x'][o]
+                                    corr_list[0][1][i]['corr'][j]
+                                    + corr_list[0][2][i]['corr'][k]
+                                    + corr_list[0][3][i]['corr'][ll]
+                                    + corr_list[1][2][p2]['corr'][m]
+                                    + corr_list[1][3][p2]['corr'][n]
+                                    + corr_list[2][3][p3]['corr'][o]
                                 ) / (
                                     corr_list[0][1][i]['dist'][j]
                                     + corr_list[0][2][i]['dist'][k]
@@ -233,7 +233,7 @@ def four_camera_matching(
                                 scratch[matched]['p'][1] = p2
                                 scratch[matched]['p'][2] = p3
                                 scratch[matched]['p'][3] = p4
-                                scratch[matched]['x'] = corr
+                                scratch[matched]['corr'] = corr
 
                                 matched += 1
                                 # print(f" matched {matched} [{p1, p2, p3, p4}]")
@@ -295,9 +295,9 @@ def three_camera_matching(
 
                             m = indices[0]
                             corr = (
-                                corr_list[i1][i2][i]['x'][j]
-                                + corr_list[i1][i3][i]['x'][k]
-                                + corr_list[i2][i3][p2]['x'][m]
+                                corr_list[i1][i2][i]['corr'][j]
+                                + corr_list[i1][i3][i]['corr'][k]
+                                + corr_list[i2][i3][p2]['corr'][m]
                             ) / (
                                 corr_list[i1][i2][i]['dist'][j]
                                 + corr_list[i1][i3][i]['dist'][k]
@@ -312,7 +312,7 @@ def three_camera_matching(
                             p = np.full(num_cams, -2)
                             p[i1], p[i2], p[i3] = p1, p2, p3
                             scratch[matched]['p'] = p
-                            scratch[matched]['x'] = corr
+                            scratch[matched]['corr'] = corr
 
                             matched += 1
                             # print(f"matched: {matched} p: {p}")
@@ -617,7 +617,7 @@ def py_correspondences(
         # calib[cam] = (<Calibration>cals[cam])._calibration
         # frm.targets[cam] = (<TargetArray>img_pts[cam])._tarr
         frm.num_targets[cam] = len(img_pts[cam])
-        frm.targets[cam] = img_pts[cam]
+        frm.targets[cam][:frm.num_targets[cam]] = img_pts[cam]
 
     # The biz:
     corresp_buf = correspondences(
@@ -712,13 +712,13 @@ def correspondences(
     # Allocation of scratch buffers for internal tasks and return-value space
     # con0 = np.ndarray((nmax * cpar.num_cams,), dtype=np.ndarray)
     con0 = np.tile(n_tupel, nmax * cpar.num_cams)
-    con0['p'] = 0
-    con0['x'] = 0.0
+    # con0['p'] =
+    # con0['corr'] = 0.0
 
     # con = np.ndarray((nmax * cpar.num_cams,), dtype=np.ndarray)
     con = np.tile(n_tupel, nmax * cpar.num_cams)
     con['p'] = 0
-    con['x'] = 0.0
+    con['corr'] = 0.0
 
     tim = safely_allocate_target_usage_marks(cpar.num_cams, nmax)
 
@@ -773,7 +773,7 @@ def correspondences(
 
             p1 = corrected[j][con[i]['p'][j]]['pnr']
             if p1 > -1 and p1 < 1202590843:
-                frm.targets[j][p1].tnr = i
+                frm.targets[j][p1]['tnr'] = i
 
     # Free all other allocations
     # deallocate_adjacency_lists(corr_list, cpar.num_cams)

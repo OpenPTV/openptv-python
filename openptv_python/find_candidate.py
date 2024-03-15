@@ -15,14 +15,14 @@ def find_candidate(
     crd: np.ndarray,
     pix: np.ndarray,
     num: int,
-    xa: float,
-    ya: float,
-    xb: float,
-    yb: float,
-    n: int,
-    nx: int,
-    ny: int,
-    sumg: int,
+    xa: np.float64,
+    ya: np.float64,
+    xb: np.float64,
+    yb: np.float64,
+    n: np.int32,
+    nx: np.int32,
+    ny: np.int32,
+    sumg: np.int32,
     vpar: VolumePar,
     cpar: ControlPar,
     cal: Calibration,
@@ -71,8 +71,8 @@ def find_candidate(
     xmax -= cal.int_par['xh']
     ymax -= cal.int_par['yh']
 
-    xmin, ymin = correct_brown_affine(xmin, ymin, cal.added_par)
-    xmax, ymax = correct_brown_affine(xmax, ymax, cal.added_par)
+    xmin, ymin = correct_brown_affine(np.float64(xmin), np.float64(ymin), cal.added_par)
+    xmax, ymax = correct_brown_affine(np.float64(xmax), np.float64(ymax), cal.added_par)
 
     # line equation: y = m*x + b
     if xa == xb:  # the line is a point or a vertical line in this camera
@@ -156,12 +156,17 @@ def find_candidate(
 #     """ Return the ratio of the smaller to the larger of the two numbers."""
 #     return a / b if a < b else b / a
 
-@njit(float64(float64, float64))
-def quality_ratio(a: float, b: float) -> float:
-    """Return the ratio of the smaller to the larger of the two numbers."""
-    if a == 0 and b == 0:
-        return 0
-    return min(a, b) / max(a, b)
+# @njit(fastmath=True)
+# @njit
+def quality_ratio(a: np.int32, b: np.int32) -> np.float64:
+    """
+    Return the ratio of the smaller to the larger of the two integers.
+
+    If either input is zero, return zero.
+    """
+    if a == 0 or b == 0:
+        return np.float64(0.0)
+    return np.min(np.r_[a, b]) / np.max(np.r_[a, b])
 
 def find_start_point(crd: np.ndarray, num: int, xa: float, vpar: VolumePar) -> int:
     """Find the start point of the candidate search.

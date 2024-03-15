@@ -91,7 +91,7 @@ mmlut_dtype = np.dtype([
     ('rw', np.int32),
     ])
 
-mm_lut = np.array((np.zeros(3), 0, 0, 0), dtype = mmlut_dtype)
+mm_lut = np.array(([0.,0.,0.], 0, 0, 0), dtype = mmlut_dtype)
 mm_lut_data = np.empty((mm_lut['nr'], mm_lut['nz']), dtype=np.float64)
 
 

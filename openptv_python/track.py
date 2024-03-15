@@ -839,7 +839,7 @@ def trackcorr_c_loop(run_info, step):
         curr_path_inf['inlist'] = 0
 
         # 3D-position
-        X[1] = vec_copy(curr_path_inf.x)
+        X[1] = curr_path_inf['x']
         # print(f"X[1] {X[1]}")
 
         # use information from previous to locate new search position
@@ -852,7 +852,7 @@ def trackcorr_c_loop(run_info, step):
             for j in range(fb.num_cams):
                 v1[j] = point_to_pixel(X[2], cal[j], cpar)
         else:
-            X[2] = vec_copy(X[1])
+            X[2] = X[1]
             for j in range(fb.num_cams):
                 if curr_corres['p'][j] == CORRES_NONE:
                     v1[j] = point_to_pixel(X[2], cal[j], cpar)

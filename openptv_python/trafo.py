@@ -242,7 +242,11 @@ def correct_brown_affine(
 
     return x1, y1
 
-def flat_to_dist(flat_x: np.float64, flat_y: np.float64, cal: Calibration) -> Tuple[np.float64, np.float64]:
+def flat_to_dist(
+    flat_x: np.float64,
+    flat_y: np.float64,
+    cal: Calibration,
+    ) -> Tuple[np.float64, np.float64]:
     """Convert flat-image coordinates to real-image coordinates.
 
     Make coordinates relative to sensor center rather than primary point
@@ -250,8 +254,8 @@ def flat_to_dist(flat_x: np.float64, flat_y: np.float64, cal: Calibration) -> Tu
     """
     # print(f"flat_x {flat_x}, flat_y {flat_y}")
     # print(f"cal.int {cal.int_par['xh']}, {cal.int_par['yh']}")
-    flat_x += cal.int_par['xh']
-    flat_y += cal.int_par['yh']
+    flat_x += cal.int_par['xh'] # type: ignore
+    flat_y += cal.int_par['yh'] # type: ignore
 
     # print(f"flat_x {flat_x}, flat_y {flat_y}")
 

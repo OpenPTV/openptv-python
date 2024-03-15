@@ -14,7 +14,7 @@ from .constants import (
     POSI,
     PREV_NONE,
     PRIO_DEFAULT,
-    PT_UNUSED,
+    # PT_UNUSED,
     TR_UNUSED,
 )
 from .epi import Coord2d_dtype
@@ -23,7 +23,7 @@ from .trafo import dist_to_flat, pixel_to_metric
 
 n_tupel_dtype = np.dtype([
     ("p", np.int32, (4,)),
-    ("corr", np.float64)
+    ("corr", np.float64),
 ])
 
 n_tupel = np.zeros(1, dtype=n_tupel_dtype)
@@ -77,7 +77,7 @@ def compare_corres(c1: np.ndarray, c2: np.ndarray) -> bool:
 
 
 Target_dtype = np.dtype([
-    ("pnr", np.int32), # PT_UNUSED
+    ("pnr", np.int32), # CORRES_NONE
     ("x", np.float64),
     ("y", np.float64),
     ("n", np.int32),
@@ -87,7 +87,7 @@ Target_dtype = np.dtype([
     ("tnr", np.int32) # TR_UNUSED
     ])
 
-Target = np.array([(PT_UNUSED, 0., 0., 0, 0, 0, 0, TR_UNUSED)], dtype=Target_dtype)
+Target = np.array([(CORRES_NONE, 0., 0., 0, 0, 0, 0, TR_UNUSED)], dtype=Target_dtype)
 
 # @dataclass
 # class Target:
@@ -779,12 +779,12 @@ def read_path_frame(
         path_buf[targets]['inlist'] = 0
         path_buf[targets]['finaldecis'] = 1000000.0
         path_buf[targets]['decis'] = [0] * POSI  # type: ignore
-        path_buf[targets].linkdecis = [-999] * POSI
+        path_buf[targets]['linkdecis'] = [-999] * POSI
 
         vals = np.fromstring(line, dtype=float, sep=" ")
         cor_buf[targets]['nr'] = targets + 1
         cor_buf[targets]['p'] = vals[-4:].astype(int)
-        path_buf[targets].x = vals[1:-4]
+        path_buf[targets]['x'] = vals[1:-4]
 
         # print(cor_buf[targets]['nr'], cor_buf[targets]['p'], path_buf[targets].x)
 
@@ -934,8 +934,8 @@ def matched_coords_as_arrays(
     pnr = np.empty(num_pts, dtype=np.int_)
 
     for pt, mc in enumerate(matched_coords):
-        pos[pt, 0] = mc.x
-        pos[pt, 1] = mc.y
+        pos[pt, 0] = mc['x']
+        pos[pt, 1] = mc['y']
         pnr[pt] = mc['pnr']
 
     return pos, pnr

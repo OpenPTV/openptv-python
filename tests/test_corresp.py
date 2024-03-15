@@ -72,13 +72,13 @@ def correct_frame(
 
         for part in range(frm.num_targets[cam]):
             x, y = pixel_to_metric(
-                frm.targets[cam][part].x, frm.targets[cam][part].y, cpar
+                frm.targets[cam][part]['x'], frm.targets[cam][part]['y'], cpar
             )
             x, y = dist_to_flat(x, y, calib[cam], tol)
 
             row[part]['pnr'] = frm.targets[cam][part]['pnr']
-            row[part].x = x
-            row[part].y = y
+            row[part]['x'] = x
+            row[part]['y'] = y
 
         # This is expected by find_candidate()
         row.sort(order='x')
@@ -103,7 +103,8 @@ def generate_test_set(calib: list[Calibration], cpar: ControlPar) -> Frame:
     for cam in range(cpar.num_cams):
         # fill in only what's needed
         frm.num_targets[cam] = 16
-        frm.targets[cam] = [Target() for _ in range(frm.num_targets[cam])]
+        # frm.targets[cam] = [Target() for _ in range(frm.num_targets[cam])]
+        frm.targets[cam] = np.tile(Target, frm.num_targets[cam])
 
         # Construct a scene representing a calibration target, generate
         # targets for it, then use them to reconstruct correspondences.
@@ -242,7 +243,8 @@ class TestReadControlPar(unittest.TestCase):
         cals.append(cal)
 
         # Generate test targets.
-        targs = [Target() for _ in range(9)]
+        # targs = [Target() for _ in range(9)]
+        targs = np.tile(Target, 9)
         for row, col in np.ndindex(3, 3):
             targ_ix = row * 3 + col
             targ = targs[targ_ix]
@@ -250,11 +252,18 @@ class TestReadControlPar(unittest.TestCase):
             pos3d = 10 * np.r_[col, row, 0]
             x, y = img_coord(pos3d, cal, cpar.mm)
             x, y = metric_to_pixel(x, y, cpar)
-            targ.set_pos((x, y))
+            targ['x'] = x
+            targ['y'] = y
+            # targ.set_pos((x, y))
 
-            targ.set_pnr(targ_ix)
-            targ.set_pixel_counts(25, 5, 5)
-            targ.set_sum_grey_value(10)
+            # targ.set_pnr(targ_ix)
+            targ['pnr'] = targ_ix
+            targ['n'] = 25
+            targ['nx'] = 5
+            targ['ny'] = 5
+            # targ.set_pixel_counts(25, 5, 5)
+            targ['sumg'] = 10
+            # targ.set_sum_grey_value(10)
 
         img_pts.append(targs)
         corrected = match_coords(targs, cpar, cal)
@@ -308,16 +317,16 @@ class TestReadControlPar(unittest.TestCase):
             for subcam in range(cam + 1, cpar.num_cams):
                 for part in range(frm.num_targets[cam]):
                     correct_pnr = (
-                        corrected[cam][corr_lists[cam][subcam][part].p1]['pnr']
+                        corrected[cam][corr_lists[cam][subcam][part]['p1']]['pnr']
                         if (subcam - cam) % 2 == 0
-                        else 15 - corrected[cam][corr_lists[cam][subcam][part].p1]['pnr']
+                        else 15 - corrected[cam][corr_lists[cam][subcam][part]['p1']]['pnr']
                     )
 
                     found_correct_pnr = False
                     for cand in range(MAXCAND):
                         if (
                             corrected[subcam][
-                                corr_lists[cam][subcam][part].p2[cand]
+                                corr_lists[cam][subcam][part]['p2'][cand]
                             ]['pnr']
                             == correct_pnr
                         ):
@@ -392,17 +401,17 @@ class TestReadControlPar(unittest.TestCase):
                     # */
                     if (subcam - cam) % 2 == 0:
                         correct_pnr = corrected[cam][
-                            corr_lists[cam][subcam][part].p1
+                            corr_lists[cam][subcam][part]['p1']
                         ]['pnr']
                     else:
                         correct_pnr = (
-                            15 - corrected[cam][corr_lists[cam][subcam][part].p1]['pnr']
+                            15 - corrected[cam][corr_lists[cam][subcam][part]['p1']]['pnr']
                         )
 
                     for cand in range(MAXCAND):
                         if (
                             corrected[subcam][
-                                corr_lists[cam][subcam][part].p2[cand]
+                                corr_lists[cam][subcam][part]['p2'][cand]
                             ]['pnr']
                             == correct_pnr
                         ):
@@ -470,3 +479,7 @@ class TestReadControlPar(unittest.TestCase):
 
         # Assert that 16 triplets were matched.
         self.assertEqual(matched, 16)
+
+
+if __name__ == "__main__":
+    unittest.main()

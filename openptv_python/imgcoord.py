@@ -13,7 +13,7 @@ from .trafo import flat_to_dist
 
 def flat_image_coord(
     orig_pos: np.ndarray, cal: Calibration, mm: MultimediaPar
-) -> Tuple[float, float]:
+) -> Tuple[np.float64, np.float64]:
     """Flat image coordinate.
 
     Args:
@@ -75,7 +75,7 @@ def flat_image_coordinates(
 
 def img_coord(
     pos: np.ndarray, cal: Calibration, mm: MultimediaPar
-) -> Tuple[float, float]:
+) -> Tuple[np.float64, np.float64]:
     """Estimate metric coordinates in image space (mm)."""
     # Estimate metric coordinates in image space using flat_image_coord()
     if pos.shape[0] != 3:

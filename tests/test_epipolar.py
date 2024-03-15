@@ -21,8 +21,8 @@ from openptv_python.calibration import (
     ap_52,
 )
 from openptv_python.epi import (
-    Candidate_dtype,
-    Coord2d_dtype,
+    Candidate,
+    Coord2d,
     epi_mm,
     epi_mm_2D,
     epipolar_curve,
@@ -222,7 +222,8 @@ class TestFindCandidate(unittest.TestCase):
             [5, 10.4, 0.1, 10, 3, 3, 70, -999],
         ]
 
-        test_pix = [Target(*x) for x in test_pix]
+        # test_pix = [Target(*x) for x in test_pix]
+        test_pix = np.array([np.array([tuple(x)], dtype=Target.dtype) for x in test_pix])
 
         # length of the test_pix
         num_pix = len(test_pix)
@@ -239,10 +240,10 @@ class TestFindCandidate(unittest.TestCase):
         #     [5, 10.4, 0.1],
         # ])
 
-        test_crd = np.ndarray(7, dtype=Coord2d_dtype)
+        test_crd = np.ndarray(7, dtype=Coord2d.dtype)
         test_crd['pnr'] = np.array([6, 3, 4, 1, 2, 0, 5])
-        test_crd.x = np.array([0.1, 0.2, 0.4, 0.7, 1.2, 0.0, 10.4])
-        test_crd.y = np.array([0.1, 0.8, -1.1, -0.1, 0.3, 0.0, 0.1])
+        test_crd['x'] = np.array([0.1, 0.2, 0.4, 0.7, 1.2, 0.0, 10.4])
+        test_crd['y'] = np.array([0.1, 0.8, -1.1, -0.1, 0.3, 0.0, 0.1])
 
         # parameters of the particle for which we look for the candidates
         n = 10
@@ -311,17 +312,17 @@ class TestFindCandidate(unittest.TestCase):
         # 13: candidate 3: pnr 4, corr 676.000000, tol 0.636396
         # 13: candidate 4: pnr 5, corr 264.000000, tol 0.000000
 
-        expected = np.ndarray(5, dtype=Candidate_dtype)
+        expected = np.ndarray(5, dtype=Candidate.dtype)
         expected['pnr'] = np.array([0, 1, 3, 4, 5])
-        expected.corr = np.array([1156.0, 784.0, 421.0, 676.0, 264.0])
-        expected.tol = np.array([0.0, 0.424264, 0.565685, 0.636396, 0.0])
+        expected['corr'] = np.array([1156.0, 784.0, 421.0, 676.0, 264.0])
+        expected['tol'] = np.array([0.0, 0.424264, 0.565685, 0.636396, 0.0])
 
         self.assertTrue(len(test_cand) == len(expected))
         for t, e in zip(test_cand, expected):
             self.assertTrue(t['pnr'] == e['pnr'])
-            self.assertTrue(t.corr == e.corr)
-            # print(t.tol, e.tol)
-            self.assertTrue(isclose(t.tol, e.tol, abs_tol=1e-5))
+            self.assertTrue(t['corr'] == e['corr'])
+            # print(t['tol'], e['tol'])
+            self.assertTrue(isclose(t['tol'], e['tol'], abs_tol=1e-5))
 
 
 if __name__ == "__main__":
