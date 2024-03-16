@@ -18,7 +18,7 @@ from openptv_python.tracking_frame_buf import Target, read_targets
 class TestSortgrid(unittest.TestCase):
     def test_nearest_neighbour_pix(self):
         """Test finding the nearest neighbour pixel."""
-        targets = [Target(0, 1127.0000, 796.0000, 13320, 111, 120, 828903, 1)]
+        targets = np.array([(0, 1127.0000, 796.0000, 13320, 111, 120, 828903, 1)], dtype=Target.dtype)
         pnr = nearest_neighbour_pix(targets, 1128.0, 795.0, 0.0)
         self.assertEqual(pnr, -999)
 
@@ -78,7 +78,7 @@ class TestSortgrid(unittest.TestCase):
 
         # sortgrid expects only x,y,z
         # fix = np.array([vec_set(p.x, p.y, p.z) for p in cal_points])
-        fix = np.c_[cal_points.x, cal_points.y, cal_points.z]
+        fix = np.c_[cal_points['x'], cal_points['y'], cal_points['z']]
 
         sorted_pix = sortgrid(cal, cpar, nfix, fix, eps, targets)
         self.assertEqual(sorted_pix[0]['pnr'], -999)
@@ -86,7 +86,7 @@ class TestSortgrid(unittest.TestCase):
 
         sorted_pix = sortgrid(cal, cpar, nfix, fix, 120, targets)
         self.assertEqual(sorted_pix[1]['pnr'], 1)
-        self.assertEqual(sorted_pix[1].x, 796)
+        self.assertEqual(sorted_pix[1]['x'], 796)
 
 
 if __name__ == "__main__":

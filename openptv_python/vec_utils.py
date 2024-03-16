@@ -82,4 +82,4 @@ def unit_vector(vec: np.ndarray) -> np.ndarray:
 @njit(float64[:](int32),fastmath=True, cache=True, nogil=True)
 def vec_init(length: int=3) -> np.ndarray:
     """Initialize a vector to zero."""
-    return np.zeros(length, dtype=float)
+    return np.zeros(length, dtype=np.float64)

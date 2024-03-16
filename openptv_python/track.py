@@ -23,7 +23,7 @@ from .constants import (
 from .imgcoord import img_coord
 from .orientation import point_position
 from .parameters import ControlPar, SequencePar, TrackPar, VolumePar
-from .tracking_frame_buf import Frame, Pathinfo
+from .tracking_frame_buf import Frame, Pathinfo, reset_links
 from .tracking_run import TrackingRun
 from .trafo import dist_to_flat, metric_to_pixel, pixel_to_metric
 from .vec_utils import vec_copy, vec_diff_norm, vec_subt
@@ -52,7 +52,7 @@ Foundpix_dtype = np.dtype([
     ('freq', np.int32),
     ('whichcam', np.int32, (TR_MAX_CAMS,))
 ])
-Foundpix = np.array([(TR_UNUSED, 0, [0]*TR_MAX_CAMS)], dtype=Foundpix_dtype)
+Foundpix = np.array((TR_UNUSED, 0, [0]*TR_MAX_CAMS), dtype=Foundpix_dtype)
 
 # Create an instance of the recarray
 #  foundpix = np.ndarray((1,), dtype=Foundpix_dtype)
@@ -93,7 +93,7 @@ def copy_foundpix_array(dest: np.ndarray, src: np.ndarray, arr_len: int, num_cam
 
         # Copy values from source whichcam member to destination whichcam member
         for cam in range(num_cams):
-            dest[i].whichcam[cam] = src[i].whichcam[cam]
+            dest[i]['whichcam'][cam] = src[i]['whichcam'][cam]
 
     return None
 
@@ -297,32 +297,50 @@ def angle_acc(
 
 def candsearch_in_pix(
     next_frame: np.ndarray,
-    num_targets: int,
-    cent_x: float,
-    cent_y: float,
-    dl: float,
-    dr: float,
-    du: float,
-    dd: float,
+    num_targets: np.int32,
+    cent_x: np.float64,
+    cent_y: np.float64,
+    dl: np.float64,
+    dr: np.float64,
+    du: np.float64,
+    dd: np.float64,
     cpar: ControlPar,
 ) -> List[int]:
-    """Search for a nearest candidate in unmatched target list."""
+    """Search for four nearest candidates in target list.
+
+    /* candsearch_in_pix searches of four (4) near candidates in target list
+    *
+    * Arguments:
+    * target next[] - array of targets (pointer, x,y, n, nx,ny, sumg, track ID),
+    *     assumed to be y sorted.
+    * int num_targets - target array length.
+    * double cent_x, cent_y - image coordinates of the position of a particle [pixel]
+    * double dl, dr, du, dd - respectively the left, right, up, down distance to
+    *   the search area borders from its center, [pixel]
+    * int p[] - indices in ``next`` of the candidates found.
+    * control_par *cpar array of parameters (cpar->imx,imy are needed)
+    *
+    * Returns:
+    * int, the number of candidates found, between 0 - 3
+    */
+
+
+    """
+    # This is assumed in the fast binary search by y
+    next_frame.sort(order = 'y')
+
     # counter = 0
-    dmin = 1e20
-    p1 = p2 = p3 = p4 = TR_UNUSED
-    p = [-1] * MAX_CANDS
+    dmin = POS_INF
+    p1, p2, p3, p4 = PT_UNUSED, PT_UNUSED, PT_UNUSED, PT_UNUSED
+    p = [PT_UNUSED] * MAX_CANDS
     d1, d2, d3, d4 = dmin, dmin, dmin, dmin
 
     xmin, xmax, ymin, ymax = cent_x - dl, cent_x + dr, cent_y - du, cent_y + dd
 
-    if xmin < 0:
-        xmin = 0
-    if xmax > cpar.imx:
-        xmax = cpar.imx
-    if ymin < 0:
-        ymin = 0
-    if ymax > cpar.imy:
-        ymax = cpar.imy
+    xmin = max(xmin, 0.0)
+    xmax = min(xmax, cpar.imx)
+    ymin = max(ymin, 0.0)
+    ymax = min(ymax, cpar.imy)
 
     if cent_x >= 0 and cent_x <= cpar.imx and cent_y >= 0 and cent_y <= cpar.imy:
         j0 = num_targets // 2
@@ -425,7 +443,7 @@ def candsearch_in_pix_rest(
 
         j0 -= 12 if j0 >= 12 else j0  # due to trunc
         for j in range(j0, num_targets):
-            if next_frame[j].tnr == TR_UNUSED:
+            if next_frame[j]['tnr'] == TR_UNUSED:
                 if next_frame[j]['y'] > ymax:
                     break  # finish search
                 if xmin < next_frame[j]['x'] < xmax and ymin < next_frame[j]['y'] < ymax:
@@ -437,7 +455,7 @@ def candsearch_in_pix_rest(
                         dmin = d
                         p[0] = j
 
-        if p[0] != -1:
+        if p[0] != TR_UNUSED:
             counter += 1
 
     return counter
@@ -737,7 +755,7 @@ def assess_new_position(
 #         # We always take the 1st candidate, apparently. Why did we fetch 4?
 #         if cand_inds[cam][0] != PT_UNUSED:
 #             _ix = cand_inds[cam][0]
-#             ref_targets[cam][_ix].tnr = frm.num_parts
+#             ref_targets[cam][_ix]['tnr'] = frm.num_parts
 #             ref_corres['p'][cam] = _ix
 #             ref_corres['nr'] = frm.num_parts
 
@@ -758,13 +776,14 @@ def add_particle(frm: Frame, pos: np.ndarray, cand_inds: np.ndarray) -> None:
         ref_path_inf = frm.path_info[num_parts]
         ref_corres = frm.correspond[num_parts]
     else:
-        ref_path_inf = Pathinfo()
-        frm.path_info.append(ref_path_inf)
+        ref_path_inf = Pathinfo.copy()
+
+        frm.path_info = np.append(frm.path_info, ref_path_inf)
         frm.correspond = np.resize(frm.correspond, frm.correspond.shape[0] + 1)
         ref_corres = frm.correspond
 
-    ref_path_inf.x = vec_copy(pos)
-    ref_path_inf.reset_links()
+    ref_path_inf['x'] = pos
+    ref_path_inf = reset_links(ref_path_inf)
 
     ref_targets = frm.targets
 
@@ -774,7 +793,7 @@ def add_particle(frm: Frame, pos: np.ndarray, cand_inds: np.ndarray) -> None:
         # We always take the 1st candidate, apparently. Why did we fetch 4?
         if cand_inds[cam][0] != PT_UNUSED:
             _ix = cand_inds[cam][0]
-            ref_targets[cam][_ix].tnr = num_parts
+            ref_targets[cam][_ix]['tnr'] = num_parts
             ref_corres['p'][cam] = _ix
             ref_corres['nr'] = num_parts
 
@@ -1176,13 +1195,13 @@ def trackback_c(run_info: TrackingRun):
             curr_path_inf['inlist'] = 0
 
             # 3D-position of current particle
-            X[1] = vec_copy(curr_path_inf.x)
+            X[1] = vec_copy(curr_path_inf['x'])
 
             # use information from previous to locate new search position
             # and to calculate values for search area
             ref_path_inf = fb.buf[0].path_info[curr_path_inf['next_frame']]
-            X[0] = vec_copy(ref_path_inf.x)
-            X[2] = search_volume_center_moving(ref_path_inf.x, curr_path_inf.x)
+            X[0] = vec_copy(ref_path_inf['x'])
+            X[2] = search_volume_center_moving(ref_path_inf['x'], curr_path_inf['x'])
 
             for j in range(fb.num_cams):
                 n[j] = point_to_pixel(X[2], cal[j], cpar)
@@ -1303,12 +1322,12 @@ def trackback_c(run_info: TrackingRun):
                     and ref_path_inf['next_frame'] == NEXT_NONE
                 ):
                     X[0] = vec_copy(
-                        fb.buf[0].path_info[curr_path_inf['next_frame']].x,
+                        fb.buf[0].path_info[curr_path_inf['next_frame']]['x'],
                     )
-                    X[1] = vec_copy(curr_path_inf.x)
-                    X[3] = vec_copy(ref_path_inf.x)
+                    X[1] = vec_copy(curr_path_inf['x'])
+                    X[3] = vec_copy(ref_path_inf['x'])
                     X[4] = vec_copy(
-                        fb.buf[3].path_info[ref_path_inf['prev_frame']].x)
+                        fb.buf[3].path_info[ref_path_inf['prev_frame']]['x'])
 
                     for j in range(3):
                         X[5][j] = 0.5 * (5.0 * X[3][j] -

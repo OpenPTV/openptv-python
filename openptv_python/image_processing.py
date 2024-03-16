@@ -8,7 +8,7 @@ from scipy.ndimage import uniform_filter
 
 from .parameters import ControlPar
 
-filter_t = np.zeros((3, 3), dtype=float)
+filter_t = np.zeros((3, 3), dtype=np.float64)
 
 @njit
 def filter_3(img, kernel=None) -> np.ndarray:

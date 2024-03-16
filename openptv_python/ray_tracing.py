@@ -96,7 +96,7 @@ def fast_ray_tracing(
     # Initial ray direction in global coordinate system
     initial_ray_direction = np.array([camera_x, camera_y, -1 * camera_cc])
     initial_ray_direction = unit_vector(initial_ray_direction)
-    transformed_direction = np.empty(3, dtype=float)
+    transformed_direction = np.empty(3, dtype=np.float64)
     matmul(transformed_direction, distortion_matrix, initial_ray_direction, 3, 3, 1, 3, 3)
 
     glass_direction = unit_vector(glass_vector)
@@ -186,7 +186,7 @@ def fast_ray_tracing(
 #     # Initial ray direction in global coordinate system
 #     tmp1 = np.array([x, y, -1 * cc])
 #     tmp1 = unit_vector(tmp1)
-#     start_dir = np.empty(3, dtype=float)
+#     start_dir = np.empty(3, dtype=np.float64)
 #     matmul(start_dir, dm, tmp1, 3, 3, 1, 3, 3)
 
 

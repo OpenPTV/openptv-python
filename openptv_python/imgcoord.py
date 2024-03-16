@@ -96,7 +96,7 @@ def image_coordinates(
     orig_pos: np.ndarray, cal: Calibration, mm: MultimediaPar
 ) -> np.ndarray:
     """Image coordinates in array mode."""
-    out = np.empty((orig_pos.shape[0], 2), dtype=float)
+    out = np.empty((orig_pos.shape[0], 2), dtype=np.float64)
 
     for i, row in enumerate(orig_pos):
         out[i, 0], out[i, 1] = img_coord(row, cal, mm)

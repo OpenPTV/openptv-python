@@ -6,6 +6,7 @@ import numpy as np
 from openptv_python.calibration import (
     Calibration,
 )
+from openptv_python.epi import Coord2d
 from openptv_python.imgcoord import flat_image_coordinates, image_coordinates
 from openptv_python.orientation import (
     external_calibration,
@@ -46,7 +47,7 @@ class Test_Orientation(unittest.TestCase):
                 (20, 10, 2000),
                 (30, 30, 30),
             ],
-            dtype=float,
+            dtype=np.float64,
         )
         coords_count = len(xyz_input)
 
@@ -113,7 +114,7 @@ class Test_Orientation(unittest.TestCase):
         mult_params.set_n3(1.0)
 
         # 3d point
-        points = np.array([[17, 42, 0], [17, 42, 0]], dtype=float)
+        points = np.array([[17, 42, 0], [17, 42, 0]], dtype=np.float64)
 
         num_cams = 4
         ori_tmpl = "tests/testing_folder/calibration/sym_cam{cam_num}.tif.ori"
@@ -188,7 +189,7 @@ class Test_Orientation(unittest.TestCase):
         calibs.append(new_cal)
 
         # 3d point
-        points = np.array([[1, 1, 0], [-1, -1, 0]], dtype=float)
+        points = np.array([[1, 1, 0], [-1, -1, 0]], dtype=np.float64)
 
         targs_plain = []
         targs_jigged = []
@@ -236,7 +237,7 @@ class Test_Orientation(unittest.TestCase):
         mult_params.set_n3(1.0)
 
         # 3d point
-        points = np.array([[17.5, 42, 0], [-17.5, 42, 0]], dtype=float)
+        points = np.array([[17.5, 42, 0], [-17.5, 42, 0]], dtype=np.float64)
 
         num_cams = 4
         ori_tmpl = "tests/testing_folder/dumbbell/cam{cam_num}.tif.ori"
@@ -284,7 +285,7 @@ class TestGradientDescent(unittest.TestCase):
         # self.control = ControlPar(4)
         self.control = read_control_par(control_file_name)
 
-        self.orient_par_file_name = "tests/testing_folder/corresp/orient.par"
+        self.orient_par_file_name = Path("tests/testing_folder/corresp/orient.par")
         self.orient_par = OrientPar().from_file(self.orient_par_file_name)
 
         self.cal = Calibration().from_file(
@@ -309,24 +310,24 @@ class TestGradientDescent(unittest.TestCase):
         )
 
         # Fake the image points by back-projection
-        targets = arr_metric_to_pixel(
+        img_pts = arr_metric_to_pixel(
             image_coordinates(ref_pts, self.cal, self.control.mm),
             self.control,
         )
 
         # Jigg the fake detections to give raw_orient some challenge.
-        targets[:, 1] -= 0.1
+        img_pts[:, 1] -= 0.1
 
-        self.assertTrue(external_calibration(self.cal, ref_pts, targets, self.control))
+        self.assertTrue(external_calibration(self.cal, ref_pts, img_pts, self.control))
         np.testing.assert_array_almost_equal(
-            self.cal.get_angles(), self.orig_cal.get_angles(), decimal=3
+            self.cal.get_angles(), self.orig_cal.get_angles(), decimal=6
         )
         np.testing.assert_array_almost_equal(
-            self.cal.get_pos(), self.orig_cal.get_pos(), decimal=3
+            self.cal.get_pos(), self.orig_cal.get_pos(), decimal=6
         )
 
     def test_full_calibration(self):
-        """Full calibration using clicked points."""
+        """Full calibration using predesigned points."""
         ref_pts = np.array(
             [
                 a.flatten()
@@ -335,40 +336,62 @@ class TestGradientDescent(unittest.TestCase):
         ).T
 
         # Fake the image points by back-projection
-        targets = arr_metric_to_pixel(
-            image_coordinates(ref_pts, self.cal, self.control.get_multimedia_params()),
+        img_pts = arr_metric_to_pixel(
+            image_coordinates(
+                ref_pts,
+                self.orig_cal,
+                self.control.get_multimedia_params()
+            ),
             self.control,
         )
 
-        # # Full calibration works with TargetArray objects, not NumPy.
-        # targets = TargetArray(len(targets))
-        # for i, trgt in enumerate(targets):
-        #     trgt.set_pnr(i)
-        #     trgt.set_pos(targets[i])
+        np.testing.assert_array_almost_equal(
+            self.cal.get_angles(), self.orig_cal.get_angles(), decimal=6
+        )
+        np.testing.assert_array_almost_equal(
+            self.cal.get_pos(), self.orig_cal.get_pos(), decimal=6
+        )
 
         # Perturb the calibration object, then compore result to original.
-        self.cal.set_pos(self.cal.get_pos() + np.r_[15.0, -15.0, 15.0])
+        self.cal.set_pos(self.cal.get_pos() + np.r_[-15.0, +15.0, -15.0])
         self.cal.set_angles(self.cal.get_angles() + np.r_[-0.5, 0.5, -0.5])
+
+        # np.testing.assert_array_almost_equal(
+        #     self.cal.get_angles(), self.orig_cal.get_angles(), decimal=6
+        # )
+        # np.testing.assert_array_almost_equal(
+        #     self.cal.get_pos(), self.orig_cal.get_pos(), decimal=6
+        # )
 
 
         self.orient_par.ccflag=0
         self.orient_par.xhflag=0
         self.orient_par.yhflag=0
-        print(f"Calibrating with the following flags: {self.orient_par}")
+        print(f"Calibrating with the following flags: {self.orient_par} \n")
+
+        targs = np.tile(Coord2d, len(img_pts))
+
+        for ptx, pt in enumerate(img_pts):
+            targs[ptx]['pnr'] = ptx
+            targs[ptx]['x'] = pt[0]
+            targs[ptx]['y'] = pt[1]
+
+        print(f"Before full calibration: {self.orig_cal.ext_par = } \n")
+        print(f"Before full calibration: {self.cal.ext_par = } \n")
 
         _, _, _ = full_calibration(
             self.cal,
             ref_pts,
-            targets,
+            targs,
             self.control,
             self.orient_par
             )
 
         np.testing.assert_array_almost_equal(
-            self.cal.get_angles(), self.orig_cal.get_angles(), decimal=4
+            self.cal.get_angles(), self.orig_cal.get_angles(), decimal=6
         )
         np.testing.assert_array_almost_equal(
-            self.cal.get_pos(), self.orig_cal.get_pos(), decimal=3
+            self.cal.get_pos(), self.orig_cal.get_pos(), decimal=6
         )
 
         print(f"{self.cal.get_pos()}")
@@ -384,10 +407,12 @@ class TestGradientDescent(unittest.TestCase):
         self.orient_par.yhflag=1
         print(f"Calibrating with the following flags: {self.orient_par}")
 
+        print(f"{self.cal.ext_par = }")
+
         _, _, _ = full_calibration(
             self.cal,
             ref_pts,
-            targets,
+            img_pts,
             self.control,
             self.orient_par
             )
@@ -420,7 +445,7 @@ class TestGradientDescent(unittest.TestCase):
         _, _, _ = full_calibration(
             self.cal,
             ref_pts,
-            targets,
+            img_pts,
             self.control,
             self.orient_par
             )
@@ -448,7 +473,7 @@ class TestGradientDescent(unittest.TestCase):
         _, _, _ = full_calibration(
             self.cal,
             ref_pts,
-            targets,
+            img_pts,
             self.control,
             self.orient_par
             )
@@ -476,7 +501,7 @@ class TestGradientDescent(unittest.TestCase):
         _, _, _ = full_calibration(
             self.cal,
             ref_pts,
-            targets,
+            img_pts,
             self.control,
             self.orient_par
             )
@@ -504,7 +529,7 @@ class TestGradientDescent(unittest.TestCase):
         _, _, _ = full_calibration(
             self.cal,
             ref_pts,
-            targets,
+            img_pts,
             self.control,
             self.orient_par
             )
@@ -532,7 +557,7 @@ class TestGradientDescent(unittest.TestCase):
         _, _, _ = full_calibration(
             self.cal,
             ref_pts,
-            targets,
+            img_pts,
             self.control,
             self.orient_par
             )
@@ -563,7 +588,7 @@ class TestGradientDescent(unittest.TestCase):
         _, _, _ = full_calibration(
             self.cal,
             ref_pts,
-            targets,
+            img_pts,
             self.control,
             self.orient_par
             )
@@ -593,7 +618,7 @@ class TestGradientDescent(unittest.TestCase):
         _, _, _ = full_calibration(
             self.cal,
             ref_pts,
-            targets,
+            img_pts,
             self.control,
             self.orient_par
             )

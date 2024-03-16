@@ -3,14 +3,14 @@ import unittest
 
 import numpy as np
 
-from openptv_python.constants import POSI
+from openptv_python.constants import NEXT_NONE, POSI, PREV_NONE, PRIO_DEFAULT, TR_UNUSED
 from openptv_python.tracking_frame_buf import (
-    Corres_dtype,
+    Corres,
+    Pathinfo,
     compare_corres,
     compare_path_info,
     read_path_frame,
 )
-from openptv_python.tracking_frame_buf import Pathinfo as P
 
 
 class TestReadPathFrame(unittest.TestCase):
@@ -20,28 +20,28 @@ class TestReadPathFrame(unittest.TestCase):
         """Tests the read_path_frame() function."""
         # Create a buffer for the corres structures.
         # cor_buf = [Corres() for _ in range(POSI)]
-        cor_buf = np.ndarray(POSI, dtype=Corres_dtype)
+        cor_buf = np.tile(Corres, POSI)
 
         # Create a buffer for the path info structures.
-        path_buf = [P() for _ in range(POSI)]
+        # path_buf = [P() for _ in range(POSI)]
+        path_buf = np.tile(Pathinfo, POSI)
 
         # Create a variable for the alt_link.
         alt_link = 0
 
         # Correct values for particle 3.
-        path_correct = P(
-            x=np.array([45.219, -20.269, 25.946]),
-            prev_frame=-1,
-            next_frame=-2,
-            prio=4,
-            finaldecis=1000000.0,
-            inlist=0,
-        )
+        path_correct = Pathinfo.copy()
+        path_correct['x'] = np.array([45.219, -20.269, 25.946])
+        path_correct['prev_frame'] = PREV_NONE
+        path_correct['next_frame'] = NEXT_NONE
+        path_correct['prio'] = PRIO_DEFAULT
+
         for alt_link in range(POSI):
             path_correct['decis'][alt_link] = 0.0
-            path_correct.linkdecis[alt_link] = -999
+            path_correct['linkdecis'][alt_link] = TR_UNUSED
 
-        corres_correct = np.array([(3, [96, 66, 26, 26])], dtype = Corres_dtype)
+        corres_correct = np.array([(3, [96, 66, 26, 26])], dtype = Corres.dtype)
+        print(corres_correct)
 
 
         # The base name of the correspondence file.
@@ -71,9 +71,8 @@ class TestReadPathFrame(unittest.TestCase):
         path_correct['next_frame'] = 0
         path_correct['prio'] = 0
 
-        # Create a buffer for the path info structures.
-        cor_buf = np.ndarray(POSI, dtype=Corres_dtype)
-        path_buf = [P() for _ in range(POSI)]
+        cor_buf = np.tile(Corres, POSI)
+        path_buf = np.tile(Pathinfo, POSI)
 
         # The base name of the linkage file.
         linkage_base = "tests/testing_fodder/ptv_is"
@@ -97,21 +96,19 @@ class TestReadPathFrame(unittest.TestCase):
 
     def test_read_path_frame_chatgpt(self):
         """Tests the read_path_frame() function."""
-        cor_buf = np.ndarray(POSI, dtype=Corres_dtype)
-        path_buf = [P() for _ in range(POSI)]
+        cor_buf = np.tile(Corres, POSI)
+        path_buf = np.tile(Pathinfo, POSI)
 
         # Correct values for particle 3
-        path_correct = P(
-            x=np.array([45.219, -20.269, 25.946]),
-            prev_frame=-1,
-            next_frame=-2,
-            prio=4,
-            finaldecis=1000000.0,
-            inlist=0,
-        )
-        path_correct['decis'] = [0.0] * POSI
-        path_correct.linkdecis = [-999] * POSI
-        c_correct = np.array([(3, [96, 66, 26, 26])],dtype=Corres_dtype)
+        path_correct = Pathinfo.copy()
+        path_correct['x'] = np.array([45.219, -20.269, 25.946])
+        path_correct['prev_frame'] = PREV_NONE
+        path_correct['next_frame'] = NEXT_NONE
+        path_correct['prio'] = PRIO_DEFAULT
+        # path_correct['decis'] = [0.0] * POSI
+        # path_correct['linkdecis'] = [-999] * POSI
+
+        c_correct = np.array(((3, [96, 66, 26, 26])),dtype=Corres.dtype)
 
 
 

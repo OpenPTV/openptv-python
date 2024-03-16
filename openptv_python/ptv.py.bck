@@ -216,7 +216,7 @@ def _correspondences(img_pts: List[np.ndarray],
                 p1 = corrected[cam][geo_id]['pnr']
                 clique_ids[cam, pt] = p1
 
-                if p1 > -1:
+                if p1 > PT_UNUSED:
                     targ = img_pts[cam][p1]
                     clique_targs[cam, pt, 0] = targ._targ['x']
                     clique_targs[cam, pt, 1] = targ._targ['y']

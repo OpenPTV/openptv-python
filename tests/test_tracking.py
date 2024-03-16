@@ -16,7 +16,7 @@ from pathlib import Path
 import numpy as np
 
 from openptv_python.calibration import Calibration, read_calibration
-from openptv_python.constants import MAX_CANDS
+from openptv_python.constants import MAX_CANDS, PT_UNUSED, TR_UNUSED
 from openptv_python.parameters import (
     ControlPar,
     TrackPar,
@@ -186,23 +186,24 @@ class TestAngleAcc(unittest.TestCase):
 
 class TestCandSearchInPix(unittest.TestCase):
     def test_candsearch_in_pix(self):
-        test_targets = [
-            Target(0, 0.0, -0.2, 5, 1, 2, 10, -999),
-            Target(6, 0.2, 0.2, 10, 8, 1, 20, -999),
-            Target(3, 0.2, 0.3, 10, 3, 3, 30, -999),
-            Target(4, 0.2, 1.0, 10, 3, 3, 40, -999),
-            Target(1, -0.7, 1.2, 10, 3, 3, 50, -999),
-            Target(7, 1.2, 1.3, 10, 3, 3, 60, -999),
-            Target(5, 10.4, 2.1, 10, 3, 3, 70, -999),
-        ]
+        test_targets = np.array([
+            (0, 0.0, -0.2, 5, 1, 2, 10, -999),
+            (6, 0.2, 0.2, 10, 8, 1, 20, -999),
+            (3, 0.2, 0.3, 10, 3, 3, 30, -999),
+            (4, 0.2, 1.0, 10, 3, 3, 40, -999),
+            (1, -0.7, 1.2, 10, 3, 3, 50, -999),
+            (7, 1.2, 1.3, 10, 3, 3, 60, -999),
+            (5, 10.4, 2.1, 10, 3, 3, 70, -999),
+        ], dtype=Target.dtype)
         num_targets = len(test_targets)
+        test_targets.sort(order="y")
+
 
         cent_x = 0.2
         cent_y = 0.2
         dl = dr = du = dd = 0.1
 
         num_cams = 4
-        p = [-1] * num_cams  # Initialize p with zeros
 
         test_cpar = ControlPar(num_cams=num_cams)
         img_format = "cam{}"
@@ -218,11 +219,11 @@ class TestCandSearchInPix(unittest.TestCase):
         test_cpar.hp_flag = 1
         test_cpar.all_cam_flag = 0
         test_cpar.tiff_flag = 1
-        test_cpar.imx = 1280
-        test_cpar.imy = 1024
-        test_cpar.pix_x = 0.02
+        test_cpar.imx = np.int32(1280)
+        test_cpar.imy = np.int32(1024)
+        test_cpar.pix_x = np.float64(0.02)
         #  20 micron pixel size
-        test_cpar.pix_y = 0.02
+        test_cpar.pix_y = np.float64(0.02)
         test_cpar.chfield = 0
         test_cpar.mm.n1 = 1
         test_cpar.mm.n2[0] = 1.49
@@ -230,9 +231,17 @@ class TestCandSearchInPix(unittest.TestCase):
         test_cpar.mm.d[0] = 5
 
         p = candsearch_in_pix(
-            test_targets, num_targets, cent_x, cent_y, dl, dr, du, dd, test_cpar
+            test_targets,
+            np.int32(num_targets),
+            np.float64(cent_x),
+            np.float64(cent_y),
+            np.float64(dl),
+            np.float64(dr),
+            np.float64(du),
+            np.float64(dd),
+            test_cpar,
         )
-        counter = len(p) - p.count(-1)
+        counter = len(p) - p.count(PT_UNUSED)
 
         # print(f"p = {p}, counter = {counter}")
 
@@ -244,27 +253,38 @@ class TestCandSearchInPix(unittest.TestCase):
         p = [-1] * num_cams  # Initialize p with zeros
 
         p = candsearch_in_pix(
-            test_targets, num_targets, cent_x, cent_y, dl, dr, du, dd, test_cpar
+            test_targets,
+            np.int32(num_targets),
+            np.float64(cent_x),
+            np.float64(cent_y),
+            np.float64(dl),
+            np.float64(dr),
+            np.float64(du),
+            np.float64(dd),
+            test_cpar,
         )
         counter = len(p) - p.count(-1)
         # print(f"p = {p}, counter = {counter}")
 
         self.assertEqual(counter, 4)
 
-        test_targets = [
-            Target(0, 0.0, -0.2, 5, 1, 2, 10, 0),
-            Target(6, 100.0, 100.0, 10, 8, 1, 20, -1),
-            Target(3, 102.0, 102.0, 10, 3, 3, 30, -1),
-            Target(4, 103.0, 103.0, 10, 3, 3, 40, 2),
-            Target(1, -0.7, 1.2, 10, 3, 3, 50, 5),
-            Target(7, 1.2, 1.3, 10, 3, 3, 60, 7),
-            Target(5, 1200, 201.1, 10, 3, 3, 70, 11),
-        ]
+
+        test_targets = np.array([
+            (0, 0.0, -0.2, 5, 1, 2, 10, 0),
+            (6, 100.0, 100.0, 10, 8, 1, 20, -1),
+            (3, 102.0, 102.0, 10, 3, 3, 30, -1),
+            (4, 103.0, 103.0, 10, 3, 3, 40, 2),
+            (1, -0.7, 1.2, 10, 3, 3, 50, 5), # should fall on imx,imy
+            (7, 1.2, 1.3, 10, 3, 3, 60, 7),
+            (5, 1200, 201.1, 10, 3, 3, 70, 11),
+        ], dtype=Target.dtype)
+
+        test_targets.sort(order="y")
         num_targets = len(test_targets)
 
-        cent_x = cent_y = 98.9
+        cent_x , cent_y = 98.9, 98.9
         dl = dr = du = dd = 3
-        p = [-1] * num_cams  # Initialize p
+        p = [TR_UNUSED] * num_cams  # Initialize p
 
         counter = candsearch_in_pix_rest(
             test_targets, num_targets, cent_x, cent_y, dl, dr, du, dd, p, test_cpar
@@ -273,8 +293,8 @@ class TestCandSearchInPix(unittest.TestCase):
         # print(f"p = {p}, counter = {counter}")
         self.assertEqual(counter, 1)
         self.assertTrue(
-            isclose(test_targets[p[0]].x, 100.0, rel_tol=1e-9),
-            f"Expected 100.0 but found {test_targets[p[0]].x}",
+            isclose(test_targets[p[0]]['x'], 100.0, rel_tol=1e-9),
+            f"Expected 100.0 but found {test_targets[p[0]]['x']}",
         )
 
 
@@ -315,11 +335,11 @@ class TestSort(unittest.TestCase):
 
     def test_copy_foundpix_array(self):
         """Test the copy_foundpix_array function."""
-        src = np.array([(1, 1, [1, 0, -999, -999]), (2, 5, [1, 1, 0, 0])], dtype=Foundpix.dtype)
+        src = np.array([(1, 1, [1, 0, TR_UNUSED, TR_UNUSED]), (2, 5, [1, 1, 0, 0])], dtype=Foundpix.dtype)
         arr_len = 2
         num_cams = 2
 
-        # one_element = np.array([(TR_UNUSED,0,[-999]*TR_MAX_CAMS)],dtype=Foundpix_dtype)
+        # one_element = np.array([(TR_UNUSED,0,[TR_UNUSED]*TR_MAX_CAMS)],dtype=Foundpix_dtype)
 
         dest = np.tile(Foundpix, num_cams * MAX_CANDS)
 
@@ -327,10 +347,10 @@ class TestSort(unittest.TestCase):
         reset_foundpix_array(dest, arr_len, num_cams)
 
         self.assertEqual(
-            dest[1]['ftnr'], -1, f"Expected dest[1].ftnr == -1 but found {dest[1]['ftnr']}"
+            dest[1]['ftnr'], TR_UNUSED, f"Expected dest[1].ftnr == -1 but found {dest[1]['ftnr']}"
         )
         self.assertEqual(
-            dest[0]['freq'], 0, f"Expected dest[0].freq == 0 but found {dest[0]['freq']}"
+            dest[0]['freq'], 0, f"Expected dest[0]['freq'] == 0 but found {dest[0]['freq']}"
         )
         self.assertEqual(
             dest[1]['whichcam'][0], 0, f"Expected 0 but found {dest[1]['whichcam'][0]}"
@@ -344,7 +364,7 @@ class TestSort(unittest.TestCase):
 
         # print("Destination foundpix array:")
         # for i in range(arr_len):
-        #     print(f"ftnr = {dest[i].ftnr} freq = {dest[i].freq} whichcam = {dest[i].whichcam}")
+        #     print(f"ftnr = {dest[i].ftnr} freq = {dest[i]['freq']} whichcam = {dest[i].whichcam}")
 
 
 class TestSearchQuader(unittest.TestCase):
@@ -448,9 +468,9 @@ class TestSortCandidatesByFreq(unittest.TestCase):
 
         # print(f"num_parts = {num_parts}")
         # self.assertEqual(num_parts, 1)
-        self.assertEqual(dest[0].ftnr, 2)
-        self.assertEqual(dest[0].freq, 2)
-        self.assertEqual(dest[1].freq, 0)
+        self.assertEqual(dest[0]['ftnr'], 2)
+        self.assertEqual(dest[0]['freq'], 2)
+        self.assertEqual(dest[1]['freq'], 0)
 
 
 if __name__ == "__main__":

@@ -9,14 +9,13 @@ from openptv_python.constants import COORD_UNUSED
 
 from .calibration import Calibration
 from .constants import CONVERGENCE, IDT, NPAR, NUM_ITER, POS_INF
-from .epi import epi_mm_2D
+from .epi import Coord2d, epi_mm_2D
 from .imgcoord import img_coord
 
 # from .lsqadj import ata, atl, matinv, matmul
 from .parameters import ControlPar, MultimediaPar, OrientPar, VolumePar
 from .ray_tracing import ray_tracing
 from .sortgrid import sortgrid
-from .tracking_frame_buf import Target
 from .trafo import correct_brown_affine, pixel_to_metric
 from .vec_utils import unit_vector, vec_norm, vec_set
 
@@ -194,7 +193,6 @@ def num_deriv_exterior(
 def orient(
     cal: Calibration,
     cpar: ControlPar,
-    nfix: int,
     fix: np.ndarray,
     pix: np.ndarray,
     flags: OrientPar,
@@ -256,22 +254,22 @@ def orient(
         distortion parameters, which are also part of the G-M model and
         described in it. On failure returns None.
     """
-    maxsize = nfix * 2 + IDT
+    maxsize = len(fix) * 2 + IDT
 
     # dm: float = 0.000001
     # drad: float = 0.0000001
 
     # P, y, yh, Xbeta, resi are arrays of double
-    P = np.ones(maxsize, dtype=float)
-    y = np.zeros(maxsize, dtype=float)
-    yh = np.zeros(maxsize, dtype=float)
-    # Xbeta = np.zeros(maxsize, dtype=float)
-    # resi = np.zeros(maxsize, dtype=float)
+    P = np.ones(maxsize, dtype=np.float64)
+    y = np.zeros(maxsize, dtype=np.float64)
+    yh = np.zeros(maxsize, dtype=np.float64)
+    # Xbeta = np.zeros(maxsize, dtype=np.float64)
+    # resi = np.zeros(maxsize, dtype=np.float64)
 
     # # X and Xh are arrays of double arrays
-    X = np.zeros((maxsize, NPAR), dtype=float)
-    Xh = np.zeros((maxsize, NPAR), dtype=float)
-    beta = np.zeros(NPAR, dtype=float)
+    X = np.zeros((maxsize, NPAR), dtype=np.float64)
+    Xh = np.zeros((maxsize, NPAR), dtype=np.float64)
+    beta = np.zeros(NPAR, dtype=np.float64)
     n_obs = 0
 
     # sigmabeta = np.zeros(NPAR,)
@@ -325,7 +323,7 @@ def orient(
     while not (stopflag or itnum >= NUM_ITER):
         itnum += 1
         n = 0
-        for i in range(nfix):
+        for i, fx in enumerate(fix):
             if pix[i]['pnr'] != i:  # we need to check this point here
                 continue
 
@@ -341,8 +339,8 @@ def orient(
             xc, yc = correct_brown_affine(xc, yc, cal.added_par)
 
             # Projected 2D position on sensor of corresponding known point
-            cal.update_rotation_matrix()
-            xp, yp = img_coord(fix[i], cal, cpar.mm)
+            # cal.update_rotation_matrix()
+            xp, yp = img_coord(fx, cal, cpar.mm)
 
             # derivatives of distortion parameters
             r = np.sqrt(xp * xp + yp * yp)
@@ -384,12 +382,12 @@ def orient(
 
             # numeric derivatives of projection coordinates over external parameters,
             # 3D position and the angles
-            X[n][:6], X[n + 1][:6] = num_deriv_exterior(cal, cpar, dm, drad, fix[i])
+            X[n][:6], X[n + 1][:6] = num_deriv_exterior(cal, cpar, dm, drad, fx)
 
             # Num. deriv. of projection coords over sensor distance from PP
             cal.int_par['cc'] += dm
             cal.update_rotation_matrix()
-            xpd, ypd = img_coord(fix[i], cal, cpar.mm)
+            xpd, ypd = img_coord(fx, cal, cpar.mm)
             X[n][6] = (xpd - xp) / dm
             X[n + 1][6] = (ypd - yp) / dm
             # for i in range(len(fix)):
@@ -406,7 +404,7 @@ def orient(
             cal.glass_par[0] += e1[0] * nGl * dm
             cal.glass_par[1] += e1[1] * nGl * dm
             cal.glass_par[2] += e1[2] * nGl * dm
-            xpd, ypd = img_coord(fix[i], cal, cpar.mm)
+            xpd, ypd = img_coord(fx, cal, cpar.mm)
             X[n][16] = (xpd - xp) / dm
             X[n + 1][16] = (ypd - yp) / dm
             # al -= dm
@@ -418,7 +416,7 @@ def orient(
             cal.glass_par[0] += e2[0] * nGl * dm
             cal.glass_par[1] += e2[1] * nGl * dm
             cal.glass_par[2] += e2[2] * nGl * dm
-            xpd, ypd = img_coord(fix[i], cal, cpar.mm)
+            xpd, ypd = img_coord(fx, cal, cpar.mm)
             X[n][17] = (xpd - xp) / dm
             X[n + 1][17] = (ypd - yp) / dm
             # be -= dm
@@ -430,7 +428,7 @@ def orient(
             cal.glass_par[0] += cal.glass_par[0] * nGl * dm
             cal.glass_par[1] += cal.glass_par[1] * nGl * dm
             cal.glass_par[2] += cal.glass_par[2] * nGl * dm
-            xpd, ypd = img_coord(fix[i], cal, cpar.mm)
+            xpd, ypd = img_coord(fx, cal, cpar.mm)
             X[n][18] = (xpd - xp) / dm
             X[n + 1][18] = (ypd - yp) / dm
             # ga -= dm
@@ -495,17 +493,17 @@ def orient(
         # )
 
         beta, residuals, rank, singular_values = scipy.linalg.lstsq(
-            Xh[:, :numbers], yh, lapack_driver='gelsy'
-        )
+            Xh[:, :numbers], yh)#, lapack_driver='gelsy'
+        #)
 
         # Interpret the results
-        # print(
-        #     f"Coefficients (beta): {beta} \n \
-        #         Residuals: {residuals} \n \
-        #         singular_values: {singular_values} \n \
-        #         rank: {rank} \n \
-        #     "
-        # )
+        print(
+            f"Coefficients: {beta=} \n \
+                Residuals: {residuals=} \n \
+                singular_values: {singular_values=} \n \
+                rank: {rank=} \n \
+            "
+        )
 
         # stopflag
         stopflag = True
@@ -541,6 +539,9 @@ def orient(
         cal.ext_par['omega'] += beta[3]
         cal.ext_par['phi'] += beta[4]
         cal.ext_par['kappa'] += beta[5]
+
+        print(f"{cal.ext_par=}")
+
         cal.int_par['cc'] += beta[6]
         cal.int_par['xh'] += beta[7]
         cal.int_par['yh'] += beta[8]
@@ -636,14 +637,8 @@ def raw_orient(
     beta = np.zeros(6)
     pos = np.zeros(3)
 
-    # cal.added_par[0] = 0
-    # cal.added_par[1] = 0
-    # cal.added_par[2] = 0
-    # cal.added_par[3] = 0
-    # cal.added_par[4] = 0
-    # cal.added_par[5] = 1
-    # cal.added_par[6] = 0
     cal.added_par = np.array([0, 0, 0, 0, 0, 1, 0], dtype=np.float64)
+
     itnum = 0
     stopflag = False
 
@@ -675,10 +670,10 @@ def raw_orient(
         )  # , rcond=None)
 
         # Interpret the results
-        # print("Coefficients (beta):", beta)
-        # print("Residuals:", residuals)
-        # print("rank:", rank)
-        # print("singular_values:", singular_values)
+        print("Coefficients (beta):", beta)
+        print("Residuals:", residuals)
+        print("rank:", rank)
+        print("singular_values:", singular_values)
 
         stopflag = True
         for i in range(6):
@@ -802,7 +797,7 @@ def external_calibration(
     # Convert pixel coords to metric coords:
     # targs = <target *>calloc(len(img_pts), sizeof(target))
     # targs = [Target() for _ in img_pts]
-    targs = np.tile(Target, len(img_pts))
+    targs = np.tile(Coord2d, len(img_pts))
 
     for ptx, pt in enumerate(img_pts):
         targs[ptx]['x'] = pt[0]
@@ -818,7 +813,7 @@ def external_calibration(
 def full_calibration(
     cal: Calibration,
     ref_pts: np.ndarray,
-    img_pts: np.ndarray,
+    targs: np.ndarray,
     cparam: ControlPar,
     orient_par: OrientPar,
     dm: float = 1e-6,
@@ -864,19 +859,7 @@ def full_calibration(
     """
     err_est = np.empty((NPAR + 1), dtype=np.float64)
 
-    if isinstance(img_pts, np.ndarray):
-        # convert numpy array to list of Target objects
-        # targs = [Target() for _ in img_pts]
-        targs = np.tile(Target, len(img_pts))
-
-        for ptx, pt in enumerate(img_pts):
-            targs[ptx]['x'] = pt[0]
-            targs[ptx]['y'] = pt[1]
-            targs[ptx]['pnr'] = ptx
-    else:
-        targs = img_pts
-
-    residuals = orient(cal, cparam, len(ref_pts), ref_pts, targs, orient_par, err_est, dm=dm, drad=drad)
+    residuals = orient(cal, cparam, ref_pts, targs, orient_par, err_est, dm=dm, drad=drad)
 
     # free(orip)
 
@@ -885,12 +868,12 @@ def full_calibration(
         print(f"Residuals = {residuals}")
         raise ValueError("Orientation iteration failed, need better setup.")
 
-    ret = np.empty((len(img_pts), 2))
-    used = np.empty(len(img_pts), dtype=np.int_)
+    ret = np.empty((len(targs), 2))
+    used = np.empty(len(targs), dtype=np.int_)
 
-    for ix, img_pt in enumerate(targs):
+    for ix, targ in enumerate(targs):
         ret[ix] = (residuals[2 * ix], residuals[2 * ix + 1])
-        used[ix] = img_pt['pnr']
+        used[ix] = targ['pnr']
 
     # free(residuals)
     return ret, used, err_est

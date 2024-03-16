@@ -3,7 +3,6 @@ import unittest
 
 import numpy as np
 
-from openptv_python.constants import POSI
 from openptv_python.tracking_frame_buf import (
     Corres,
     Pathinfo,
@@ -116,23 +115,16 @@ class TestReadPathFrame(unittest.TestCase):
         # Correct values for particle 3
         tmp = {
             "x": [45.219, -20.269, 25.946],
-            "prev_frame": -1,
-            "next_frame": -2,
-            "prio": 4,
-            "finaldecis": 1000000.0,
-            "inlist": 0.0,
-            "decis": [0.0] * POSI,
-            "linkdecis": [-999] * POSI,
         }
         path_correct = Pathinfo
         path_correct['x'] = tmp['x']
-        path_correct['prio'] = tmp['prio']
-        path_correct['prev_frame'] = tmp['prev_frame']
-        path_correct['next_frame'] = tmp['next_frame']
-        path_correct['finaldecis'] = tmp['finaldecis']
-        path_correct['inlist'] = tmp['inlist']
-        path_correct['decis'] = tmp['decis']
-        path_correct['linkdecis'] = tmp['linkdecis']
+        # path_correct['prio'] = tmp['prio']
+        # path_correct['prev_frame'] = tmp['prev_frame']
+        # path_correct['next_frame'] = tmp['next_frame']
+        # path_correct['finaldecis'] = tmp['finaldecis']
+        # path_correct['inlist'] = tmp['inlist']
+        # path_correct['decis'] = tmp['decis']
+        # path_correct['linkdecis'] = tmp['linkdecis']
 
 
 

@@ -14,6 +14,7 @@ from .constants import (
     POSI,
     PREV_NONE,
     PRIO_DEFAULT,
+    PT_UNUSED,
     # PT_UNUSED,
     TR_UNUSED,
 )
@@ -53,7 +54,7 @@ Corres_dtype = np.dtype([
     ("p", np.int32, (4,)) # -1 for no correspondence
 ])
 
-Corres = np.array([(0, [-1, -1, -1, -1])], dtype=Corres_dtype)
+Corres = np.array((0, [-1, -1, -1, -1]), dtype=Corres_dtype)
 
     # def __eq__(self, other):
     #     return self['nr'] == other['nr'] and np.all(self['p'] == other['p'])
@@ -87,7 +88,7 @@ Target_dtype = np.dtype([
     ("tnr", np.int32) # TR_UNUSED
     ])
 
-Target = np.array([(CORRES_NONE, 0., 0., 0, 0, 0, 0, TR_UNUSED)], dtype=Target_dtype)
+Target = np.array((PT_UNUSED, 0., 0., 0, 0, 0, 0, TR_UNUSED), dtype=Target_dtype)
 
 # @dataclass
 # class Target:
@@ -126,7 +127,7 @@ Target = np.array([(CORRES_NONE, 0., 0., 0, 0, 0, 0, TR_UNUSED)], dtype=Target_d
 
 # def pos(target: np.ndarray) -> Tuple[float, float]:
 #     """Return target position."""
-#     # return Coord2d(self.x, self.y)
+#     # return Coord2d(self['x'], self['y'])
 #     return target['x'], target['y']
 
 # def count_pixels(self):
@@ -136,8 +137,8 @@ Target = np.array([(CORRES_NONE, 0., 0., 0, 0, 0, 0, TR_UNUSED)], dtype=Target_d
 #     def __eq__(self, __value) -> bool:
 #         return (
 #             self['pnr'] == __value['pnr']  # type: ignore
-#             and self.x == __value.x  # type: ignore
-#             and self.y == __value.y  # type: ignore
+#             and self['x'] == __value['x']  # type: ignore
+#             and self['y'] == __value['y']  # type: ignore
 #             and self.n == __value.n  # type: ignore
 #             and self.nx == __value.nx  # type: ignore
 #             and self.ny == __value.ny  # type: ignore
@@ -257,8 +258,8 @@ Pathinfo_dtype = np.dtype([
         ('linkdecis', np.int32, POSI),
         ('inlist', np.int32)
     ])
-Pathinfo = np.array([(np.zeros(3), PREV_NONE, NEXT_NONE, PRIO_DEFAULT,
-                         [0.0] * POSI, 1000000.0, [0] * POSI, 0)], dtype=Pathinfo_dtype)
+Pathinfo = np.array(((np.zeros(3,), PREV_NONE, NEXT_NONE, PRIO_DEFAULT,
+                         np.zeros(POSI,), 1000000.0, TR_UNUSED*np.ones(POSI,), 0)), dtype=Pathinfo_dtype)
 
 # @dataclass
 # class Pathinfo:
@@ -277,7 +278,7 @@ Pathinfo = np.array([(np.zeros(3), PREV_NONE, NEXT_NONE, PRIO_DEFAULT,
 #         if not isinstance(other, Pathinfo):
 #             return False
 #         return (
-#             (self.x == other.x).all()
+#             (self['x'] == other['x']).all()
 #             and self['prev_frame'] == other['prev_frame']
 #             and self['next_frame'] == other['next_frame']
 #             and self['prio'] == other['prio']
@@ -405,7 +406,7 @@ class Frame:
         """Return an (n,3) array 3D positions on n particles in the frame."""
         pos3d = np.zeros((self.num_parts, 3))
         for pt in range(self.num_parts):
-            pos3d[pt] = self.path_info[pt].x
+            pos3d[pt] = self.path_info[pt]['x']
 
         return pos3d
 
@@ -433,8 +434,8 @@ class Frame:
             if tix == CORRES_NONE:
                 pos2d[pt] = np.nan
             else:
-                pos2d[pt, 0] = self.targets[cam][tix].x
-                pos2d[pt, 1] = self.targets[cam][tix].y
+                pos2d[pt, 0] = self.targets[cam][tix]['x']
+                pos2d[pt, 1] = self.targets[cam][tix]['y']
 
         return pos2d
 
@@ -764,29 +765,29 @@ def read_path_frame(
 
         if linkagein is not None:
             linkage_line = linkagein.readline()
-            linkage_vals = np.fromstring(linkage_line, dtype=float, sep=" ")
+            linkage_vals = np.fromstring(linkage_line, dtype=np.float64, sep=" ")
             path_buf[targets]['prev_frame'] = linkage_vals[0].astype(int)
             path_buf[targets]['next_frame'] = linkage_vals[1].astype(int)
-            # path_buf[targets].x = linkage_vals[2:]
+            # path_buf[targets]['x'] = linkage_vals[2:]
 
         if prioin is not None:
             prio_line = prioin.readline()
-            prio_vals = np.fromstring(prio_line, dtype=float, sep=" ")
+            prio_vals = np.fromstring(prio_line, dtype=np.float64, sep=" ")
             path_buf[targets]['prio'] = prio_vals[-1].astype(int)
         else:
-            path_buf[targets]['prio'] = 4
+            path_buf[targets]['prio'] = PRIO_DEFAULT
 
-        path_buf[targets]['inlist'] = 0
-        path_buf[targets]['finaldecis'] = 1000000.0
-        path_buf[targets]['decis'] = [0] * POSI  # type: ignore
-        path_buf[targets]['linkdecis'] = [-999] * POSI
+        # path_buf[targets]['inlist'] = 0
+        # path_buf[targets]['finaldecis'] = 1000000.0
+        # path_buf[targets]['decis'] = [0] * POSI  # type: ignore
+        # path_buf[targets]['linkdecis'] = [-999] * POSI
 
-        vals = np.fromstring(line, dtype=float, sep=" ")
+        vals = np.fromstring(line, dtype=np.float64, sep=" ")
         cor_buf[targets]['nr'] = targets + 1
         cor_buf[targets]['p'] = vals[-4:].astype(int)
         path_buf[targets]['x'] = vals[1:-4]
 
-        # print(cor_buf[targets]['nr'], cor_buf[targets]['p'], path_buf[targets].x)
+        # print(cor_buf[targets]['nr'], cor_buf[targets]['p'], path_buf[targets]['x'])
 
         targets += 1
 

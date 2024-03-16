@@ -10,6 +10,7 @@ from .constants import (
     MAXCAND,
     NMAX,
     PT_UNUSED,
+    TR_UNUSED,
 )
 from .epi import epi_mm
 from .find_candidate import find_candidate
@@ -527,7 +528,7 @@ def take_best_candidates(
             tnum = cand['p'][cam]
 
             # If any correspondence in this camera, check if the target is free
-            if tnum > -1 and tusage[cam][tnum] > 0:
+            if tnum > TR_UNUSED and tusage[cam][tnum] > 0:
                 has_used_target = True
                 break
 
@@ -537,7 +538,7 @@ def take_best_candidates(
         # Mark the targets as used
         for cam in range(num_cams):
             tnum = cand['p'][cam]
-            if tnum > -1:
+            if tnum > TR_UNUSED:
                 tusage[cam][tnum] += 1
 
         dst[taken] = cand
@@ -649,7 +650,7 @@ def py_correspondences(
                 p1 = flat_coords[cam][geo_id]['pnr']
                 clique_ids[cam, pt] = p1
 
-                if p1 > -1:
+                if p1 > PT_UNUSED:
                     targ = img_pts[cam][p1]
                     clique_targs[cam, pt, 0] = targ['x']
                     clique_targs[cam, pt, 1] = targ['y']
@@ -772,7 +773,7 @@ def correspondences(
                 continue
 
             p1 = corrected[j][con[i]['p'][j]]['pnr']
-            if p1 > -1 and p1 < 1202590843:
+            if p1 > PT_UNUSED and p1 < 1202590843:
                 frm.targets[j][p1]['tnr'] = i
 
     # Free all other allocations

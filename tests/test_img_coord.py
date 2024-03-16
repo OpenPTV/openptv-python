@@ -16,7 +16,7 @@ class Test_image_coordinates(unittest.TestCase):
     def test_img_coord_typecheck(self):
         # with self.assertRaises(TypeError):
         x, y = flat_image_coord(
-            np.zeros(3, dtype=float), cal=self.calibration, mm=self.control.mm
+            np.zeros(3, dtype=np.float64), cal=self.calibration, mm=self.control.mm
         )
         assert x == 0 and y == 0
 

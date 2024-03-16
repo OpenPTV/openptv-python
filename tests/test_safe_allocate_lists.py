@@ -50,8 +50,8 @@ class TestSafelyAllocateAdjacencyLists(unittest.TestCase):
         for i, row in enumerate(lists):
             for col in row:
                 for item in range(target_counts[i]):
-                    self.assertTrue(np.all(col[item].n == 0))
-                    self.assertTrue(np.all(col[item].p1 == PT_UNUSED))
+                    self.assertTrue(np.all(col[item]['n'] == 0))
+                    self.assertTrue(np.all(col[item]['p1'] == PT_UNUSED))
                     # print(lists[row][col])
 
         # self.assertEqual(lists, expected_lists)
