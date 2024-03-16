@@ -284,7 +284,7 @@ class TestGradientDescent(unittest.TestCase):
         self.control = read_control_par(control_file_name)
 
         self.orient_par_file_name = "tests/testing_folder/corresp/orient.par"
-        self.orient_par = OrientPar().from_file(self.orient_par_file_name)
+        self.orient_par = OrientPar().from_file(Path(self.orient_par_file_name))
 
         self.cal = Calibration().from_file(
             Path("tests/testing_folder/calibration/cam1.tif.ori"),
