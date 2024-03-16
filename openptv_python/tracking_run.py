@@ -1,8 +1,9 @@
 """Tracking run module."""
-import math
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List
+
+import numpy as np
 
 from openptv_python.calibration import Calibration
 from openptv_python.tracking_frame_buf import FrameBuf
@@ -30,10 +31,10 @@ class TrackingRun:
     vpar: VolumePar
     cpar: ControlPar
     cal: List[Calibration]
-    flatten_tol: float = 0.0
-    ymin: float = 0.0
-    ymax: float = 0.0
-    lmax: float = 0.0
+    flatten_tol: np.float64 # type: ignore
+    ymin: np.float64
+    ymax: np.float64
+    lmax: np.float64
     npart: int = 0
     nlinks: int = 0
 
@@ -49,7 +50,7 @@ class TrackingRun:
         linkage_file_base: str,
         prio_file_base: str,
         cal: List[Calibration],
-        flatten_tol: float,
+        flatten_tol: np.float64,
     ):
         self.tpar = tpar
         self.vpar = vpar
@@ -68,7 +69,7 @@ class TrackingRun:
             seq_par.img_base_name,
         )
 
-        self.lmax = math.sqrt(
+        self.lmax = np.sqrt(
             (tpar.dvxmin - tpar.dvxmax) ** 2
             + (tpar.dvymin - tpar.dvymax) ** 2
             + (tpar.dvzmin - tpar.dvzmax) ** 2

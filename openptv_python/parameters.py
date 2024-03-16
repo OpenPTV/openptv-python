@@ -42,10 +42,10 @@ class MultimediaPar(Parameters):
     """Multimedia parameters."""
 
     nlay: int = 1
-    n1: float = 1.0
-    n2: List[float] = field(default_factory=lambda: [1.0])
-    d: List[float] = field(default_factory=lambda: [0.0])
-    n3: float = 1.0
+    n1: np.float64 = 1.0
+    n2: List[np.float64] = field(default_factory=lambda: [1.0])
+    d: List[np.float64] = field(default_factory=lambda: [0.0])
+    n3: np.float64 = 1.0
 
     def __post_init__(self):
         if len(self.n2) != len(self.d):
@@ -59,7 +59,7 @@ class MultimediaPar(Parameters):
         """Return the refractive index of the first medium."""
         return self.n1
 
-    def set_n1(self, n1: float):
+    def set_n1(self, n1: np.float64):
         """Return the refractive index of the first medium."""
         self.n1 = n1
 
@@ -67,7 +67,7 @@ class MultimediaPar(Parameters):
         """Return the refractive index of the last medium."""
         return self.n3
 
-    def set_n3(self, n3: float):
+    def set_n3(self, n3: np.float64):
         """Return the refractive index of the last medium."""
         self.n3 = n3
 
@@ -79,7 +79,7 @@ class MultimediaPar(Parameters):
         """Return the thickness of the second medium."""
         return self.d
 
-    def set_layers(self, refr_index: list[float], thickness: list[float]):
+    def set_layers(self, refr_index: list[np.float64], thickness: list[np.float64]):
         """Set the layers of the medium."""
         if len(refr_index) != len(thickness):
             raise ValueError("Lengths of refractive index and thickness must be equal.")
@@ -179,19 +179,19 @@ def compare_sequence_par(sp1: SequencePar, sp2: SequencePar) -> bool:
 class TrackPar(Parameters):
     """Tracking parameters."""
 
-    dvxmin: float = 0.0
-    dvxmax: float = 0.0
-    dvymin: float = 0.0
-    dvymax: float = 0.0
-    dvzmin: float = 0.0
-    dvzmax: float = 0.0
-    dangle: float = 0.0
-    dacc: float = 0.0
+    dvxmin: np.float64 = 0.0
+    dvxmax: np.float64 = 0.0
+    dvymin: np.float64 = 0.0
+    dvymax: np.float64 = 0.0
+    dvzmin: np.float64 = 0.0
+    dvzmax: np.float64 = 0.0
+    dangle: np.float64 = 0.0
+    dacc: np.float64 = 0.0
     add: int = 0
-    dsumg: float = 0.0
-    dn: float = 0.0
-    dnx: float = 0.0
-    dny: float = 0.0
+    dsumg: np.float64 = 0.0
+    dn: np.float64 = 0.0
+    dnx: np.float64 = 0.0
+    dny: np.float64 = 0.0
 
 
     # def to_dict(self):
@@ -223,14 +223,14 @@ class TrackPar(Parameters):
         """
         try:
             with open(filename, "r", encoding="utf-8") as fpp:
-                dvxmin = float(fpp.readline().rstrip())
-                dvxmax = float(fpp.readline().rstrip())
-                dvymin = float(fpp.readline().rstrip())
-                dvymax = float(fpp.readline().rstrip())
-                dvzmin = float(fpp.readline().rstrip())
-                dvzmax = float(fpp.readline().rstrip())
-                dangle = float(fpp.readline().rstrip())
-                dacc = float(fpp.readline().rstrip())
+                dvxmin = np.float64(fpp.readline().rstrip())
+                dvxmax = np.float64(fpp.readline().rstrip())
+                dvymin = np.float64(fpp.readline().rstrip())
+                dvymax = np.float64(fpp.readline().rstrip())
+                dvzmin = np.float64(fpp.readline().rstrip())
+                dvzmax = np.float64(fpp.readline().rstrip())
+                dangle = np.float64(fpp.readline().rstrip())
+                dacc = np.float64(fpp.readline().rstrip())
                 add = int(fpp.readline().rstrip())
         except IOError as exc:
             raise (f"Error reading tracking parameters from {filename}") from exc  # type: ignore
@@ -320,18 +320,18 @@ def compare_track_par(t1: TrackPar, t2: TrackPar) -> bool:
 class VolumePar(Parameters):
     """Volume parameters."""
 
-    x_lay: List[float] = field(default_factory=list)
-    z_min_lay: List[float] = field(default_factory=list)
-    z_max_lay: List[float] = field(default_factory=list)
+    x_lay: List[np.float64] = field(default_factory=list)
+    z_min_lay: List[np.float64] = field(default_factory=list)
+    z_max_lay: List[np.float64] = field(default_factory=list)
     # minimal criteria for number of pixels
-    cn: float = field(default_factory=float)
-    cnx: float = field(default_factory=float)  # same in x direction
-    cny: float = field(default_factory=float)  # same in y direction
-    csumg: float = field(default_factory=float)  # same in sum of grey values
+    cn: np.float64 = field(default_factory=np.float64)
+    cnx: np.float64 = field(default_factory=np.float64)  # same in x direction
+    cny: np.float64 = field(default_factory=np.float64)  # same in y direction
+    csumg: np.float64 = field(default_factory=np.float64)  # same in sum of grey values
     # minimal criteria for epipolar distance
-    eps0: float = field(default_factory=float)
-    corrmin: float = field(
-        default_factory=float
+    eps0: np.float64 = field(default_factory=np.float64)
+    corrmin: np.float64 = field(
+        default_factory=np.float64
     )  # minimal correlation value of all criteria
 
     # def to_dict(self):
@@ -348,31 +348,31 @@ class VolumePar(Parameters):
     #         'corrmin': self.corrmin,
     #     }
 
-    def set_z_min_lay(self, z_min_lay: list[float]) -> None:
+    def set_z_min_lay(self, z_min_lay: list[np.float64]) -> None:
         """Set the minimum z coordinate of the layers."""
         self.z_min_lay = z_min_lay
 
-    def set_z_max_lay(self, z_max_lay: list[float]) -> None:
+    def set_z_max_lay(self, z_max_lay: list[np.float64]) -> None:
         """Set the maximum z coordinate of the layers."""
         self.z_max_lay = z_max_lay
 
-    def set_cn(self, cn: float) -> None:
+    def set_cn(self, cn: np.float64) -> None:
         """Set the refractive index."""
         self.cn = cn
 
-    def set_cnx(self, cnx: float) -> None:
+    def set_cnx(self, cnx: np.float64) -> None:
         """Set the refractive index in x direction."""
         self.cnx = cnx
 
-    def set_csumg(self, csumg: float) -> None:
+    def set_csumg(self, csumg: np.float64) -> None:
         """Set the maximum sum of the gradient."""
         self.csumg = csumg
 
-    def set_eps0(self, eps0: float) -> None:
+    def set_eps0(self, eps0: np.float64) -> None:
         """Set the maximum sum of the gradient."""
         self.eps0 = eps0
 
-    def set_corrmin(self, corrmin: float):
+    def set_corrmin(self, corrmin: np.float64):
         """Set the minimum correlation value of all criteria."""
         self.corrmin = corrmin
 
@@ -388,14 +388,14 @@ class VolumePar(Parameters):
         x_lay, z_min_lay, z_max_lay = [], [], []
 
         with open(filename, "r", encoding="utf-8") as f:
-            x_lay.append(float(f.readline()))
-            z_min_lay.append(float(f.readline()))
-            z_max_lay.append(float(f.readline()))
-            x_lay.append(float(f.readline()))
-            z_min_lay.append(float(f.readline()))
-            z_max_lay.append(float(f.readline()))
+            x_lay.append(np.float64(f.readline()))
+            z_min_lay.append(np.float64(f.readline()))
+            z_max_lay.append(np.float64(f.readline()))
+            x_lay.append(np.float64(f.readline()))
+            z_min_lay.append(np.float64(f.readline()))
+            z_max_lay.append(np.float64(f.readline()))
             cnx, cny, cn, csumg, corrmin, eps0 = [
-                float(f.readline()) for _ in range(6)
+                np.float64(f.readline()) for _ in range(6)
             ]
 
         return cls(x_lay, z_min_lay, z_max_lay, cn, cnx, cny, csumg, eps0, corrmin)

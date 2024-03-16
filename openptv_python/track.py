@@ -101,15 +101,15 @@ def register_closest_neighbs(
     targets: np.ndarray,
     num_targets: int,
     cam: int,
-    cent_x: float,
-    cent_y: float,
-    dl: float,
-    dr: float,
-    du: float,
-    dd: float,
+    cent_x: np.float64,
+    cent_y: np.float64,
+    dl: np.float64,
+    dr: np.float64,
+    du: np.float64,
+    dd: np.float64,
     reg: np.ndarray,
     cpar: ControlPar,
-) -> List[int]:
+) -> None:
     """Register_closest_neighbs() finds candidates for continuing a particle's.
 
     path in the search volume, and registers their data in a foundpix array
@@ -144,7 +144,7 @@ def register_closest_neighbs(
             reg[cand_idx]['whichcam'][cam] = 1
             reg[cand_idx]['ftnr'] = targets[all_cands[cand_idx]]['tnr']
 
-    return all_cands
+    # return all_cands
 
 @njit(float64[:](float64[:], float64[:]), cache=True, fastmath=True, nogil=True, parallel=True)
 def search_volume_center_moving(
@@ -216,7 +216,7 @@ def pos3d_in_bounds(pos, bounds):
 
 # def angle_acc(
 #     start: np.ndarray, pred: np.ndarray, cand: np.ndarray
-# ) -> Tuple[float, float]:
+# ) -> Tuple[np.float64, np.float64]:
 #     """Calculate the angle between the (1st order) numerical velocity vectors.
 
 #     to the predicted next_frame position and to the candidate actual position. The
@@ -231,8 +231,8 @@ def pos3d_in_bounds(pos, bounds):
 
 #     Returns:
 #     -------
-#     angle -- float, the angle between the two velocity vectors, [gon]
-#     acc -- float, the 1st-order numerical acceleration embodied in the deviation from prediction.
+#     angle -- np.float64, the angle between the two velocity vectors, [gon]
+#     acc -- np.float64, the 1st-order numerical acceleration embodied in the deviation from prediction.
 #     """
 #     v0 = pred - start
 #     v1 = cand - start
@@ -245,7 +245,7 @@ def pos3d_in_bounds(pos, bounds):
 #     elif np.all(v0 == v1):
 #         angle = 0
 #     else:
-#         angle = float((200.0 / math.pi) * math.acos(
+#         angle = np.float64((200.0 / math.pi) * math.acos(
 #             math.fsum([v0[i] * v1[i] for i in range(3)])
 #             / (math.dist(start, pred) * math.dist(start, cand)))
 #         )
@@ -255,7 +255,7 @@ def pos3d_in_bounds(pos, bounds):
 
 def angle_acc(
     start: np.ndarray, pred: np.ndarray, cand: np.ndarray
-) -> Tuple[float, float]:
+) -> Tuple[np.float64, np.float64]:
     """Calculate the angle between the (1st order) numerical velocity vectors.
 
     to the predicted next_frame position and to the candidate actual position. The
@@ -270,8 +270,8 @@ def angle_acc(
 
     Returns
     -------
-    angle -- float, the angle between the two velocity vectors, [gon]
-    acc -- float, the 1st-order numerical acceleration embodied in the deviation from prediction.
+    angle -- np.float64, the angle between the two velocity vectors, [gon]
+    acc -- np.float64, the 1st-order numerical acceleration embodied in the deviation from prediction.
     """
     v0 = pred - start
     v1 = cand - start
@@ -291,13 +291,13 @@ def angle_acc(
             dot_product / (norm_start_pred * norm_start_cand)
         )
 
-    return float(angle), float(acc)
+    return np.float64(angle), np.float64(acc)
 
 
 
 def candsearch_in_pix(
     next_frame: np.ndarray,
-    num_targets: np.int32,
+    num_targets: int,
     cent_x: np.float64,
     cent_y: np.float64,
     dl: np.float64,
@@ -400,12 +400,12 @@ def candsearch_in_pix(
 def candsearch_in_pix_rest(
     next_frame: np.ndarray,
     num_targets: int,
-    cent_x: float,
-    cent_y: float,
-    dl: float,
-    dr: float,
-    du: float,
-    dd: float,
+    cent_x: np.float64,
+    cent_y: np.float64,
+    dl: np.float64,
+    dr: np.float64,
+    du: np.float64,
+    dd: np.float64,
     p: List[int],
     cpar: ControlPar,
 ) -> int:
@@ -575,13 +575,13 @@ def sort_candidates_by_freq(foundpix: np.ndarray, num_cams: int) -> int:
     return different
 
 
-def sort(n: int, a: List[float], b: List[int]) -> Tuple[List[float], List[int]]:
-    """In-place sorts a float list 'a' and an integer list 'b' equal lengths, sort up to n.
+def sort(n: int, a: List[np.float64], b: List[int]) -> Tuple[List[np.float64], List[int]]:
+    """In-place sorts a np.float64 list 'a' and an integer list 'b' equal lengths, sort up to n.
 
     Arguments:
     ---------
-    a -- float array (returned sorted in ascending order)
-    b -- integer array (returned sorted according to float array a)
+    a -- np.float64 array (returned sorted in ascending order)
+    b -- integer array (returned sorted according to np.float64 array a)
 
     Returns
     -------
@@ -634,7 +634,7 @@ def sorted_candidates_in_volume(
 
     # search in pix for candidates in the next_frame time step
     for cam in range(frm.num_cams):
-        _ = register_closest_neighbs(
+        register_closest_neighbs(
             frm.targets[cam],
             frm.num_targets[cam],
             cam,
@@ -704,10 +704,10 @@ def assess_new_position(
             frm.num_targets[cam],
             pixel[0],
             pixel[1],
-            left,
-            right,
-            up,
-            down,
+            np.float64(left),
+            np.float64(right),
+            np.float64(up),
+            np.float64(down),
             cand_inds[cam],
             run.cpar,
         )
@@ -1400,7 +1400,7 @@ class Tracker:
         spar: SequencePar,
         cals: List[Calibration],
         naming: dict,
-        flatten_tol: float = 0.0001,
+        flatten_tol: np.float64 = 0.0001, # type: ignore
     ):
         """
         Initialize the tracker.
@@ -1429,7 +1429,7 @@ class Tracker:
             naming["linkage"],
             naming["prio"],
             cals,
-            flatten_tol,
+            np.float64(flatten_tol),
         )
         self.step = self.run_info.seq_par.first
 
