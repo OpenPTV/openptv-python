@@ -49,7 +49,7 @@ class TestSortgrid(unittest.TestCase):
         # with self.assertRaises(FileNotFoundError):
         assert calblock_file.exists()
 
-        cal_points = read_calblock(str(calblock_file))
+        cal_points = read_calblock(calblock_file)
         self.assertEqual(len(cal_points), correct_num_points)
 
     def test_sortgrid(self):

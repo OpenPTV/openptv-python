@@ -9,18 +9,33 @@ import numpy as np
 import scipy.optimize as opt
 
 from openptv_python.calibration import Calibration
+from openptv_python.epi import Coord2d
 from openptv_python.imgcoord import image_coordinates, img_coord
 from openptv_python.orientation import external_calibration, full_calibration
 from openptv_python.parameters import OrientPar, read_control_par
-from openptv_python.tracking_frame_buf import Target
+
+# from openptv_python.tracking_frame_buf import Target
 from openptv_python.trafo import arr_metric_to_pixel, pixel_to_metric
 
 
-def print_cal(cal: Calibration):
-    print(cal.get_pos())
-    print(cal.get_angles())
-    print(cal.get_primary_point())
-    print(cal.added_par)
+def added_par_residual(added_par_array, ref_pts, targs, control, cal):
+    c = copy.deepcopy(cal)
+    c.added_par = added_par_array
+
+    residual = 0
+    for i, t in enumerate(targs):
+        xc, yc = pixel_to_metric(t['x'], t['y'], control)
+        xp, yp = img_coord(ref_pts[i], c, control.mm)
+        residual += ((xc - xp)**2 + (yc - yp)**2)
+
+    return residual
+
+def print_cal(cal1: Calibration):
+    """Print the calibration parameters."""
+    print(cal1.get_pos())
+    print(cal1.get_angles())
+    print(cal1.get_primary_point())
+    print(cal1.added_par)
 
 control_file_name = Path("tests/testing_folder/corresp/control.par")
 # self.control = ControlPar(4)
@@ -71,10 +86,17 @@ np.testing.assert_array_almost_equal(
 
 tmp_orient_par = OrientPar()
 
+targs = np.tile(Coord2d, len(targets))
+
+for ptx, pt in enumerate(targets):
+    targs[ptx]['pnr'] = ptx
+    targs[ptx]['x'] = pt[0]
+    targs[ptx]['y'] = pt[1]
+
 _, _, _ = full_calibration(
             cal,
             ref_pts,
-            targets,
+            targs,
             control,
             tmp_orient_par
             )
@@ -105,69 +127,13 @@ tmp_orient_par.sheflag = 0
 _, _, _ = full_calibration(
             cal,
             ref_pts,
-            targets,
+            targs,
             control,
             tmp_orient_par
             )
 print_cal(cal)
 
-# # %%
-# control_file_name = "tests/testing_folder/corresp/control.par"
-# control = read_control_par(control_file_name)
 
-# orient_par_file_name = "tests/testing_folder/corresp/orient.par"
-# orient_par = OrientPar().from_file(orient_par_file_name)
-
-# cal = Calibration().from_file(
-#     "tests/testing_folder/calibration/cam1.tif.ori",
-#     "tests/testing_folder/calibration/cam1.tif.addpar",
-# )
-# orig_cal = Calibration().from_file(
-#     "tests/testing_folder/calibration/cam1.tif.ori",
-#     "tests/testing_folder/calibration/cam1.tif.addpar")
-
-# # %%
-# ref_pts = np.array(
-#     [
-#         [-40.0, -25.0, 8.0],
-#         [40.0, -15.0, 0.0],
-#         [40.0, 15.0, 0.0],
-#         [40.0, 0.0, 8.0],
-#     ]
-# )
-
-# # Fake the image points by back-projection
-# targets = arr_metric_to_pixel(
-#     image_coordinates(ref_pts, cal, control.mm),
-#     control,
-# )
-
-# cal.set_pos(np.array([0, 0, 100]))
-# cal.set_angles(np.array([0, 0, 0]))
-
-# # Jigg the fake detections to give raw_orient some challenge.
-# targets[:, 1] -= 0.1
-
-# # %%
-# targs = [Target() for _ in targets]
-targs = np.tile(Target, len(targets))
-
-for ptx, pt in enumerate(targets):
-    targs[ptx]['x'] = pt[0]
-    targs[ptx]['y'] = pt[1]
-    targs[ptx]['pnr'] = ptx
-
-def added_par_residual(added_par_array, ref_pts, targs, control, cal):
-    c = copy.deepcopy(cal)
-    c.added_par = added_par_array
-
-    residual = 0
-    for i, t in enumerate(targs):
-        xc, yc = pixel_to_metric(t['x'], t['y'], control)
-        xp, yp = img_coord(ref_pts[i], c, control.mm)
-        residual += ((xc - xp)**2 + (yc - yp)**2)
-
-    return residual
 
 
 
@@ -187,7 +153,7 @@ print(f"{sol['x']=}")
 cal.set_added_par(sol['x'])
 # # print(cal.added_par)
 
-full_calibration(cal, ref_pts, targets, control, tmp_orient_par)
+full_calibration(cal, ref_pts, targs, control, tmp_orient_par)
 print_cal(cal)
 
 # # # %%

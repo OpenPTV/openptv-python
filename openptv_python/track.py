@@ -626,18 +626,15 @@ def sorted_candidates_in_volume(
     center: np.ndarray, center_proj: np.ndarray, frm: Frame, run: TrackingRun
 ) -> np.ndarray:
     """Find candidates for continuing a particle's path in the search volume."""
-    # points = [Foundpix() for _ in range(frm.num_cams * MAX_CANDS)]
-    points = np.array(
-        [(TR_UNUSED, 0, [0]*TR_MAX_CAMS)]*(frm.num_cams*MAX_CANDS),
-        dtype=Foundpix_dtype)
-    reset_foundpix_array(points, frm.num_cams * MAX_CANDS, frm.num_cams)
+    points = np.tile(Foundpix, frm.num_cams * MAX_CANDS)
+    # reset_foundpix_array(points, frm.num_cams * MAX_CANDS, frm.num_cams)
 
     # Search limits in image space
     right, left, down, up = searchquader(center, run.tpar, run.cpar, run.cal)
 
     # search in pix for candidates in the next_frame time step
     for cam in range(frm.num_cams):
-        register_closest_neighbs(
+        _ = register_closest_neighbs(
             frm.targets[cam],
             frm.num_targets[cam],
             cam,

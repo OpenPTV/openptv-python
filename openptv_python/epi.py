@@ -19,8 +19,7 @@ Candidate_dtype = np.dtype([
     ('corr', np.float64),
 ])
 
-Candidate = np.zeros(1, dtype=Candidate_dtype)
-Candidate['pnr'] = PT_UNUSED
+Candidate = np.array((PT_UNUSED, 0.0, 0.0), dtype=Candidate_dtype)
 
 Coord2d_dtype = np.dtype([
     ('pnr', np.int32),
@@ -28,8 +27,7 @@ Coord2d_dtype = np.dtype([
     ('y', np.float64),
 ])
 
-Coord2d = np.zeros(1, dtype=Coord2d_dtype)
-Coord2d['pnr'] = PT_UNUSED
+Coord2d = np.array((PT_UNUSED, 0., 0.), dtype=Coord2d_dtype)
 
 Coord3d_dtype = np.dtype([
     ('pnr', np.int32),
@@ -50,7 +48,7 @@ def sort_coord2d_y(crd: np.ndarray) -> np.ndarray:
     return np.sort(crd, order='y')
 
 
-def epi_mm(xl, yl, cal1, cal2, mmp, vpar) -> Tuple[float, float, float, float]:
+def epi_mm(xl, yl, cal1, cal2, mmp, vpar) -> Tuple[np.float64, np.float64, np.float64, np.float64]:
     """Return the end points of the epipolar line in the "second" camera.
 
     /*  epi_mm() takes a point in images space of one camera, positions of this

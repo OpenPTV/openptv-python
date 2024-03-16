@@ -265,7 +265,12 @@ def flat_to_dist(
     return dist_x, dist_y
 
 
-def dist_to_flat(dist_x: np.float64, dist_y: np.float64, cal: Calibration, tol: float = 1e-5):
+def dist_to_flat(
+    dist_x: np.float64,
+    dist_y: np.float64,
+    cal: Calibration,
+    tol: float = 1e-5
+    ) -> Tuple[np.float64, np.float64]:
     """Convert real-image coordinates to flat-image coordinates."""
     flat_x, flat_y = correct_brown_affine(dist_x, dist_y, cal.added_par, tol)
     flat_x -= cal.int_par['xh']

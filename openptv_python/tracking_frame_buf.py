@@ -88,7 +88,9 @@ Target_dtype = np.dtype([
     ("tnr", np.int32) # TR_UNUSED
     ])
 
-Target = np.array((PT_UNUSED, 0., 0., 0, 0, 0, 0, TR_UNUSED), dtype=Target_dtype)
+Target = np.array([(PT_UNUSED, 0., 0., 0, 0, 0, 0, TR_UNUSED)], dtype=Target_dtype)
+
+
 
 # @dataclass
 # class Target:
@@ -195,7 +197,7 @@ def read_targets(file_base: str, frame_num: int) -> np.ndarray:
         raise FileNotFoundError(f"Can't open ascii file: {filename}")
 
     buffer = np.loadtxt(filename, dtype=Target_dtype, skiprows=1)
-    return buffer
+    return np.atleast_1d(buffer)
 
 
 def write_targets(
@@ -360,7 +362,7 @@ class Frame:
         for cam in range(self.num_cams):
             tmp = read_targets( target_file_base[cam], frame_num )
             self.targets[cam][:len(tmp)] = tmp
-            self.num_targets[cam] = len(self.targets[cam])
+            self.num_targets[cam] = len(tmp)
 
             if self.num_targets[cam] == -1:
                 return False

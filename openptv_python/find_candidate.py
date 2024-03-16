@@ -115,16 +115,16 @@ def find_candidate(
         if d >= vpar.eps0:
             continue
 
-        p2 = crd[j]['pnr']
+        p2 = pix[crd[j]['pnr']]
 
         # print(f"p2 = {p2}, d = {d}, eps0 = {vpar.eps0}")
 
         # Quality of each parameter is a ratio of the values of the
         # size n, nx, ny and sum of grey values sumg.
-        qn = quality_ratio(n, pix[p2]['n'])
-        qnx = quality_ratio(nx, pix[p2]['nx'])
-        qny = quality_ratio(ny, pix[p2]['ny'])
-        qsumg = quality_ratio(sumg, pix[p2]['sumg'])
+        qn = quality_ratio(n, p2['n']) # type: ignore
+        qnx = quality_ratio(nx, p2['nx']) # type: ignore
+        qny = quality_ratio(ny, p2['ny']) # type: ignore
+        qsumg = quality_ratio(sumg, p2['sumg']) # type: ignore
 
         # Enforce minimum quality values and maximum candidates.
         if qn < vpar.cn or qnx < vpar.cnx or qny < vpar.cny or qsumg <= vpar.csumg:
@@ -139,10 +139,10 @@ def find_candidate(
         corr = 4 * qsumg + 2 * qn + qnx + qny
 
         # Prefer matches with brighter targets.
-        corr *= sumg + pix[p2]['sumg']
+        corr *= sumg + p2['sumg']
 
         # cand.append(Candidate(pnr=j, tol=d, corr=corr))
-        cand.append(np.array([(j, d, corr)], dtype=Candidate.dtype)) # type: ignore
+        cand.append(np.array((j, d, corr), dtype=Candidate.dtype)) # type: ignore
 
 
 
@@ -168,7 +168,7 @@ def quality_ratio(a: np.int32, b: np.int32) -> np.float64:
         return np.float64(0.0)
     return np.min(np.r_[a, b]) / np.max(np.r_[a, b])
 
-def find_start_point(crd: np.ndarray, num: int, xa: float, vpar: VolumePar) -> int:
+def find_start_point(crd: np.ndarray, num: int, xa: np.float64, vpar: VolumePar) -> int:
     """Find the start point of the candidate search.
 
     Args:
