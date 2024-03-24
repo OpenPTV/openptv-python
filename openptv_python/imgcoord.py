@@ -96,9 +96,13 @@ def image_coordinates(
     orig_pos: np.ndarray, cal: Calibration, mm: MultimediaPar
 ) -> np.ndarray:
     """Image coordinates in array mode."""
-    out = np.empty((orig_pos.shape[0], 2), dtype=float)
+    npoints = orig_pos.shape[0]
+    out = np.empty((npoints, 2), dtype=float)
 
-    for i, row in enumerate(orig_pos):
-        out[i, 0], out[i, 1] = img_coord(row, cal, mm)
+    for i in range(npoints):
+        if orig_pos[i].shape != (3,):
+            raise ValueError("orig_pos must be a 3D vector")
+
+        out[i, 0], out[i, 1] = img_coord(orig_pos[i], cal, mm)
 
     return out

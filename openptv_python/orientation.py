@@ -944,7 +944,7 @@ def match_detection_to_ref(
 
 
 def point_positions(
-    targets: np.ndarray, cparam: ControlPar, cals: List[Calibration], vparam: VolumePar
+    targets: np.ndarray, mm_par: MultimediaPar, cals: List[Calibration], vparam: VolumePar
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Calculate the 3D positions of the points given by their 2D projections.
@@ -958,7 +958,7 @@ def point_positions(
     np.ndarray[ndim=3, dtype=pos_t] targets - (num_targets, num_cams, 2) array,
         containing the metric coordinates of each target on the image plane of
         each camera. Cameras must be in the same order for all targets.
-    ControlParams cparam - needed for the parameters of the tank through which
+    MultimediaPar - needed for the parameters of the tank through which
         we see the targets.
     cals - a sequence of Calibration objects for each of the cameras, in the
         camera order of ``targets``.
@@ -976,9 +976,9 @@ def point_positions(
     #     np.ndarray[ndim=1, dtype=pos_t] rcm
 
     if len(cals) == 1:
-        res, rcm = single_cam_point_positions(targets, cparam, cals, vparam)
+        res, rcm = single_cam_point_positions(targets, mm_par, cals, vparam)
     elif len(cals) > 1:
-        res, rcm = multi_cam_point_positions(targets, cparam, cals)
+        res, rcm = multi_cam_point_positions(targets, mm_par, cals)
     else:
         raise ValueError("wrong number of cameras in point_positions")
 
@@ -986,7 +986,7 @@ def point_positions(
 
 
 def single_cam_point_positions(
-    targets: np.ndarray, cparam: ControlPar, cals: List[Calibration], vparam: VolumePar
+    targets: np.ndarray, mm_par: MultimediaPar, cals: List[Calibration], vparam: VolumePar
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Calculate the 3D positions of the points from a single camera using.
@@ -1010,13 +1010,13 @@ def single_cam_point_positions(
 
     for pt in range(num_targets):
         targ = targets[pt]
-        res[pt, :] = epi_mm_2D(targ[0][0], targ[0][1], cals[0], cparam.mm, vparam)
+        res[pt, :] = epi_mm_2D(targ[0][0], targ[0][1], cals[0], mm_par, vparam)
 
     return res, rcm
 
 
 def multi_cam_point_positions(
-    targets: np.ndarray, cparam: ControlPar, cals: List[Calibration]
+    targets: np.ndarray, mm_par: MultimediaPar, cals: List[Calibration]
 ):
     """
     Calculate the 3D positions of the points given by their 2D projections.
@@ -1051,6 +1051,6 @@ def multi_cam_point_positions(
     rcm = np.empty(num_targets)
 
     for pt in range(num_targets):
-        rcm[pt], res = point_position(targets[pt], num_cams, cparam.mm, cals)
+        rcm[pt], res = point_position(targets[pt], num_cams, mm_par, cals)
 
     return res, rcm
