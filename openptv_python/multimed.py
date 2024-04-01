@@ -67,50 +67,29 @@ def fast_multimed_r_nlay(
     y0: float,
     z0: float,
     pos: np.ndarray
-) -> float:
-    """Calculate the radial shift for the multimedia model.
-
-    mm = MultimediaPar.to_dict()
-    mm = {'nlay': 2, 'n1': 1, 'n2': [1.49, 0.0, 0.0], 'd': [5.0, 0.0, 0.0], 'n3': 1.33}
-    data = cal.mmlut.data (np.ndarray)
-
-    x0,y0,z0 =  x0, y0, z0
-
-    """
+    ) -> float:
+    """Faster mutlimedia model calculation."""
     n_iter = 40
-    rdiff = 0.1
-    beta2 = np.zeros(nlay, dtype=np.float64)
-
     X, Y, Z = pos
-    zout = Z
-    for i in range(1, nlay):
-        zout += d[i]
-
-
-    r = vec_norm(np.array([X-x0, Y-y0, 0]))
+    r = np.linalg.norm(np.array([X-x0, Y-y0]))
     rq = r
-
+    zout = Z + np.sum(d[1:nlay])
+    zdiff = z0 - Z
+    if zdiff == 0:
+        zdiff = 1.0
     it = 0
-    while (rdiff > 0.001 or rdiff < -0.001) and it < n_iter:
-        zdiff = z0 - Z
-        if zdiff == 0:
-            zdiff = 1.0
+    rdiff = 0.1  # Initialize to enter the loop
+
+    while abs(rdiff) > 0.001 and it < n_iter:
         beta1 = np.arctan(rq / zdiff)
-        for i in range(nlay):
-            beta2[i] = np.arcsin(np.sin(beta1) * n1 / n2[i])
+        beta2 = np.arcsin(np.sin(beta1) * n1 / n2[0])
         beta3 = np.arcsin(np.sin(beta1) * n1 / n3)
 
-        rbeta = (z0 - d[0]) * np.tan(beta1) - zout * np.tan(beta3)
-        for i in range(nlay):
-            rbeta += d[i] * np.tan(beta2[i])
+        rbeta = (z0 - d[0]) * np.tan(beta1) - zout * np.tan(beta3) + np.sum(d * np.tan(beta2))
 
         rdiff = r - rbeta
         rq += rdiff
         it += 1
-
-    if it >= n_iter:
-        # print("multimed_r_nlay stopped after", n_iter, "iterations")
-        return 1.0
 
     return 1.0 if r == 0 else float(rq / r)
 
