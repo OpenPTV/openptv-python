@@ -11,8 +11,8 @@ from numba import float64, int32, njit
 
 @njit(float64(float64[:]),fastmath=True, cache=True, nogil=True)
 def vec_norm(vec: np.ndarray) -> float:
-    """vec_norm() gives the norm of a vector."""
-    return np.sqrt(vec[0]**2 + vec[1]**2 + vec[2]**2)
+    """Calculate norm of a vector."""
+    return np.sqrt(vec[0]*vec[0] + vec[1]*vec[1] + vec[2]*vec[2])
 
 @njit(float64[:](float64,float64,float64),fastmath=True, cache=True, nogil=True)
 def vec_set(x: float, y: float, z: float) -> np.ndarray:
@@ -71,7 +71,7 @@ def vec_cmp(vec1: np.ndarray, vec2: np.ndarray, tol: float = 1e-6) -> bool:
     """vec_cmp() checks whether two vectors are equal within a tolerance."""
     return np.allclose(vec1, vec2, atol=tol)
 
-@njit(float64[:](float64[:]),fastmath=True, cache=True, nogil=True)
+@njit(float64[::1](float64[::1]),fastmath=True, cache=True, nogil=True)
 def unit_vector(vec: np.ndarray) -> np.ndarray:
     """Normalize a vector to a unit vector."""
     magnitude = vec_norm(vec)

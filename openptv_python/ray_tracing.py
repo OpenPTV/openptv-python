@@ -5,15 +5,9 @@ import numpy as np
 from numba import njit
 
 from .calibration import Calibration
-from .lsqadj import matmul
 from .parameters import MultimediaPar
 from .vec_utils import (
     unit_vector,
-    vec_add,
-    vec_dot,
-    vec_norm,
-    vec_scalar_mul,
-    vec_subt,
 )
 
 
@@ -50,11 +44,10 @@ def ray_tracing(
             _type_: _description_
     """
     primary_point = np.r_[cal.ext_par.x0, cal.ext_par.y0, cal.ext_par.z0]
-    glass = cal.glass_par
+    glass = np.ascontiguousarray(cal.glass_par)
+    camera = np.array([x,y, -cal.int_par.cc], dtype=np.float64, order='C')
     return fast_ray_tracing(
-        x,
-        y,
-        cal.int_par.cc,
+        camera,
         cal.ext_par.dm,
         primary_point,
         glass,
@@ -64,11 +57,10 @@ def ray_tracing(
         mm.n3,
     )
 
+
 @njit
 def fast_ray_tracing(
-    camera_x: float,
-    camera_y: float,
-    camera_cc: float,
+    initial_ray_direction: np.ndarray,
     distortion_matrix: np.ndarray,
     primary_point: np.ndarray,
     glass_vector: np.ndarray,
@@ -77,86 +69,152 @@ def fast_ray_tracing(
     refractive_index_medium2: float,
     refractive_index_medium3: float,
 ) -> Tuple[np.ndarray, np.ndarray]:
-    """
-    Fast ray tracing.
-
-    Parameters
-    ----------
-    - camera_x, camera_y, camera_cc: Camera parameters
-    - distortion_matrix: Distortion matrix
-    - primary_point: Primary point coordinates
-    - glass_vector: Glass vector
-    - distance_param: Distance parameter
-    - refractive_index_medium1, refractive_index_medium2, refractive_index_medium3: Refractive indices
-
-    Returns
-    -------
-    - Tuple containing the resulting point X and output direction vector
-    """
-    # Initial ray direction in global coordinate system
-    initial_ray_direction = np.array([camera_x, camera_y, -1 * camera_cc])
-    initial_ray_direction = unit_vector(initial_ray_direction)
-    transformed_direction = np.empty(3, dtype=float)
-    matmul(transformed_direction, distortion_matrix, initial_ray_direction, 3, 3, 1, 3, 3)
+    """Fast ray tracing."""
+    # initial_ray_direction = np.array([camera_x, camera_y, -camera_cc])
+    # initial_ray_direction = camera.copy()
+    # print(distortion_matrix.shape, initial_ray_direction.shape)
+    transformed_direction = distortion_matrix @ unit_vector(initial_ray_direction)
 
     glass_direction = unit_vector(glass_vector)
-    c_param = vec_norm(glass_vector) + distance_param
+    c_param = np.linalg.norm(glass_vector) + distance_param
 
-    # Project start ray on glass vector to find n1/n2 interface.
-    dist_cam_glass = vec_dot(glass_direction, primary_point) - c_param
-    dot_product_start_dir = float(vec_dot(glass_direction, transformed_direction))
-
-    # avoid division by zero
+    dist_cam_glass = np.dot(glass_direction, primary_point) - c_param
+    dot_product_start_dir = np.dot(glass_direction, transformed_direction)
     if dot_product_start_dir == 0.0:
-        dot_product_start_dir = 1.0
+        dot_product_start_dir = 1e-6  # Avoid division by zero with a small number
     d1 = -dist_cam_glass / dot_product_start_dir
 
-    transformed_direction_scaled = vec_scalar_mul(transformed_direction, d1)
-    Xb = vec_add(primary_point, transformed_direction_scaled)
+    transformed_direction_scaled = transformed_direction * d1
+    Xb = primary_point + transformed_direction_scaled
 
-    # Break down ray into glass-normal and glass-parallel components. */
-    n = vec_dot(transformed_direction, glass_direction)
-    transformed_direction_parallel = vec_scalar_mul(glass_direction, n)
-
-    transformed_direction_perpendicular = vec_subt(transformed_direction, transformed_direction_parallel)
+    n = np.dot(transformed_direction, glass_direction)
+    transformed_direction_parallel = glass_direction * n
+    transformed_direction_perpendicular = transformed_direction - transformed_direction_parallel
     bp = unit_vector(transformed_direction_perpendicular)
 
-    # Transform to direction inside glass, using Snell's law
-    p = np.sqrt(1 - n * n) * refractive_index_medium1 / refractive_index_medium2
-    # glass parallel
-    n = -np.sqrt(1 - p * p)
-    # glass normal
+    p = np.sqrt(1 - n**2) * refractive_index_medium1 / refractive_index_medium2
+    n = -np.sqrt(1 - p**2)
 
-    # Propagation length in glass parallel to glass vector */
-    transformed_direction_parallel_scaled = vec_scalar_mul(bp, p)
-    transformed_direction_perpendicular_scaled = vec_scalar_mul(glass_direction, n)
-    a2 = vec_add(transformed_direction_parallel_scaled, transformed_direction_perpendicular_scaled)
+    transformed_direction_parallel_scaled = bp * p
+    transformed_direction_perpendicular_scaled = glass_direction * n
+    a2 = transformed_direction_parallel_scaled + transformed_direction_perpendicular_scaled
 
-    abs_dot_product = np.abs(vec_dot(glass_direction, a2))
-
-    # avoid division by zero
+    abs_dot_product = np.abs(np.dot(glass_direction, a2))
     if abs_dot_product == 0:
-        abs_dot_product = 1.0
+        abs_dot_product = 1e-6  # Avoid division by zero with a small number
     d2 = distance_param / abs_dot_product
 
-    # point on the horizontal plane between n2,n3
-    a2_scaled = vec_scalar_mul(a2, d2)
-    X = vec_add(Xb, a2_scaled)
+    a2_scaled = a2 * d2
+    X = Xb + a2_scaled
 
-    # Again, direction in next medium
-    n = vec_dot(a2, glass_direction)
-    transformed_direction_perpendicular_scaled = vec_subt(a2, transformed_direction_perpendicular_scaled)
+    n = np.dot(a2, glass_direction)
+    transformed_direction_perpendicular_scaled = a2 - transformed_direction_perpendicular_scaled
     bp = unit_vector(transformed_direction_perpendicular_scaled)
 
-    p = np.sqrt(1 - n * n)
-    p = p * refractive_index_medium2 / refractive_index_medium3
-    n = -np.sqrt(1 - p * p)
+    p = np.sqrt(1 - n**2) * refractive_index_medium2 / refractive_index_medium3
+    n = -np.sqrt(1 - p**2)
 
-    transformed_direction_parallel_scaled = vec_scalar_mul(bp, p)
-    transformed_direction_perpendicular_scaled = vec_scalar_mul(glass_direction, n)
-    out = vec_add(transformed_direction_parallel_scaled, transformed_direction_perpendicular_scaled)
+    transformed_direction_parallel_scaled = bp * p
+    transformed_direction_perpendicular_scaled = glass_direction * n
+    out = transformed_direction_parallel_scaled + transformed_direction_perpendicular_scaled
 
     return X, out
+
+
+# @njit
+# def fast_ray_tracing(
+#     camera_x: float,
+#     camera_y: float,
+#     camera_cc: float,
+#     distortion_matrix: np.ndarray,
+#     primary_point: np.ndarray,
+#     glass_vector: np.ndarray,
+#     distance_param: float,
+#     refractive_index_medium1: float,
+#     refractive_index_medium2: float,
+#     refractive_index_medium3: float,
+# ) -> Tuple[np.ndarray, np.ndarray]:
+#     """
+#     Fast ray tracing.
+
+#     Parameters
+#     ----------
+#     - camera_x, camera_y, camera_cc: Camera parameters
+#     - distortion_matrix: Distortion matrix
+#     - primary_point: Primary point coordinates
+#     - glass_vector: Glass vector
+#     - distance_param: Distance parameter
+#     - refractive_index_medium1, refractive_index_medium2, refractive_index_medium3: Refractive indices
+
+#     Returns
+#     -------
+#     - Tuple containing the resulting point X and output direction vector
+#     """
+#     # Initial ray direction in global coordinate system
+#     initial_ray_direction = np.array([camera_x, camera_y, -1 * camera_cc])
+#     initial_ray_direction = unit_vector(initial_ray_direction)
+#     transformed_direction = np.empty(3, dtype=float)
+#     matmul(transformed_direction, distortion_matrix, initial_ray_direction, 3, 3, 1, 3, 3)
+
+#     glass_direction = unit_vector(glass_vector)
+#     c_param = vec_norm(glass_vector) + distance_param
+
+#     # Project start ray on glass vector to find n1/n2 interface.
+#     dist_cam_glass = vec_dot(glass_direction, primary_point) - c_param
+#     dot_product_start_dir = float(vec_dot(glass_direction, transformed_direction))
+
+#     # avoid division by zero
+#     if dot_product_start_dir == 0.0:
+#         dot_product_start_dir = 1.0
+#     d1 = -dist_cam_glass / dot_product_start_dir
+
+#     transformed_direction_scaled = vec_scalar_mul(transformed_direction, d1)
+#     Xb = vec_add(primary_point, transformed_direction_scaled)
+
+#     # Break down ray into glass-normal and glass-parallel components. */
+#     n = vec_dot(transformed_direction, glass_direction)
+#     transformed_direction_parallel = vec_scalar_mul(glass_direction, n)
+
+#     transformed_direction_perpendicular = vec_subt(transformed_direction, transformed_direction_parallel)
+#     bp = unit_vector(transformed_direction_perpendicular)
+
+#     # Transform to direction inside glass, using Snell's law
+#     p = np.sqrt(1 - n * n) * refractive_index_medium1 / refractive_index_medium2
+#     # glass parallel
+#     n = -np.sqrt(1 - p * p)
+#     # glass normal
+
+#     # Propagation length in glass parallel to glass vector */
+#     transformed_direction_parallel_scaled = vec_scalar_mul(bp, p)
+#     transformed_direction_perpendicular_scaled = vec_scalar_mul(glass_direction, n)
+#     a2 = vec_add(transformed_direction_parallel_scaled, transformed_direction_perpendicular_scaled)
+
+#     abs_dot_product = np.abs(vec_dot(glass_direction, a2))
+
+#     # avoid division by zero
+#     if abs_dot_product == 0:
+#         abs_dot_product = 1.0
+#     d2 = distance_param / abs_dot_product
+
+#     # point on the horizontal plane between n2,n3
+#     a2_scaled = vec_scalar_mul(a2, d2)
+#     X = vec_add(Xb, a2_scaled)
+
+#     # Again, direction in next medium
+#     n = vec_dot(a2, glass_direction)
+#     transformed_direction_perpendicular_scaled = vec_subt(a2, transformed_direction_perpendicular_scaled)
+#     bp = unit_vector(transformed_direction_perpendicular_scaled)
+
+#     p = np.sqrt(1 - n * n)
+#     p = p * refractive_index_medium2 / refractive_index_medium3
+#     n = -np.sqrt(1 - p * p)
+
+#     transformed_direction_parallel_scaled = vec_scalar_mul(bp, p)
+#     transformed_direction_perpendicular_scaled = vec_scalar_mul(glass_direction, n)
+#     out = vec_add(transformed_direction_parallel_scaled, transformed_direction_perpendicular_scaled)
+
+#     return X, out
+
 
 # def fast_ray_tracing(
 #     x,
