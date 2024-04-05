@@ -5,7 +5,6 @@ import numpy as np
 
 from .calibration import Calibration
 from .constants import (
-    COORD_UNUSED,
     CORRES_NONE,
     MAX_TARGETS,
     MAXCAND,
@@ -16,95 +15,6 @@ from .epi import epi_mm
 from .find_candidate import find_candidate
 from .parameters import ControlPar, VolumePar
 from .tracking_frame_buf import Frame, Target, n_tupel_dtype
-from .trafo import dist_to_flat, pixel_to_metric
-
-
-class MatchedCoords:
-    """Keep a block of 2D flat coordinates.add().
-
-    each with a "point number", the same
-    as the number on one ``target`` from the block to which this block is kept
-    matched. This block is x-sorted.
-
-    NB: the data is not meant to be directly manipulated at this point. The
-    coord_2d arrays are most useful as intermediate objects created and
-    manipulated only by other liboptv functions. Although one can imagine a
-    use case for direct manipulation in Python, it is rare and supporting it
-    is a low priority.
-    """
-
-    def __init__(self, targs, cpar, cal, tol=0.00001, reset_numbers=True):
-        """Allocate and initialize the memory.add().
-
-        including coordinate conversion and sorting.
-
-        Arguments:
-        TargetArray targs - the TargetArray to be converted and matched.
-        ControlParams cpar - parameters of image size etc. for conversion.
-        Calibration cal - representation of the camera parameters to use in
-            the flat/distorted transforms.
-        double tol - optional tolerance for the lens distortion correction
-            phase, see ``optv.transforms``.
-        reset_numbers - if True (default) numbers the targets too, in their
-            current order. This shouldn't be necessary since all TargetArray
-            creators number the targets, but this gets around cases where they
-            don't.
-        """
-        self._num_pts = len(targs)
-        self.buf = np.empty(self._num_pts,
-                            dtype=np.dtype([('x', np.float64), ('y', np.float64), ('pnr', np.int32)]))
-
-        for tnum, targ in enumerate(targs):
-            targ = targs[tnum]
-            if reset_numbers:
-                targ.pnr = tnum
-
-            self.buf[tnum]['x'], self.buf[tnum]['y'] = pixel_to_metric(
-                targ.x, targ.y,  cpar)
-
-            self.buf[tnum]['x'], self.buf[tnum]['y'] = dist_to_flat(
-                self.buf[tnum]['x'], self.buf[tnum]['y'], cal, tol
-            )
-            self.buf[tnum]['pnr'] = targ.pnr
-
-        self.buf.sort(order='x')
-
-    def as_arrays(self):
-        """Return the matched coordinates as NumPy arrays.
-
-        Returns
-        -------
-        pos - (n,2) array, the (x,y) flat-coordinates position of n targets.
-        pnr - n-length array, the corresponding target number for each point.
-        """
-        pos = np.empty((self._num_pts, 2))
-        pnr = np.empty(self._num_pts, dtype=np.int_)
-
-        for pt in range(self._num_pts):
-            pos[pt, 0] = self.buf[pt]['x']
-            pos[pt, 1] = self.buf[pt]['y']
-            pnr[pt] = self.buf[pt]['pnr']
-
-        return pos, pnr
-
-    def get_by_pnrs(self, pnrs):
-        """Return the flat positions of points whose pnr property is given.
-
-        as an (n,2) flat position array. Assumes all pnrs are to be found, otherwise
-        there will be garbage at the end of the position array.
-        """
-        pos = np.full((len(pnrs), 2), COORD_UNUSED, dtype=np.float64)
-        for pt in range(self._num_pts):
-            which = np.flatnonzero(self.buf[pt]['pnr'] == pnrs)
-            if len(which) > 0:
-                which = which[0]
-                pos[which, 0] = self.buf[pt]['x']
-                pos[which, 1] = self.buf[pt]['y']
-        return pos
-
-    def __del__(self):
-        del self.buf
-
 
 Correspond_dtype = np.dtype([
     ('p1', np.int32),  # PT_UNUSED

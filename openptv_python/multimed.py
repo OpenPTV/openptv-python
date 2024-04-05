@@ -67,7 +67,7 @@ def fast_multimed_r_nlay(
     y0: float,
     z0: float,
     pos: np.ndarray
-    ) -> float:
+) -> float:
     """Faster mutlimedia model calculation."""
     n_iter = 40
     X, Y, Z = pos
@@ -85,7 +85,8 @@ def fast_multimed_r_nlay(
         beta2 = np.arcsin(np.sin(beta1) * n1 / n2[0])
         beta3 = np.arcsin(np.sin(beta1) * n1 / n3)
 
-        rbeta = (z0 - d[0]) * np.tan(beta1) - zout * np.tan(beta3) + np.sum(d * np.tan(beta2))
+        rbeta = (z0 - d[0]) * np.tan(beta1) - zout * \
+            np.tan(beta3) + np.sum(d * np.tan(beta2))
 
         rdiff = r - rbeta
         rq += rdiff
@@ -106,7 +107,7 @@ def trans_cam_point(
 
     pos_t, cross_p, cross_c = trans_cam_point(ex, mm, glass, pos, ex_t)
     """
-    origin = np.r_[ex.x0, ex.y0, ex.z0] # type: ignore
+    origin = np.r_[ex.x0, ex.y0, ex.z0]  # type: ignore
     pos = pos.astype(np.float64)
 
     return fast_trans_cam_point(
@@ -119,7 +120,7 @@ def fast_trans_cam_point(
     d: float,
     glass_dir: np.ndarray,
     pos: np.ndarray
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, float]:
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, float]:
     """Derive translation of camera point."""
     dist_o_glass = float(np.linalg.norm(glass_dir))  # vector length
     if dist_o_glass == 0.0:
@@ -174,8 +175,15 @@ def back_trans_point(
     """
     return fast_back_trans_point(glass, mm.d[0], cross_c, cross_p, pos_t)
 
+
 @njit(fastmath=True, cache=True, nogil=True)
-def fast_back_trans_point(glass_direction: np.ndarray, d: float, cross_c, cross_p, pos_t) -> np.ndarray:
+def fast_back_trans_point(
+    glass_direction: np.ndarray,
+    d: float,
+    cross_c: np.ndarray,
+    cross_p: np.ndarray,
+    pos_t: np.ndarray
+    ) -> np.ndarray:
     """Run numba faster version of back projection."""
     # Calculate the glass direction vector
 
@@ -199,11 +207,12 @@ def fast_back_trans_point(glass_direction: np.ndarray, d: float, cross_c, cross_
 
     # If the norm of the vector temp is greater than zero, adjust the position
     # of the point in the camera coordinate system
-    if norm_temp > 0.0: # type: ignore
+    if norm_temp > 0.0:  # type: ignore
         renorm_temp = temp * (-pos_t[0] / norm_temp)
         pos = pos - renorm_temp
 
     return pos
+
 
 @njit(fastmath=True, cache=True, nogil=True)
 def move_along_ray(glob_z: float, vertex: np.ndarray, direct: np.ndarray) -> np.ndarray:
@@ -252,7 +261,7 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibrati
     z_max_t = z_max
 
     # intersect with image vertices rays
-    cal_t = Calibration(mmlut = cal.mmlut.copy())
+    cal_t = Calibration(mmlut=cal.mmlut.copy())
 
     for i in range(2):
         for j in range(2):
@@ -273,9 +282,9 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibrati
 
             R = vec_norm(
                 np.r_[xyz_t[0] - cal_t.ext_par.x0,
-                     xyz_t[1] - cal_t.ext_par.y0,
-                     0]
-                )
+                      xyz_t[1] - cal_t.ext_par.y0,
+                      0]
+            )
 
             if R > Rmax:
                 Rmax = R
@@ -291,7 +300,7 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibrati
                 z_max_t = xyz_t[2]
 
             R = vec_norm(np.r_[xyz_t[0] - cal_t.ext_par.x0,
-                     xyz_t[1] - cal_t.ext_par.y0, 0])
+                               xyz_t[1] - cal_t.ext_par.y0, 0])
 
             if R > Rmax:
                 Rmax = R
@@ -317,8 +326,9 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibrati
         for i in range(nr):
             for j in range(nz):
                 xyz = np.r_[Ri[i] + cal_t.ext_par.x0,
-                              cal_t.ext_par.y0, Zi[j]]
-                cal.mmlut_data.flat[i * nz + j] = multimed_r_nlay(cal_t, cpar.mm, xyz)
+                            cal_t.ext_par.y0, Zi[j]]
+                cal.mmlut_data.flat[i * nz +
+                                    j] = multimed_r_nlay(cal_t, cpar.mm, xyz)
 
         # print(f"filled mmlut data with {data}")
         # cal.mmlut_data = data
@@ -337,6 +347,8 @@ def get_mmf_from_mmlut(cal: Calibration, pos: np.ndarray) -> float:
     return fast_get_mmf_from_mmlut(rw, origin, data, nz, nr, pos)
 
 # @njit
+
+
 def fast_get_mmf_from_mmlut(
     rw: int,
     origin: np.ndarray,
