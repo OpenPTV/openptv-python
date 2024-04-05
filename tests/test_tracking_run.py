@@ -125,7 +125,8 @@ class TestTrackCorrNoAdd(unittest.TestCase):
             calib,
             10000.0,
         )
-        run.tpar.add = 0
+
+        run.tpar = run.tpar._replace(add = 0)
         print(f"run.seq_par.first = {run.seq_par.first} run.seq_par.last = {run.seq_par.last}")
 
         track_forward_start(run)
@@ -198,7 +199,7 @@ class TestTrackCorrNoAdd(unittest.TestCase):
 
         run.seq_par.first = 10240
         run.seq_par.last = 10250
-        run.tpar.add = 1
+        run.tpar = run.tpar._replace(add=1)
 
         track_forward_start(run)
         trackcorr_c_loop(run, run.seq_par.first)
@@ -274,7 +275,7 @@ class TestTrackback(unittest.TestCase):
 
         run.seq_par.first = 10240
         run.seq_par.last = 10250
-        run.tpar.add = 1
+        run.tpar = run.tpar._replace(add=1)
 
         track_forward_start(run)
         trackcorr_c_loop(run, run.seq_par.first)
@@ -285,8 +286,14 @@ class TestTrackback(unittest.TestCase):
         trackcorr_c_finish(run, run.seq_par.last)
 
 
-        run.tpar.dvxmin = run.tpar.dvymin = run.tpar.dvzmin = -50.0
-        run.tpar.dvxmax = run.tpar.dvymax = run.tpar.dvzmax = 50.0
+        run.tpar = run.tpar._replace(
+            dvxmin = -50,
+            dvymin = -50,
+            dvzmin = -50.0,
+            dvxmax = 50.0,
+            dvymax = 50.0,
+            dvzmax = 50.0,
+        )
 
 
         run.lmax = vec_norm(
@@ -356,7 +363,7 @@ class TestNewParticle(unittest.TestCase):
             0.1,
         )
 
-        run.tpar.add = 0
+        run.tpar = run.tpar._replace(add = 0)
 
         track_forward_start(run)
         trackcorr_c_loop(run, 10001)
@@ -381,7 +388,7 @@ class TestNewParticle(unittest.TestCase):
         #     calib,
         #     0.1,
         # )
-        run.tpar.add = 1
+        run.tpar = run.tpar._replace(add=1)
         track_forward_start(run)
         trackcorr_c_loop(run, 10001)
         trackcorr_c_loop(run, 10002)

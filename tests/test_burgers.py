@@ -138,7 +138,8 @@ class TestBurgers(unittest.TestCase):
             10000.0,
         )
 
-        run.tpar.add = 1
+        # run.tpar = run.tpar._replace(add=1)
+        run.tpar = run.tpar._replace(add=1)
         print("changed add particle to", run.tpar.add)
 
         track_forward_start(run)

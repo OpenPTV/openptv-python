@@ -21,7 +21,7 @@ from .constants import (
 )
 from .imgcoord import img_coord
 from .orientation import point_position
-from .parameters import ControlPar, TrackPar
+from .parameters import ControlPar, TrackParTuple, convert_track_par_to_tuple
 from .tracking_frame_buf import Frame, Pathinfo, Target
 from .tracking_run import TrackingRun
 from .trafo import dist_to_flat, metric_to_pixel, pixel_to_metric
@@ -188,8 +188,8 @@ def predict(prev_pos, curr_pos, output):
     output[0] = 2 * curr_pos[0] - prev_pos[0]
     output[1] = 2 * curr_pos[1] - prev_pos[1]
 
-
-def pos3d_in_bounds(pos: np.ndarray, bounds: TrackPar) -> bool:
+@njit(cache=True, fastmath=True, nogil=True)
+def pos3d_in_bounds(pos: np.ndarray, bounds: TrackParTuple) -> bool:
     """Check that all components of a pos3d are in their respective bounds.
 
     taken from a track_par object.
@@ -210,44 +210,6 @@ def pos3d_in_bounds(pos: np.ndarray, bounds: TrackPar) -> bool:
         and bounds.dvzmin < pos[2] < bounds.dvzmax
     )
 
-
-# def angle_acc(
-#     start: np.ndarray, pred: np.ndarray, cand: np.ndarray
-# ) -> Tuple[float, float]:
-#     """Calculate the angle between the (1st order) numerical velocity vectors.
-
-#     to the predicted next_frame position and to the candidate actual position. The
-#     angle is calculated in [gon], see [1]. The predicted position is the
-#     position if the particle continued at current velocity.
-
-#     Arguments:
-#     ---------
-#     start -- vec3d, the particle start position
-#     pred -- vec3d, predicted position
-#     cand -- vec3d, possible actual position
-
-#     Returns:
-#     -------
-#     angle -- float, the angle between the two velocity vectors, [gon]
-#     acc -- float, the 1st-order numerical acceleration embodied in the deviation from prediction.
-#     """
-#     v0 = pred - start
-#     v1 = cand - start
-
-#     acc = math.dist(v0, v1)
-#     # acc = np.linalg.norm(v0 - v1)
-
-#     if np.all(v0 == -v1):
-#         angle = 200
-#     elif np.all(v0 == v1):
-#         angle = 0
-#     else:
-#         angle = float((200.0 / math.pi) * math.acos(
-#             math.fsum([v0[i] * v1[i] for i in range(3)])
-#             / (math.dist(start, pred) * math.dist(start, cand)))
-#         )
-
-#     return angle, acc
 
 @njit(float64[:](float64[:], float64[:], float64[:]), cache=True, fastmath=True, nogil=True, parallel=True)
 def angle_acc(
@@ -441,7 +403,7 @@ def candsearch_in_pix_rest(
 
 
 def searchquader(
-    point: np.ndarray, tpar: TrackPar, cpar: ControlPar, cal: List[Calibration]
+    point: np.ndarray, tpar: TrackParTuple, cpar: ControlPar, cal: List[Calibration]
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Calculate the search volume in image space."""
     mins = np.array([tpar.dvxmin, tpar.dvymin, tpar.dvzmin])
@@ -819,7 +781,7 @@ def trackcorr_c_loop(run_info, step):
 
     fb = run_info.fb
     cal = run_info.cal
-    tpar = run_info.tpar
+    tpar = convert_track_par_to_tuple(run_info.tpar)
     vpar = run_info.vpar
     cpar = run_info.cpar
     curr_targets = fb.buf[1].targets

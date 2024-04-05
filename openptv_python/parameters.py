@@ -1,4 +1,5 @@
 """Parameters for OpenPTV-Python."""
+from collections import namedtuple
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import List, Tuple
@@ -6,6 +7,21 @@ from typing import List, Tuple
 import yaml
 
 from openptv_python.constants import TR_MAX_CAMS
+
+TrackParTuple = namedtuple('TrackParTuple',
+                           ['dvxmin',
+                            'dvxmax',
+                            'dvymin',
+                            'dvymax',
+                            'dvzmin',
+                            'dvzmax',
+                            'dangle',
+                            'dacc',
+                            'add',
+                            'dsumg',
+                            'dn',
+                            'dnx',
+                            'dny'])
 
 
 @dataclass
@@ -193,24 +209,6 @@ class TrackPar(Parameters):
     dny: float = 0.0
 
 
-    # def to_dict(self):
-    #     """Convert TrackPar instance to a dictionary."""
-    #     return {
-    #         'dvxmax': self.dvxmax,
-    #         'dvxmin': self.dvxmin,
-    #         'dvymax': self.dvymax,
-    #         'dvymin': self.dvymin,
-    #         'dvzmax': self.dvzmax,
-    #         'dvzmin': self.dvzmin,
-    #         'dangle': self.dangle,
-    #         'dacc': self.dacc,
-    #         'add': self.add,
-    #         'dsumg': self.dsumg,
-    #         'dn': self.dn,
-    #         'dnx': self.dnx,
-    #         'dny': self.dny,
-    #     }
-
     @classmethod
     def from_file(cls, filename: Path):
         """Read tracking parameters from file and return TrackPar object.
@@ -313,6 +311,24 @@ def read_track_par(filename: Path) -> TrackPar:
 def compare_track_par(t1: TrackPar, t2: TrackPar) -> bool:
     """Compare two TrackPar objects."""
     return all(getattr(t1, field) == getattr(t2, field) for field in t1.__annotations__)
+
+
+def convert_track_par_to_tuple(track_par: TrackPar) -> TrackParTuple:
+    """Convert TrackPar object to TrackParTuple object."""
+    return TrackParTuple(track_par.dvxmin,
+                         track_par.dvxmax,
+                         track_par.dvymin,
+                         track_par.dvymax,
+                         track_par.dvzmin,
+                         track_par.dvzmax,
+                         track_par.dangle,
+                         track_par.dacc,
+                         track_par.add,
+                         track_par.dsumg,
+                         track_par.dn,
+                         track_par.dnx,
+                         track_par.dny)
+
 
 
 @dataclass

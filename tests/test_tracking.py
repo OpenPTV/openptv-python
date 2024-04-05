@@ -20,6 +20,7 @@ from openptv_python.constants import MAX_CANDS, TR_MAX_CAMS, TR_UNUSED
 from openptv_python.parameters import (
     ControlPar,
     TrackPar,
+    convert_track_par_to_tuple,
 )
 from openptv_python.track import (
     Foundpix_dtype,
@@ -122,7 +123,8 @@ class TestPos3dInBounds(unittest.TestCase):
         inside = np.array([1.0, -1.0, 0.0])
         outside = np.array([2.0, -0.8, 2.1])
 
-        bounds = TrackPar(
+        bounds = convert_track_par_to_tuple(
+            TrackPar(
             -2.0,
             2.0,
             -2.0,
@@ -136,6 +138,7 @@ class TestPos3dInBounds(unittest.TestCase):
             0.0,
             0.0,
             0.0,
+        )
         )
 
         result = pos3d_in_bounds(inside, bounds)
@@ -361,8 +364,10 @@ class TestSearchQuader(unittest.TestCase):
 
         #  print(f"cpar = {self.cpar}")
 
-        tpar = TrackPar(
+        tpar = convert_track_par_to_tuple(
+            TrackPar(
             0.2, -0.2, 0.1, -0.1, 0.1, -0.1, 120, 0.4, 1, 0.0, 0.0, 0.0, 0.0
+        )
         )
         xr, xl, yd, yu = searchquader(point, tpar, self.cpar, self.calib)
 
@@ -379,8 +384,10 @@ class TestSearchQuader(unittest.TestCase):
 
         # Let's test with just one camera to check borders
         self.cpar.num_cams = 1
-        tpar1 = TrackPar(
+        tpar1 = convert_track_par_to_tuple(
+            TrackPar(
             0.0, -0.0, 0.0, -0.0, 0.0, -0.0, 120, 0.4, 1, 0.0, 0.0, 0.0, 0.0
+        )
         )
         xr, xl, yd, yu = searchquader(point, tpar1, self.cpar, self.calib)
 
@@ -391,7 +398,8 @@ class TestSearchQuader(unittest.TestCase):
         )
 
         # Test with infinitely large values of tpar that should return about half the image size
-        tpar2 = TrackPar(
+        tpar2 = convert_track_par_to_tuple(
+            TrackPar(
             1000.0,
             -1000.0,
             1000.0,
@@ -405,6 +413,7 @@ class TestSearchQuader(unittest.TestCase):
             0.0,
             0.0,
             0.0,
+        )
         )
 
         xr, xl, yd, yu = searchquader(point, tpar2, self.cpar, self.calib)

@@ -11,8 +11,9 @@ from .multimed import volumedimension
 from .parameters import (
     ControlPar,
     SequencePar,
-    TrackPar,
+    TrackParTuple,
     VolumePar,
+    convert_track_par_to_tuple,
     read_control_par,
     read_sequence_par,
     read_track_par,
@@ -26,7 +27,7 @@ class TrackingRun:
 
     fb: FrameBuf
     seq_par: SequencePar
-    tpar: TrackPar
+    tpar: TrackParTuple
     vpar: VolumePar
     cpar: ControlPar
     cal: List[Calibration]
@@ -40,7 +41,7 @@ class TrackingRun:
     def __init__(
         self,
         seq_par: SequencePar,
-        tpar: TrackPar,
+        tpar: TrackParTuple,
         vpar: VolumePar,
         cpar: ControlPar,
         buf_len: int,
@@ -113,7 +114,7 @@ def tr_new(
     """Create a new tracking run from legacy files."""
     cpar = read_control_par(cpar_fname)
     seq_par = read_sequence_par(seq_par_fname, cpar.num_cams)
-    tpar = read_track_par(tpar_fname)
+    tpar = convert_track_par_to_tuple(read_track_par(tpar_fname))
     vpar = read_volume_par(vpar_fname)
 
     tr = TrackingRun(
