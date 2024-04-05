@@ -249,10 +249,10 @@ def pos3d_in_bounds(pos: np.ndarray, bounds: TrackPar) -> bool:
 
 #     return angle, acc
 
-
+@njit(float64[:](float64[:], float64[:], float64[:]), cache=True, fastmath=True, nogil=True, parallel=True)
 def angle_acc(
     start: np.ndarray, pred: np.ndarray, cand: np.ndarray
-) -> Tuple[float, float]:
+) -> np.ndarray:
     """Calculate the angle between the (1st order) numerical velocity vectors.
 
     to the predicted next_frame position and to the candidate actual position. The
@@ -288,7 +288,7 @@ def angle_acc(
             dot_product / (norm_start_pred * norm_start_cand)
         )
 
-    return float(angle), float(acc)
+    return np.array([angle, acc])
 
 
 
