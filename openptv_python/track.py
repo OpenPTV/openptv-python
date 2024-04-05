@@ -4,6 +4,7 @@ from typing import List, Tuple
 
 import numpy as np
 from numba import float64, njit
+from scipy.spatial import cKDTree
 
 from .calibration import Calibration
 from .constants import (
@@ -292,6 +293,90 @@ def angle_acc(
 
 
 
+# def candsearch_in_pix(
+#     next_frame: List[Target],
+#     num_targets: int,
+#     cent_x: float,
+#     cent_y: float,
+#     dl: float,
+#     dr: float,
+#     du: float,
+#     dd: float,
+#     cpar: ControlPar,
+# ) -> List[int]:
+#     """Search for a nearest candidate in unmatched target list."""
+#     # counter = 0
+#     dmin = 1e20
+#     p1 = p2 = p3 = p4 = TR_UNUSED
+#     p = [-1] * MAX_CANDS
+#     d1, d2, d3, d4 = dmin, dmin, dmin, dmin
+
+#     xmin, xmax, ymin, ymax = cent_x - dl, cent_x + dr, cent_y - du, cent_y + dd
+
+#     if xmin < 0:
+#         xmin = 0
+#     if xmax > cpar.imx:
+#         xmax = cpar.imx
+#     if ymin < 0:
+#         ymin = 0
+#     if ymax > cpar.imy:
+#         ymax = cpar.imy
+
+#     if cent_x >= 0 and cent_x <= cpar.imx and cent_y >= 0 and cent_y <= cpar.imy:
+#         j0 = num_targets // 2
+#         dj = num_targets // 4
+#         while dj > 1:
+#             if next_frame[j0].y < ymin:
+#                 j0 += dj
+#             else:
+#                 j0 -= dj
+#             dj //= 2
+
+#         j0 -= 12
+#         if j0 < 0:
+#             j0 = 0
+
+#         for j in range(j0, num_targets):
+#             if next_frame[j].tnr != -1:
+#                 if next_frame[j].y > ymax:
+#                     break
+#                 if xmin < next_frame[j].x < xmax and ymin < next_frame[j].y < ymax:
+#                     d = np.sqrt(
+#                         (cent_x - next_frame[j].x) ** 2
+#                         + (cent_y - next_frame[j].y) ** 2
+#                     )
+
+#                     if d < dmin:
+#                         dmin = d
+
+#                     if d < d1:
+#                         p4, p3, p2, p1 = p3, p2, p1, j
+#                         d4, d3, d2, d1 = d3, d2, d1, d
+#                     elif d1 < d < d2:
+#                         p4, p3, p2 = p3, p2, j
+#                         d4, d3, d2 = d3, d2, d
+#                     elif d2 < d < d3:
+#                         p4, p3 = p3, j
+#                         d4, d3 = d3, d
+#                     elif d3 < d < d4:
+#                         p4 = j
+#                         d4 = d
+
+#         p[0] = p1
+#         p[1] = p2
+#         p[2] = p3
+#         p[3] = p4
+
+#         # print("from inside p = ", p)
+
+#         # TODO: check why we need counter, we can use counter = len(p) - p.count(-1)
+#         # for j in range(4):
+#         #     if p[j] != -1:
+#         #         counter += 1
+
+#     return p
+
+
 def candsearch_in_pix(
     next_frame: List[Target],
     num_targets: int,
@@ -335,31 +420,37 @@ def candsearch_in_pix(
         if j0 < 0:
             j0 = 0
 
-        for j in range(j0, num_targets):
-            if next_frame[j].tnr != -1:
-                if next_frame[j].y > ymax:
-                    break
-                if xmin < next_frame[j].x < xmax and ymin < next_frame[j].y < ymax:
-                    d = np.sqrt(
-                        (cent_x - next_frame[j].x) ** 2
-                        + (cent_y - next_frame[j].y) ** 2
-                    )
+        # Create a k-d tree from the target positions
+        target_positions = np.array([(target.x, target.y) for target in next_frame])
+        tree = cKDTree(target_positions)
 
-                    if d < dmin:
-                        dmin = d
+        # Query the k-d tree for the nearest neighbors within the search area
+        neighbors = tree.query_ball_point((cent_x, cent_y), np.sqrt(dl**2 + du**2))
 
-                    if d < d1:
-                        p4, p3, p2, p1 = p3, p2, p1, j
-                        d4, d3, d2, d1 = d3, d2, d1, d
-                    elif d1 < d < d2:
-                        p4, p3, p2 = p3, p2, j
-                        d4, d3, d2 = d3, d2, d
-                    elif d2 < d < d3:
-                        p4, p3 = p3, j
-                        d4, d3 = d3, d
-                    elif d3 < d < d4:
-                        p4 = j
-                        d4 = d
+        # Find the nearest neighbor that is within the search area and has not been matched yet
+        for neighbor in neighbors:
+            if xmin <= next_frame[neighbor].x <= xmax and \
+                ymin <= next_frame[neighbor].y <= ymax and \
+                    next_frame[neighbor].tnr == -1:
+                d = np.sqrt(
+                    (cent_x - next_frame[neighbor].x) ** 2
+                    + (cent_y - next_frame[neighbor].y) ** 2
+                )
+
+                if d < dmin:
+                    dmin = d
+
+                    p4, p3, p2, p1 = p3, p2, p1, neighbor
+                    d4, d3, d2, d1 = d3, d2, d1, d
+                elif d1 < d < d2:
+                    p4, p3, p2 = p3, p2, neighbor
+                    d4, d3, d2 = d3, d2, d
+                elif d2 < d < d3:
+                    p4, p3 = p3, neighbor
+                    d4, d3 = d3, d
+                elif d3 < d < d4:
+                    p4 = neighbor
+                    d4 = d
 
         p[0] = p1
         p[1] = p2
@@ -374,7 +465,6 @@ def candsearch_in_pix(
         #         counter += 1
 
     return p
-
 
 def candsearch_in_pix_rest(
     next_frame: List[Target],
