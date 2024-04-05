@@ -11,7 +11,6 @@ from .constants import (
     COORD_UNUSED,
     CORRES_NONE,
     MAX_CANDS,
-    MAX_TARGETS,
     NEXT_NONE,
     POS_INF,
     PREV_NONE,
@@ -22,7 +21,7 @@ from .constants import (
 )
 from .imgcoord import img_coord
 from .orientation import point_position
-from .parameters import ControlPar, SequencePar, TrackPar, VolumePar
+from .parameters import ControlPar, TrackPar
 from .tracking_frame_buf import Frame, Pathinfo, Target
 from .tracking_run import TrackingRun
 from .trafo import dist_to_flat, metric_to_pixel, pixel_to_metric
@@ -1367,92 +1366,92 @@ default_naming = {
 }
 
 
-class Tracker:
-    """
-    Workflow: instantiate, call restart() to initialize the frame buffer, then.
+# class Tracker:
+#     """
+#     Workflow: instantiate, call restart() to initialize the frame buffer, then.
 
-    call either ``step_forward()`` while it still return True, then call
-    ``finalize()`` to finish the run. Alternatively, ``full_forward()`` will
-    do all this for you.
-    """
+#     call either ``step_forward()`` while it still return True, then call
+#     ``finalize()`` to finish the run. Alternatively, ``full_forward()`` will
+#     do all this for you.
+#     """
 
-    def __init__(
-        self,
-        cpar: ControlPar,
-        vpar: VolumePar,
-        tpar: TrackPar,
-        spar: SequencePar,
-        cals: List[Calibration],
-        naming: dict,
-        flatten_tol: float = 0.0001,
-    ):
-        """
-        Initialize the tracker.
+#     def __init__(
+#         self,
+#         cpar: ControlPar,
+#         vpar: VolumePar,
+#         tpar: TrackPar,
+#         spar: SequencePar,
+#         cals: List[Calibration],
+#         naming: dict,
+#         flatten_tol: float = 0.0001,
+#     ):
+#         """
+#         Initialize the tracker.
 
-        Arguments:
-        ---------
-        ControlPar cpar, VolumePar vpar, TrackPar tpar,
-        SequencePar spar - the usual parameter objects, as read from
-            anywhere.
-        cals - a list of Calibratiopn objects.
-        dict naming - a dictionary with naming rules for the frame buffer
-            files. See the ``default_naming`` member (which is the default).
-        """
-        # We need to keep a reference to the Python objects so that their
-        # allocations are not freed.
-        self._keepalive = (cpar, vpar, tpar, spar, cals)
+#         Arguments:
+#         ---------
+#         ControlPar cpar, VolumePar vpar, TrackPar tpar,
+#         SequencePar spar - the usual parameter objects, as read from
+#             anywhere.
+#         cals - a list of Calibratiopn objects.
+#         dict naming - a dictionary with naming rules for the frame buffer
+#             files. See the ``default_naming`` member (which is the default).
+#         """
+#         # We need to keep a reference to the Python objects so that their
+#         # allocations are not freed.
+#         self._keepalive = (cpar, vpar, tpar, spar, cals)
 
-        self.run_info = TrackingRun(
-            spar,
-            tpar,
-            vpar,
-            cpar,
-            TR_BUFSPACE,
-            MAX_TARGETS,
-            naming["corres"],
-            naming["linkage"],
-            naming["prio"],
-            cals,
-            flatten_tol,
-        )
-        self.step = self.run_info.seq_par.first
+#         self.run_info = TrackingRun(
+#             spar,
+#             tpar,
+#             vpar,
+#             cpar,
+#             TR_BUFSPACE,
+#             MAX_TARGETS,
+#             naming["corres"],
+#             naming["linkage"],
+#             naming["prio"],
+#             cals,
+#             flatten_tol,
+#         )
+#         self.step = self.run_info.seq_par.first
 
-    def restart(self):
-        """
-        Prepare a tracking run. Sets up initial buffers and performs the.
+#     def restart(self):
+#         """
+#         Prepare a tracking run. Sets up initial buffers and performs the.
 
-        one-time calculations used throughout the loop.
-        """
-        self.step = self.run_info.seq_par.first
-        track_forward_start(self.run_info)
+#         one-time calculations used throughout the loop.
+#         """
+#         self.step = self.run_info.seq_par.first
+#         track_forward_start(self.run_info)
 
-    def step_forward(self):
-        """Perform one tracking step for the current frame of iteration."""
-        if self.step >= self.run_info.seq_par.last:
-            return False
+#     def step_forward(self):
+#         """Perform one tracking step for the current frame of iteration."""
+#         if self.step >= self.run_info.seq_par.last:
+#             return False
 
-        trackcorr_c_loop(self.run_info, self.step)
-        self.step += 1
-        return True
+#         trackcorr_c_loop(self.run_info, self.step)
+#         self.step += 1
+#         return True
 
-    def finalize(self):
-        """Finish a tracking run."""
-        trackcorr_c_finish(self.run_info, self.step)
+#     def finalize(self):
+#         """Finish a tracking run."""
+#         trackcorr_c_finish(self.run_info, self.step)
 
-    def full_forward(self):
-        """Do a full tracking run from restart to finalize."""
-        track_forward_start(self.run_info)
-        for step in range(self.run_info.seq_par.first, self.run_info.seq_par.last):
-            trackcorr_c_loop(self.run_info, step)
-        trackcorr_c_finish(self.run_info, self.run_info.seq_par.last)
+#     def full_forward(self):
+#         """Do a full tracking run from restart to finalize."""
+#         track_forward_start(self.run_info)
+#         for step in range(self.run_info.seq_par.first, self.run_info.seq_par.last):
+#             trackcorr_c_loop(self.run_info, step)
+#         trackcorr_c_finish(self.run_info, self.run_info.seq_par.last)
 
-    def full_backward(self):
-        """Do a full backward run on existing tracking results. so make sure.
+#     def full_backward(self):
+#         """Do a full backward run on existing tracking results. so make sure.
 
-        results exist or it will explode in your face.
-        """
-        trackback_c(self.run_info)
+#         results exist or it will explode in your face.
+#         """
+#         trackback_c(self.run_info)
 
-    def current_step(self):
-        """Return the current step."""
-        return self.step
+#     def current_step(self):
+#         """Return the current step."""
+#         return self.step

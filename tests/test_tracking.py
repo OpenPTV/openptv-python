@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 """
-Tests for the Tracker class.
+Tests for the tracking.
 
 Created on Mon Apr 24 10:57:01 2017
 
