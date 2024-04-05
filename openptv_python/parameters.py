@@ -8,6 +8,7 @@ import yaml
 from openptv_python.constants import TR_MAX_CAMS
 
 
+@dataclass
 class Parameters:
     """Base class for all parameters with a couple of methods."""
 

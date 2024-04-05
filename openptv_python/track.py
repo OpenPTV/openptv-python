@@ -189,7 +189,7 @@ def predict(prev_pos, curr_pos, output):
     output[1] = 2 * curr_pos[1] - prev_pos[1]
 
 
-def pos3d_in_bounds(pos, bounds):
+def pos3d_in_bounds(pos: np.ndarray, bounds: TrackPar) -> bool:
     """Check that all components of a pos3d are in their respective bounds.
 
     taken from a track_par object.
