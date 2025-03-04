@@ -2,6 +2,7 @@
 version.py
 
 # Sphinx automatic generation of API
+docs/README.md
 docs/_api/
 
 # Combined environments
@@ -468,16 +469,4 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
-<<<<<<< ours
-# End of https://www.toptal.com/developers/gitignore/api/python,jupyternotebooks,vim,visualstudiocode,pycharm
-tests/testing_fodder/track/img/*
-tests/testing_fodder/track/res/*
-=======
 # End of https://www.toptal.com/developers/gitignore/api/python,jupyternotebooks,vim,visualstudiocode,pycharm,emacs,linux,macos,windows
->>>>>>> theirs
-tests/testing_fodder/test_cavity/*
-tests/testing_fodder/track/newpart/*
-tests/testing_fodder/burgers/*
-tests/testing_fodder/test_0042_targets
-tests/testing_folder/round_trip.%04d0001_targets
-*.prof

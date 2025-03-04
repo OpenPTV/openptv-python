@@ -6,6 +6,7 @@ Python version of the OpenPTV library.
 :caption: 'Contents:'
 :maxdepth: 2
 
+README.md
 API Reference <_api/openptv_python/index>
 ```
 
