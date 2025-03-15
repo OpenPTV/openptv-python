@@ -285,3 +285,228 @@ def fast_box_blur_numba(filt_span, src, cpar):
 # cpar = {'imx': src.shape[1], 'imy': src.shape[0]}
 
 # result = fast_box_blur_numba(filt_span, src, cpar)
+
+
+
+
+def filter_3_numpy(img: np.ndarray, filt: np.ndarray) -> np.ndarray:
+    """
+    Performs a 3x3 filtering over an image.
+
+    Args:
+        img: Original image (NumPy array).
+        filt: 3x3 filter matrix (NumPy array).
+
+    Returns:
+        Filtered image (NumPy array).
+    """
+    sum_filt = np.sum(filt)
+    if sum_filt == 0:
+        return img  # Or raise an exception, depending on desired behavior
+
+    img_pad = np.pad(img, pad_width=1, mode='wrap')  # Wrap-around edges
+    img_lp = np.zeros_like(img, dtype=np.uint8)
+
+    for i in range(img.shape[0]):
+        for j in range(img.shape[1]):
+            # Use array slicing for efficiency
+            region = img_pad[i:i + 3, j:j + 3]
+            buf = np.sum(filt * region)
+            buf /= sum_filt
+
+            buf = np.clip(buf, 8, 255)  # Enforce minimal brightness and max value
+            img_lp[i, j] = int(buf)
+
+    return img_lp
+
+
+def lowpass_3_numpy(img: np.ndarray) -> np.ndarray:
+    """
+    Applies a 3x3 lowpass filter (average of all 9 pixels).
+
+    Args:
+        img: Original image (NumPy array).
+
+    Returns:
+        Filtered image (NumPy array).
+    """
+    img_pad = np.pad(img, pad_width=1, mode='wrap')
+    img_lp = np.zeros_like(img, dtype=np.uint8)
+
+    for i in range(img.shape[0]):
+        for j in range(img.shape[1]):
+            region = img_pad[i:i + 3, j:j + 3]
+            buf = np.sum(region)
+            img_lp[i, j] = buf // 9  # Integer division
+
+    return img_lp
+
+
+def fast_box_blur_numpy(img: np.ndarray, filt_span: int) -> np.ndarray:
+    """
+    Performs a fast box blur on an image.
+
+    Args:
+        img: Original image (NumPy array).
+        filt_span: Half-width of the box blur filter.
+
+    Returns:
+        Blurred image (NumPy array).
+    """
+    n = 2 * filt_span + 1
+    nq = n * n
+    imy, imx = img.shape
+
+    row_accum = np.zeros(img.size, dtype=np.int32).reshape(imy, imx)
+    col_accum = np.zeros(imx, dtype=np.int32)
+
+    # Sum over lines
+    for i in range(imy):
+        row_start = i * imx
+        accum = img[i, 0]
+        row_accum[i, 0] = accum * n
+
+        for m in range(3, 2 * filt_span + 2, 2):
+            accum += (img[i, m // 2] + img[i, m // 2 + 1])
+            row_accum[i, m // 2] = accum * n // m
+        
+        for j in range(filt_span + 1, imx):
+            accum += (img[i, j] - img[i, j - n])
+            row_accum[i, j] = accum
+
+        for m in range(n - 2, 1, -2):
+            accum -= (img[i, imx - 1 - m // 2] + img[i, imx - 2 - m // 2])
+            row_accum[i, imx - 1 - m // 2] = accum * n // m
+
+    # Sum over columns
+    dest = np.zeros_like(img, dtype=np.uint8)
+
+    for j in range(imx):
+        col_accum[j] = row_accum[0, j]
+        dest[0, j] = col_accum[j] // n
+
+    for i in range(1, filt_span + 1):
+        for j in range(imx):
+            col_accum[j] += (row_accum[2 * i - 1, j] + row_accum[2 * i, j])
+            dest[i, j] = n * col_accum[j] // nq // (2 * i + 1)
+
+    for i in range(filt_span + 1, imy - filt_span):
+        for j in range(imx):
+            col_accum[j] += (row_accum[i + filt_span, j] - row_accum[i - filt_span - 1, j])
+            dest[i, j] = col_accum[j] // nq
+
+    for i in range(filt_span, 0, -1):
+        for j in range(imx):
+            col_accum[j] -= (row_accum[imy - 2 * i - 1, j] + row_accum[imy - 2 * i, j])
+            dest[imy - i, j] = n * col_accum[j] // nq // (2 * i + 1)
+
+    return dest.astype(np.uint8)
+
+
+def split_numpy(img: np.ndarray, half_selector: int) -> np.ndarray:
+    """
+    Crams either even or odd lines into the first half of the image.
+    The lower half of the image is set to 2.
+
+    Args:
+        img: Image to modify (NumPy array).
+        half_selector: 1 for odd rows, 2 for even rows, 0 to do nothing.
+
+    Returns:
+        Modified image (NumPy array).
+    """
+    if half_selector == 0:
+        return img
+
+    imy, imx = img.shape
+    cond_offs = imx if (half_selector % 2) else 0
+
+    for row in range(imy // 2):
+        img[row] = img[2 * row][cond_offs:cond_offs + imx]
+
+    img[imy // 2:] = 2  # Set lower half to 2
+
+    return img
+
+
+def subtract_img_numpy(img1: np.ndarray, img2: np.ndarray) -> np.ndarray:
+    """
+    Subtracts img2 from img1.
+
+    Args:
+        img1: First image (NumPy array).
+        img2: Second image (NumPy array).
+
+    Returns:
+        Resulting image (NumPy array).
+    """
+    img_new = np.maximum(0, img1.astype(np.int16) - img2.astype(np.int16)).astype(np.uint8)
+    return img_new
+
+
+def subtract_mask_numpy(img: np.ndarray, img_mask: np.ndarray) -> np.ndarray:
+    """
+    Creates a masked image where pixels equal to zero in img_mask are set to 0.
+
+    Args:
+        img: Original image (NumPy array).
+        img_mask: Mask image (NumPy array).
+
+    Returns:
+        Resulting image (NumPy array).
+    """
+    img_new = np.where(img_mask == 0, 0, img)
+    return img_new.astype(np.uint8)
+
+
+def copy_images_numpy(src: np.ndarray) -> np.ndarray:
+    """
+    Copies one image into another.
+
+    Args:
+        src: Source image (NumPy array).
+
+    Returns:
+        Destination image (NumPy array).
+    """
+    dest = src.copy()
+    return dest
+
+
+def prepare_image_numpy(img: np.ndarray, dim_lp: int, filter_hp: int, filter_file: str, cpar: Tuple[int, int, int]) -> np.ndarray:
+    """
+    Prepares an image for particle detection.
+
+    Args:
+        img: Source image (NumPy array).
+        dim_lp: Half-width of the lowpass filter.
+        filter_hp: Flag for additional filtering (0: none, 1: lowpass, 2: 3x3 filter).
+        filter_file: Path to the filter matrix file.
+	    cpar: image details such as size and image half for interlaced cases.
+
+    Returns:
+        Filtered image (NumPy array).
+    """
+    imx, imy, chfield = cpar
+    img_lp = fast_box_blur(img, dim_lp)
+    img_hp = subtract_img(img, img_lp)
+
+    # consider field mode
+    if chfield == 1 or chfield == 2:
+        img_hp = split(img_hp, chfield)
+
+    # filter highpass image, if wanted
+    if filter_hp == 1:
+        img_hp = lowpass_3(img_hp)
+    elif filter_hp == 2:
+        try:
+            filt = np.loadtxt(filter_file)
+            if filt.shape != (3, 3):
+                raise ValueError("Filter file must contain a 3x3 matrix.")
+            img_hp = filter_3(img_hp, filt)
+        except Exception as e:
+            print(f"Error reading or applying filter: {e}")
+            return None
+
+    return img_hp
+
