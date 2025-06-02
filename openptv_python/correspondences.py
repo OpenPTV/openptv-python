@@ -438,7 +438,9 @@ def take_best_candidates(
 
     # Sort candidates by match quality (.corr)
     src.sort(order="corr")  # by corr
-    src = src[::-1]  # reverse order
+    src[:] = np.flip(
+        src, axis=0
+    )  # reverse order in-place while preserving recarray type
 
     # Take candidates from the top to the bottom of the sorted list
     # Only take if none of the corresponding targets have been used
@@ -665,7 +667,7 @@ def correspondences(
         )
 
         match_counts[1] = take_best_candidates(
-            con0, con[match_counts[3] :], cpar.num_cams, tim
+            con0, con[match_counts[3] :].view(np.recarray), cpar.num_cams, tim
         )
         match_counts[3] += match_counts[1]
 
@@ -675,7 +677,7 @@ def correspondences(
             corr_list, cpar.num_cams, frm.num_targets, vpar.corrmin, con0, 4 * nmax, tim
         )
         match_counts[2] = take_best_candidates(
-            con0, con[match_counts[3] :], cpar.num_cams, tim
+            con0, con[match_counts[3] :].view(np.recarray), cpar.num_cams, tim
         )
         match_counts[3] += match_counts[2]
 

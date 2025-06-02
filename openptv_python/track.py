@@ -610,7 +610,7 @@ def sorted_candidates_in_volume(
     # fill and sort candidate struct
     num_cands = sort_candidates_by_freq(points, frm.num_cams)
     if num_cands > 0:
-        points = points[: num_cands + 1]
+        points = points[: num_cands + 1].view(np.recarray)
         # points[-1] = np.ndarray((1,), dtype = Foundpix_dtype)
         # points[-1].ftnr = TR_UNUSED
     else:
