@@ -9,8 +9,7 @@ class TestOrientationParameters(unittest.TestCase):
 
     def setUp(self):
         # Create a temporary file for testing
-        self.temp_file = 'tests/testing_fodder/parameters/orient.par'
-
+        self.temp_file = "tests/testing_fodder/parameters/orient.par"
 
     def test_read_from_file(self):
         """Read from file."""
@@ -33,7 +32,7 @@ class TestOrientationParameters(unittest.TestCase):
         instance = OrientPar.from_file(self.temp_file)
 
         # Write to YAML
-        yaml_file = 'orientation_parameters.yaml'
+        yaml_file = "orientation_parameters.yaml"
         instance.to_yaml(yaml_file)
 
         # Read back from YAML
@@ -43,5 +42,6 @@ class TestOrientationParameters(unittest.TestCase):
         self.assertEqual(instance, read_instance)
         os.remove(yaml_file)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

@@ -35,7 +35,6 @@ class TestGradientDescent(unittest.TestCase):
             Path("tests/testing_folder/calibration/cam1.tif.addpar"),
         )
 
-
     def test_external_calibration(self):
         """External calibration using clicked points."""
         ref_pts = np.array(
@@ -89,19 +88,14 @@ class TestGradientDescent(unittest.TestCase):
         self.cal.set_pos(self.cal.get_pos() + np.r_[15.0, -15.0, 15.0])
         self.cal.set_angles(self.cal.get_angles() + np.r_[-0.5, 0.5, -0.5])
 
-
-        self.orient_par.ccflag=0
-        self.orient_par.xhflag=0
-        self.orient_par.yhflag=0
+        self.orient_par.ccflag = 0
+        self.orient_par.xhflag = 0
+        self.orient_par.yhflag = 0
         print(f"Calibrating with the following flags: {self.orient_par}")
 
         _, _, _ = full_calibration(
-            self.cal,
-            ref_pts,
-            targets,
-            self.control,
-            self.orient_par
-            )
+            self.cal, ref_pts, targets, self.control, self.orient_par
+        )
 
         np.testing.assert_array_almost_equal(
             self.cal.get_angles(), self.orig_cal.get_angles(), decimal=4
@@ -118,18 +112,14 @@ class TestGradientDescent(unittest.TestCase):
         self.cal.set_pos(self.cal.get_pos() + np.r_[1.0, -1.0, 1.0])
         self.cal.set_angles(self.cal.get_angles() + np.r_[-0.1, 0.1, -0.1])
 
-        self.orient_par.ccflag=1
-        self.orient_par.xhflag=1
-        self.orient_par.yhflag=1
+        self.orient_par.ccflag = 1
+        self.orient_par.xhflag = 1
+        self.orient_par.yhflag = 1
         print(f"Calibrating with the following flags: {self.orient_par}")
 
         _, _, _ = full_calibration(
-            self.cal,
-            ref_pts,
-            targets,
-            self.control,
-            self.orient_par
-            )
+            self.cal, ref_pts, targets, self.control, self.orient_par
+        )
 
         np.testing.assert_array_almost_equal(
             self.cal.get_angles(), self.orig_cal.get_angles(), decimal=4
@@ -146,23 +136,19 @@ class TestGradientDescent(unittest.TestCase):
         # self.cal.set_pos(self.cal.get_pos() + np.r_[1.0, -1.0, 1.0])
         # self.cal.set_angles(self.cal.get_angles() + np.r_[-0.1, 0.1, -0.1])
 
-        self.orient_par.ccflag=0
-        self.orient_par.xhflag=0
-        self.orient_par.yhflag=0
-        self.orient_par.k1flag=0
-        self.orient_par.k2flag=0
-        self.orient_par.k3flag=0
-        self.orient_par.scxflag=0
-        self.orient_par.sheflag=0
+        self.orient_par.ccflag = 0
+        self.orient_par.xhflag = 0
+        self.orient_par.yhflag = 0
+        self.orient_par.k1flag = 0
+        self.orient_par.k2flag = 0
+        self.orient_par.k3flag = 0
+        self.orient_par.scxflag = 0
+        self.orient_par.sheflag = 0
         print(f"Calibrating with the following flags: {self.orient_par}")
 
         _, _, _ = full_calibration(
-            self.cal,
-            ref_pts,
-            targets,
-            self.control,
-            self.orient_par
-            )
+            self.cal, ref_pts, targets, self.control, self.orient_par
+        )
 
         np.testing.assert_array_almost_equal(
             self.cal.get_angles(), self.orig_cal.get_angles(), decimal=4
@@ -174,23 +160,19 @@ class TestGradientDescent(unittest.TestCase):
         print(f"{self.cal.get_angles()}")
         print(f"{self.cal.added_par}")
 
-        self.orient_par.ccflag=0
-        self.orient_par.xhflag=0
-        self.orient_par.yhflag=0
-        self.orient_par.k1flag=0
-        self.orient_par.k2flag=0
-        self.orient_par.k3flag=0
-        self.orient_par.scxflag=1
-        self.orient_par.sheflag=0
+        self.orient_par.ccflag = 0
+        self.orient_par.xhflag = 0
+        self.orient_par.yhflag = 0
+        self.orient_par.k1flag = 0
+        self.orient_par.k2flag = 0
+        self.orient_par.k3flag = 0
+        self.orient_par.scxflag = 1
+        self.orient_par.sheflag = 0
         print(f"Calibrating with the following flags: {self.orient_par}")
 
         _, _, _ = full_calibration(
-            self.cal,
-            ref_pts,
-            targets,
-            self.control,
-            self.orient_par
-            )
+            self.cal, ref_pts, targets, self.control, self.orient_par
+        )
 
         np.testing.assert_array_almost_equal(
             self.cal.get_angles(), self.orig_cal.get_angles(), decimal=4
@@ -202,23 +184,19 @@ class TestGradientDescent(unittest.TestCase):
         print(f"{self.cal.get_angles()}")
         print(f"{self.cal.added_par}")
 
-        self.orient_par.ccflag=0
-        self.orient_par.xhflag=0
-        self.orient_par.yhflag=0
-        self.orient_par.k1flag=0
-        self.orient_par.k2flag=0
-        self.orient_par.k3flag=1
-        self.orient_par.scxflag=0
-        self.orient_par.sheflag=0
+        self.orient_par.ccflag = 0
+        self.orient_par.xhflag = 0
+        self.orient_par.yhflag = 0
+        self.orient_par.k1flag = 0
+        self.orient_par.k2flag = 0
+        self.orient_par.k3flag = 1
+        self.orient_par.scxflag = 0
+        self.orient_par.sheflag = 0
         print(f"Calibrating with the following flags: {self.orient_par}")
 
         _, _, _ = full_calibration(
-            self.cal,
-            ref_pts,
-            targets,
-            self.control,
-            self.orient_par
-            )
+            self.cal, ref_pts, targets, self.control, self.orient_par
+        )
 
         np.testing.assert_array_almost_equal(
             self.cal.get_angles(), self.orig_cal.get_angles(), decimal=4
@@ -230,23 +208,19 @@ class TestGradientDescent(unittest.TestCase):
         print(f"{self.cal.get_angles()}")
         print(f"{self.cal.added_par}")
 
-        self.orient_par.ccflag=0
-        self.orient_par.xhflag=0
-        self.orient_par.yhflag=0
-        self.orient_par.k1flag=0
-        self.orient_par.k2flag=1
-        self.orient_par.k3flag=0
-        self.orient_par.scxflag=0
-        self.orient_par.sheflag=0
+        self.orient_par.ccflag = 0
+        self.orient_par.xhflag = 0
+        self.orient_par.yhflag = 0
+        self.orient_par.k1flag = 0
+        self.orient_par.k2flag = 1
+        self.orient_par.k3flag = 0
+        self.orient_par.scxflag = 0
+        self.orient_par.sheflag = 0
         print(f"Calibrating with the following flags: {self.orient_par}")
 
         _, _, _ = full_calibration(
-            self.cal,
-            ref_pts,
-            targets,
-            self.control,
-            self.orient_par
-            )
+            self.cal, ref_pts, targets, self.control, self.orient_par
+        )
 
         np.testing.assert_array_almost_equal(
             self.cal.get_angles(), self.orig_cal.get_angles(), decimal=4
@@ -258,23 +232,19 @@ class TestGradientDescent(unittest.TestCase):
         print(f"{self.cal.get_angles()}")
         print(f"{self.cal.added_par}")
 
-        self.orient_par.ccflag=0
-        self.orient_par.xhflag=0
-        self.orient_par.yhflag=0
-        self.orient_par.k1flag=1
-        self.orient_par.k2flag=0
-        self.orient_par.k3flag=0
-        self.orient_par.scxflag=0
-        self.orient_par.sheflag=0
+        self.orient_par.ccflag = 0
+        self.orient_par.xhflag = 0
+        self.orient_par.yhflag = 0
+        self.orient_par.k1flag = 1
+        self.orient_par.k2flag = 0
+        self.orient_par.k3flag = 0
+        self.orient_par.scxflag = 0
+        self.orient_par.sheflag = 0
         print(f"Calibrating with the following flags: {self.orient_par}")
 
         _, _, _ = full_calibration(
-            self.cal,
-            ref_pts,
-            targets,
-            self.control,
-            self.orient_par
-            )
+            self.cal, ref_pts, targets, self.control, self.orient_par
+        )
 
         np.testing.assert_array_almost_equal(
             self.cal.get_angles(), self.orig_cal.get_angles(), decimal=4
@@ -286,26 +256,22 @@ class TestGradientDescent(unittest.TestCase):
         print(f"{self.cal.get_angles()}")
         print(f"{self.cal.added_par}")
 
-        self.orient_par.ccflag=0
-        self.orient_par.xhflag=0
-        self.orient_par.yhflag=0
-        self.orient_par.k1flag=0
-        self.orient_par.k2flag=0
-        self.orient_par.k3flag=1
-        self.orient_par.scxflag=0
-        self.orient_par.sheflag=0
-        self.orient_par.p1flag=1
-        self.orient_par.p2flag=0
+        self.orient_par.ccflag = 0
+        self.orient_par.xhflag = 0
+        self.orient_par.yhflag = 0
+        self.orient_par.k1flag = 0
+        self.orient_par.k2flag = 0
+        self.orient_par.k3flag = 1
+        self.orient_par.scxflag = 0
+        self.orient_par.sheflag = 0
+        self.orient_par.p1flag = 1
+        self.orient_par.p2flag = 0
 
         print(f"Calibrating with the following flags: {self.orient_par}")
 
         _, _, _ = full_calibration(
-            self.cal,
-            ref_pts,
-            targets,
-            self.control,
-            self.orient_par
-            )
+            self.cal, ref_pts, targets, self.control, self.orient_par
+        )
 
         np.testing.assert_array_almost_equal(
             self.cal.get_angles(), self.orig_cal.get_angles(), decimal=4
@@ -317,25 +283,21 @@ class TestGradientDescent(unittest.TestCase):
         print(f"{self.cal.get_angles()}")
         print(f"{self.cal.added_par}")
 
-        self.orient_par.ccflag=1
-        self.orient_par.xhflag=0
-        self.orient_par.yhflag=0
-        self.orient_par.k1flag=0
-        self.orient_par.k2flag=0
-        self.orient_par.k3flag=0
-        self.orient_par.scxflag=0
-        self.orient_par.sheflag=0
-        self.orient_par.p1flag=1
-        self.orient_par.p2flag=1
+        self.orient_par.ccflag = 1
+        self.orient_par.xhflag = 0
+        self.orient_par.yhflag = 0
+        self.orient_par.k1flag = 0
+        self.orient_par.k2flag = 0
+        self.orient_par.k3flag = 0
+        self.orient_par.scxflag = 0
+        self.orient_par.sheflag = 0
+        self.orient_par.p1flag = 1
+        self.orient_par.p2flag = 1
         print(f"Calibrating with the following flags: {self.orient_par}")
 
         _, _, _ = full_calibration(
-            self.cal,
-            ref_pts,
-            targets,
-            self.control,
-            self.orient_par
-            )
+            self.cal, ref_pts, targets, self.control, self.orient_par
+        )
 
         np.testing.assert_array_almost_equal(
             self.cal.get_angles(), self.orig_cal.get_angles(), decimal=4
@@ -346,6 +308,7 @@ class TestGradientDescent(unittest.TestCase):
         print(f"{self.cal.get_pos()}")
         print(f"{self.cal.get_angles()}")
         print(f"{self.cal.added_par}")
+
 
 if __name__ == "__main__":
     unittest.main()

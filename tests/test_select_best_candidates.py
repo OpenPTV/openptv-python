@@ -8,7 +8,8 @@ from openptv_python.tracking_frame_buf import n_tupel_dtype
 
 class TestTakeBestCandidates(unittest.TestCase):
     def test_candidates_selection(self):
-        src = [([1, 2, 3, 4], 0.8),
+        src = [
+            ([1, 2, 3, 4], 0.8),
             ([2, 1, -1, 5], 0.9),
             ([1, -1, -1, 6], 0.7),
             ([1, 2, 3, 7], 0.95),

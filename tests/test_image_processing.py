@@ -1,4 +1,5 @@
 """Test the image processing functions."""
+
 import unittest
 
 import numpy as np
@@ -50,11 +51,11 @@ class Test_image_processing(unittest.TestCase):
 
         correct_res = np.array(
             [
-                [ 28, 56, 85, 56, 28],
-                [ 56,255,255, 255, 56],
-                [ 85, 255, 255, 255,  85],
-                [ 56 ,255 ,255, 255 , 56],
-                [ 28 , 56 , 85 , 56,  28],
+                [28, 56, 85, 56, 28],
+                [56, 255, 255, 255, 56],
+                [85, 255, 255, 255, 85],
+                [56, 255, 255, 255, 56],
+                [28, 56, 85, 56, 28],
             ],
             dtype=np.uint8,
         )

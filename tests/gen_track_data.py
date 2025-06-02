@@ -4,6 +4,7 @@ that is pretty degenerates so is good for
 testing. It starts from (0,0,0) and moves in a straight line on the x axis,
 at a slow velocity.
 """
+
 from pathlib import Path
 from typing import List
 
@@ -22,7 +23,9 @@ part_traject = np.zeros((num_frames, 3))
 part_traject[:, 0] = np.r_[:num_frames] * velocity
 
 # Find targets on each camera.
-cpar = ControlPar(num_cams=3).from_file(Path("tests/testing_fodder/track/parameters/control_newpart.par"))
+cpar = ControlPar(num_cams=3).from_file(
+    Path("tests/testing_fodder/track/parameters/control_newpart.par")
+)
 
 targs: List[List[List[float]]] = [
     [[0.0, 0.0] for _ in range(num_frames)] for _ in range(num_cams)
@@ -30,7 +33,7 @@ targs: List[List[List[float]]] = [
 
 for cam in range(num_cams):
     cal = Calibration().from_file(
-        Path(f"tests/testing_fodder/cal/sym_cam{cam+1}.tif.ori"),
+        Path(f"tests/testing_fodder/cal/sym_cam{cam + 1}.tif.ori"),
         Path("tests/testing_fodder/cal/cam1.tif.addpar"),
     )
     # check this out
@@ -42,7 +45,9 @@ for cam in range(num_cams):
 for frame in range(num_frames):
     # write 3D positions:
     with open(
-        f"tests/testing_fodder/track/res_orig/particles.{frame+1}", "w", encoding="utf-8"
+        f"tests/testing_fodder/track/res_orig/particles.{frame + 1}",
+        "w",
+        encoding="utf-8",
     ) as outfile:
         # Note correspondence to the single target in each frame.
         outfile.writelines(
@@ -64,7 +69,7 @@ for frame in range(num_frames):
     # write associated targets from all cameras:
     for cam in range(num_cams):
         with open(
-            f"tests/testing_fodder/track/newpart/cam{cam+1}.{frame+1:04d}_targets",
+            f"tests/testing_fodder/track/newpart/cam{cam + 1}.{frame + 1:04d}_targets",
             "w",
             encoding="utf-8",
         ) as outfile:

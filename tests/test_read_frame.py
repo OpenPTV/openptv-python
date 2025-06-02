@@ -1,4 +1,5 @@
 """Test the Frame class."""
+
 import unittest
 
 import numpy as np

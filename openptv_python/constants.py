@@ -1,4 +1,5 @@
 """Constants used in the Python version of OpenPTV."""
+
 NMAX = 10000  # correspondences
 MAXCAND = 40  # assuming a maximum capacity of MAXCAND candidates
 PT_UNUSED = -999

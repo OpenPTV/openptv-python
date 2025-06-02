@@ -1,4 +1,5 @@
 """Test ray_tracing function."""
+
 import unittest
 
 import numpy as np
@@ -35,8 +36,8 @@ class TestRayTracing(unittest.TestCase):
 
         # The exterior parameters
         test_Ex = Exterior.copy()
-        test_Ex.z0 = 100.
-        test_Ex.dm=np.array(((1.0, 0.2, -0.3), (0.2, 1.0, 0.0), (-0.3, 0.0, 1.0)))
+        test_Ex.z0 = 100.0
+        test_Ex.dm = np.array(((1.0, 0.2, -0.3), (0.2, 1.0, 0.0), (-0.3, 0.0, 1.0)))
 
         # The interior parameters
         test_I = Interior.copy()
@@ -46,7 +47,7 @@ class TestRayTracing(unittest.TestCase):
         test_G = np.array((0.0001, 0.00001, 1.0))
 
         # The addp parameters
-        test_addp = ap_52.copy() # (0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
+        test_addp = ap_52.copy()  # (0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
 
         # The calibration parameters
         test_cal = Calibration(test_Ex, test_I, test_G, test_addp)

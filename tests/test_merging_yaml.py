@@ -15,35 +15,35 @@ from openptv_python.parameters import (
     VolumePar,
 )
 
-par_dict = {'cal_ori': CalibrationPar,
-            'detect_plate':TargetPar,
-            'track': TrackPar,
-            'multi_planes':MultiPlanesPar,
-            'ptv': ControlPar,
-            'criteria':VolumePar,
-            'sequence':SequencePar,
-            'targ_rec': TargetPar,
-            'orient' : OrientPar
-            }
+par_dict = {
+    "cal_ori": CalibrationPar,
+    "detect_plate": TargetPar,
+    "track": TrackPar,
+    "multi_planes": MultiPlanesPar,
+    "ptv": ControlPar,
+    "criteria": VolumePar,
+    "sequence": SequencePar,
+    "targ_rec": TargetPar,
+    "orient": OrientPar,
+}
 
 # print(par_dict)
 
 # Define the directory containing the .par files
-directory_path = pathlib.Path('tests/testing_fodder/parameters')
-output_yaml_file = 'tests/testing_fodder/parameters/merged_parameters.yaml'
+directory_path = pathlib.Path("tests/testing_fodder/parameters")
+output_yaml_file = "tests/testing_fodder/parameters/merged_parameters.yaml"
 
 # Initialize an empty dictionary to store the merged data
 merged_data = {}
 
-ptv_par = directory_path / 'ptv.par'
-par_class = par_dict['ptv']
+ptv_par = directory_path / "ptv.par"
+par_class = par_dict["ptv"]
 par_content = par_class().from_file(ptv_par)
 num_cams = par_content.num_cams
 
 
-
 # Find all .par files in the specified directory
-par_files = directory_path.glob('*.par')
+par_files = directory_path.glob("*.par")
 # print(par_files)
 
 # Iterate through each .par file
@@ -72,7 +72,7 @@ for file_path in par_files:
         merged_data[title] = asdict(par_content)
 
 # Write the merged data to a single YAML file
-with open(output_yaml_file, 'w', encoding='utf-8') as output_file:
+with open(output_yaml_file, "w", encoding="utf-8") as output_file:
     yaml.dump(merged_data, output_file, default_flow_style=False)
 
-print(f'Merged data written to {output_yaml_file}')
+print(f"Merged data written to {output_yaml_file}")

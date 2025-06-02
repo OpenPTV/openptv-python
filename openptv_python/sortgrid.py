@@ -120,7 +120,7 @@ def read_sortgrid_par(filename) -> int:
     return eps
 
 
-def read_calblock(filename: Path) -> np.recarray: #List[Coord3d]:
+def read_calblock(filename: Path) -> np.recarray:  # List[Coord3d]:
     """
     Read the calibration block file into the structure of 3D positions and pointers.
 
@@ -151,6 +151,6 @@ def read_calblock(filename: Path) -> np.recarray: #List[Coord3d]:
         return np.recarray(0, dtype=Coord3d_dtype)
     except ValueError:
         print(f"Empty or badly formatted file: {filename}")
-        return np.recarray(0, dtype = Coord3d_dtype)
+        return np.recarray(0, dtype=Coord3d_dtype)
 
     return np.array(coords).view(np.recarray)

@@ -1,4 +1,5 @@
 """Tracking run module."""
+
 import math
 from dataclasses import dataclass
 from pathlib import Path

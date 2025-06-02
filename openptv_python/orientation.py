@@ -1,4 +1,5 @@
 """Functions for the orientation of the camera."""
+
 from typing import List, Optional, Tuple
 
 import numpy as np
@@ -24,6 +25,7 @@ from .vec_utils import unit_vector, vec_norm, vec_set
 def is_singular(matrix):
     rank = np.linalg.matrix_rank(matrix)
     return rank < matrix.shape[0]
+
 
 @njit
 def skew_midpoint(
@@ -200,7 +202,7 @@ def orient(
     flags: OrientPar,
     sigmabeta: np.ndarray,
     dm: float = 0.000001,
-    drad: float = 0.000001
+    drad: float = 0.000001,
 ) -> Optional[np.ndarray]:
     """Calculate orientation of the camera, updating its calibration.
 
@@ -311,8 +313,8 @@ def orient(
         cal.added_par[3],
         cal.added_par[4],
         cal.added_par[5],
-        cal.added_par[6]
-        ]
+        cal.added_par[6],
+    ]
 
     # backup for changing back and forth
     safety_x = cal.glass_par[0]
@@ -347,8 +349,8 @@ def orient(
             # derivatives of distortion parameters
             r = np.sqrt(xp * xp + yp * yp)
 
-            X[n][7] = cal.added_par[5] # cal.added_par[5]
-            X[n + 1][7] = np.sin(cal.added_par[6]) #np.sin(cal.added_par[6])
+            X[n][7] = cal.added_par[5]  # cal.added_par[5]
+            X[n + 1][7] = np.sin(cal.added_par[6])  # np.sin(cal.added_par[6])
 
             X[n][8] = 0
             X[n + 1][8] = 1
@@ -495,7 +497,7 @@ def orient(
         # )
 
         beta, residuals, rank, singular_values = scipy.linalg.lstsq(
-            Xh[:, :numbers], yh, lapack_driver='gelsy'
+            Xh[:, :numbers], yh, lapack_driver="gelsy"
         )
 
         # Interpret the results
@@ -575,7 +577,6 @@ def orient(
     omega = np.sum(resi * P * resi)
     sigmabeta[NPAR] = np.sqrt(omega / (n_obs - numbers))
 
-
     # if np.any(np.isnan(sigmabeta)):
     #     pdb.set_trace()
 
@@ -588,7 +589,6 @@ def orient(
     else:
         XPX = np.linalg.inv(XTX)
 
-
     # XPX = np.linalg.inv()
 
     # def invert_singular_matrix(m):
@@ -598,13 +598,12 @@ def orient(
     # identity_matrix = np.eye(a, a)
     # return np.linalg.lstsq(m, identity_matrix)[0]
 
-
     # import pdb; pdb.set_trace()
     # for i in range(numbers):
     #     # print(f"{i=}, {np.sqrt(XPX[i][i]) = }")
     #     sigmabeta[i] = sigmabeta[NPAR] * np.sqrt(XPX[i][i])
 
-    sigmabeta[:numbers] = sigmabeta[NPAR]*np.sqrt(np.diag(XPX))
+    sigmabeta[:numbers] = sigmabeta[NPAR] * np.sqrt(np.diag(XPX))
 
     if stopflag:
         cal.update_rotation_matrix()
@@ -620,7 +619,7 @@ def raw_orient(
     fix: np.ndarray,
     pix: List[Target],
     dm: float = 1e-4,
-    drad: float = 1e-4
+    drad: float = 1e-4,
 ) -> bool:
     """Calculate orientation of the camera, updating its calibration."""
     # the original C file says nfix is typically 4, but why X is 10 x 6 and not 8?
@@ -671,7 +670,7 @@ def raw_orient(
 
         # Solve the linear system
         beta, residuals, rank, singular_values = scipy.linalg.lstsq(
-            X, y, lapack_driver='gelsy'
+            X, y, lapack_driver="gelsy"
         )  # , rcond=None)
 
         # Interpret the results
@@ -738,6 +737,7 @@ def read_calblock(filename):
             parts = line.split()
             fix[i] = np.array([float(parts[1]), float(parts[2]), float(parts[3])])
     return fix, num_fix
+
 
 def dumbbell_target_func(
     targets: np.ndarray,
@@ -814,6 +814,7 @@ def external_calibration(
 
     return True if success else False
 
+
 def full_calibration(
     cal: Calibration,
     ref_pts: np.ndarray,
@@ -821,7 +822,7 @@ def full_calibration(
     cparam: ControlPar,
     orient_par: OrientPar,
     dm: float = 1e-6,
-    drad: float = 1e-6
+    drad: float = 1e-6,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Perform a full calibration, affecting all calibration structs.
@@ -874,7 +875,9 @@ def full_calibration(
     else:
         targs = img_pts
 
-    residuals = orient(cal, cparam, len(ref_pts), ref_pts, targs, orient_par, err_est, dm=dm, drad=drad)
+    residuals = orient(
+        cal, cparam, len(ref_pts), ref_pts, targs, orient_par, err_est, dm=dm, drad=drad
+    )
 
     # free(orip)
 
@@ -944,7 +947,10 @@ def match_detection_to_ref(
 
 
 def point_positions(
-    targets: np.ndarray, mm_par: MultimediaPar, cals: List[Calibration], vparam: VolumePar
+    targets: np.ndarray,
+    mm_par: MultimediaPar,
+    cals: List[Calibration],
+    vparam: VolumePar,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Calculate the 3D positions of the points given by their 2D projections.
@@ -986,7 +992,10 @@ def point_positions(
 
 
 def single_cam_point_positions(
-    targets: np.ndarray, mm_par: MultimediaPar, cals: List[Calibration], vparam: VolumePar
+    targets: np.ndarray,
+    mm_par: MultimediaPar,
+    cals: List[Calibration],
+    vparam: VolumePar,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Calculate the 3D positions of the points from a single camera using.

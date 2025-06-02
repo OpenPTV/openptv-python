@@ -1,4 +1,5 @@
 """Test the Calibration class."""
+
 import unittest
 
 import numpy as np
@@ -27,12 +28,13 @@ class TestCalibrationClass(unittest.TestCase):
 
     def test_glass_initialization(self):
         """Test glass parameters initialization."""
-        assert (np.all(self.cal.glass_par == np.array([0.0, 0.0, 1.0])))
+        assert np.all(self.cal.glass_par == np.array([0.0, 0.0, 1.0]))
 
     def test_ap_52_initialization(self):
         """Test ap_52 parameters initialization."""
-        assert np.array_equal(self.cal.added_par, \
-            np.array([0,0,0,0,0,1,0],dtype=np.float64))
+        assert np.array_equal(
+            self.cal.added_par, np.array([0, 0, 0, 0, 0, 1, 0], dtype=np.float64)
+        )
 
     def test_mmlut_initialization(self):
         """Test mmlut parameters initialization."""

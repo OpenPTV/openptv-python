@@ -31,9 +31,8 @@ class TestOrientation(unittest.TestCase):
 
         self.control = ControlPar(4).from_file(self.control_file_name)
         self.calibration = Calibration().from_file(
-            self.input_ori_file_name,
-            self.input_add_file_name
-            )
+            self.input_ori_file_name, self.input_add_file_name
+        )
         self.vpar = VolumePar().from_file(self.volume_file_name)
         self.orient_par = OrientPar().from_file(self.orient_par_file_name)
 
@@ -112,7 +111,6 @@ class TestOrientation(unittest.TestCase):
         mult_params.set_layers([1.0], [1.0])
         mult_params.set_n3(1.0)
 
-
         # 3d point
         points = np.atleast_2d(np.array([17, 42, 0], dtype=float))
 
@@ -146,9 +144,7 @@ class TestOrientation(unittest.TestCase):
         targs_plain = np.array(targs_plain).transpose(1, 0, 2)
         targs_jigged = np.array(targs_jigged).transpose(1, 0, 2)
         skew_dist_plain = point_positions(targs_plain, mult_params, calibs, self.vpar)
-        skew_dist_jigged = point_positions(
-            targs_jigged, mult_params, calibs, self.vpar
-        )
+        skew_dist_jigged = point_positions(targs_jigged, mult_params, calibs, self.vpar)
 
         if np.any(skew_dist_plain[1] > 1e-10):
             self.fail(
@@ -209,7 +205,6 @@ class TestOrientation(unittest.TestCase):
         # print(f"new_jigged_targs: {new_jigged_targs}")
 
         targs_plain = np.array(targs_plain).transpose(1, 0, 2)
-
 
         targs_jigged = np.array(targs_jigged).transpose(1, 0, 2)
 

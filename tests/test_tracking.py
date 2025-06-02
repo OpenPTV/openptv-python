@@ -7,6 +7,7 @@ Created on Mon Apr 24 10:57:01 2017
 
 @author: yosef
 """
+
 import copy  # noqa: F401
 import shutil
 import unittest
@@ -125,20 +126,20 @@ class TestPos3dInBounds(unittest.TestCase):
 
         bounds = convert_track_par_to_tuple(
             TrackPar(
-            -2.0,
-            2.0,
-            -2.0,
-            2.0,
-            -2.0,
-            2.0,
-            120,
-            0.4,
-            1,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-        )
+                -2.0,
+                2.0,
+                -2.0,
+                2.0,
+                -2.0,
+                2.0,
+                120,
+                0.4,
+                1,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+            )
         )
 
         result = pos3d_in_bounds(inside, bounds)
@@ -294,12 +295,12 @@ class TestSort(unittest.TestCase):
 
         self.assertTrue(
             isclose(test_array[0], -0.8, rel_tol=1e-9),
-            f"Expected -0.8 but found { test_array[0] } ",
+            f"Expected -0.8 but found {test_array[0]} ",
         )
         self.assertNotEqual(
             ix_array[len_array - 1],
             1,
-            f"Expected not to be 1 but found { ix_array[len_array - 1] }",
+            f"Expected not to be 1 but found {ix_array[len_array - 1]}",
         )
 
         # sort an array longer than the number of elements
@@ -313,18 +314,21 @@ class TestSort(unittest.TestCase):
 
         self.assertTrue(
             isclose(test_array[0], 0.3, rel_tol=1e-9),
-            f"Expected 0.3 but found { test_array[0] } ",
+            f"Expected 0.3 but found {test_array[0]} ",
         )
 
     def test_copy_foundpix_array(self):
         """Test the copy_foundpix_array function."""
-        src = np.rec.array([(1, 1, [1, 0, -999, -999]), (2, 5, [1, 1, 0, 0])], dtype=Foundpix_dtype)
+        src = np.rec.array(
+            [(1, 1, [1, 0, -999, -999]), (2, 5, [1, 1, 0, 0])], dtype=Foundpix_dtype
+        )
         arr_len = 2
         num_cams = 2
 
-        one_element = np.array([(TR_UNUSED,0,[-999]*TR_MAX_CAMS)],dtype=Foundpix_dtype)
+        one_element = np.array(
+            [(TR_UNUSED, 0, [-999] * TR_MAX_CAMS)], dtype=Foundpix_dtype
+        )
         dest = np.tile(one_element, num_cams * MAX_CANDS).view(np.recarray)
-
 
         reset_foundpix_array(dest, arr_len, num_cams)
 
@@ -351,7 +355,9 @@ class TestSort(unittest.TestCase):
 
 class TestSearchQuader(unittest.TestCase):
     def setUp(self):
-        self.cpar = ControlPar().from_file(Path("tests/testing_fodder/track/parameters/ptv.par"))
+        self.cpar = ControlPar().from_file(
+            Path("tests/testing_fodder/track/parameters/ptv.par")
+        )
         self.cpar.mm.n2[0] = 1.0
         self.cpar.mm.n3 = 1.0
 
@@ -365,9 +371,7 @@ class TestSearchQuader(unittest.TestCase):
         #  print(f"cpar = {self.cpar}")
 
         tpar = convert_track_par_to_tuple(
-            TrackPar(
-            0.2, -0.2, 0.1, -0.1, 0.1, -0.1, 120, 0.4, 1, 0.0, 0.0, 0.0, 0.0
-        )
+            TrackPar(0.2, -0.2, 0.1, -0.1, 0.1, -0.1, 120, 0.4, 1, 0.0, 0.0, 0.0, 0.0)
         )
         xr, xl, yd, yu = searchquader(point, tpar, self.cpar, self.calib)
 
@@ -385,9 +389,7 @@ class TestSearchQuader(unittest.TestCase):
         # Let's test with just one camera to check borders
         self.cpar.num_cams = 1
         tpar1 = convert_track_par_to_tuple(
-            TrackPar(
-            0.0, -0.0, 0.0, -0.0, 0.0, -0.0, 120, 0.4, 1, 0.0, 0.0, 0.0, 0.0
-        )
+            TrackPar(0.0, -0.0, 0.0, -0.0, 0.0, -0.0, 120, 0.4, 1, 0.0, 0.0, 0.0, 0.0)
         )
         xr, xl, yd, yu = searchquader(point, tpar1, self.cpar, self.calib)
 
@@ -400,20 +402,20 @@ class TestSearchQuader(unittest.TestCase):
         # Test with infinitely large values of tpar that should return about half the image size
         tpar2 = convert_track_par_to_tuple(
             TrackPar(
-            1000.0,
-            -1000.0,
-            1000.0,
-            -1000.0,
-            1000.0,
-            -1000.0,
-            120,
-            0.4,
-            1,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-        )
+                1000.0,
+                -1000.0,
+                1000.0,
+                -1000.0,
+                1000.0,
+                -1000.0,
+                120,
+                0.4,
+                1,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+            )
         )
 
         xr, xl, yd, yu = searchquader(point, tpar2, self.cpar, self.calib)
@@ -440,7 +442,9 @@ class TestSortCandidatesByFreq(unittest.TestCase):
 
         num_cams = 2
 
-        one_element = np.array([(TR_UNUSED,0,[0]*TR_MAX_CAMS)],dtype=Foundpix_dtype)
+        one_element = np.array(
+            [(TR_UNUSED, 0, [0] * TR_MAX_CAMS)], dtype=Foundpix_dtype
+        )
         dest = np.tile(one_element, num_cams * MAX_CANDS).view(np.recarray)
 
         # sortwhatfound freaks out if the array is not reset before

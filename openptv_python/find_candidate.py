@@ -133,7 +133,7 @@ def find_candidate(
         if len(cand) >= MAXCAND:
             print(f"Increase maximum number of candidates {len(cand)}\n")
             out = np.array(cand).view(np.recarray).flatten()
-            return out # type: ignore
+            return out  # type: ignore
 
         # Empirical correlation coefficient from shape and brightness
         # parameters.
@@ -143,18 +143,18 @@ def find_candidate(
         corr *= sumg + pix[p2].sumg
 
         # cand.append(Candidate(pnr=j, tol=d, corr=corr))
-        cand.append(np.array([(j, d, corr)], dtype=Candidate_dtype)) # type: ignore
-
+        cand.append(np.array([(j, d, corr)], dtype=Candidate_dtype))  # type: ignore
 
     out = np.array(cand).view(np.recarray).flatten()
-        # print(f"appended: {cand[-1]}")
+    # print(f"appended: {cand[-1]}")
 
-    return out # type: ignore
+    return out  # type: ignore
 
 
 # def quality_ratio(a, b):
 #     """ Return the ratio of the smaller to the larger of the two numbers."""
 #     return a / b if a < b else b / a
+
 
 @njit(float64(float64, float64))
 def quality_ratio(a: float, b: float) -> float:
@@ -162,6 +162,7 @@ def quality_ratio(a: float, b: float) -> float:
     if a == 0 and b == 0:
         return 0
     return min(a, b) / max(a, b)
+
 
 def find_start_point(crd: np.recarray, num: int, xa: float, vpar: VolumePar) -> int:
     """Find the start point of the candidate search.
@@ -181,6 +182,7 @@ def find_start_point(crd: np.recarray, num: int, xa: float, vpar: VolumePar) -> 
     # x = np.array([_.x for _ in crd])
     out = find_start_point_binary(crd.x, num, xa, vpar.eps0)
     return out
+
 
 @njit(int32(float64[:], int32, float64, float64))
 def find_start_point_binary(x: np.ndarray, num: int, xa: float, eps0: float) -> int:

@@ -1,6 +1,5 @@
 """Image coordinates."""
 
-
 from typing import Tuple
 
 import numpy as np
@@ -29,7 +28,7 @@ def flat_image_coord(
     if orig_pos.shape != (3,):
         raise ValueError("orig_pos must be a 3D vector")
 
-    cal_t = Calibration(mmlut = cal.mmlut)
+    cal_t = Calibration(mmlut=cal.mmlut)
 
     # This block calculate 3D position in an imaginary air-filled space,
     # i.e. where the point will have been seen in the absence of refractive
@@ -51,12 +50,12 @@ def flat_image_coord(
     dm = cal.ext_par.dm
     origin = np.r_[cal.ext_par.x0, cal.ext_par.y0, cal.ext_par.z0]
 
-    deno = np.dot(dm[:,2], (pos - origin))
+    deno = np.dot(dm[:, 2], (pos - origin))
     if deno == 0:
         deno = 1
 
-    x = (-cal.int_par.cc * np.dot(dm[:, 0], (pos - origin)) / deno)
-    y = (-cal.int_par.cc * np.dot(dm[:, 1], (pos - origin)) / deno)
+    x = -cal.int_par.cc * np.dot(dm[:, 0], (pos - origin)) / deno
+    y = -cal.int_par.cc * np.dot(dm[:, 1], (pos - origin)) / deno
 
     return x, y
 

@@ -82,8 +82,7 @@ class TestEpipolarCurve(unittest.TestCase):
         line = epipolar_curve(
             mid - np.r_[100.0, 0.0], orig_cal, proj_cal, 5, cpar, vpar
         )
-        np.testing.assert_array_equal(
-            np.argsort(line[:, 0]), np.arange(5)[::-1])
+        np.testing.assert_array_equal(np.argsort(line[:, 0]), np.arange(5)[::-1])
         self.assertTrue(np.all(abs(line[:, 1] - mid[1]) < 1e-6))
 
     def test_epi_mm_2D(self):
@@ -91,15 +90,13 @@ class TestEpipolarCurve(unittest.TestCase):
         test_Ex = Exterior.copy()
         test_Ex.z0 = 100.0
 
-
         test_I = Interior.copy()
         test_I.cc = 100.0
         test_G = np.array((0.0, 0.0, 50.0))
-        test_addp = ap_52.copy()# (0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
+        test_addp = ap_52.copy()  # (0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
         test_cal = Calibration(test_Ex, test_I, test_G, test_addp)
 
-        test_mm = MultimediaPar(1, 1.0, [1.49, 0.0, 0.0], [
-                                5.0, 0.0, 0.0], 1.33)
+        test_mm = MultimediaPar(1, 1.0, [1.49, 0.0, 0.0], [5.0, 0.0, 0.0], 1.33)
 
         test_vpar = VolumePar(
             [-250.0, 250.0],
@@ -133,26 +130,24 @@ class TestEpipolarCurve(unittest.TestCase):
         test_Ex = Exterior.copy()
         test_Ex.x0 = 10.0
         test_Ex.z0 = 100.0
-        test_Ex.phi = -.01
+        test_Ex.phi = -0.01
 
         test_I = Interior.copy()
         test_I.cc = 100.0
         test_G = np.array((0.0, 0.0, 50.0))
-        test_addp = ap_52.copy()# (0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
+        test_addp = ap_52.copy()  # (0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
         test_cal_1 = Calibration(test_Ex, test_I, test_G, test_addp)
 
         test_Ex_2 = Exterior.copy()
         test_Ex_2.x0 = -10.0
         test_Ex_2.z0 = 100.0
-        test_Ex_2.phi = .01
+        test_Ex_2.phi = 0.01
         test_cal_2 = Calibration(test_Ex_2, test_I, test_G, test_addp)
 
-        test_mm = MultimediaPar(1, 1.0, [1.49, 0.0, 0.0], [
-                                5.0, 0.0, 0.0], 1.33)
+        test_mm = MultimediaPar(1, 1.0, [1.49, 0.0, 0.0], [5.0, 0.0, 0.0], 1.33)
 
         test_vpar = VolumePar(
-            [-250.0, 250.0], [-50.0, -50.0], [50.0, 50.0],
-            0.01, 0.3, 0.3, 0.01, 1.0, 33
+            [-250.0, 250.0], [-50.0, -50.0], [50.0, 50.0], 0.01, 0.3, 0.3, 0.01, 1.0, 33
         )
 
         x = 10.0
@@ -174,7 +169,7 @@ class TestEpipolarCurve(unittest.TestCase):
         test_I = Interior.copy()
         test_I.cc = 100.0
         test_G = np.array((0.0, 0.0, 50.0))
-        test_addp = ap_52.copy()#(0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
+        test_addp = ap_52.copy()  # (0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
         test_cal_1 = Calibration(test_Ex, test_I, test_G, test_addp)
 
         test_Ex_2 = Exterior.copy()
@@ -251,15 +246,14 @@ class TestFindCandidate(unittest.TestCase):
         sumg = 100
 
         test_Ex = Exterior.copy()
-        test_Ex.z0 = 100.
+        test_Ex.z0 = 100.0
 
         test_I = Interior.copy()
-        test_I.cc =  100.0
+        test_I.cc = 100.0
         test_G = np.array((0.0, 0.0, 50.0))
-        test_addp = ap_52.copy()# (0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
+        test_addp = ap_52.copy()  # (0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
         test_cal = Calibration(test_Ex, test_I, test_G, test_addp)
-        test_mm = MultimediaPar(1, 1.0, [1.49, 0.0, 0.0], [
-                                5.0, 0.0, 0.0], 1.33)
+        test_mm = MultimediaPar(1, 1.0, [1.49, 0.0, 0.0], [5.0, 0.0, 0.0], 1.33)
         test_vpar = VolumePar(
             [-250.0, 250.0],
             [-100.0, -100.0],

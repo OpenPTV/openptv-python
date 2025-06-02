@@ -11,8 +11,8 @@ from openptv_python.parameters import read_control_par, read_volume_par
 class TestInitMmLut(unittest.TestCase):
     def test_init_mmLUT(self):
         filepath = Path("tests") / "testing_fodder"
-        ori_file = filepath/"cal"/"cam2.tif.ori"
-        add_file = filepath/"cal"/"cam2.tif.addpar"
+        ori_file = filepath / "cal" / "cam2.tif.ori"
+        add_file = filepath / "cal" / "cam2.tif.addpar"
         vol_file = filepath / "parameters" / "criteria.par"
         filename = filepath / "parameters" / "ptv.par"
 
@@ -30,12 +30,9 @@ class TestInitMmLut(unittest.TestCase):
         self.assertIsNotNone(cpar, "\n control parameter file reading failed\n ")
 
         # test_mmlut = [mmlut() for _ in range(cpar.num_cams)]
-        correct_mmlut = np.array((
-            (0.0, 0.0, -250.00001105),
-            130,
-            177,
-            2),
-        dtype = mmlut_dtype)
+        correct_mmlut = np.array(
+            ((0.0, 0.0, -250.00001105), 130, 177, 2), dtype=mmlut_dtype
+        )
         correct_mmlut = correct_mmlut.view(np.recarray)
 
         # run init_mmLUT for one camera only

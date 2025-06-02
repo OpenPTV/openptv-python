@@ -61,7 +61,7 @@ class TestDistFlatRoundTrip(unittest.TestCase):
 
         cal = Calibration()
         cal.int_par.xh, cal.int_par.yh, cal.int_par.cc = 1.5, 1.5, 60.0
-        cal.added_par = np.array((1e-5, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0),dtype=np.float64)
+        cal.added_par = np.array((1e-5, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0), dtype=np.float64)
 
         xdist, ydist = flat_to_dist(x, y, cal)
         xflat, yflat = dist_to_flat(xdist, ydist, cal, iter_eps)
@@ -73,7 +73,7 @@ class TestDistFlatRoundTrip(unittest.TestCase):
         """Test the shear distortion parameter."""
         x, y = 1.0, 1.0
         ap = ap_52[:]
-        ap[6]=1.0
+        ap[6] = 1.0
         xp, yp = distort_brown_affine(x, y, ap)
         self.assertAlmostEqual(xp, 0.158529)
         self.assertAlmostEqual(yp, 0.5403023)
@@ -224,8 +224,8 @@ class TestDistFlatRoundTrip(unittest.TestCase):
             parameters.imx,
             parameters.imy,
             parameters.pix_x,
-            parameters.pix_y
-            )
+            parameters.pix_y,
+        )
 
         # check if the actual output matches the expected output
         assert metric[:, 0] == x_metric_expected
@@ -243,7 +243,9 @@ class Test_transforms(unittest.TestCase):
         self.control = ControlPar().from_file(self.input_control_par_file_name)
 
         self.input_ori_file_name = Path("tests/testing_folder/calibration/cam1.tif.ori")
-        self.input_add_file_name = Path("tests/testing_folder/calibration/cam2.tif.addpar")
+        self.input_add_file_name = Path(
+            "tests/testing_folder/calibration/cam2.tif.addpar"
+        )
 
         # self.calibration = Calibration()
         self.calibration = read_calibration(
@@ -254,18 +256,20 @@ class Test_transforms(unittest.TestCase):
         """Transformed values are as before."""
         correct_output_pixel_to_metric = np.array(
             [
-            [-8181.0, 6657.92],
-            [-8181.0, 6657.92],
-            [-8181.0, 6657.92],
-        ])
-        correct_output_metric_to_pixel = np.array([
-            [646.60066007, 505.81188119],
-            [646.60066007, 505.81188119],
-            [646.60066007, 505.81188119],
-        ])
+                [-8181.0, 6657.92],
+                [-8181.0, 6657.92],
+                [-8181.0, 6657.92],
+            ]
+        )
+        correct_output_metric_to_pixel = np.array(
+            [
+                [646.60066007, 505.81188119],
+                [646.60066007, 505.81188119],
+                [646.60066007, 505.81188119],
+            ]
+        )
 
         input_pos = np.full((3, 2), 100, dtype=np.int32)
-
 
         # Test when passing a list
         output = arr_pixel_to_metric(
@@ -273,10 +277,9 @@ class Test_transforms(unittest.TestCase):
             self.control.imx,
             self.control.imy,
             self.control.pix_x,
-            self.control.pix_y
-            )
+            self.control.pix_y,
+        )
         np.testing.assert_array_almost_equal(output, correct_output_pixel_to_metric)
-
 
         input_pos = np.full((3, 2), 100, dtype=np.float64)
         output = arr_metric_to_pixel(input_pos, self.control)
@@ -289,20 +292,14 @@ class Test_transforms(unittest.TestCase):
         cpar.set_pixel_size((0.1, 0.1))
 
         metric_pos = np.array([[1.0, 1.0], [-10.0, 15.0], [20.0, -30.0]])
-        pixel_pos = np.array([[650, 490], [540, 350], [840, 800]],dtype=np.int32)
+        pixel_pos = np.array([[650, 490], [540, 350], [840, 800]], dtype=np.int32)
 
         np.testing.assert_array_almost_equal(
-            pixel_pos,
-            arr_metric_to_pixel(
-                metric_pos,
-                cpar)
+            pixel_pos, arr_metric_to_pixel(metric_pos, cpar)
         )
         np.testing.assert_array_almost_equal(
-            metric_pos, arr_pixel_to_metric(pixel_pos,
-                                            cpar.imx,
-                                            cpar.imy,
-                                            cpar.pix_x,
-                                            cpar.pix_y)
+            metric_pos,
+            arr_pixel_to_metric(pixel_pos, cpar.imx, cpar.imy, cpar.pix_x, cpar.pix_y),
         )
 
     def test_brown_affine_regress(self):
@@ -342,9 +339,17 @@ class Test_transforms(unittest.TestCase):
         cal.set_angles(np.array([0.0, 0.0, 0.0]))
         cal.set_primary_point(np.array([0.0, 0.0, 10.0]))
         cal.set_glass_vec(np.r_[0.0, 0.0, 20.0])
-        cal.set_radial_distortion(np.zeros(3,))
-        cal.set_decentering(np.zeros(2,))
-        cal.set_affine_distortion(np.array([1,0]))
+        cal.set_radial_distortion(
+            np.zeros(
+                3,
+            )
+        )
+        cal.set_decentering(
+            np.zeros(
+                2,
+            )
+        )
+        cal.set_affine_distortion(np.array([1, 0]))
 
         # reference metric positions:
         ref_pos = np.array([[0.1, 0.1], [1.0, -1.0], [-10.0, 10.0]])
@@ -375,8 +380,16 @@ class Test_transforms(unittest.TestCase):
         cal.set_angles(np.r_[0.0, 0.0, 0.0])
         cal.set_primary_point(np.r_[0.0, 0.0, 10.0])
         cal.set_glass_vec(np.r_[0.0, 0.0, 20.0])
-        cal.set_radial_distortion(np.zeros(3,))
-        cal.set_decentering(np.zeros(2,))
+        cal.set_radial_distortion(
+            np.zeros(
+                3,
+            )
+        )
+        cal.set_decentering(
+            np.zeros(
+                2,
+            )
+        )
         cal.set_affine_distortion(np.array([1, 0]))
 
         # reference metric positions:

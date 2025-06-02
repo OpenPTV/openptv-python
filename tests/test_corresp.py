@@ -1,4 +1,5 @@
 """Unit tests for the correspondence code."""
+
 import unittest
 from pathlib import Path
 
@@ -47,7 +48,7 @@ def read_all_calibration(num_cams: int = 4) -> list[Calibration]:
 
 def correct_frame(
     frm: Frame, calib: list[Calibration], cpar: ControlPar, tol: float
-) -> np.recarray: # num_cams, num_targets
+) -> np.recarray:  # num_cams, num_targets
     """
     Perform the transition from pixel to metric to flat coordinates.
 
@@ -60,14 +61,14 @@ def correct_frame(
     tol - tolerance parameter for iterative flattening phase, see
         trafo.h:correct_brown_affine_exact().
     """
-    corrected = np.recarray((cpar.num_cams,max(frm.num_targets)), dtype=Coord2d_dtype)
+    corrected = np.recarray((cpar.num_cams, max(frm.num_targets)), dtype=Coord2d_dtype)
     corrected.pnr = PT_UNUSED
 
     for cam in range(cpar.num_cams):
         row = corrected[cam]
         # corrected.append(row)
 
-    # for cam in range(cpar.num_cams):
+        # for cam in range(cpar.num_cams):
         # row = corrected[cam]
 
         for part in range(frm.num_targets[cam]):
@@ -81,7 +82,7 @@ def correct_frame(
             row[part].y = y
 
         # This is expected by find_candidate()
-        row.sort(order='x')
+        row.sort(order="x")
         # corrected.append(row)
 
         # transform to arrya
@@ -221,7 +222,9 @@ class TestReadControlPar(unittest.TestCase):
 
     def test_single_cam_corresp(self):
         """Single camera correspondence."""
-        cpar = read_control_par(Path("tests/testing_folder/single_cam/parameters/ptv.par"))
+        cpar = read_control_par(
+            Path("tests/testing_folder/single_cam/parameters/ptv.par")
+        )
         vpar = read_volume_par(
             Path("tests/testing_folder/single_cam/parameters/criteria.par")
         )

@@ -1,4 +1,5 @@
 """Epipolar geometry."""
+
 from typing import Tuple
 
 import numpy as np
@@ -11,34 +12,40 @@ from .parameters import ControlPar, MultimediaPar, VolumePar
 from .ray_tracing import ray_tracing
 from .trafo import dist_to_flat, metric_to_pixel, pixel_to_metric
 
-Candidate_dtype = np.dtype([
-    ('pnr', np.int32),
-    ('tol', np.float64),
-    ('corr', np.float64),
-])
+Candidate_dtype = np.dtype(
+    [
+        ("pnr", np.int32),
+        ("tol", np.float64),
+        ("corr", np.float64),
+    ]
+)
 
-Coord2d_dtype = np.dtype([
-    ('pnr', np.int32),
-    ('x', np.float64),
-    ('y', np.float64),
-])
+Coord2d_dtype = np.dtype(
+    [
+        ("pnr", np.int32),
+        ("x", np.float64),
+        ("y", np.float64),
+    ]
+)
 
-Coord3d_dtype = np.dtype([
-    ('pnr', np.int32),
-    ('x', np.float64),
-    ('y', np.float64),
-    ('z', np.float64),
-])
-
+Coord3d_dtype = np.dtype(
+    [
+        ("pnr", np.int32),
+        ("x", np.float64),
+        ("y", np.float64),
+        ("z", np.float64),
+    ]
+)
 
 
 def sort_coord2d_x(crd: np.ndarray) -> np.ndarray:
     """Quicksort for coordinates by x ."""
-    return np.sort(crd, order='x')
+    return np.sort(crd, order="x")
+
 
 def sort_coord2d_y(crd: np.ndarray) -> np.ndarray:
     """Sort coordinates by y."""
-    return np.sort(crd, order='y')
+    return np.sort(crd, order="y")
 
 
 def epi_mm(xl, yl, cal1, cal2, mmp, vpar) -> Tuple[float, float, float, float]:

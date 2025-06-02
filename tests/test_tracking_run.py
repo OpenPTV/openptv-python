@@ -102,7 +102,6 @@ class TestTrackCorrNoAdd(unittest.TestCase):
         if Path("img/").exists():
             remove_directory("img/")
 
-
         copy_directory("res_orig/", "res/")
         copy_directory("img_orig/", "img/")
 
@@ -126,8 +125,10 @@ class TestTrackCorrNoAdd(unittest.TestCase):
             10000.0,
         )
 
-        run.tpar = run.tpar._replace(add = 0)
-        print(f"run.seq_par.first = {run.seq_par.first} run.seq_par.last = {run.seq_par.last}")
+        run.tpar = run.tpar._replace(add=0)
+        print(
+            f"run.seq_par.first = {run.seq_par.first} run.seq_par.last = {run.seq_par.last}"
+        )
 
         track_forward_start(run)
         trackcorr_c_loop(run, run.seq_par.first)
@@ -139,7 +140,6 @@ class TestTrackCorrNoAdd(unittest.TestCase):
             # print(f"run.nlinks = {run.nlinks}")
 
         trackcorr_c_finish(run, run.seq_par.last)
-
 
         range_val = run.seq_par.last - run.seq_par.first
         npart = run.npart / range_val
@@ -172,7 +172,6 @@ class TestTrackCorrNoAdd(unittest.TestCase):
         if Path("img/").exists():
             remove_directory("img/")
 
-
         copy_directory("res_orig/", "res/")
         copy_directory("img_orig/", "img/")
 
@@ -217,16 +216,15 @@ class TestTrackCorrNoAdd(unittest.TestCase):
         nlinks = run.nlinks / range_val
 
         self.assertTrue(
-            abs(npart - 1.0) < EPS,
-            f"Was expecting npart == 208/210 but found {npart}"
+            abs(npart - 1.0) < EPS, f"Was expecting npart == 208/210 but found {npart}"
         )
         self.assertTrue(
             abs(nlinks - 0.7) < EPS,
-            f"Was expecting nlinks == 328/210 but found {nlinks}"
+            f"Was expecting nlinks == 328/210 but found {nlinks}",
         )
 
-
         os.chdir(current_directory)
+
 
 class TestTrackback(unittest.TestCase):
     """Test tracking with adding particles."""
@@ -247,7 +245,6 @@ class TestTrackback(unittest.TestCase):
 
         if Path("img/").exists():
             remove_directory("img/")
-
 
         copy_directory("res_orig/", "res/")
         copy_directory("img_orig/", "img/")
@@ -285,24 +282,22 @@ class TestTrackback(unittest.TestCase):
 
         trackcorr_c_finish(run, run.seq_par.last)
 
-
         run.tpar = run.tpar._replace(
-            dvxmin = -50,
-            dvymin = -50,
-            dvzmin = -50.0,
-            dvxmax = 50.0,
-            dvymax = 50.0,
-            dvzmax = 50.0,
+            dvxmin=-50,
+            dvymin=-50,
+            dvzmin=-50.0,
+            dvxmax=50.0,
+            dvymax=50.0,
+            dvzmax=50.0,
         )
-
 
         run.lmax = vec_norm(
             np.r_[
-            (run.tpar.dvxmin - run.tpar.dvxmax),
-            (run.tpar.dvymin - run.tpar.dvymax),
-            (run.tpar.dvzmin - run.tpar.dvzmax)
+                (run.tpar.dvxmin - run.tpar.dvxmax),
+                (run.tpar.dvymin - run.tpar.dvymax),
+                (run.tpar.dvzmin - run.tpar.dvzmax),
             ]
-            )
+        )
 
         nlinks = trackback_c(run)
 
@@ -311,7 +306,7 @@ class TestTrackback(unittest.TestCase):
         # Uncomment the following lines to add assertions
         self.assertTrue(
             abs(nlinks - 1.0) < EPS,
-            f"Was expecting nlinks to be 1.0 but found {nlinks}"
+            f"Was expecting nlinks to be 1.0 but found {nlinks}",
         )
 
         remove_directory("res/")
@@ -327,8 +322,6 @@ class TestNewParticle(unittest.TestCase):
         """Test tracking without adding particles."""
         ori_tmpl = "cal/sym_cam%d.tif.ori"
         added_name = "cal/cam1.tif.addpar"
-
-
 
         current_directory = Path.cwd()
         print(f"working from {current_directory}")
@@ -363,7 +356,7 @@ class TestNewParticle(unittest.TestCase):
             0.1,
         )
 
-        run.tpar = run.tpar._replace(add = 0)
+        run.tpar = run.tpar._replace(add=0)
 
         track_forward_start(run)
         trackcorr_c_loop(run, 10001)
@@ -395,7 +388,6 @@ class TestNewParticle(unittest.TestCase):
         trackcorr_c_loop(run, 10003)
         trackcorr_c_loop(run, 10004)
         # trackcorr_c_finish(run, 10004)
-
 
         run.fb.fb_prev()  # because each loop step moves the FB forward
         # self.assertEqual(run.fb.buf[3].path_info[0].next_frame, 0)

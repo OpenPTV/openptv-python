@@ -51,7 +51,9 @@ class TestFlatToDist(unittest.TestCase):
 
     def test_pixel_to_metric_and_back(self):
         """Test the pixel_to_metric and metric_to_pixel functions."""
-        cpar = ControlPar().from_file(Path("tests/testing_folder/control_parameters/control.par"))
+        cpar = ControlPar().from_file(
+            Path("tests/testing_folder/control_parameters/control.par")
+        )
 
         x, y = metric_to_pixel(1, 1, cpar)
         x, y = pixel_to_metric(x, y, cpar)
@@ -107,7 +109,7 @@ class TestFlatToDist(unittest.TestCase):
         iter_eps = 1e-5
 
         cal = Calibration()
-        cal.int_par = np.array( (1.5, 1.5, 60.0), dtype = interior_dtype).view(np.recarray)
+        cal.int_par = np.array((1.5, 1.5, 60.0), dtype=interior_dtype).view(np.recarray)
         cal.set_added_par(np.array([0.0005, 0, 0, 0, 0, 1, 0], dtype=np.float64))
 
         xres, yres = flat_to_dist(x, y, cal)

@@ -1,4 +1,5 @@
 """Unit tests for the correspondence code."""
+
 import unittest
 from pathlib import Path
 
@@ -211,7 +212,9 @@ class TestTwoCameraMatching(unittest.TestCase):
 
         # # continue to the consistent_pair matching test
         con = np.recarray((4 * 16), dtype=n_tupel_dtype)
-        con.p = np.zeros(4,)
+        con.p = np.zeros(
+            4,
+        )
         con.corr = 0.0
 
         tusage = safely_allocate_target_usage_marks(cpar.num_cams)

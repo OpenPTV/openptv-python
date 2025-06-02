@@ -1,4 +1,5 @@
 """Test the calibration binding module."""
+
 import filecmp
 import os
 import shutil
@@ -46,29 +47,28 @@ class TestCalibration(unittest.TestCase):
         glass = pos * 7
 
         ext = Exterior.copy()
-        ext['x0'] = 1.0
-        ext['y0'] = 3.0
-        ext['z0'] = 5.0
-        ext['omega'] = 2.0
-        ext['phi'] = 4.0
-        ext['kappa'] = 6.0
+        ext["x0"] = 1.0
+        ext["y0"] = 3.0
+        ext["z0"] = 5.0
+        ext["omega"] = 2.0
+        ext["phi"] = 4.0
+        ext["kappa"] = 6.0
 
-        In = np.array((3.0, 9.0, 15.0),dtype=Interior.dtype).view(np.recarray)
+        In = np.array((3.0, 9.0, 15.0), dtype=Interior.dtype).view(np.recarray)
 
         G = np.array(glass)
 
         addpar = np.array(
             [
-            rad_dist[0],
-            rad_dist[1],
-            rad_dist[2],
-            decent[0],
-            decent[1],
-            affine[0],
-            affine[1]
+                rad_dist[0],
+                rad_dist[1],
+                rad_dist[2],
+                decent[0],
+                decent[1],
+                affine[0],
+                affine[1],
             ]
         )
-
 
         cal = Calibration()
         cal.ext_par = ext
@@ -180,11 +180,11 @@ class TestCompareAddpar(unittest.TestCase):
 
     def test_compare_addpar(self):
         """Test compare_addpar() function."""
-        a1 = np.array((1, 2, 3, 4, 5, 6, 7),dtype=ap_52.dtype).view(np.recarray)
-        a2 = np.array((1, 2, 3, 4, 5, 6, 7),dtype=ap_52.dtype).view(np.recarray)
+        a1 = np.array((1, 2, 3, 4, 5, 6, 7), dtype=ap_52.dtype).view(np.recarray)
+        a2 = np.array((1, 2, 3, 4, 5, 6, 7), dtype=ap_52.dtype).view(np.recarray)
         self.assertTrue(compare_addpar(a1, a2))
 
-        a3 = np.array((1, 2, 3, 4, 6, 6, 7),dtype=ap_52.dtype).view(np.recarray)
+        a3 = np.array((1, 2, 3, 4, 6, 6, 7), dtype=ap_52.dtype).view(np.recarray)
         self.assertFalse(compare_addpar(a1, a3))
 
 

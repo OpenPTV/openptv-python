@@ -13,7 +13,7 @@ from openptv_python.vec_utils import vec_set
 class TestGetMmfMmLUT(unittest.TestCase):
     def setUp(self):
         filepath = Path("tests") / "testing_fodder"
-        self.ori_file = filepath / "cal"/ "cam2.tif.ori"
+        self.ori_file = filepath / "cal" / "cam2.tif.ori"
         self.add_file = filepath / "cal/cam2.tif.addpar"
         self.vol_file = filepath / "parameters/criteria.par"
         self.ptv_file = filepath / "parameters/ptv.par"
@@ -21,8 +21,9 @@ class TestGetMmfMmLUT(unittest.TestCase):
         self.vpar = read_volume_par(self.vol_file)
         self.cpar = read_control_par(self.ptv_file)
         self.correct_mmlut = [
-            np.array(( (0.0, 0.0, -250.00001105), 130, 177, 2),
-            dtype=mm_lut.dtype).view(np.recarray)
+            np.array(((0.0, 0.0, -250.00001105), 130, 177, 2), dtype=mm_lut.dtype).view(
+                np.recarray
+            )
             for _ in range(4)
         ]
 

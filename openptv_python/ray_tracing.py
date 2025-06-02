@@ -1,4 +1,5 @@
 """Ray tracing."""
+
 from typing import Tuple
 
 import numpy as np
@@ -45,7 +46,7 @@ def ray_tracing(
     """
     primary_point = np.r_[cal.ext_par.x0, cal.ext_par.y0, cal.ext_par.z0]
     glass = np.ascontiguousarray(cal.glass_par)
-    camera = np.array([x,y, -cal.int_par.cc], dtype=np.float64, order='C')
+    camera = np.array([x, y, -cal.int_par.cc], dtype=np.float64, order="C")
     return fast_ray_tracing(
         camera,
         cal.ext_par.dm,
@@ -89,7 +90,9 @@ def fast_ray_tracing(
 
     n = np.dot(transformed_direction, glass_direction)
     transformed_direction_parallel = glass_direction * n
-    transformed_direction_perpendicular = transformed_direction - transformed_direction_parallel
+    transformed_direction_perpendicular = (
+        transformed_direction - transformed_direction_parallel
+    )
     bp = unit_vector(transformed_direction_perpendicular)
 
     p = np.sqrt(1 - n**2) * refractive_index_medium1 / refractive_index_medium2
@@ -97,7 +100,10 @@ def fast_ray_tracing(
 
     transformed_direction_parallel_scaled = bp * p
     transformed_direction_perpendicular_scaled = glass_direction * n
-    a2 = transformed_direction_parallel_scaled + transformed_direction_perpendicular_scaled
+    a2 = (
+        transformed_direction_parallel_scaled
+        + transformed_direction_perpendicular_scaled
+    )
 
     abs_dot_product = np.abs(np.dot(glass_direction, a2))
     if abs_dot_product == 0:
@@ -108,7 +114,9 @@ def fast_ray_tracing(
     X = Xb + a2_scaled
 
     n = np.dot(a2, glass_direction)
-    transformed_direction_perpendicular_scaled = a2 - transformed_direction_perpendicular_scaled
+    transformed_direction_perpendicular_scaled = (
+        a2 - transformed_direction_perpendicular_scaled
+    )
     bp = unit_vector(transformed_direction_perpendicular_scaled)
 
     p = np.sqrt(1 - n**2) * refractive_index_medium2 / refractive_index_medium3
@@ -116,7 +124,10 @@ def fast_ray_tracing(
 
     transformed_direction_parallel_scaled = bp * p
     transformed_direction_perpendicular_scaled = glass_direction * n
-    out = transformed_direction_parallel_scaled + transformed_direction_perpendicular_scaled
+    out = (
+        transformed_direction_parallel_scaled
+        + transformed_direction_perpendicular_scaled
+    )
 
     return X, out
 
@@ -310,7 +321,11 @@ def fast_ray_tracing(
 # import numpy as np
 # import time
 
-@njit(float64[:, :](float64[:, :], float64[:, :], float64[:, :], int64, int64, int64), parallel=True)
+
+@njit(
+    float64[:, :](float64[:, :], float64[:, :], float64[:, :], int64, int64, int64),
+    parallel=True,
+)
 def matmul_numba_optimized(a, b, c, m, n, k):
     for i in prange(m):
         for j in range(k):
@@ -319,6 +334,7 @@ def matmul_numba_optimized(a, b, c, m, n, k):
                 temp += b[i, ll] * c[ll, j]
             a[i, j] = temp
     return a
+
 
 # # Define the same inputs as in the C test
 # b = np.array([

@@ -18,7 +18,9 @@ class TestSafelyAllocateAdjacencyLists(unittest.TestCase):
             self.assertEqual(len(lists[i]), num_cams)
             for j in range(num_cams):
                 if i < j:
-                    self.assertTrue(len(lists[i][j]) >= target_counts[i]) # recarray is one length
+                    self.assertTrue(
+                        len(lists[i][j]) >= target_counts[i]
+                    )  # recarray is one length
 
     def test_memory_error(self):
         """Memory stress test."""

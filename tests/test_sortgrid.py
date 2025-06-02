@@ -66,8 +66,7 @@ class TestSortgrid(unittest.TestCase):
         targets = read_targets(file_base, frame_num)
         self.assertEqual(len(targets), 2)
 
-
-        ori_file = test_path / "cal"/ "cam1.tif.ori"
+        ori_file = test_path / "cal" / "cam1.tif.ori"
         add_file = test_path / "cal" / "cam1.tif.addpar"
 
         cal = read_calibration(ori_file, add_file)

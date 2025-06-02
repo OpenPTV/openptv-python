@@ -1,4 +1,5 @@
 """Parameters for OpenPTV-Python."""
+
 from collections import namedtuple
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -8,20 +9,24 @@ import yaml
 
 from openptv_python.constants import TR_MAX_CAMS
 
-TrackParTuple = namedtuple('TrackParTuple',
-                           ['dvxmin',
-                            'dvxmax',
-                            'dvymin',
-                            'dvymax',
-                            'dvzmin',
-                            'dvzmax',
-                            'dangle',
-                            'dacc',
-                            'add',
-                            'dsumg',
-                            'dn',
-                            'dnx',
-                            'dny'])
+TrackParTuple = namedtuple(
+    "TrackParTuple",
+    [
+        "dvxmin",
+        "dvxmax",
+        "dvymin",
+        "dvymax",
+        "dvzmin",
+        "dvzmax",
+        "dangle",
+        "dacc",
+        "add",
+        "dsumg",
+        "dn",
+        "dnx",
+        "dny",
+    ],
+)
 
 
 @dataclass
@@ -40,16 +45,15 @@ class Parameters:
 
     def to_yaml(self, file_path: Path):
         """Write parameters to YAML file."""
-        with open(file_path, 'w', encoding='utf-8') as output_file:
+        with open(file_path, "w", encoding="utf-8") as output_file:
             yaml.dump(asdict(self), output_file, default_flow_style=False)
 
     @classmethod
     def from_yaml(cls, file_path: Path):
         """Read from YAML file."""
-        with open(file_path, 'r', encoding='utf-8') as file:
+        with open(file_path, "r", encoding="utf-8") as file:
             data_dict = yaml.safe_load(file)
             return cls(**data_dict)
-
 
 
 @dataclass
@@ -126,7 +130,6 @@ class SequencePar(Parameters):
     first: int = 0
     last: int = 0
 
-
     # def to_dict(self):
     #     """Convert SequencePar instance to a dictionary."""
     #     return {
@@ -139,10 +142,9 @@ class SequencePar(Parameters):
         """Set the image base name for each camera."""
         self.img_base_name[:] = new_name
 
-    def get_img_base_name(self, icam: int=0):
+    def get_img_base_name(self, icam: int = 0):
         """Get the image base name for each camera."""
         return self.img_base_name[icam]
-
 
     def set_first(self, newfirst: int):
         """Set the first frame number."""
@@ -207,7 +209,6 @@ class TrackPar(Parameters):
     dn: float = 0.0
     dnx: float = 0.0
     dny: float = 0.0
-
 
     @classmethod
     def from_file(cls, filename: Path):
@@ -315,20 +316,21 @@ def compare_track_par(t1: TrackPar, t2: TrackPar) -> bool:
 
 def convert_track_par_to_tuple(track_par: TrackPar) -> TrackParTuple:
     """Convert TrackPar object to TrackParTuple object."""
-    return TrackParTuple(track_par.dvxmin,
-                         track_par.dvxmax,
-                         track_par.dvymin,
-                         track_par.dvymax,
-                         track_par.dvzmin,
-                         track_par.dvzmax,
-                         track_par.dangle,
-                         track_par.dacc,
-                         track_par.add,
-                         track_par.dsumg,
-                         track_par.dn,
-                         track_par.dnx,
-                         track_par.dny)
-
+    return TrackParTuple(
+        track_par.dvxmin,
+        track_par.dvxmax,
+        track_par.dvymin,
+        track_par.dvymax,
+        track_par.dvzmin,
+        track_par.dvzmax,
+        track_par.dangle,
+        track_par.dacc,
+        track_par.add,
+        track_par.dsumg,
+        track_par.dn,
+        track_par.dnx,
+        track_par.dny,
+    )
 
 
 @dataclass
@@ -409,9 +411,7 @@ class VolumePar(Parameters):
             x_lay.append(float(f.readline()))
             z_min_lay.append(float(f.readline()))
             z_max_lay.append(float(f.readline()))
-            cnx, cny, cn, csumg, corrmin, eps0 = [
-                float(f.readline()) for _ in range(6)
-            ]
+            cnx, cny, cn, csumg, corrmin, eps0 = [float(f.readline()) for _ in range(6)]
 
         return cls(x_lay, z_min_lay, z_max_lay, cn, cnx, cny, csumg, eps0, corrmin)
 
@@ -457,8 +457,8 @@ class ControlPar(Parameters):
     @classmethod
     def from_dict(cls, data):
         """Read ControlPar from a dictionary."""
-        mm_data = data.get('mm', {})
-        data['mm'] = MultimediaPar.from_dict(mm_data)
+        mm_data = data.get("mm", {})
+        data["mm"] = MultimediaPar.from_dict(mm_data)
         return cls(**data)
 
     def set_image_size(self, imsize: Tuple[int, int]):
@@ -556,8 +556,8 @@ class ControlPar(Parameters):
     def to_dict(cls, data):
         """Convert ControlPar instance to a dictionary."""
         control_par_dict = asdict(data)
-        if isinstance(control_par_dict['mm'], MultimediaPar):
-            control_par_dict['mm'] = asdict(control_par_dict['mm'])
+        if isinstance(control_par_dict["mm"], MultimediaPar):
+            control_par_dict["mm"] = asdict(control_par_dict["mm"])
         return control_par_dict
 
 
@@ -584,7 +584,6 @@ def compare_control_par(c1: ControlPar, c2: ControlPar) -> bool:
         and c1.chfield == c2.chfield
         and c1.mm == c2.mm
     )
-
 
 
 @dataclass
@@ -688,10 +687,12 @@ class TargetPar(Parameters):
         """Return the sum grey bounds."""
         return self.sumg_min
 
+
 def read_target_par(filename: Path) -> TargetPar:
     """Read target parameters from file and returns target_par object."""
     tpar = TargetPar()
     return tpar.from_file(filename)
+
 
 def compare_target_par(targ1: TargetPar, targ2: TargetPar) -> bool:
     """Compare two target_par objects."""
@@ -732,10 +733,15 @@ class OrientPar(Parameters):
         ret = cls()
         try:
             with open(filename, "r", encoding="utf-8") as file:
-
-                ret.useflag = int(file.readline().strip())  # /* use every point or every other pt */
-                ret.ccflag = int(file.readline().strip())   # /* change back focal distance */
-                ret.xhflag = int(file.readline().strip())   # /* change xh point, 1-yes, 0-no */
+                ret.useflag = int(
+                    file.readline().strip()
+                )  # /* use every point or every other pt */
+                ret.ccflag = int(
+                    file.readline().strip()
+                )  # /* change back focal distance */
+                ret.xhflag = int(
+                    file.readline().strip()
+                )  # /* change xh point, 1-yes, 0-no */
                 ret.yhflag = int(file.readline().strip())
                 ret.k1flag = int(file.readline().strip())
                 ret.k2flag = int(file.readline().strip())
@@ -744,7 +750,9 @@ class OrientPar(Parameters):
                 ret.p2flag = int(file.readline().strip())
                 ret.scxflag = int(file.readline().strip())  # /* scx - scaling  */
                 ret.sheflag = int(file.readline().strip())  # /* she - shearing  */
-                ret.interfflag = int(file.readline().strip())   # /* interface glass vector */
+                ret.interfflag = int(
+                    file.readline().strip()
+                )  # /* interface glass vector */
 
         except IOError:
             print(f"Could not open orientation parameters file {filename}.")
@@ -752,18 +760,16 @@ class OrientPar(Parameters):
         return ret
 
 
-
 @dataclass
 class CalibrationPar(Parameters):
     """Calibration parameters."""
 
-    fixp_name: str = ''
+    fixp_name: str = ""
     img_name: list = field(default_factory=list)
     img_ori0: list = field(default_factory=list)
     tiff_flag: int = 0
     pair_flag: int = 0
     chfield: int = 0
-
 
     # def to_dict(self):
     #     """Convert CalibrationPar instance to a dictionary."""
@@ -779,9 +785,9 @@ class CalibrationPar(Parameters):
     @classmethod
     def from_file(cls, file_path: str, num_cams: int):
         """Read from cal_ori.par file."""
-        with open(file_path, 'r', encoding="utf-8") as file:
+        with open(file_path, "r", encoding="utf-8") as file:
             fixp_name = file.readline().strip()
-            tmp = [file.readline().strip() for _ in range(num_cams*2)]
+            tmp = [file.readline().strip() for _ in range(num_cams * 2)]
             # img_ori0 = [file.readline().strip() for _ in range(4)]
             img_name = tmp[0::2]
             img_ori0 = tmp[1::2]
@@ -794,9 +800,9 @@ class CalibrationPar(Parameters):
 
 def read_cal_ori_parameters(file_path: Path, num_cams: int) -> CalibrationPar:
     """Read from cal_ori.par file."""
-    with open(file_path, 'r', encoding="utf-8") as file:
+    with open(file_path, "r", encoding="utf-8") as file:
         fixp_name = file.readline().strip()
-        tmp = [file.readline().strip() for _ in range(num_cams*2)]
+        tmp = [file.readline().strip() for _ in range(num_cams * 2)]
         # img_ori0 = [file.readline().strip() for _ in range(4)]
         img_name = tmp[0::2]
         img_ori0 = tmp[1::2]
@@ -805,6 +811,7 @@ def read_cal_ori_parameters(file_path: Path, num_cams: int) -> CalibrationPar:
         chfield = int(file.readline().strip())
 
     return CalibrationPar(fixp_name, img_name, img_ori0, tiff_flag, pair_flag, chfield)
+
 
 @dataclass
 class MultiPlanesPar(Parameters):
@@ -816,10 +823,11 @@ class MultiPlanesPar(Parameters):
     @classmethod
     def from_file(cls, file_path: Path):
         """Read from multiplanes.par file."""
-        with open(file_path, 'r', encoding="utf-8") as file:
+        with open(file_path, "r", encoding="utf-8") as file:
             num_planes = int(file.readline().strip())
             filename = [file.readline().strip() for _ in range(num_planes)]
         return cls(num_planes, filename)
+
 
 @dataclass
 class ExaminePar(Parameters):
@@ -831,17 +839,19 @@ class ExaminePar(Parameters):
     @classmethod
     def from_file(cls, file_path: Path):
         """Read from examine.par file."""
-        with open(file_path, 'r', encoding="utf-8") as file:
+        with open(file_path, "r", encoding="utf-8") as file:
             examine_flag = bool(int(file.readline().strip()))
             combine_flag = bool(int(file.readline().strip()))
         return cls(examine_flag, combine_flag)
 
+
 def read_examine_par(file_path: Path) -> ExaminePar:
     """Read from examine.par file."""
-    with open(file_path, 'r', encoding="utf-8") as file:
+    with open(file_path, "r", encoding="utf-8") as file:
         examine_flag = bool(int(file.readline().strip()))
         combine_flag = bool(int(file.readline().strip()))
     return ExaminePar(examine_flag, combine_flag)
+
 
 @dataclass
 class PftVersionPar(Parameters):
@@ -852,12 +862,12 @@ class PftVersionPar(Parameters):
     @classmethod
     def from_file(cls, file_path: Path):
         """Read from pft_version.par file."""
-        with open(file_path, 'r', encoding="utf-8") as file:
+        with open(file_path, "r", encoding="utf-8") as file:
             pft_version = bool(int(file.readline().strip()))
         return cls(pft_version)
 
     @classmethod
     def write(cls, file_path: Path):
         """Write to pft_version.par file."""
-        with open(file_path, 'w', encoding="utf-8") as file:
+        with open(file_path, "w", encoding="utf-8") as file:
             file.write(f"{cls.existing_target_flag}\n")

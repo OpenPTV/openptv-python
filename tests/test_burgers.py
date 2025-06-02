@@ -42,8 +42,7 @@ def copy_directory(source_path, destination_path):
     # Copy the contents from the source to the destination
     for item in source_path.iterdir():
         if item.is_dir():
-            shutil.copytree(item, destination_path /
-                            item.name, dirs_exist_ok=True)
+            shutil.copytree(item, destination_path / item.name, dirs_exist_ok=True)
         else:
             shutil.copy2(item, destination_path / item.name)
 
@@ -58,7 +57,7 @@ def read_all_calibration(num_cams: int = 4) -> list[Calibration]:
     for cam in range(num_cams):
         ori_name = ori_tmpl % (cam + 1)
         added_name = added_tmpl % (cam + 1)
-        calib.append(read_calibration( Path(ori_name), Path(added_name) ))
+        calib.append(read_calibration(Path(ori_name), Path(added_name)))
 
     return calib
 
@@ -120,9 +119,11 @@ class TestBurgers(unittest.TestCase):
         # print(f"total num parts is {run.npart}, num links is {run.nlinks}")
 
         self.assertEqual(
-            run.npart, 19, f"Was expecting npart == 19 but found {run.npart}")
+            run.npart, 19, f"Was expecting npart == 19 but found {run.npart}"
+        )
         self.assertEqual(
-            run.nlinks, 17, f"Was expecting nlinks == 17 but found {run.nlinks}")
+            run.nlinks, 17, f"Was expecting nlinks == 17 but found {run.nlinks}"
+        )
 
         run = tr_new(
             parameters_path / "sequence.par",
@@ -150,9 +151,11 @@ class TestBurgers(unittest.TestCase):
         print(f"total num parts is {run.npart}, num links is {run.nlinks}")
 
         self.assertEqual(
-            run.npart, 20, f"Was expecting npart == 19 but found {run.npart}")
+            run.npart, 20, f"Was expecting npart == 19 but found {run.npart}"
+        )
         self.assertEqual(
-            run.nlinks, 20, f"Was expecting nlinks == 17 but found {run.nlinks}")
+            run.nlinks, 20, f"Was expecting nlinks == 17 but found {run.nlinks}"
+        )
 
         remove_directory("res/")
         remove_directory("img/")
@@ -160,5 +163,5 @@ class TestBurgers(unittest.TestCase):
         os.chdir(current_directory)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

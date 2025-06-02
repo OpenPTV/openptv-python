@@ -100,7 +100,7 @@ class TestWriteTargets(unittest.TestCase):
         self.assertTrue(compare_targets(tbuf[1], t2))
 
         # Clean up the test directory
-        os.remove(file_base % frame_num +"_targets")
+        os.remove(file_base % frame_num + "_targets")
 
 
 class TestReadPathFrame(unittest.TestCase):
@@ -129,7 +129,6 @@ class TestReadPathFrame(unittest.TestCase):
         c_correct = np.recarray(1, dtype=Corres_dtype)
         c_correct.nr = 3
         c_correct.p = np.array([96, 66, 26, 26])
-
 
         file_base = "tests/testing_fodder/rt_is"
         linkage_base = "tests/testing_fodder/ptv_is"

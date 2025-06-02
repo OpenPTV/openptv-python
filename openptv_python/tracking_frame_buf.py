@@ -1,4 +1,5 @@
 """Tracking frame buffer."""
+
 from collections import deque
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -22,10 +23,7 @@ from .epi import Coord2d_dtype
 from .parameters import ControlPar
 from .trafo import dist_to_flat, pixel_to_metric
 
-n_tupel_dtype = np.dtype([
-    ("p", np.int32, (4,)),
-    ("corr", np.float64)
-])
+n_tupel_dtype = np.dtype([("p", np.int32, (4,)), ("corr", np.float64)])
 
 
 def quicksort_n_tupel(arr: np.recarray) -> np.recarray:
@@ -47,17 +45,16 @@ def quicksort_n_tupel(arr: np.recarray) -> np.recarray:
     return arr
 
 
+Corres_dtype = np.dtype(
+    [
+        ("nr", np.int32),
+        ("p", np.int32, (4,)),  # -1 for no correspondence
+    ]
+)
 
 
-Corres_dtype = np.dtype([
-    ("nr", np.int32),
-    ("p", np.int32, (4,)) # -1 for no correspondence
-])
-
-
-
-    # def __eq__(self, other):
-    #     return self.nr == other.nr and np.all(self.p == other.p)
+# def __eq__(self, other):
+#     return self.nr == other.nr and np.all(self.p == other.p)
 
 
 def compare_corres(c1: np.recarray, c2: np.recarray) -> bool:
@@ -137,6 +134,7 @@ def sort_target_y(targets: List[Target]) -> List[Target]:
     """Sort targets by y coordinate."""
     return sorted(targets, key=lambda t: t.y)
 
+
 # class TargetArray(list):
 #     """Target array class."""
 
@@ -173,7 +171,7 @@ def read_targets(file_base: str, frame_num: int) -> List[Target]:
 
     if frame_num > 0:
         # filename = f"{file_base}{frame_num:04d}_targets"
-        fname = file_base % frame_num + '_targets'
+        fname = file_base % frame_num + "_targets"
     else:
         fname = f"{file_base}_targets"
 
@@ -212,20 +210,21 @@ def read_targets(file_base: str, frame_num: int) -> List[Target]:
 
 
 def write_targets(
-    targets: List[Target], num_targets: int, file_base: str, frame_num: int) -> bool:
+    targets: List[Target], num_targets: int, file_base: str, frame_num: int
+) -> bool:
     """Write targets to a file."""
     success = False
 
     # fix old-type names, that are like cam1.# or just cam1.
-    if '#' in file_base:
-        file_base = file_base.replace('#', '%05d')
+    if "#" in file_base:
+        file_base = file_base.replace("#", "%05d")
     if "%" not in file_base:
         file_base = file_base + "%05d"
 
     if frame_num == 0:
         frame_num = 123456789
 
-    file_name =  file_base % frame_num + "_targets"
+    file_name = file_base % frame_num + "_targets"
 
     try:
         # Convert targets to a 2D numpy array
@@ -358,7 +357,7 @@ class Frame:
             return False
 
         for cam in range(self.num_cams):
-            self.targets[cam] = read_targets( target_file_base[cam], frame_num )
+            self.targets[cam] = read_targets(target_file_base[cam], frame_num)
             self.num_targets[cam] = len(self.targets[cam])
 
             if self.num_targets[cam] == -1:
@@ -661,8 +660,8 @@ class FrameBuf(FrameBufBase):
         else:
             return frame.read(
                 self.corres_file_base,
-                '',
-                '',
+                "",
+                "",
                 self.target_file_base,
                 frame_num,
             )
@@ -695,7 +694,7 @@ def read_path_frame(
     linkage_file_base: str,
     prio_file_base: str,
     frame_num: int,
-) -> Tuple[np.recarray, List[Pathinfo]]: #List[Corres]
+) -> Tuple[np.recarray, List[Pathinfo]]:  # List[Corres]
     """Read a rt_is frames from the disk.
 
         /* Reads rt_is files. these files contain both the path info and the
@@ -732,7 +731,9 @@ def read_path_frame(
     # print(f"Reading {n_particles} particles from {fname}")
     # cor_buf = [Corres() for _ in range(n_particles)] # we do not want empty lists
 
-    cor_buf = np.recarray((n_particles), dtype=Corres_dtype) # we do not want empty lists
+    cor_buf = np.recarray(
+        (n_particles), dtype=Corres_dtype
+    )  # we do not want empty lists
 
     path_buf = [Pathinfo() for _ in range(n_particles)]
 
@@ -804,7 +805,7 @@ def read_path_frame(
 
 
 def write_path_frame(
-    cor_buf: np.recarray, #List[Corres],
+    cor_buf: np.recarray,  # List[Corres],
     path_buf: List[Pathinfo],
     num_parts: int,
     corres_file_base: str,
@@ -915,13 +916,13 @@ def match_coords(
         matched_coords[tnum].x, matched_coords[tnum].y = dist_to_flat(x, y, cal, tol)
         matched_coords[tnum].pnr = targ.pnr
 
-    matched_coords.sort(order='x')
+    matched_coords.sort(order="x")
 
     return matched_coords
 
 
 def matched_coords_as_arrays(
-    matched_coords: np.recarray, #Coord2d
+    matched_coords: np.recarray,  # Coord2d
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Return the data associated with the object (the matched coordinates.
@@ -945,7 +946,9 @@ def matched_coords_as_arrays(
     return pos, pnr
 
 
-def get_by_pnrs(matched_coords: List[np.recarray], pnrs: np.ndarray) -> np.ndarray: #Coord2d
+def get_by_pnrs(
+    matched_coords: List[np.recarray], pnrs: np.ndarray
+) -> np.ndarray:  # Coord2d
     """
     Return the flat positions of points whose pnr property is given, as an.
 

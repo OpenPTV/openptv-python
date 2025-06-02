@@ -50,7 +50,8 @@ def multimed_r_nlay(cal: Calibration, mm: MultimediaPar, pos: np.ndarray) -> flo
         cal.ext_par.x0,
         cal.ext_par.y0,
         cal.ext_par.z0,
-        pos)
+        pos,
+    )
     # print(f"mmf from a loop = {mmf}")
 
     return mmf
@@ -66,12 +67,12 @@ def fast_multimed_r_nlay(
     x0: float,
     y0: float,
     z0: float,
-    pos: np.ndarray
+    pos: np.ndarray,
 ) -> float:
     """Faster mutlimedia model calculation."""
     n_iter = 40
     X, Y, Z = pos
-    r = np.linalg.norm(np.array([X-x0, Y-y0]))
+    r = np.linalg.norm(np.array([X - x0, Y - y0]))
     rq = r
     zout = Z + np.sum(d[1:nlay])
     zdiff = z0 - Z
@@ -85,8 +86,11 @@ def fast_multimed_r_nlay(
         beta2 = np.arcsin(np.sin(beta1) * n1 / n2[0])
         beta3 = np.arcsin(np.sin(beta1) * n1 / n3)
 
-        rbeta = (z0 - d[0]) * np.tan(beta1) - zout * \
-            np.tan(beta3) + np.sum(d * np.tan(beta2))
+        rbeta = (
+            (z0 - d[0]) * np.tan(beta1)
+            - zout * np.tan(beta3)
+            + np.sum(d * np.tan(beta2))
+        )
 
         rdiff = r - rbeta
         rq += rdiff
@@ -110,16 +114,12 @@ def trans_cam_point(
     origin = np.r_[ex.x0, ex.y0, ex.z0]  # type: ignore
     pos = pos.astype(np.float64)
 
-    return fast_trans_cam_point(
-        origin, mm.d[0], glass_dir, pos)
+    return fast_trans_cam_point(origin, mm.d[0], glass_dir, pos)
 
 
 @njit(fastmath=True, cache=True, nogil=True)
 def fast_trans_cam_point(
-    primary_point: np.ndarray,
-    d: float,
-    glass_dir: np.ndarray,
-    pos: np.ndarray
+    primary_point: np.ndarray, d: float, glass_dir: np.ndarray, pos: np.ndarray
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, float]:
     """Derive translation of camera point."""
     dist_o_glass = float(np.linalg.norm(glass_dir))  # vector length
@@ -182,8 +182,8 @@ def fast_back_trans_point(
     d: float,
     cross_c: np.ndarray,
     cross_p: np.ndarray,
-    pos_t: np.ndarray
-    ) -> np.ndarray:
+    pos_t: np.ndarray,
+) -> np.ndarray:
     """Run numba faster version of back projection."""
     # Calculate the glass direction vector
 
@@ -281,9 +281,7 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibrati
                 z_max_t = xyz_t[2]
 
             R = vec_norm(
-                np.r_[xyz_t[0] - cal_t.ext_par.x0,
-                      xyz_t[1] - cal_t.ext_par.y0,
-                      0]
+                np.r_[xyz_t[0] - cal_t.ext_par.x0, xyz_t[1] - cal_t.ext_par.y0, 0]
             )
 
             if R > Rmax:
@@ -299,8 +297,9 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibrati
             if xyz_t[2] > z_max_t:
                 z_max_t = xyz_t[2]
 
-            R = vec_norm(np.r_[xyz_t[0] - cal_t.ext_par.x0,
-                               xyz_t[1] - cal_t.ext_par.y0, 0])
+            R = vec_norm(
+                np.r_[xyz_t[0] - cal_t.ext_par.x0, xyz_t[1] - cal_t.ext_par.y0, 0]
+            )
 
             if R > Rmax:
                 Rmax = R
@@ -325,10 +324,8 @@ def init_mmlut(vpar: VolumePar, cpar: ControlPar, cal: Calibration) -> Calibrati
 
         for i in range(nr):
             for j in range(nz):
-                xyz = np.r_[Ri[i] + cal_t.ext_par.x0,
-                            cal_t.ext_par.y0, Zi[j]]
-                cal.mmlut_data.flat[i * nz +
-                                    j] = multimed_r_nlay(cal_t, cpar.mm, xyz)
+                xyz = np.r_[Ri[i] + cal_t.ext_par.x0, cal_t.ext_par.y0, Zi[j]]
+                cal.mmlut_data.flat[i * nz + j] = multimed_r_nlay(cal_t, cpar.mm, xyz)
 
         # print(f"filled mmlut data with {data}")
         # cal.mmlut_data = data
@@ -346,16 +343,12 @@ def get_mmf_from_mmlut(cal: Calibration, pos: np.ndarray) -> float:
 
     return fast_get_mmf_from_mmlut(rw, origin, data, nz, nr, pos)
 
+
 # @njit
 
 
 def fast_get_mmf_from_mmlut(
-    rw: int,
-    origin: np.ndarray,
-    data: np.ndarray,
-    nz: int,
-    nr: int,
-    pos: np.ndarray
+    rw: int, origin: np.ndarray, data: np.ndarray, nz: int, nr: int, pos: np.ndarray
 ) -> float:
     """Get the refractive index of the medium at a given position."""
     temp = pos - origin

@@ -22,6 +22,7 @@ def print_cal(cal: Calibration):
     print(cal.get_primary_point())
     print(cal.added_par)
 
+
 control_file_name = Path("tests/testing_folder/corresp/control.par")
 # self.control = ControlPar(4)
 control = read_control_par(control_file_name)
@@ -37,7 +38,6 @@ orig_cal = Calibration().from_file(
     Path("tests/testing_folder/calibration/cam1.tif.ori"),
     Path("tests/testing_folder/calibration/cam1.tif.addpar"),
 )
-
 
 
 # def test_external_calibration(self):
@@ -62,29 +62,15 @@ targets[:, 1] -= 0.1
 
 external_calibration(cal, ref_pts, targets, control)
 
-np.testing.assert_array_almost_equal(
-    cal.get_angles(), orig_cal.get_angles(), decimal=3
-)
-np.testing.assert_array_almost_equal(
-    cal.get_pos(), orig_cal.get_pos(), decimal=3
-)
+np.testing.assert_array_almost_equal(cal.get_angles(), orig_cal.get_angles(), decimal=3)
+np.testing.assert_array_almost_equal(cal.get_pos(), orig_cal.get_pos(), decimal=3)
 
 tmp_orient_par = OrientPar()
 
-_, _, _ = full_calibration(
-            cal,
-            ref_pts,
-            targets,
-            control,
-            tmp_orient_par
-            )
+_, _, _ = full_calibration(cal, ref_pts, targets, control, tmp_orient_par)
 
-np.testing.assert_array_almost_equal(
-    cal.get_angles(), orig_cal.get_angles(), decimal=3
-)
-np.testing.assert_array_almost_equal(
-    cal.get_pos(), orig_cal.get_pos(), decimal=3
-)
+np.testing.assert_array_almost_equal(cal.get_angles(), orig_cal.get_angles(), decimal=3)
+np.testing.assert_array_almost_equal(cal.get_pos(), orig_cal.get_pos(), decimal=3)
 
 print_cal(cal)
 
@@ -102,13 +88,7 @@ tmp_orient_par.scxflag = 1
 tmp_orient_par.sheflag = 0
 # tmp_orient_par.k3flag = 1
 
-_, _, _ = full_calibration(
-            cal,
-            ref_pts,
-            targets,
-            control,
-            tmp_orient_par
-            )
+_, _, _ = full_calibration(cal, ref_pts, targets, control, tmp_orient_par)
 print_cal(cal)
 
 # # %%
@@ -156,6 +136,7 @@ for ptx, pt in enumerate(targets):
     targs[ptx].y = pt[1]
     targs[ptx].pnr = ptx
 
+
 def added_par_residual(added_par_array, ref_pts, targs, control, cal):
     c = copy.deepcopy(cal)
     c.added_par = added_par_array
@@ -164,20 +145,23 @@ def added_par_residual(added_par_array, ref_pts, targs, control, cal):
     for i, t in enumerate(targs):
         xc, yc = pixel_to_metric(t.x, t.y, control)
         xp, yp = img_coord(ref_pts[i], c, control.mm)
-        residual += ((xc - xp)**2 + (yc - yp)**2)
+        residual += (xc - xp) ** 2 + (yc - yp) ** 2
 
     return residual
 
 
-
-np.seterr(all='raise')
+np.seterr(all="raise")
 
 x0 = np.array(cal.added_par.tolist())
-sol = opt.minimize(added_par_residual, x0, args=(ref_pts, targs, control, cal), \
-    method='Nelder-Mead', tol=1e-6)
+sol = opt.minimize(
+    added_par_residual,
+    x0,
+    args=(ref_pts, targs, control, cal),
+    method="Nelder-Mead",
+    tol=1e-6,
+)
 print(f"{sol.x=}")
 # print(sol.x - np.hstack([orig_cal.get_pos(), orig_cal.get_angles()]))
-
 
 
 # # # %%

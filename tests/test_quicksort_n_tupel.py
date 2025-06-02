@@ -25,10 +25,9 @@ class TestQuicksortNTuple(unittest.TestCase):
         expected_list.p = np.array([[7, 8, 9, 0], [1, 2, 3, 0], [4, 5, 6, 0]])
         expected_list.corr = np.array([0.2, 0.5, 1.0])
 
-
         actual_list = quicksort_n_tupel(n_tupel_list)
 
-        self.assertTrue(np.all(actual_list.corr ==  expected_list.corr))
+        self.assertTrue(np.all(actual_list.corr == expected_list.corr))
         self.assertTrue(np.all(actual_list.p == expected_list.p))
 
         # equivalent to :

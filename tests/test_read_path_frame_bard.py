@@ -1,4 +1,5 @@
 """Tests for the read_path_frame() function in tracking_frame_buf.py."""
+
 import unittest
 
 import numpy as np
@@ -41,8 +42,9 @@ class TestReadPathFrame(unittest.TestCase):
             path_correct.decis[alt_link] = 0.0
             path_correct.linkdecis[alt_link] = -999
 
-        corres_correct = np.array([(3, [96, 66, 26, 26])], dtype = Corres_dtype).view(np.recarray)
-
+        corres_correct = np.array([(3, [96, 66, 26, 26])], dtype=Corres_dtype).view(
+            np.recarray
+        )
 
         # The base name of the correspondence file.
         file_base = "tests/testing_fodder/rt_is"
@@ -111,9 +113,9 @@ class TestReadPathFrame(unittest.TestCase):
         )
         path_correct.decis = [0.0] * POSI
         path_correct.linkdecis = [-999] * POSI
-        c_correct = np.array([(3, [96, 66, 26, 26])],dtype=Corres_dtype).view(np.recarray)
-
-
+        c_correct = np.array([(3, [96, 66, 26, 26])], dtype=Corres_dtype).view(
+            np.recarray
+        )
 
         file_base = "tests/testing_fodder/rt_is"
         frame_num = 818
