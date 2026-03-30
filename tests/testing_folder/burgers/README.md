@@ -1,3 +1,5 @@
-# Burgers_test_ALEXL
+# Burgers Test Data
 
-Alex Ruiz @alexruiz95 created PTV_SYN package in Matlab that generates thes small test data
+This folder contains a small Burgers-flow test fixture used by the test suite.
+
+It is fixture data, not a separate project documentation tree. For the unified repository overview, engine selection, and versioning rules, see the top-level [README.md](../../../README.md).

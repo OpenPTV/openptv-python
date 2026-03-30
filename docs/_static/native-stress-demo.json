@@ -1,0 +1,84 @@
+{
+  "generated_at": "2026-03-15T12:45:22.894671+00:00",
+  "python": "/home/user/Documents/GitHub/openptv-python/.venv/bin/python",
+  "command": [
+    "/home/user/Documents/GitHub/openptv-python/.venv/bin/python",
+    "-m",
+    "pytest",
+    "-q",
+    "-s",
+    "tests/test_native_stress_performance.py"
+  ],
+  "results": [
+    {
+      "key": "sequence",
+      "label": "Sequence params",
+      "python_label": "python",
+      "python_seconds": 2.8e-05,
+      "native_seconds": 1e-05,
+      "speedup": 2.86,
+      "legacy_seconds": null,
+      "compiled_vs_legacy": null
+    },
+    {
+      "key": "preprocess",
+      "label": "Preprocess image",
+      "python_label": "python",
+      "python_seconds": 2.190105,
+      "native_seconds": 0.004607,
+      "speedup": 475.37,
+      "legacy_seconds": null,
+      "compiled_vs_legacy": null
+    },
+    {
+      "key": "segmentation",
+      "label": "Segmentation",
+      "python_label": "python+numba",
+      "python_seconds": 0.005055,
+      "native_seconds": 0.001317,
+      "speedup": 3.84,
+      "legacy_seconds": null,
+      "compiled_vs_legacy": null
+    },
+    {
+      "key": "stereomatching",
+      "label": "Stereo matching",
+      "python_label": "python",
+      "python_seconds": 14.192568,
+      "native_seconds": 0.002493,
+      "speedup": 5693.37,
+      "legacy_seconds": null,
+      "compiled_vs_legacy": null
+    },
+    {
+      "key": "reconstruction",
+      "label": "Reconstruction",
+      "python_label": "compiled-python",
+      "python_seconds": 0.011528,
+      "native_seconds": 0.004852,
+      "speedup": 2.38,
+      "legacy_seconds": 0.649974,
+      "compiled_vs_legacy": 56.38
+    },
+    {
+      "key": "multilayer_reconstruction",
+      "label": "Multilayer reconstruction",
+      "python_label": "compiled-python",
+      "python_seconds": 0.009571,
+      "native_seconds": 0.004759,
+      "speedup": 2.01,
+      "legacy_seconds": 0.533542,
+      "compiled_vs_legacy": 55.74
+    },
+    {
+      "key": "tracking",
+      "label": "Tracking",
+      "python_label": "python",
+      "python_seconds": 1.300061,
+      "native_seconds": 0.144059,
+      "speedup": 9.02,
+      "legacy_seconds": null,
+      "compiled_vs_legacy": null
+    }
+  ]
+}

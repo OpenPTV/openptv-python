@@ -1,17 +1,17 @@
 # Values taken from the parameters used in the C test for adding a particle.
 
 cameras:
-- ori_file: testing_folder/burgers/cal/cam1.tif.ori
-  addpar_file: testing_folder/burgers/cal/cam1.tif.addpar
+- ori_file: testing_fodder/burgers/cal/cam1.tif.ori
+  addpar_file: testing_fodder/burgers/cal/cam1.tif.addpar
 
-- ori_file: testing_folder/burgers/cal/cam2.tif.ori
-  addpar_file: testing_folder/burgers/cal/cam2.tif.addpar
+- ori_file: testing_fodder/burgers/cal/cam2.tif.ori
+  addpar_file: testing_fodder/burgers/cal/cam2.tif.addpar
 
-- ori_file: testing_folder/burgers/cal/cam3.tif.ori
-  addpar_file: testing_folder/burgers/cal/cam3.tif.addpar
+- ori_file: testing_fodder/burgers/cal/cam3.tif.ori
+  addpar_file: testing_fodder/burgers/cal/cam3.tif.addpar
 
-- ori_file: testing_folder/burgers/cal/cam4.tif.ori
-  addpar_file: testing_folder/burgers/cal/cam4.tif.addpar
+- ori_file: testing_fodder/burgers/cal/cam4.tif.ori
+  addpar_file: testing_fodder/burgers/cal/cam4.tif.addpar
 
 scene:
   flags: hp, headers
@@ -39,12 +39,12 @@ correspondences:
   epipolar_band: 0.01     # mm on sensor plane.
 
 sequence:
-  targets_template: testing_folder/burgers/img/cam{cam:1d}.
+  targets_template: testing_fodder/burgers/img/Cam{cam:1d}/frame_
   first: 10001
-  last: 10005
+  last: 10006
 
 tracking:
-  velocity_lims: [[-0.5, 0.5], [-0.5, 0.5], [-0.5, 0.5]]
+  velocity_lims: [[-0.1, 0.1], [-0.1, 0.1], [-0.1, 0.1]]
   angle_lim: 100
-  accel_lim: 0.1
+  accel_lim: 0.01
   add_particle: 0

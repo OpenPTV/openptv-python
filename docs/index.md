@@ -1,16 +1,16 @@
 # Welcome to openptv_python's documentation!
 
-Python version of the OpenPTV library.
+This is the documentation tree for the unified OpenPTV Python repository.
 
-Start with the README for installation and backend selection details. The short
-version is:
+Start with the root [README.md](../README.md) for installation, versioning, and engine-selection details.
 
-- install runtime dependencies with `uv sync` on Python 3.12 or 3.13
+Short version:
+
+- install runtime dependencies with `uv sync`
 - install contributor tooling with `uv sync --extra dev`
-- use the same Python API regardless of backend
-- get pure Python behavior everywhere, Numba acceleration in selected kernels,
-  and automatic native `optv` delegation for preprocessing and full-frame
-  target recognition when available
+- use `optv` by default for supported operations
+- use `--engine python` in GUI or batch runs when you want to force the fallback backend for debugging/testing
+- the shared API automatically falls back to Python/Numba when `optv` is unavailable
 
 ```{toctree}
 :caption: 'Contents:'
@@ -18,6 +18,7 @@ version is:
 
 README.md
 bundle_adjustment.md
+native_backend_unification.md
 ```
 
 # Indices and tables

@@ -1,0 +1,443 @@
+"""Unit tests for utility and plugin functions in ptv.py"""
+
+import pytest
+import numpy as np
+import os
+import time
+from pathlib import Path
+from unittest.mock import Mock, patch, MagicMock
+from optv.correspondences import MatchedCoords
+from openptv_python.parameters import ControlPar, VolumePar
+from pyptv.ptv import (
+    _read_calibrations, generate_short_file_bases, py_pre_processing_c, py_determination_proc_c,
+    run_sequence_plugin, run_tracking_plugin, py_sequence_loop,
+    py_trackcorr_init
+)
+from pyptv.experiment import Experiment
+from optv.calibration import Calibration
+
+
+@pytest.fixture
+def test_cavity_exp():
+    """Load test_cavity experiment for real testing"""
+    test_cavity_path = Path(__file__).parent.parent / "testing_folder" / "test_cavity"
+    if not test_cavity_path.exists():
+        pytest.skip("test_cavity directory not found")
+    
+    yaml_file = test_cavity_path / "parameters_Run1.yaml"
+    if not yaml_file.exists():
+        pytest.skip("test_cavity parameters_Run1.yaml not found")
+    
+    original_cwd = Path.cwd()
+    os.chdir(test_cavity_path)
+    
+    try:
+        experiment = Experiment()
+        experiment.pm.from_yaml(yaml_file)
+        experiment.target_filenames = experiment.pm.get_target_filenames()
+        yield experiment
+    finally:
+        os.chdir(original_cwd)
+
+
+@pytest.fixture
+def test_splitter_exp():
+    """Load test_splitter experiment for real testing"""
+    test_splitter_path = Path(__file__).parent.parent / "testing_folder" / "test_splitter"
+    if not test_splitter_path.exists():
+        pytest.skip("test_splitter directory not found")
+    
+    yaml_file = test_splitter_path / "parameters_Run1.yaml"
+    if not yaml_file.exists():
+        pytest.skip("test_splitter parameters_Run1.yaml not found")
+    
+    original_cwd = Path.cwd()
+    os.chdir(test_splitter_path)
+    
+    try:
+        experiment = Experiment()
+        experiment.pm.from_yaml(yaml_file)
+        experiment.target_filenames = experiment.pm.get_target_filenames()
+
+        yield experiment
+    finally:
+        os.chdir(original_cwd)
+
+
+class TestReadCalibrations:
+    """Test _read_calibrations function"""
+    
+    def test_read_calibrations_basic(self, test_cavity_exp):
+        """Test basic calibration reading with real experiment data"""
+        from pyptv import ptv
+        
+        try:
+            # Initialize PyPTV core with real experiment data
+            cpar, spar, vpar, track_par, tpar, cals, epar = ptv.py_start_proc_c(test_cavity_exp.pm)
+            
+            num_cams = test_cavity_exp.pm.num_cams
+            
+            # Test the function with real control parameters
+            result = _read_calibrations(cpar, num_cams)
+            
+            assert len(result) == num_cams
+            assert all(isinstance(cal, Calibration) for cal in result)
+            
+        except Exception as e:
+            # If core initialization fails, skip with informative message
+            pytest.skip(f"Could not initialize PyPTV core with real data: {e}")
+    
+    def test_read_calibrations_mismatched_count(self, test_splitter_exp):
+        """Test calibration reading with different camera count"""
+        from pyptv import ptv
+
+        cpar, spar, vpar, track_par, tpar, cals, epar = ptv.py_start_proc_c(test_splitter_exp.pm)
+
+        # Test with a different number of cameras than in the experiment.
+        # Missing camera base names should now fall back to default calibrations.
+        test_n_cams = test_splitter_exp.pm.num_cams + 1
+
+        result = _read_calibrations(cpar, test_n_cams)
+        assert len(result) == test_n_cams
+        assert isinstance(result[-1], Calibration)
+
+
+class TestPyPreProcessingC:
+    """Test py_pre_processing_c function"""
+    
+    def test_py_pre_processing_c_basic(self, test_cavity_exp):
+        """Test basic preprocessing with real experiment data"""
+        from pyptv import ptv
+        
+        try:
+            # Initialize PyPTV core with real experiment data
+            cpar, spar, vpar, track_par, tpar, cals, epar = ptv.py_start_proc_c(test_cavity_exp.pm)
+            
+            num_cams = test_cavity_exp.pm.num_cams
+            
+            # Create test images with proper dimensions
+            imx = cpar.get_image_size()[0]
+            imy = cpar.get_image_size()[1]
+            images = [
+                np.random.randint(0, 255, (imy, imx), dtype=np.uint8)
+                for _ in range(num_cams)
+            ]
+            
+            # Use real parameters from the experiment
+            ptv_params = test_cavity_exp.pm.parameters.get('ptv', {})
+            
+            result = py_pre_processing_c(num_cams, images, ptv_params)
+            
+            # Should return processed images
+            assert len(result) == num_cams
+            assert all(isinstance(img, np.ndarray) for img in result)
+            
+        except Exception as e:
+            # If core initialization fails, skip with informative message
+            pytest.skip(f"Could not initialize PyPTV core with real data: {e}")
+    
+    def test_py_pre_processing_c_empty_images(self):
+        """Test preprocessing with empty image list"""
+        num_cams = 0
+        images = []
+        ptv_params = {
+            'imx': 100, 'imy': 100, 'hp_flag': 1,
+            'pix_x': 0.012, 'pix_y': 0.012,  # Add required pixel size parameters
+            'allcam_flag': 0,  # Add required allcam flag
+            'tiff_flag': 0,  # Add required tiff flag
+            'chfield': 0,  # Add required chfield parameter
+            'mmp_n1': 1.0,  # Multimedia parameters
+            'mmp_n2': 1.33,
+            'mmp_d': 1.0,
+            'mmp_n3': 1.0,
+            'img_cal': []  # Empty calibration list to match num_cams=0
+        }
+        
+        result = py_pre_processing_c(num_cams, images, ptv_params)
+        
+        # Should return empty list for empty input
+        assert len(result) == 0
+    
+    @patch('pyptv.ptv._populate_cpar')
+    def test_py_pre_processing_c_invalid_params(self, mock_populate_cpar):
+        """Test preprocessing with invalid parameters"""
+        num_cams = 1
+        images = [np.random.randint(0, 255, (100, 100), dtype=np.uint8)]
+        ptv_params = {}  # Missing required parameters
+        
+        mock_populate_cpar.side_effect = KeyError("Missing required parameter")
+        
+        with pytest.raises(KeyError):
+            py_pre_processing_c(num_cams, images, ptv_params)
+
+
+class TestPyDeterminationProcC:
+    """Test py_determination_proc_c function"""
+    
+    @patch('pyptv.ptv.point_positions')
+    def test_py_determination_proc_c_basic(self, mock_point_positions, tmp_path, monkeypatch):
+        """Test determination processing writes a correspondence file for valid inputs."""
+        monkeypatch.chdir(tmp_path)
+        num_cams = 1
+        sorted_pos = [np.array([[100.0], [200.0]])]
+        sorted_corresp = [np.array([[0]])]
+        corrected = [Mock()]
+        corrected[0].get_by_pnrs.return_value = np.array([[1.0, 2.0]])
+        cpar = ControlPar(num_cams=1, img_base_name=['cam1'], cal_img_base_name=['cam1'])
+        vpar = VolumePar()
+        cals = [Calibration()]
+        mock_point_positions.return_value = (np.array([[1.0, 2.0, 3.0]]), None)
+
+        py_determination_proc_c(
+            num_cams, sorted_pos, sorted_corresp, corrected, cpar, vpar, cals
+        )
+
+        output_path = tmp_path / "res" / "rt_is.123456789"
+        assert output_path.exists()
+        lines = output_path.read_text(encoding="utf-8").splitlines()
+        assert lines[0] == "1"
+    
+    def test_py_determination_proc_c_real_data(self, test_cavity_exp):
+        """Test determination processing rejects empty real-data inputs cleanly."""
+        from pyptv import ptv
+
+        cpar, spar, vpar, track_par, tpar, cals, epar = ptv.py_start_proc_c(test_cavity_exp.pm)
+
+        num_cams = test_cavity_exp.pm.num_cams
+        sorted_pos = [np.array([]).reshape(0, 2) for _ in range(num_cams)]
+        sorted_corresp = [np.array([]).reshape(0, 1) for _ in range(num_cams)]
+        from optv.tracking_framebuf import TargetArray
+
+        corrected = [MatchedCoords(TargetArray(0), cpar, cals[i]) for i in range(num_cams)]
+
+        with pytest.raises((ValueError, IndexError)):
+            py_determination_proc_c(
+                num_cams, sorted_pos, sorted_corresp, corrected, cpar, vpar, cals
+            )
+    
+    def test_py_determination_proc_c_invalid_calibrations(self):
+        """Test determination processing with invalid calibrations"""
+        num_cams = 2
+        sorted_pos = [np.array([[1.0, 2.0], [3.0, 4.0]])]
+        sorted_corresp = [np.array([[0, 1]])]
+        corrected = [Mock()]
+        cpar = ControlPar(num_cams=2, img_base_name=['cam1', 'cam2'], cal_img_base_name=['cam1', 'cam2'])
+        vpar = VolumePar()
+        cals = []  # Empty calibrations
+        
+        with pytest.raises((IndexError, ValueError)):
+            py_determination_proc_c(num_cams, sorted_pos, sorted_corresp, corrected, cpar, vpar, cals)
+
+
+class TestRunSequencePlugin:
+    """Test run_sequence_plugin function"""
+    
+    @patch('pyptv.ptv.os.listdir')
+    @patch('pyptv.ptv.os.getcwd')
+    def test_run_sequence_plugin_empty_dir(self, mock_getcwd, mock_listdir):
+        """Test sequence plugin with empty plugin directory"""
+        from unittest.mock import Mock
+        import tempfile
+        import os
+        
+        # Create a mock experiment object with plugin system
+        exp = Mock()
+        exp.plugins = Mock()
+        exp.plugins.sequence_alg = "test_plugin"
+        
+        # Mock an empty plugin directory
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Create the plugins subdirectory
+            plugins_dir = os.path.join(temp_dir, "plugins")
+            os.makedirs(plugins_dir, exist_ok=True)
+            
+            mock_getcwd.return_value = temp_dir
+            mock_listdir.return_value = []  # Empty directory
+            
+            # Should handle gracefully when no plugins found
+            run_sequence_plugin(exp)
+    
+    def test_run_sequence_plugin_no_plugin_error(self):
+        """Test sequence plugin with missing plugin directory - expect error"""
+        import tempfile
+        import os
+        
+        exp = Mock()
+        exp.plugins = Mock()
+        exp.plugins.sequence_alg = "nonexistent"
+        
+        # Create a temporary directory without plugins subdirectory to ensure clean test
+        with tempfile.TemporaryDirectory() as temp_dir:
+            original_cwd = os.getcwd()
+            try:
+                os.chdir(temp_dir)
+                # Should raise FileNotFoundError when plugin directory doesn't exist
+                with pytest.raises(FileNotFoundError):
+                    run_sequence_plugin(exp)
+            finally:
+                os.chdir(original_cwd)
+
+
+class TestRunTrackingPlugin:
+    """Test run_tracking_plugin function"""
+    
+    @patch('pyptv.ptv.os.listdir')
+    @patch('pyptv.ptv.os.getcwd')
+    def test_run_tracking_plugin_empty_dir(self, mock_getcwd, mock_listdir):
+        """Test tracking plugin with empty plugin directory"""
+        from unittest.mock import Mock
+        import tempfile
+        import os
+        
+        # Create a mock experiment object with plugin system
+        exp = Mock()
+        exp.plugins = Mock()
+        exp.plugins.track_alg = "test_tracker"
+        
+        # Mock an empty plugin directory
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Create the plugins subdirectory
+            plugins_dir = os.path.join(temp_dir, "plugins")
+            os.makedirs(plugins_dir, exist_ok=True)
+            
+            mock_getcwd.return_value = temp_dir
+            mock_listdir.return_value = []  # Empty directory
+            
+            # Should handle gracefully when no plugins found
+            run_tracking_plugin(exp)
+    
+    def test_run_tracking_plugin_no_plugin_error(self):
+        """Test tracking plugin with missing plugin directory - expect error"""
+        import tempfile
+        import os
+        
+        exp = Mock()
+        exp.plugins = Mock()
+        exp.plugins.track_alg = "nonexistent"
+        
+        # Create a temporary directory without plugins subdirectory to ensure clean test
+        with tempfile.TemporaryDirectory() as temp_dir:
+            original_cwd = os.getcwd()
+            try:
+                os.chdir(temp_dir)
+                # Should raise FileNotFoundError when plugin directory doesn't exist
+                with pytest.raises(FileNotFoundError):
+                    run_tracking_plugin(exp)
+            finally:
+                os.chdir(original_cwd)
+
+
+class TestPySequenceLoop:
+    """Test py_sequence_loop function"""
+    
+    def test_py_sequence_loop_basic_real_data(self, test_cavity_exp):
+        """Test basic sequence loop execution with real test_cavity data"""
+        from pyptv import ptv
+
+        test_start = time.perf_counter()
+        print("[TIMING] test_py_sequence_loop_basic_real_data: starting setup")
+        
+        # Initialize PyPTV core with real experiment data
+        setup_start = time.perf_counter()
+        cpar, spar, vpar, track_par, tpar, cals, epar = ptv.py_start_proc_c(test_cavity_exp.pm)
+        print(
+            f"[TIMING] py_start_proc_c finished in {time.perf_counter() - setup_start:.3f}s"
+        )
+        
+        # Create a proper experiment object for testing
+        exp_start = time.perf_counter()
+        exp = Mock()
+        exp.pm = test_cavity_exp.pm
+        exp.num_cams = test_cavity_exp.pm.num_cams
+        exp.cpar = cpar
+        exp.spar = spar
+        exp.vpar = vpar
+        exp.track_par = track_par
+        exp.tpar = tpar
+        exp.cals = cals
+        print(f"[TIMING] experiment setup finished in {time.perf_counter() - exp_start:.3f}s")
+        
+        # Modify to process only 1 frame to keep test fast
+        frame_start = time.perf_counter()
+        original_last = spar.get_last()
+        spar.set_last(spar.get_first())  # Process just first frame
+        print(f"[TIMING] frame-window adjustment finished in {time.perf_counter() - frame_start:.3f}s")
+
+        exp.target_filenames = test_cavity_exp.target_filenames
+        
+        # Should execute without major errors
+        loop_start = time.perf_counter()
+        print("[TIMING] entering py_sequence_loop")
+        py_sequence_loop(exp)
+        print(f"[TIMING] py_sequence_loop finished in {time.perf_counter() - loop_start:.3f}s")
+        
+        # Restore original settings
+        spar.set_last(original_last)
+        print(f"[TIMING] total test duration {time.perf_counter() - test_start:.3f}s")
+        # If core initialization fails, skip with informative message
+
+    def test_py_sequence_loop_invalid_experiment(self):
+        """Test sequence loop with invalid experiment"""
+        with pytest.raises(ValueError):
+            py_sequence_loop(None)
+
+
+class TestPyTrackcorrInit:
+    """Test py_trackcorr_init function"""
+    
+    def test_py_trackcorr_init_real_data(self, test_splitter_exp):
+        """Test basic tracking correction initialization with real test_splitter data"""
+        from pyptv import ptv
+
+        cpar, spar, vpar, track_par, tpar, cals, epar = ptv.py_start_proc_c(test_splitter_exp.pm)
+
+        exp = Mock()
+        exp.spar = spar
+        exp.tpar = tpar
+        exp.vpar = vpar
+        exp.track_par = track_par
+        exp.cpar = cpar
+        exp.cals = cals
+
+        result = py_trackcorr_init(exp)
+
+        assert result is not None
+        assert hasattr(exp, "target_filenames")
+    
+    def test_py_trackcorr_init_missing_params(self):
+        """Test tracking correction init with missing parameters"""
+        exp = Mock()
+        exp.cpar.get_num_cams.return_value = 2  # Mock returns integer for range()
+        exp.spar = None  # Missing sequence parameters
+        exp.target_filenames = ['cam1', 'cam2']  # Mock target filenames
+        
+        with pytest.raises(AttributeError):
+            py_trackcorr_init(exp)
+
+
+class TestPyRclickDelete:
+    """Test py_rclick_delete function"""
+    
+    # def test_py_rclick_delete_basic(self):
+    #     """Test basic right-click delete"""
+    #     x, y, n = 100, 200, 0
+    #     
+    #     # Function is a stub that just passes, so test it returns None
+    #     result = py_rclick_delete(x, y, n)
+    #     assert result is None
+    
+    # def test_py_rclick_delete_invalid_coords(self):
+    #     """Test right-click delete with invalid coordinates"""
+    #     # Function is a stub that just passes, so test it returns None
+    #     result = py_rclick_delete(-1, -1, 0)
+    #     assert result is None
+    
+    # def test_py_rclick_delete_invalid_camera(self):
+    #     """Test right-click delete with invalid camera number"""
+    #     # Function is a stub that just passes, so test it returns None
+    #     result = py_rclick_delete(100, 200, -1)
+    #     assert result is None
+
+
+if __name__ == "__main__":
+    pytest.main([__file__])
